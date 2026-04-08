@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PhaseHandoffPacket",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "packet_id",
+    "candidate_id",
+    "track",
+    "phase_completed",
+    "next_phase",
+    "objective",
+    "input_artifacts",
+    "output_artifacts",
+    "decisions_made",
+    "excluded_or_deferred",
+    "open_questions",
+    "required_gates",
+    "fresh_context_required",
+    "fresh_context_reason"
+  ],
+  "properties": {
+    "packet_id": { "type": "string", "minLength": 1 },
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "track": {
+      "type": "string",
+      "enum": ["Discovery", "Architecture", "Runtime"]
+    },
+    "phase_completed": { "type": "string", "minLength": 1 },
+    "next_phase": { "type": "string", "minLength": 1 },
+    "objective": { "type": "string", "minLength": 1 },
+    "mission_relevance": { "type": "string" },
+    "capability_gap_ref": { "type": "string" },
+    "input_artifacts": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "output_artifacts": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "decisions_made": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "excluded_or_deferred": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "required_gates": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "phase_risks": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "rollback_note": { "type": "string" },
+    "fresh_context_required": { "type": "boolean" },
+    "fresh_context_reason": { "type": "string", "minLength": 1 }
+  }
+}

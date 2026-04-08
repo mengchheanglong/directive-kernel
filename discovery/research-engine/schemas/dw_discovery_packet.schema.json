@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "research-engine/schemas/dw_discovery_packet.schema.json",
+  "title": "Research Engine DW Discovery Packet",
+  "type": "object",
+  "required": [
+    "packet_kind",
+    "contract_version",
+    "mission_id",
+    "generated_at",
+    "decision_boundary",
+    "candidates",
+    "holds_and_rejections"
+  ],
+  "properties": {
+    "packet_kind": { "const": "research_engine.dw_discovery_packet" },
+    "contract_version": { "const": 1 },
+    "mission_id": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "decision_boundary": { "type": "string" },
+    "candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/discoveryCandidate" }
+    },
+    "holds_and_rejections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/discoveryCandidate" }
+    }
+  },
+  "$defs": {
+    "discoveryCandidate": {
+      "type": "object",
+      "required": [
+        "candidate_id",
+        "candidate_name",
+        "source_type",
+        "source_reference",
+        "mission_relevance",
+        "source_kind",
+        "initial_value_hypothesis",
+        "initial_baggage_signals",
+        "capability_gap_hint",
+        "evidence_bundle_refs",
+        "evidence_cluster_summary",
+        "contradiction_flags",
+        "rejection_or_hold_reasons",
+        "provenance_summary",
+        "discovery_signal_band",
+        "signal_total_score",
+        "signal_score_summary",
+        "freshness_summary",
+        "freshness_signal",
+        "freshest_source_updated_at",
+        "freshest_source_age_days",
+        "structural_signal_band",
+        "structural_signal_summary",
+        "workflow_phase_labels",
+        "provider_seam_summary",
+        "workflow_boundary_shape_hint",
+        "recommended_lane_target",
+        "lane_target_rationale",
+        "workflow_phase_scores",
+        "structural_extraction_recommendations",
+        "structural_avoid_recommendations",
+        "review_guidance_summary",
+        "review_guidance_action",
+        "review_guidance_stop_line",
+        "uncertainty_notes"
+      ],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "candidate_name": { "type": "string" },
+        "source_type": { "type": "string" },
+        "source_reference": { "type": "string" },
+        "mission_relevance": { "type": "string" },
+        "source_kind": { "type": "string" },
+        "initial_value_hypothesis": { "type": "string" },
+        "initial_baggage_signals": { "type": "array", "items": { "type": "string" } },
+        "capability_gap_hint": { "type": "string" },
+        "evidence_bundle_refs": { "type": "array", "items": { "type": "string" } },
+        "evidence_cluster_summary": { "type": "array", "items": { "type": "string" } },
+        "contradiction_flags": { "type": "array", "items": { "type": "string" } },
+        "rejection_or_hold_reasons": { "type": "array", "items": { "type": "string" } },
+        "provenance_summary": { "type": "array", "items": { "type": "string" } },
+        "discovery_signal_band": { "type": "string" },
+        "signal_total_score": { "type": ["integer", "null"] },
+        "signal_score_summary": { "type": "string" },
+        "freshness_summary": { "type": "string" },
+        "freshness_signal": { "type": "string" },
+        "freshest_source_updated_at": { "type": ["string", "null"] },
+        "freshest_source_age_days": { "type": ["integer", "null"] },
+        "structural_signal_band": { "type": "string" },
+        "structural_signal_summary": { "type": "string" },
+        "workflow_phase_labels": { "type": "array", "items": { "type": "string" } },
+        "provider_seam_summary": { "type": ["string", "null"] },
+        "workflow_boundary_shape_hint": { "type": ["string", "null"] },
+        "recommended_lane_target": { "type": ["string", "null"] },
+        "lane_target_rationale": { "type": ["string", "null"] },
+        "workflow_phase_scores": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" }
+        },
+        "structural_extraction_recommendations": { "type": "array", "items": { "type": "string" } },
+        "structural_avoid_recommendations": { "type": "array", "items": { "type": "string" } },
+        "review_guidance_summary": { "type": "string" },
+        "review_guidance_action": { "type": "string" },
+        "review_guidance_stop_line": { "type": "string" },
+        "uncertainty_notes": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

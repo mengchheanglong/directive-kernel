@@ -1,0 +1,53 @@
+{
+  "candidate_id": "dw-example-split-case",
+  "candidate_name": "Example Split-Case Discovery Candidate",
+  "source_type": "paper",
+  "source_reference": "https://example.com/research-paper",
+  "mission_alignment": "Relevant to a mission-conditioned capability gap and needs full intake, triage, and routing treatment.",
+  "capability_gap_id": null,
+  "notes": "Example split-case submission from a third-party host.",
+  "record_shape": "split_case",
+  "case_record": {
+    "intake": {
+      "intake_date": "2026-03-22",
+      "source_type": "paper",
+      "source_reference": "https://example.com/research-paper",
+      "submitted_by": "third-party-host",
+      "why_it_entered_the_system": "Candidate appears relevant enough to justify full Discovery treatment.",
+      "claimed_value": "Potentially improves the system's ability to solve an active mission problem.",
+      "initial_relevance_to_workspace": "High mission relevance with unclear final adoption target.",
+      "suspected_adoption_target": "architecture"
+    },
+    "triage": {
+      "triage_date": "2026-03-22",
+      "first_pass_summary": "Promising candidate with likely structural value.",
+      "problem_it_appears_to_solve": "Improves the quality of future source adaptation or verification.",
+      "extractable_value_hypothesis": "Durable internal mechanism can be extracted into product-owned operating code.",
+      "routing_recommendation": "Route to Architecture for bounded mechanism extraction.",
+      "proposed_adoption_target": "architecture",
+      "stack_shape_summary": "Source is conceptual/research-oriented rather than runtime-ready.",
+      "boilerplate_vs_product_boundary": "Underlying mechanism appears reusable; presentation-specific baggage should be excluded.",
+      "suggested_decision_state": "adopt",
+      "fit_to_current_direction": "Supports the self-improving source adaptation direction.",
+      "reusability_across_surfaces": "Likely reusable across Discovery and Architecture.",
+      "operational_risk": "Low runtime risk because no immediate runtime promotion is proposed.",
+      "integration_cost": "Moderate extraction and validation effort.",
+      "can_current_gates_validate_safely": "yes",
+      "immediate_risks": "Need to avoid over-importing source-specific baggage.",
+      "missing_evidence": "Need one bounded experiment note.",
+      "next_action": "Create an Architecture experiment record."
+    },
+    "routing": {
+      "route_date": "2026-03-22",
+      "source_type": "paper",
+      "decision_state": "adopt",
+      "adoption_target": "architecture",
+      "route_destination": "architecture",
+      "why_this_route": "Primary value is reusable internal operating logic rather than a runtime capability.",
+      "why_not_alternatives": "Runtime would be premature because runtime form is not yet justified.",
+      "receiving_track_owner": "directive-workspace",
+      "required_next_artifact": "architecture/01-experiments/2026-03-22-example-split-case-slice-01.md"
+    }
+  }
+}
+

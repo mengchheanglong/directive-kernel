@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CrossSourceSynthesisPacket",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "packet_id",
+    "packet_date",
+    "source_slice_ref",
+    "sources_compared",
+    "synthesis_question",
+    "shared_pattern",
+    "key_agreements",
+    "key_tensions",
+    "directive_synthesis",
+    "excluded_baggage",
+    "artifact_refs",
+    "reuse_targets",
+    "usefulness_level",
+    "meta_usefulness",
+    "meta_usefulness_category"
+  ],
+  "properties": {
+    "packet_id": { "type": "string", "minLength": 1 },
+    "packet_date": { "type": "string", "minLength": 1 },
+    "source_slice_ref": { "type": "string", "minLength": 1 },
+    "sources_compared": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "synthesis_question": { "type": "string", "minLength": 1 },
+    "shared_pattern": { "type": "string", "minLength": 1 },
+    "key_agreements": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "key_tensions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "directive_synthesis": { "type": "string", "minLength": 1 },
+    "excluded_baggage": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "artifact_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "reuse_targets": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "usefulness_level": {
+      "type": "string",
+      "enum": ["direct", "structural", "meta"]
+    },
+    "meta_usefulness": { "type": "boolean" },
+    "meta_usefulness_category": {
+      "type": "string",
+      "enum": [
+        "analysis_quality",
+        "extraction_quality",
+        "adaptation_quality",
+        "improvement_quality",
+        "routing_quality",
+        "evaluation_quality",
+        "handoff_quality",
+        "n/a"
+      ]
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/transformation-proof-artifact",
+  "title": "TransformationProofArtifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "transformation_type",
+    "preservation_claim",
+    "baseline_measurement",
+    "result_measurement",
+    "comparison_summary",
+    "rollback_verification"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "transformation_type": {
+      "type": "string",
+      "enum": [
+        "speed",
+        "cost",
+        "reliability",
+        "maintainability",
+        "correctness",
+        "runtime-fit",
+        "quality"
+      ]
+    },
+    "preservation_claim": { "type": "string", "minLength": 1 },
+    "baseline_measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "value", "measurement_method"],
+      "properties": {
+        "metric": { "type": "string", "minLength": 1 },
+        "value": { "type": ["string", "number"] },
+        "measurement_method": { "type": "string", "minLength": 1 }
+      }
+    },
+    "result_measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "value", "measurement_method"],
+      "properties": {
+        "metric": { "type": "string", "minLength": 1 },
+        "value": { "type": ["string", "number"] },
+        "measurement_method": { "type": "string", "minLength": 1 }
+      }
+    },
+    "comparison_summary": { "type": "string", "minLength": 1 },
+    "rollback_verification": { "type": "string", "minLength": 1 },
+    "regression_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check_name", "result"],
+        "properties": {
+          "check_name": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "enum": ["pass", "fail"] }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "status": "active",
+  "updatedAt": "2026-04-08",
+  "policy": {
+    "selectorField": "Quality gate profile",
+    "familyField": "Promotion profile family",
+    "proofShapeField": "Proof shape",
+    "primaryHostCheckerField": "Primary host checker",
+    "resolutionRule": "Every Runtime promotion record must declare one cataloged quality gate profile when the consuming project enables promotion profiles.",
+    "proofShapeRule": "Proof artifacts must satisfy the proof shape associated with the selected profile; profile family and host checker must not be inferred ad hoc from candidate name or script behavior.",
+    "hostCheckerRule": "Each active promotion profile must have exactly one primary host checker command, with any extra gates recorded as supporting host checks.",
+    "nonApplicableFieldRule": "Promotion records may use `n/a` for fields that are not part of the selected proof shape, but the selector, family, proof shape, and primary host checker must still match the chosen catalog entry."
+  },
+  "notes": [
+    "Directive Kernel does not ship the old workspace-specific promotion profile catalog.",
+    "Consuming projects may add bounded promotion profiles here when they also own the required checks, host proofs, and rollback policy."
+  ],
+  "profiles": []
+}

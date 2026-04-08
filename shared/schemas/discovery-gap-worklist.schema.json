@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/discovery-gap-worklist",
+  "title": "DiscoveryGapWorklist",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "updatedAt", "policy", "items"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["active"]
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date"
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selectionRule", "syncRule", "openGapRule"],
+      "properties": {
+        "selectionRule": { "type": "string", "minLength": 1 },
+        "syncRule": { "type": "string", "minLength": 1 },
+        "openGapRule": { "type": "string", "minLength": 1 }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "gap_id",
+          "worklist_rank",
+          "gap_priority",
+          "priority_score",
+          "score_breakdown",
+          "mission_objective",
+          "gap_status",
+          "next_slice_track",
+          "next_action"
+        ],
+        "properties": {
+          "gap_id": { "type": "string", "minLength": 1 },
+          "worklist_rank": { "type": "integer", "minimum": 1 },
+          "gap_priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "priority_score": {
+            "type": "integer"
+          },
+          "score_breakdown": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "base_priority",
+              "mission_pressure",
+              "mission_leverage",
+              "proof_clarity",
+              "adaptation_leverage",
+              "blocker_severity",
+              "blocker_penalty"
+            ],
+            "properties": {
+              "base_priority": { "type": "integer", "minimum": 0 },
+              "mission_pressure": { "type": "integer", "minimum": 0, "maximum": 5 },
+              "mission_leverage": { "type": "integer", "minimum": 0, "maximum": 5 },
+              "proof_clarity": { "type": "integer", "minimum": 0, "maximum": 5 },
+              "adaptation_leverage": { "type": "integer", "minimum": 0, "maximum": 5 },
+              "blocker_severity": { "type": "integer", "minimum": 0, "maximum": 5 },
+              "blocker_penalty": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "mission_objective": { "type": "string", "minLength": 1 },
+          "gap_status": {
+            "type": "string",
+            "enum": ["ready", "in_progress", "blocked", "monitoring", "resolved"]
+          },
+          "next_slice_track": {
+            "type": "string",
+            "enum": ["discovery", "architecture", "runtime"]
+          },
+          "latest_candidate_id": { "type": ["string", "null"] },
+          "latest_candidate_status": {
+            "type": ["string", "null"],
+            "enum": ["pending", "processing", "routed", "completed", "held", null]
+          },
+          "latest_result_path": { "type": ["string", "null"] },
+          "next_action": { "type": "string", "minLength": 1 },
+          "blocking_reason": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

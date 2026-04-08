@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/generation-boundary-note.schema.json",
+  "title": "Generation Boundary Note",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "generation_id",
+    "boundary_date",
+    "triggering_adoption_ref",
+    "affected_surface",
+    "superseded_behavior",
+    "new_behavior",
+    "stale_evidence_scope",
+    "carry_forward_allowed",
+    "required_reset_actions",
+    "next_clean_proof_requirement",
+    "closure_condition"
+  ],
+  "properties": {
+    "profile": {
+      "const": "generation_boundary_note/v1"
+    },
+    "generation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "boundary_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "triggering_adoption_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "affected_surface": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "superseded_behavior": {
+      "type": "string",
+      "minLength": 1
+    },
+    "new_behavior": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stale_evidence_scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "carry_forward_allowed": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_reset_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "next_clean_proof_requirement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "closure_condition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

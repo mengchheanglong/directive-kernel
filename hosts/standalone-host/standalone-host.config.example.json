@@ -1,0 +1,19 @@
+{
+  "$schema": "../../shared/schemas/standalone-host-config.schema.json",
+  "mode": "standalone_reference_api_host",
+  "directiveRoot": "./example-directive-root",
+  "receivedAt": "2026-03-23",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8787
+  },
+  "runtimeArtifacts": {
+    "relativeRoot": "runtime/standalone-host",
+    "writeStatusFile": true,
+    "writeAccessLog": true,
+    "writeBootLog": true
+  },
+  "persistence": {
+    "mode": "filesystem_and_sqlite"
+  }
+}

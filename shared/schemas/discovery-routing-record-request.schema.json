@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/discovery-routing-record-request",
+  "title": "DiscoveryRoutingRecordRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "route_date",
+    "source_type",
+    "decision_state",
+    "adoption_target",
+    "route_destination",
+    "why_this_route",
+    "why_not_alternatives",
+    "receiving_track_owner",
+    "required_next_artifact",
+    "linked_intake_record"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1 },
+    "route_date": { "type": "string", "format": "date" },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "github-repo",
+        "paper",
+        "product-doc",
+        "theory",
+        "technical-essay",
+        "workflow-writeup",
+        "external-system",
+        "internal-signal"
+      ]
+    },
+    "decision_state": {
+      "type": "string",
+      "enum": ["adopt", "defer", "monitor", "reject"]
+    },
+    "adoption_target": { "type": "string", "minLength": 1 },
+    "route_destination": {
+      "type": "string",
+      "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference"]
+    },
+    "why_this_route": { "type": "string", "minLength": 1 },
+    "why_not_alternatives": { "type": "string", "minLength": 1 },
+    "receiving_track_owner": { "type": "string", "minLength": 1 },
+    "required_next_artifact": { "type": "string", "minLength": 1 },
+    "linked_intake_record": { "type": "string", "minLength": 1 },
+    "handoff_contract_used": { "type": ["string", "null"] },
+    "linked_triage_record": { "type": ["string", "null"] },
+    "reentry_or_promotion_conditions": { "type": ["string", "null"] },
+    "review_cadence": { "type": ["string", "null"] },
+    "output_relative_path": { "type": ["string", "null"] }
+  }
+}

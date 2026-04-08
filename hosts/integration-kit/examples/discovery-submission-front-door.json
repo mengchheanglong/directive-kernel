@@ -1,0 +1,13 @@
+{
+  "candidate_id": "dw-example-front-door",
+  "candidate_name": "Example Engine-Backed Front-Door Candidate",
+  "source_type": "workflow-writeup",
+  "source_reference": "https://example.com/engine-routing-improvement",
+  "mission_alignment": "Improves Directive Workspace engine routing and review clarity through an Engine-backed Discovery front door pass.",
+  "capability_gap_id": "gap-example-front-door",
+  "notes": "Preferred host-integration example: let Discovery front door plus Engine decide the route instead of pre-authoring fast_path or split_case.",
+  "primary_adoption_target": "architecture",
+  "contains_workflow_pattern": true,
+  "improves_directive_workspace": true,
+  "workflow_boundary_shape": "bounded_protocol"
+}

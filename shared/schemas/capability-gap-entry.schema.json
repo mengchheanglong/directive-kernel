@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/capability-gap-entry",
+  "title": "CapabilityGapEntry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["gap_id", "description", "priority", "current_state", "desired_state"],
+  "properties": {
+    "gap_id": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+    "related_mission_objective": { "type": ["string", "null"] },
+    "current_state": { "type": "string" },
+    "desired_state": { "type": "string" },
+    "candidate_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "detected_at": { "type": "string", "format": "date" },
+    "resolved_at": { "type": ["string", "null"], "format": "date" },
+    "resolution_notes": { "type": ["string", "null"] }
+  }
+}

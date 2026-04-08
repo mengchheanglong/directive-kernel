@@ -1,0 +1,22 @@
+{
+  "candidate_id": "dw-example-fast-path",
+  "candidate_name": "Example Fast-Path Discovery Candidate",
+  "source_type": "github-repo",
+  "source_reference": "https://example.com/upstream/repo",
+  "mission_alignment": "Improves a current mission lane through a bounded runtime or structural follow-up.",
+  "capability_gap_id": null,
+  "notes": "Example fast-path submission from a third-party host.",
+  "record_shape": "fast_path",
+  "fast_path": {
+    "record_date": "2026-03-22",
+    "claimed_value": "Provides a bounded mechanism with likely reusable value.",
+    "first_pass_summary": "Quickly understandable candidate with clear likely route and bounded proof need.",
+    "adoption_target": "runtime",
+    "decision_state": "adopt",
+    "route_destination": "runtime",
+    "why_this_route": "Primary value is a repeatedly callable runtime capability.",
+    "why_not_alternatives": "Architecture-only treatment would miss the reusable runtime objective.",
+    "need_bounded_proof": "Need one bounded proof artifact before promotion.",
+    "next_artifact": "runtime/00-follow-up/2026-03-22-example-fast-path-runtime-follow-up-record.md"
+  }
+}

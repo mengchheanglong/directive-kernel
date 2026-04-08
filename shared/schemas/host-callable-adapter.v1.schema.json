@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/host-callable-adapter.v1",
+  "title": "HostCallableAdapterV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "contractPath",
+    "schemaPath",
+    "adapterId",
+    "candidateId",
+    "candidateName",
+    "hostName",
+    "hostSurface",
+    "callableSurface",
+    "capabilityKind",
+    "evidencePaths",
+    "acceptance",
+    "proof",
+    "stopLine"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "host_callable_adapter.v1"
+    },
+    "contractPath": {
+      "const": "shared/contracts/host-callable-adapter.md"
+    },
+    "schemaPath": {
+      "const": "shared/schemas/host-callable-adapter.v1.schema.json"
+    },
+    "adapterId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidateName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hostName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hostSurface": {
+      "type": "string",
+      "minLength": 1
+    },
+    "callableSurface": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capabilityKind": {
+      "enum": ["descriptor_callable", "runtime_callable_execution"]
+    },
+    "evidencePaths": {
+      "$ref": "#/$defs/evidencePaths"
+    },
+    "acceptance": {
+      "$ref": "#/$defs/acceptance"
+    },
+    "proof": {
+      "$ref": "#/$defs/proof"
+    },
+    "stopLine": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "nullablePath": {
+      "type": ["string", "null"]
+    },
+    "evidencePaths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promotionRecordPath", "promotionSpecificationPath"],
+      "properties": {
+        "promotionRecordPath": {
+          "$ref": "#/$defs/nullablePath"
+        },
+        "promotionSpecificationPath": {
+          "$ref": "#/$defs/nullablePath"
+        },
+        "callableStubPath": {
+          "$ref": "#/$defs/nullablePath"
+        },
+        "hostSelectionResolutionPath": {
+          "$ref": "#/$defs/nullablePath"
+        },
+        "executionEvidencePath": {
+          "$ref": "#/$defs/nullablePath"
+        }
+      }
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "callableThroughHost",
+        "descriptorCallableOnly",
+        "runtimeCallableExecution",
+        "sourceRuntimeExecutionClaimed",
+        "hostIntegrationClaimed",
+        "registryAcceptanceClaimed",
+        "promotionAutomation",
+        "runtimeInternalsBypassed"
+      ],
+      "properties": {
+        "callableThroughHost": {
+          "type": "boolean"
+        },
+        "descriptorCallableOnly": {
+          "type": "boolean"
+        },
+        "runtimeCallableExecution": {
+          "type": "boolean"
+        },
+        "sourceRuntimeExecutionClaimed": {
+          "const": false
+        },
+        "hostIntegrationClaimed": {
+          "type": "boolean"
+        },
+        "registryAcceptanceClaimed": {
+          "const": false
+        },
+        "promotionAutomation": {
+          "const": false
+        },
+        "runtimeInternalsBypassed": {
+          "const": false
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primaryChecker", "supportingCheckers"],
+      "properties": {
+        "primaryChecker": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supportingCheckers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

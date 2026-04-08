@@ -1,0 +1,19 @@
+{
+  "name": "@directive/kernel-integration-kit",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./cli": "./cli/host-integration-kit-cli.ts",
+    "./starter": "./starter/index.ts",
+    "./starter/front-door": "./starter/discovery-front-door-adapter.template.ts",
+    "./starter/submission": "./starter/discovery-submission-adapter.template.ts",
+    "./starter/memory-bridge": "./starter/discovery-host-storage-bridge.memory.template.ts",
+    "./starter/filesystem-bridge": "./starter/discovery-host-storage-bridge.filesystem.template.ts",
+    "./starter/overview": "./starter/discovery-overview-reader.template.ts",
+    "./starter/signals": "./starter/discovery-signal-adapter.template.ts",
+    "./starter/acceptance": "./starter/host-integration-acceptance.template.ts",
+    "./starter/acceptance-writer": "./starter/write-host-integration-acceptance-report.template.ts",
+    "./starter/acceptance-quickstart": "./starter/run-host-integration-acceptance-quickstart.template.ts"
+  }
+}

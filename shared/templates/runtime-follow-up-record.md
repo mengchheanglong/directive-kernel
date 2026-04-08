@@ -1,0 +1,24 @@
+# Runtime Follow-up Record Template
+
+- Candidate id:
+- Candidate name:
+- Follow-up date:
+- Current decision state:
+- Origin track:
+- Runtime value to operationalize:
+- Proposed host:
+- Proposed integration mode:
+- Source-pack allowlist profile:
+- Allowed export surfaces:
+- Excluded baggage:
+- Promotion contract path:
+- Re-entry contract path (if deferred):
+- Re-entry preconditions (checklist):
+- Required proof:
+- Required gates:
+- Trial scope limit (if experimenting):
+- Risks:
+- Rollback:
+- No-op path:
+- Review cadence:
+- Current status:

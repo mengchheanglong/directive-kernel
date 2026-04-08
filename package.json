@@ -1,0 +1,44 @@
+{
+  "name": "@directive/kernel",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "frontend:install": "npm --prefix ./frontend install",
+    "frontend:build": "npm --prefix ./frontend run build",
+    "dev": "node --experimental-strip-types ./scripts/run-frontend-dev.ts",
+    "start": "npm run frontend:build && node --experimental-strip-types ./scripts/start-frontend.ts",
+    "standalone:cli": "node --experimental-strip-types ./hosts/standalone-host/cli.ts",
+    "web:serve": "node --experimental-strip-types ./hosts/web-host/cli.ts serve --directive-root ."
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./engine": "./engine/index.ts",
+    "./engine/cases": "./engine/cases/index.ts",
+    "./engine/coordination": "./engine/coordination/index.ts",
+    "./engine/execution": "./engine/execution/index.ts",
+    "./integration-kit": "./hosts/integration-kit/index.ts",
+    "./integration-kit/cli": "./hosts/integration-kit/cli/host-integration-kit-cli.ts",
+    "./integration-kit/starter": "./hosts/integration-kit/starter/index.ts",
+    "./standalone-host": "./hosts/standalone-host/index.ts",
+    "./standalone-host/bootstrap": "./hosts/standalone-host/bootstrap.ts",
+    "./standalone-host/cli": "./hosts/standalone-host/cli.ts",
+    "./standalone-host/config": "./hosts/standalone-host/config.ts",
+    "./standalone-host/runtime": "./hosts/standalone-host/runtime.ts",
+    "./standalone-host/persistence": "./hosts/standalone-host/persistence.ts",
+    "./standalone-host/server": "./hosts/standalone-host/server.ts",
+    "./frontend": "./hosts/web-host/index.ts",
+    "./frontend/cli": "./hosts/web-host/cli.ts",
+    "./frontend/server": "./hosts/web-host/server.ts",
+    "./architecture": "./architecture/lib/index.ts",
+    "./discovery": "./discovery/lib/index.ts",
+    "./runtime": "./runtime/lib/index.ts",
+    "./engine/state": "./engine/state/index.ts",
+    "./shared/directive-goal": "./shared/lib/directive-goal.ts",
+    "./runtime/core/runtime-core-contract": "./runtime/core/runtime-core-contract.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "tsx": "^4.21.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-08",
+  "policy": {
+    "selectionRule": "Directive Kernel ships without built-in operator migration slices.",
+    "syncRule": "Consuming projects own this registry if they choose to use the migration selector."
+  },
+  "items": []
+}

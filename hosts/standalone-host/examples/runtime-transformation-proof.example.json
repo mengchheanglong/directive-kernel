@@ -1,0 +1,25 @@
+{
+  "candidate_id": "standalone-transformation-example",
+  "candidate_name": "Standalone Transformation Example",
+  "proof_date": "2026-03-23",
+  "transformation_type": "maintainability",
+  "preservation_claim": "The standalone transformation lane must preserve the described workflow behavior while improving product-owned execution discipline.",
+  "baseline_measurement": {
+    "metric": "manual_transformation_recording_steps",
+    "value": 2,
+    "measurement_method": "Count the separate proof and record artifacts that previously required hand-authored formatting."
+  },
+  "result_measurement": {
+    "metric": "manual_transformation_recording_steps",
+    "value": 1,
+    "measurement_method": "Count the standalone-host proof write needed once a canonical transformation-proof writer exists."
+  },
+  "comparison_summary": "The proof artifact moves from hand-authored JSON to one canonical product-owned writer while preserving the transformation-proof schema shape.",
+  "rollback_verification": "Delete the generated transformation proof and transformation record artifacts to return the local bundle to its pre-example state.",
+  "regression_checks": [
+    {
+      "check_name": "check:directive-standalone-runtime-host",
+      "result": "pass"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "host_name": "Example Third-Party Host",
+  "accepted": true,
+  "generated_at": "2026-03-22T12:00:00.000Z",
+  "module_surface": "package_import",
+  "submission_acceptance": {
+    "ok": true,
+    "check_count": 3,
+    "summary": "Queue-only, fast-path, and split-case submissions all exercised the canonical Discovery submission path."
+  },
+  "overview_acceptance": {
+    "ok": true,
+    "check_count": 7,
+    "summary": "Overview reader consumed the canonical queue document and returned status counts plus recent entries."
+  },
+  "signal_acceptance": {
+    "ok": true,
+    "check_count": 2,
+    "summary": "Signal adapter accepted degraded signals through canonical Discovery submission and ignored healthy runtime state."
+  },
+  "notes": [
+    "Directive Workspace remains the product; the host is only accepted as a consumer of the canonical surface.",
+    "Passing acceptance does not authorize host-local redefinition of Discovery, Runtime, or Architecture vocabulary."
+  ]
+}

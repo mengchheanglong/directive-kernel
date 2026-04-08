@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/proof-checklist-artifact",
+  "title": "ProofChecklistArtifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "capability_id",
+    "required_proof_items",
+    "gate_snapshot",
+    "pass_fail_summary",
+    "rollback_verification"
+  ],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_proof_items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "gate_snapshot": {
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "pass_fail_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rollback_verification": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/discovery-completion-record-request",
+  "title": "DiscoveryCompletionRecordRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "decision_date",
+    "decision_state",
+    "adoption_target",
+    "route_destination",
+    "rationale",
+    "evidence_path",
+    "validation_method",
+    "rollback_note",
+    "linked_intake_record",
+    "linked_routing_record",
+    "output_relative_path"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1 },
+    "decision_date": { "type": "string", "format": "date" },
+    "decision_state": {
+      "type": "string",
+      "enum": ["adopt", "defer", "monitor", "reject"]
+    },
+    "adoption_target": { "type": "string", "minLength": 1 },
+    "route_destination": {
+      "type": "string",
+      "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference"]
+    },
+    "rationale": { "type": "string", "minLength": 1 },
+    "evidence_path": { "type": "string", "minLength": 1 },
+    "validation_method": { "type": "string", "minLength": 1 },
+    "rollback_note": { "type": "string", "minLength": 1 },
+    "linked_intake_record": { "type": "string", "minLength": 1 },
+    "linked_routing_record": { "type": "string", "minLength": 1 },
+    "output_relative_path": { "type": "string", "minLength": 1 },
+    "excluded_baggage": { "type": ["string", "null"] },
+    "risk_note": { "type": ["string", "null"] },
+    "follow_up_owner": { "type": ["string", "null"] },
+    "follow_up_path": { "type": ["string", "null"] }
+  }
+}

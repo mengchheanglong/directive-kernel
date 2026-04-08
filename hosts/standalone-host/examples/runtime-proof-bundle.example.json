@@ -1,0 +1,39 @@
+{
+  "candidate_id": "standalone-runtime-example",
+  "candidate_name": "Standalone Runtime Example",
+  "proof_date": "2026-03-23",
+  "linked_runtime_record": "runtime/02-records/2026-03-23-standalone-runtime-example-runtime-record.md",
+  "required_proof_items": [
+    "Runtime record exists",
+    "Gate snapshot JSON exists",
+    "Rollback verification note is captured"
+  ],
+  "validation_commands": [
+    "check:directive-standalone-runtime-host",
+    "check:directive-standalone-api-host"
+  ],
+  "source_proof_artifacts": [
+    "runtime/00-follow-up/2026-03-23-standalone-runtime-example-runtime-follow-up-record.md",
+    "runtime/02-records/2026-03-23-standalone-runtime-example-runtime-record.md"
+  ],
+  "gate_snapshot": {
+    "overall_result": "pass",
+    "evaluated_gates": [
+      {
+        "command": "check:directive-standalone-runtime-host",
+        "result": "pass"
+      },
+      {
+        "command": "check:directive-standalone-api-host",
+        "result": "pass"
+      }
+    ],
+    "evidence": [
+      "local artifact lifecycle written",
+      "Runtime overview reports follow-up, record, proof, promotion, and registry state"
+    ]
+  },
+  "pass_fail_summary": "Bounded standalone Runtime proof bundle generated locally with passing host and API evidence.",
+  "rollback_verification": "Delete the proof checklist, gate snapshot JSON, and linked local Runtime artifacts to roll back the example cleanly.",
+  "status": "validated_locally"
+}

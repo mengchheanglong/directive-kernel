@@ -1,0 +1,67 @@
+{
+  "status": "active",
+  "updatedAt": "2026-03-21",
+  "policy": {
+    "defaultImportRule": "Only sources declared as default_import may load when the import request omits `sources`.",
+    "explicitImportRule": "Explicit import requests may include only default_import and explicit_import_only sources.",
+    "blockedRule": "Blocked sources must return `source_blocked` and reference-only packs must never enter the import lane."
+  },
+  "sources": [
+    {
+      "id": "agency-agents",
+      "availability": "default_import",
+      "requiredClassification": "live_runtime",
+      "requiredActivationMode": "resolver",
+      "note": "Default import source for live specialist packs."
+    },
+    {
+      "id": "arscontexta",
+      "availability": "explicit_import_only",
+      "requiredClassification": "live_runtime",
+      "requiredActivationMode": "agent_pack_import_lane",
+      "note": "Allowed only by explicit request as a bounded context-operator import lane."
+    },
+    {
+      "id": "agent-orchestrator",
+      "availability": "blocked",
+      "requiredClassification": "follow_up_only",
+      "requiredActivationMode": "manual_follow_up",
+      "note": "Blocked until the Runtime-owned AO pack has a runnable CLI artifact."
+    },
+    {
+      "id": "superpowers",
+      "availability": "explicit_import_only",
+      "requiredClassification": "live_runtime",
+      "requiredActivationMode": "agent_pack_import_lane",
+      "note": "Allowed only by explicit request as a bounded workflow operator import lane."
+    },
+    {
+      "id": "software-design-philosophy-skill",
+      "availability": "explicit_import_only",
+      "requiredClassification": "live_runtime",
+      "requiredActivationMode": "agent_pack_import_lane",
+      "note": "Allowed only by explicit request as a bounded design-review skill import lane."
+    },
+    {
+      "id": "skills-manager",
+      "availability": "default_import",
+      "requiredClassification": "live_runtime",
+      "requiredActivationMode": "agent_pack_import_lane",
+      "note": "Default import source for the live bounded skill-lifecycle lane."
+    },
+    {
+      "id": "impeccable",
+      "availability": "blocked",
+      "requiredClassification": "reference_only",
+      "requiredActivationMode": "reference_only",
+      "note": "Reference-only Architecture carryover; not importable as a Runtime pack."
+    },
+    {
+      "id": "celtrix",
+      "availability": "blocked",
+      "requiredClassification": "reference_only",
+      "requiredActivationMode": "reference_only",
+      "note": "Reference-only bootstrap sample; not importable as a Runtime pack."
+    }
+  ]
+}

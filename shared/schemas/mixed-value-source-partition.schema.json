@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MixedValueSourcePartition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "partition_id",
+    "partition_date",
+    "source_id",
+    "source_reference",
+    "packet_inputs_reused",
+    "packet_coverage_scope",
+    "source_reanalysis_required",
+    "architecture_retained_mechanisms",
+    "runtime_candidate_mechanisms",
+    "excluded_baggage",
+    "split_rationale",
+    "architecture_artifact_targets",
+    "runtime_handoff_candidates",
+    "defer_or_revisit_conditions"
+  ],
+  "properties": {
+    "partition_id": { "type": "string" },
+    "partition_date": { "type": "string" },
+    "source_id": { "type": "string" },
+    "source_reference": { "type": "array", "items": { "type": "string" } },
+    "packet_inputs_reused": { "type": "array", "items": { "type": "string" } },
+    "packet_coverage_scope": { "type": "array", "items": { "type": "string" } },
+    "source_reanalysis_required": { "type": "array", "items": { "type": "string" } },
+    "architecture_retained_mechanisms": { "type": "array", "items": { "type": "string" } },
+    "runtime_candidate_mechanisms": { "type": "array", "items": { "type": "string" } },
+    "excluded_baggage": { "type": "array", "items": { "type": "string" } },
+    "split_rationale": { "type": "string" },
+    "architecture_artifact_targets": { "type": "array", "items": { "type": "string" } },
+    "runtime_handoff_candidates": { "type": "array", "items": { "type": "string" } },
+    "defer_or_revisit_conditions": { "type": "array", "items": { "type": "string" } }
+  }
+}

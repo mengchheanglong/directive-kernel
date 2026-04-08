@@ -1,0 +1,19 @@
+{
+  "known_baseline_names": [
+    "Vane",
+    "GPT Researcher",
+    "Open Deep Research",
+    "dzhng/deep-research",
+    "local-deep-researcher"
+  ],
+  "known_candidate_anchor_names": [
+    "STORM / Co-STORM",
+    "PaperQA2",
+    "Fathom-DeepResearch",
+    "Microsoft GraphRAG",
+    "Arize Phoenix",
+    "LangGraph",
+    "Crawl4AI",
+    "Salesforce Enterprise Deep Research"
+  ]
+}

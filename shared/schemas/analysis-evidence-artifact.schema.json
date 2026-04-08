@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/analysis-evidence-artifact",
+  "title": "AnalysisEvidenceArtifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "capability_id",
+    "evidence_items",
+    "collection_status",
+    "errors"
+  ],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "source_ref",
+          "content"
+        ],
+        "properties": {
+          "source_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "collection_status": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "partial",
+        "empty"
+      ]
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

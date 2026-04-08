@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Architecture Adoption Decision",
+  "description": "Machine-readable schema for Architecture adoption decisions. Enforces architecture-adoption-criteria and architecture-self-improvement-contract.",
+  "type": "object",
+  "required": [
+    "decision_format",
+    "source_id",
+    "adoption_date",
+    "usefulness_level",
+    "readiness_check",
+    "artifact_type",
+    "artifact_path",
+    "adaptation_quality",
+    "decision"
+  ],
+  "properties": {
+    "decision_format": {
+      "type": "string",
+      "const": "directive-architecture-adoption-decision-1.0",
+      "description": "Canonical retained artifact format identifier for migration-safe Architecture adoption decisions."
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "adoption_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "source_analysis_ref": {
+      "type": "string",
+      "description": "Path to source-analysis record"
+    },
+    "adaptation_decision_ref": {
+      "type": "string",
+      "description": "Path to adaptation-decision record"
+    },
+    "usefulness_level": {
+      "type": "string",
+      "enum": ["direct", "structural", "meta"]
+    },
+    "readiness_check": {
+      "type": "object",
+      "required": [
+        "source_analysis_complete",
+        "adaptation_decision_complete",
+        "adaptation_quality_acceptable",
+        "delta_evidence_present",
+        "no_unresolved_baggage"
+      ],
+      "properties": {
+        "source_analysis_complete": { "type": "boolean" },
+        "adaptation_decision_complete": { "type": "boolean" },
+        "adaptation_quality_acceptable": { "type": "boolean" },
+        "delta_evidence_present": { "type": "boolean" },
+        "no_unresolved_baggage": { "type": "boolean" }
+      }
+    },
+    "artifact_type": {
+      "type": "string",
+      "enum": ["contract", "schema", "template", "policy", "engine-code", "reference-pattern", "shared-lib", "doctrine-update"]
+    },
+    "artifact_path": {
+      "type": "string"
+    },
+    "adaptation_quality": {
+      "type": "string",
+      "enum": ["strong", "adequate", "weak", "skipped"]
+    },
+    "improvement_quality": {
+      "type": "string",
+      "enum": ["strong", "adequate", "weak", "skipped"]
+    },
+    "runtime_handoff": {
+      "type": "object",
+      "properties": {
+        "required": { "type": "boolean" },
+        "ref": { "type": "string" },
+        "rationale": { "type": "string" }
+      }
+    },
+    "self_improvement": {
+      "type": "object",
+      "description": "Required when usefulness_level is 'meta'",
+      "required": [
+        "category",
+        "claim",
+        "mechanism",
+        "baseline_observation",
+        "expected_effect",
+        "verification_method"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "analysis_quality",
+            "extraction_quality",
+            "adaptation_quality",
+            "improvement_quality",
+            "routing_quality",
+            "evaluation_quality",
+            "handoff_quality"
+          ]
+        },
+        "claim": {
+          "type": "string",
+          "description": "One falsifiable sentence describing the future improvement"
+        },
+        "mechanism": {
+          "type": "string",
+          "description": "What specifically creates the self-improvement effect"
+        },
+        "baseline_observation": {
+          "type": "string"
+        },
+        "expected_effect": {
+          "type": "string"
+        },
+        "verification_method": {
+          "type": "string",
+          "enum": [
+            "next_cycle_comparison",
+            "structural_inspection",
+            "metric_tracking",
+            "retrospective_judgment"
+          ]
+        },
+        "verification_result": {
+          "type": "string",
+          "enum": ["confirmed", "partially_confirmed", "not_confirmed", "not_yet_verified"]
+        },
+        "verification_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "verification_notes": {
+          "type": "string"
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["verdict", "rationale"],
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": ["adopt", "stay_experimental", "hand_off_to_runtime", "defer", "reject"]
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "completion_status": {
+          "type": "string",
+          "enum": [
+            "product_materialized",
+            "product_partial",
+            "doc_only_or_planned",
+            "routed_out_of_architecture",
+            "reference_only"
+          ],
+          "description": "Per architecture-completion-rubric status classes"
+        },
+        "stay_experimental_reason": {
+          "type": "string",
+          "description": "Required when verdict is stay_experimental"
+        },
+        "runtime_threshold_check": {
+          "type": "string",
+          "description": "Answer: Would this mechanism still be valuable if we never built a runtime surface for it?"
+        }
+      }
+    }
+  }
+}

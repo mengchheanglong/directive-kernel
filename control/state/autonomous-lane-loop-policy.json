@@ -1,0 +1,26 @@
+{
+  "enabled": false,
+  "approvedBy": "directive-kernel-default",
+  "maxActionsPerRun": 4,
+  "discovery": {
+    "autoOpenRoute": false,
+    "requireNoHumanReview": true,
+    "minimumConfidence": "high"
+  },
+  "architecture": {
+    "autoStartFromHandoff": false,
+    "autoCloseBoundedStart": false,
+    "autoAdoptBoundedResult": false,
+    "autoCreateImplementationTargetForPlannedNext": false,
+    "autoCompleteMaterializationChain": false
+  },
+  "runtime": {
+    "autoAdvanceToPromotionReadiness": false,
+    "autoGeneratePromotionSpecification": false,
+    "autoCreatePromotionRecord": false,
+    "autoHostAdapterDescriptor": false,
+    "autoHostCallableExecution": false,
+    "autoWriteRegistryEntry": false,
+    "requireNoHumanReview": true
+  }
+}

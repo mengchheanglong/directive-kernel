@@ -1,0 +1,24 @@
+# Integration Contract Artifact Template
+
+- Artifact type: `IntegrationContractArtifact`
+- capability_id:
+- capability_name:
+- generated_at:
+- source_experiment_design_artifact:
+- adoption_target:
+- integration_mode:
+- escalation_mode:
+- background_evaluation_window:
+- owner:
+- boundary_checks:
+  - auth:
+  - health:
+  - protocol:
+- boundary_check_result:
+- required_gates:
+  - `npm run check:directive-v0`
+  - `npm run check:ops-stack`
+- expected_output_artifacts:
+- objective_summary:
+- rollback_plan:
+- status:

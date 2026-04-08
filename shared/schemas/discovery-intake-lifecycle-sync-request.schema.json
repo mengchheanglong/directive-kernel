@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/discovery-intake-lifecycle-sync-request",
+  "title": "DiscoveryIntakeLifecycleSyncRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidate_id", "target_phase"],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "target_phase": {
+      "type": "string",
+      "enum": ["routed", "completed"]
+    },
+    "routing_target": {
+      "type": ["string", "null"],
+      "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference", null]
+    },
+    "assigned_worker": { "type": ["string", "null"] },
+    "intake_record_path": { "type": ["string", "null"] },
+    "fast_path_record_path": { "type": ["string", "null"] },
+    "routing_record_path": { "type": ["string", "null"] },
+    "result_record_path": { "type": ["string", "null"] },
+    "note_append": { "type": ["string", "null"] }
+  }
+}

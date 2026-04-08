@@ -1,0 +1,26 @@
+{
+  "candidate_id": "standalone-runtime-example",
+  "candidate_name": "Standalone Runtime Example",
+  "runtime_record_date": "2026-03-23",
+  "origin_path": "architecture/02-adopted/2026-03-23-standalone-runtime-example-origin.md",
+  "linked_follow_up_record": "runtime/00-follow-up/2026-03-23-standalone-runtime-example-runtime-follow-up-record.md",
+  "runtime_objective": "Materialize a bounded Runtime record from the standalone host's local/shareable surface.",
+  "proposed_host": "directive-workspace-standalone-host",
+  "proposed_runtime_surface": "local markdown-defined runtime workflow",
+  "execution_slice": "Write a bounded Runtime record and expose it through standalone-host overview/API without claiming runtime parity.",
+  "required_proof": "runtime/03-proof/2026-03-23-standalone-runtime-example-proof-checklist.md",
+  "required_gates": [
+    "check:directive-standalone-runtime-host"
+  ],
+  "risks": [
+    "Example origin paths are placeholders and should be replaced for real work"
+  ],
+  "rollback": "Delete the generated Runtime record and linked follow-up if the example is no longer useful.",
+  "current_status": "follow_up_only",
+  "next_decision_point": "After local review, decide whether to open a real bounded runtime slice.",
+  "supporting_contracts": [
+    "shared/contracts/host-integration-boundary.md",
+    "shared/contracts/standalone-host-runtime-profile.md"
+  ]
+}
+

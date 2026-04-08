@@ -1,0 +1,13 @@
+{
+  "name": "research-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone source-discovery and evidence-assembly workspace.",
+  "scripts": {
+    "check": "npm run check:agent-control",
+    "check:agent-control": "npm --prefix agent-control run check"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

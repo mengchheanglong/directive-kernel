@@ -1,0 +1,10 @@
+{
+  "candidate_id": "dw-example-queue-only",
+  "candidate_name": "Example Queue-Only Discovery Candidate",
+  "source_type": "internal-signal",
+  "source_reference": "host://signals/example-queue-only",
+  "mission_alignment": "Supports the active mission by surfacing a candidate into Discovery without premature routing.",
+  "capability_gap_id": null,
+  "notes": "Minimal queue-only entry for a host adapter.",
+  "record_shape": "queue_only"
+}

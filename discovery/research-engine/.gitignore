@@ -1,0 +1,11 @@
+.tmp/
+.research/
+.venv/
+.env
+__pycache__/
+*.pyc
+artifacts/
+artifacts-*/
+dist/
+build/
+node_modules/

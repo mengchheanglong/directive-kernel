@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/discovery-intake-queue-entry",
+  "title": "DiscoveryIntakeQueueEntry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "source_type",
+    "received_at",
+    "status",
+    "routing_target"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1 },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "github-repo",
+        "paper",
+        "product-doc",
+        "theory",
+        "technical-essay",
+        "workflow-writeup",
+        "external-system",
+        "internal-signal"
+      ]
+    },
+    "source_reference": { "type": "string" },
+    "received_at": { "type": "string", "format": "date" },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "processing", "routed", "completed", "held"]
+    },
+    "routing_target": {
+      "type": ["string", "null"],
+      "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference", null]
+    },
+    "mission_alignment": { "type": ["string", "null"] },
+    "capability_gap_id": { "type": ["string", "null"] },
+    "assigned_worker": { "type": ["string", "null"] },
+    "intake_record_path": { "type": ["string", "null"] },
+    "fast_path_record_path": { "type": ["string", "null"] },
+    "routing_record_path": { "type": ["string", "null"] },
+    "routed_at": { "type": ["string", "null"], "format": "date" },
+    "completed_at": { "type": ["string", "null"], "format": "date" },
+    "result_record_path": { "type": ["string", "null"] },
+    "notes": { "type": ["string", "null"] },
+    "operating_mode": {
+      "type": ["string", "null"],
+      "enum": ["note", "standard", "deep", null],
+      "description": "Operating mode classification (NOTE/STANDARD/DEEP). Set at triage time. See CLAUDE.md Operating modes."
+    }
+  }
+}

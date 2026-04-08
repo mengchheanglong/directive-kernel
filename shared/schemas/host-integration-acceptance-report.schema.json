@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/host-integration-acceptance-report",
+  "title": "HostIntegrationAcceptanceReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "host_name",
+    "accepted",
+    "generated_at",
+    "module_surface",
+    "submission_acceptance",
+    "overview_acceptance",
+    "signal_acceptance",
+    "notes"
+  ],
+  "properties": {
+    "host_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "accepted": {
+      "type": "boolean"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "module_surface": {
+      "type": "string",
+      "enum": ["package_import", "starter_copy", "mixed"]
+    },
+    "submission_acceptance": {
+      "$ref": "#/$defs/acceptanceSection"
+    },
+    "overview_acceptance": {
+      "$ref": "#/$defs/acceptanceSection"
+    },
+    "signal_acceptance": {
+      "$ref": "#/$defs/acceptanceSection"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "acceptanceSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "check_count", "summary"],
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "check_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "candidate_id": "standalone-runtime-example",
+  "candidate_name": "Standalone Runtime Example",
+  "follow_up_date": "2026-03-23",
+  "current_decision_state": "accepted_for_bounded_local_follow_up",
+  "origin_track": "architecture",
+  "runtime_value_to_operationalize": "Write and review a bounded Runtime follow-up through the standalone host without another host layer.",
+  "proposed_host": "directive-workspace-standalone-host",
+  "proposed_integration_mode": "local_shareable_workflow",
+  "source_pack_allowlist_profile": "n/a",
+  "allowed_export_surfaces": [
+    "@directive/kernel/standalone-host",
+    "@directive/kernel/standalone-host/runtime"
+  ],
+  "excluded_baggage": [
+    "broad runtime parity claims",
+    "legacy host-specific assumptions"
+  ],
+  "promotion_contract_path": "shared/contracts/host-integration-boundary.md",
+  "reentry_preconditions": [
+    "keep the standalone workflow bounded and reversible",
+    "do not treat the reference host as a Runtime runtime replacement"
+  ],
+  "required_proof": [
+    "Runtime follow-up artifact can be written locally",
+    "Runtime overview can read the new artifact"
+  ],
+  "required_gates": [
+    "check:directive-standalone-runtime-host"
+  ],
+  "trial_scope_limit": [
+    "markdown workflow artifacts only",
+    "no runtime promotion"
+  ],
+  "risks": [
+    "Example payload should be replaced with real source-specific details before any live work"
+  ],
+  "rollback": "Delete the generated follow-up artifact if the example is no longer needed.",
+  "no_op_path": "Continue using the standalone host for Discovery-only local work.",
+  "review_cadence": "review on the next standalone-host completeness pass",
+  "current_status": "follow_up_only"
+}

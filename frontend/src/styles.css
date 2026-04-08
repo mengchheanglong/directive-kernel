@@ -1,0 +1,21 @@
+:root {
+  color-scheme: light;
+  font-family: ui-monospace, Consolas, monospace;
+  background: #f6f4ee;
+  color: #1f1c16;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #f6f4ee;
+}
+
+body {
+  min-height: 100vh;
+}

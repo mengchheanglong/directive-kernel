@@ -1,0 +1,34 @@
+# Promotion Record Template
+
+- Candidate id:
+- Candidate name:
+- Promotion date:
+- Linked Runtime record:
+- Target host:
+- Target runtime surface:
+- Integration mode:
+- Source intent artifact:
+- Compile contract artifact:
+- Runtime permissions profile:
+- Safe output scope:
+- Sanitize policy:
+- Proposed runtime status:
+- Proof path:
+- Quality gate profile:
+- Promotion profile family:
+- Proof shape:
+- Primary host checker:
+- Full-text coverage threshold (%):
+- Evidence-binding threshold (%):
+- Citation-error threshold (%):
+- Observed full-text coverage (%):
+- Observed evidence-binding (%):
+- Observed citation error rate (%):
+- Quality gate result:
+- Validation state:
+- Quality gate fail reasons:
+- Required gates:
+- Validation result:
+- Rollback plan:
+- Owner:
+- Promotion decision:

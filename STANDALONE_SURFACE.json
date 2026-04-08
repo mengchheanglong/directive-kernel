@@ -1,0 +1,112 @@
+{
+  "status": "active",
+  "updatedAt": "2026-04-08",
+  "decision": {
+    "productOwner": "directive-kernel",
+    "productOwnerReason": "Directive Kernel is the reusable system-only core for clone-and-wire use in other projects.",
+    "packageName": "@directive/kernel",
+    "releaseMode": "clone_and_wire_system_core",
+    "releaseModeReason": "Directive Kernel ships the reusable operating code, contracts, reference hosts, frontend host, and integration kit without the historical lane corpora and workspace records.",
+    "runtimeHost": "repo_native_reference_hosts",
+    "runtimeHostReason": "The standalone host and web host are reference hosts that prove the kernel can run locally while consuming projects remain responsible for their own project-specific adapters."
+  },
+  "packageSurface": {
+    "activeExportKeys": [
+      ".",
+      "./engine",
+      "./engine/cases",
+      "./engine/coordination",
+      "./engine/execution",
+      "./integration-kit",
+      "./integration-kit/cli",
+      "./integration-kit/starter",
+      "./standalone-host",
+      "./standalone-host/bootstrap",
+      "./standalone-host/cli",
+      "./standalone-host/config",
+      "./standalone-host/runtime",
+      "./standalone-host/persistence",
+      "./standalone-host/server",
+      "./frontend",
+      "./frontend/cli",
+      "./frontend/server",
+      "./architecture",
+      "./discovery",
+      "./runtime",
+      "./engine/state",
+      "./runtime/core/runtime-core-contract"
+    ]
+  },
+  "entries": [
+    {
+      "id": "kernel-package-manifest",
+      "path": "package.json",
+      "kind": "package_manifest"
+    },
+    {
+      "id": "kernel-root-barrel",
+      "path": "index.ts",
+      "kind": "root_barrel"
+    },
+    {
+      "id": "kernel-readme",
+      "path": "README.md",
+      "kind": "product_doc"
+    },
+    {
+      "id": "kernel-goal-root-file",
+      "path": "DIRECTIVE_GOAL.md",
+      "kind": "product_doc"
+    },
+    {
+      "id": "kernel-goal-contract",
+      "path": "shared/contracts/directive-kernel-goal-input.md",
+      "kind": "product_doc"
+    },
+    {
+      "id": "kernel-goal-reader",
+      "path": "shared/lib/directive-goal.ts",
+      "kind": "shared_support_surface"
+    },
+    {
+      "id": "kernel-standalone-host",
+      "path": "hosts/standalone-host/index.ts",
+      "kind": "reference_host_surface"
+    },
+    {
+      "id": "kernel-web-host",
+      "path": "hosts/web-host/index.ts",
+      "kind": "reference_host_surface"
+    },
+    {
+      "id": "kernel-integration-kit",
+      "path": "hosts/integration-kit/index.ts",
+      "kind": "host_integration_surface"
+    },
+    {
+      "id": "kernel-runtime-contract",
+      "path": "runtime/core/runtime-core-contract.ts",
+      "kind": "runtime_core_entry"
+    },
+    {
+      "id": "kernel-discovery-lane",
+      "path": "discovery/lib/index.ts",
+      "kind": "lane_surface"
+    },
+    {
+      "id": "kernel-runtime-lane",
+      "path": "runtime/lib/index.ts",
+      "kind": "lane_surface"
+    },
+    {
+      "id": "kernel-architecture-lane",
+      "path": "architecture/lib/index.ts",
+      "kind": "lane_surface"
+    },
+    {
+      "id": "kernel-engine-state",
+      "path": "engine/state/index.ts",
+      "kind": "engine_state_surface"
+    }
+  ]
+}

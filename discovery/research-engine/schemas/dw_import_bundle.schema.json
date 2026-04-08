@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "research-engine/schemas/dw_import_bundle.schema.json",
+  "title": "Research Engine DW Import Bundle",
+  "type": "object",
+  "required": [
+    "packet_kind",
+    "contract_version",
+    "mission_id",
+    "generated_at",
+    "decision_boundary",
+    "import_ready",
+    "artifact_refs",
+    "counts",
+    "schema_refs",
+    "import_notes"
+  ],
+  "properties": {
+    "packet_kind": { "const": "research_engine.dw_import_bundle" },
+    "contract_version": { "const": 1 },
+    "mission_id": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "decision_boundary": { "type": "string" },
+    "import_ready": { "const": true },
+    "artifact_refs": {
+      "type": "object",
+      "required": [
+        "source_intelligence_packet",
+        "dw_discovery_packet"
+      ],
+      "properties": {
+        "source_intelligence_packet": { "type": "string" },
+        "dw_discovery_packet": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "counts": { "type": "object" },
+    "schema_refs": { "type": "object" },
+    "import_notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

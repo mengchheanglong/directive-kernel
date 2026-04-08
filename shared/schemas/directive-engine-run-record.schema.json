@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://directive-workspace.dev/schemas/directive-engine-run-record.schema.json",
+  "title": "Directive Engine Run Record",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "recordKind",
+    "runId",
+    "receivedAt",
+    "source",
+    "mission",
+    "openGaps",
+    "selectedLane",
+    "candidate",
+    "analysis",
+    "routingAssessment",
+    "extractionPlan",
+    "adaptationPlan",
+    "improvementPlan",
+    "proofPlan",
+    "decision",
+    "integrationProposal",
+    "reportPlan",
+    "events"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "shared/schemas/directive-engine-run-record.schema.json"
+    },
+    "schemaVersion": {
+      "const": 2
+    },
+    "recordKind": {
+      "const": "directive_engine_run_record"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "receivedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "sourceType",
+        "sourceRef",
+        "title"
+      ],
+      "properties": {
+        "sourceType": { "type": "string", "minLength": 1 },
+        "sourceRef": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 }
+      }
+    },
+    "mission": {
+      "type": "object",
+      "required": [
+        "currentObjective",
+        "usefulnessSignals",
+        "capabilityLanes",
+        "activeMissionMarkdown"
+      ],
+      "properties": {
+        "currentObjective": { "type": "string", "minLength": 1 },
+        "usefulnessSignals": { "type": "array", "items": { "type": "string" } },
+        "capabilityLanes": { "type": "array", "items": { "type": "string" } },
+        "activeMissionMarkdown": { "type": "string" }
+      }
+    },
+    "openGaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "gapId",
+          "description",
+          "priority",
+          "relatedMissionObjective",
+          "currentState",
+          "desiredState",
+          "detectedAt"
+        ],
+        "properties": {
+          "gapId": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "priority": { "enum": ["high", "medium", "low"] },
+          "relatedMissionObjective": { "type": "string", "minLength": 1 },
+          "currentState": { "type": "string", "minLength": 1 },
+          "desiredState": { "type": "string", "minLength": 1 },
+          "detectedAt": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "selectedLane": {
+      "type": "object",
+      "required": [
+        "laneId",
+        "label",
+        "hostDependence",
+        "valuableWithoutHostRuntime"
+      ],
+      "properties": {
+        "laneId": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "hostDependence": { "type": "string", "minLength": 1 },
+        "valuableWithoutHostRuntime": { "type": "boolean" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "candidateName",
+        "recommendedLaneId",
+        "recommendedRecordShape",
+        "usefulnessLevel",
+        "missionPriorityScore",
+        "confidence",
+        "matchedGapId",
+        "matchedGapRank",
+        "requiresHumanReview",
+        "rationale"
+      ],
+      "properties": {
+        "candidateId": { "type": "string", "minLength": 1 },
+        "candidateName": { "type": "string", "minLength": 1 },
+        "recommendedLaneId": { "type": "string", "minLength": 1 },
+        "recommendedRecordShape": { "type": "string", "minLength": 1 },
+        "usefulnessLevel": { "enum": ["direct", "structural", "meta"] },
+        "missionPriorityScore": { "type": "number" },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "matchedGapId": { "type": ["string", "null"] },
+        "matchedGapRank": { "type": ["integer", "null"] },
+        "requiresHumanReview": { "type": "boolean" },
+        "rationale": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "required": [
+        "missionFitSummary",
+        "primaryAdoptionQuestion",
+        "matchedCapabilityGapId",
+        "usefulnessRationale",
+        "rationale"
+      ],
+      "properties": {
+        "missionFitSummary": { "type": "string", "minLength": 1 },
+        "primaryAdoptionQuestion": { "type": "string", "minLength": 1 },
+        "matchedCapabilityGapId": { "type": ["string", "null"] },
+        "usefulnessRationale": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "routingAssessment": {
+      "type": "object",
+        "required": [
+          "recommendedLaneId",
+          "recommendedRecordShape",
+          "missionPriorityScore",
+          "confidence",
+          "matchedGapId",
+          "matchedGapRank",
+          "routeConflict",
+          "needsHumanReview",
+          "ambiguitySummary",
+          "reviewGuidance",
+          "scoreBreakdown",
+          "explanationBreakdown",
+          "rationale"
+        ],
+      "properties": {
+        "recommendedLaneId": { "type": "string", "minLength": 1 },
+        "recommendedRecordShape": { "type": "string", "minLength": 1 },
+        "missionPriorityScore": { "type": "number" },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "matchedGapId": { "type": ["string", "null"] },
+        "matchedGapRank": { "type": ["integer", "null"] },
+        "routeConflict": { "type": "boolean" },
+        "needsHumanReview": { "type": "boolean" },
+        "ambiguitySummary": {
+          "type": "object",
+          "required": [
+            "topLaneId",
+            "runnerUpLaneId",
+            "scoreDelta",
+            "conflictingSignalFamilies",
+            "conflictingLaneIds"
+          ],
+          "properties": {
+            "topLaneId": { "type": "string", "minLength": 1 },
+            "runnerUpLaneId": { "type": ["string", "null"] },
+            "scoreDelta": { "type": "number" },
+            "conflictingSignalFamilies": { "type": "array", "items": { "type": "string" } },
+            "conflictingLaneIds": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "reviewGuidance": {
+          "type": ["object", "null"],
+          "required": [
+            "guidanceKind",
+            "summary",
+            "operatorAction",
+            "requiredChecks",
+            "stopLine"
+          ],
+          "properties": {
+            "guidanceKind": { "type": "string", "minLength": 1 },
+            "summary": { "type": "string", "minLength": 1 },
+            "operatorAction": { "type": "string", "minLength": 1 },
+            "requiredChecks": { "type": "array", "items": { "type": "string" } },
+            "stopLine": { "type": "string", "minLength": 1 }
+          }
+        },
+        "scoreBreakdown": {
+          "type": "object",
+          "required": [
+            "missionFit",
+            "gapAlignment",
+            "laneScores",
+            "keywordLaneScores",
+            "metadataLaneScores",
+            "gapLaneScores",
+            "metaUsefulnessSignal",
+            "patternExtractionSignal",
+            "transformationSignal",
+            "runtimeSignal",
+            "ambiguityPenalty",
+            "total"
+          ],
+          "properties": {
+            "missionFit": { "type": "number" },
+            "gapAlignment": { "type": "number" },
+            "laneScores": { "type": "object" },
+            "keywordLaneScores": { "type": "object" },
+            "metadataLaneScores": { "type": "object" },
+            "gapLaneScores": { "type": "object" },
+            "metaUsefulnessSignal": { "type": "number" },
+            "patternExtractionSignal": { "type": "number" },
+            "transformationSignal": { "type": "number" },
+            "runtimeSignal": { "type": "number" },
+            "ambiguityPenalty": { "type": "number" },
+            "total": { "type": "number" }
+          }
+        },
+        "explanationBreakdown": {
+          "type": "object",
+          "required": [
+            "keywordSignals",
+            "metadataSignals",
+            "gapAlignmentSignals",
+            "ambiguitySignals"
+          ],
+          "properties": {
+            "keywordSignals": { "type": "array", "items": { "type": "string" } },
+            "metadataSignals": { "type": "array", "items": { "type": "string" } },
+            "gapAlignmentSignals": { "type": "array", "items": { "type": "string" } },
+            "ambiguitySignals": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "rationale": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "extractionPlan": {
+      "type": "object",
+      "required": ["extractedValue", "excludedBaggage"],
+      "properties": {
+        "extractedValue": { "type": "array", "items": { "type": "string" } },
+        "excludedBaggage": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "adaptationPlan": {
+      "type": "object",
+      "required": ["directiveOwnedForm", "adaptedValue"],
+      "properties": {
+        "directiveOwnedForm": { "type": "string", "minLength": 1 },
+        "adaptedValue": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "improvementPlan": {
+      "type": "object",
+      "required": ["improvementGoals", "intendedDelta"],
+      "properties": {
+        "improvementGoals": { "type": "array", "items": { "type": "string" } },
+        "intendedDelta": { "type": "string", "minLength": 1 }
+      }
+    },
+    "proofPlan": {
+      "type": "object",
+      "required": ["proofKind", "objective", "requiredEvidence", "requiredGates", "rollbackPrompt"],
+      "properties": {
+        "proofKind": { "type": "string", "minLength": 1 },
+        "objective": { "type": "string", "minLength": 1 },
+        "requiredEvidence": { "type": "array", "items": { "type": "string" } },
+        "requiredGates": { "type": "array", "items": { "type": "string" } },
+        "rollbackPrompt": { "type": "string", "minLength": 1 }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["decisionState", "requiresHumanApproval", "summary", "rationale"],
+      "properties": {
+        "decisionState": {
+          "enum": [
+            "hold_in_discovery",
+            "accept_for_architecture",
+            "route_to_runtime_follow_up",
+            "needs_human_review"
+          ]
+        },
+        "requiresHumanApproval": { "type": "boolean" },
+        "summary": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "integrationProposal": {
+      "type": "object",
+      "required": [
+        "targetLaneId",
+        "integrationMode",
+        "hostDependence",
+        "valuableWithoutHostRuntime",
+        "handoffArtifactFamily",
+        "nextAction",
+        "requiresHumanReview"
+      ],
+      "properties": {
+        "targetLaneId": { "type": "string", "minLength": 1 },
+        "integrationMode": { "type": "string", "minLength": 1 },
+        "hostDependence": { "type": "string", "minLength": 1 },
+        "valuableWithoutHostRuntime": { "type": "boolean" },
+        "handoffArtifactFamily": { "type": "string", "minLength": 1 },
+        "nextAction": { "type": "string", "minLength": 1 },
+        "requiresHumanReview": { "type": "boolean" }
+      }
+    },
+    "reportPlan": {
+      "type": "object",
+      "required": ["reportKind", "summary", "usefulnessRationale", "requiredDestinations", "syncRequired"],
+      "properties": {
+        "reportKind": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "usefulnessRationale": { "type": "string", "minLength": 1 },
+        "requiredDestinations": { "type": "array", "items": { "type": "string" } },
+        "syncRequired": { "type": "boolean" }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "at", "summary"],
+        "properties": {
+          "type": { "type": "string", "minLength": 1 },
+          "at": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

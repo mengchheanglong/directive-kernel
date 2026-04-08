@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-08",
+  "policy": {
+    "selectionRule": "Directive Kernel ships without built-in workspace completion slices.",
+    "syncRule": "Consuming projects own their own completion-slice registry if they choose to use this selector."
+  },
+  "items": []
+}

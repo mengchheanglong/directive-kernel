@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-08",
+  "anchorPath": "control/state/operator-simplicity-migration-status.json",
+  "currentTargetId": "kernel_operator_surface_baseline_complete",
+  "currentTargetDescription": "Directive Kernel ships with no workspace migration backlog.",
+  "selectionRule": "Directive Kernel ships without workspace-specific operator simplification slices.",
+  "lastCompletedSliceId": null,
+  "lastContextArtifactPath": null
+}

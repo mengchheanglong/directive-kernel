@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "research-engine/schemas/source_intelligence_packet.schema.json",
+  "title": "Research Engine Source Intelligence Packet",
+  "type": "object",
+  "required": [
+    "packet_kind",
+    "contract_version",
+    "mission_id",
+    "generated_at",
+    "decision_boundary",
+    "research_frame",
+    "baseline_context",
+    "candidate_intelligence",
+    "signal_scoring",
+    "strong_signals",
+    "weak_signals",
+    "structural_signals",
+    "lane_target_signals",
+    "structural_recommendations",
+    "review_guidance",
+    "review_queue",
+    "open_uncertainties",
+    "machine_friendly_research_packet"
+  ],
+  "properties": {
+    "packet_kind": { "const": "research_engine.source_intelligence_packet" },
+    "contract_version": { "const": 1 },
+    "mission_id": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "decision_boundary": { "type": "string" },
+    "research_frame": { "type": "object" },
+    "baseline_context": { "type": "object" },
+    "candidate_intelligence": { "type": "array", "items": { "type": "object" } },
+    "signal_scoring": { "type": "array", "items": { "type": "object" } },
+    "strong_signals": { "type": "array", "items": { "type": "object" } },
+    "weak_signals": { "type": "array", "items": { "type": "object" } },
+    "structural_signals": { "type": "array", "items": { "type": "object" } },
+    "lane_target_signals": { "type": "array", "items": { "type": "object" } },
+    "structural_recommendations": { "type": "array", "items": { "type": "object" } },
+    "review_guidance": { "type": "array", "items": { "type": "object" } },
+    "review_queue": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/reviewQueueItem" }
+    },
+    "open_uncertainties": { "type": "array", "items": { "type": "string" } },
+    "machine_friendly_research_packet": {
+      "type": "object",
+      "required": ["review_queue"],
+      "properties": {
+        "review_queue": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/reviewQueueItem" }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "reviewQueueItem": {
+      "type": "object",
+      "required": [
+        "name",
+        "link",
+        "target",
+        "status",
+        "priority_score",
+        "priority_band",
+        "rationale",
+        "action",
+        "stop_line",
+        "uncertainty_count"
+      ],
+      "properties": {
+        "name": { "type": "string" },
+        "link": { "type": "string" },
+        "target": { "type": "string" },
+        "status": { "type": "string", "enum": ["accepted", "rejected"] },
+        "priority_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "priority_band": { "type": "string", "enum": ["high", "medium", "low"] },
+        "rationale": { "type": "string" },
+        "action": { "type": "string" },
+        "stop_line": { "type": "string" },
+        "uncertainty_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

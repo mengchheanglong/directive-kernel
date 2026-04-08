@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-08",
+  "anchorPath": "control/state/completion-status.json",
+  "currentTargetId": "kernel_baseline_complete",
+  "currentTargetDescription": "Directive Kernel baseline is ready. Define consuming-project slices explicitly if you want roadmap selection.",
+  "selectionRule": "Directive Kernel ships without workspace-specific completion slices. Add consuming-project slices before using automatic completion selection.",
+  "closedSeams": [],
+  "lastCompletedSliceId": null,
+  "lastContextArtifactPath": null
+}
