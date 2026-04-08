@@ -1,66 +1,70 @@
 # Directive Kernel
 
-Directive Kernel is a reusable source-adaptation system core for clone-and-wire use inside other projects.
+Directive Kernel is a reusable system you can add to another project.
 
-It keeps the operating code, contracts, hosts, and frontend needed to:
-- ingest sources through Discovery
-- operationalize reusable runtime capability through Runtime
-- evaluate self-improvement through Architecture
-- host the system through a standalone filesystem host or thin web host
-
-It intentionally ships the system surfaces only:
-- no historical lane corpora
-- no archived promotion history
-- no experiment backlog
-- no control logs or reports
-- no source dumps
+Use it when you want your project to:
+- bring outside sources into your own workflow
+- decide which sources are worth keeping
+- route useful work into the right next step
+- turn useful results into something reusable
+- see the current state in a simple host or frontend
 
 ## What This Repo Is For
 
-Use Directive Kernel when you want to clone a reusable source-adaptation system into another project and wire it to that project's own goals, operators, and storage.
+Use Directive Kernel when you want your project to take in outside sources, judge them against your current goal, and move them through a clear workflow instead of handling everything by hand.
 
-## Included Surfaces
+## How It Works
 
-- `engine/` - shared adaptation core and state resolver
-- `discovery/lib/` - Discovery front door, routing, queue, and import surfaces
-- `discovery/research-engine/` - bounded Python research pipeline
-- `runtime/lib/`, `runtime/core/`, `runtime/capabilities/`, `runtime/meta/` - Runtime operating code and capability contracts
-- `architecture/lib/` - Architecture operating code
-- `shared/` - shared libs, contracts, schemas, and templates
-- `hosts/standalone-host/` - reference filesystem host
-- `hosts/web-host/` + `frontend/` - thin web/API host and frontend
-- `hosts/integration-kit/` - starter surfaces for embedding the kernel into another project
+1. your project gives Kernel the current goal
+2. sources enter through Discovery
+3. Discovery decides whether to hold, review, or route the source
+4. Runtime turns useful routed work into reusable capability
+5. Architecture handles system-improvement work
+6. the host and frontend show the current state and artifact detail
+
+The three main lanes are:
+- `Discovery` for intake and routing
+- `Runtime` for reusable capability work
+- `Architecture` for system improvement work
+
+## Main Parts
+
+- `engine/` - shared logic that ties the lanes together
+- `discovery/` - source intake and routing
+- `runtime/` - reusable capability work
+- `architecture/` - system-improvement work
+- `shared/` - shared helpers and contracts
+- `hosts/` - ways to run or embed the system
+- `frontend/` - a simple read-only operator view
 
 ## Goal Ownership
 
-Directive Kernel does not infer the consuming project's active goal from historical project records.
-
 The host project must provide goal context explicitly.
 
-The preferred human-facing source of truth is a root-level goal file:
+The easiest way is a root-level goal file:
 - [DIRECTIVE_GOAL.md](/C:/Users/User/projects/directive-kernel/DIRECTIVE_GOAL.md)
 
-Keep a file with that shape at the consuming project's root or at the directive root you pass into the kernel.
+Keep that file at the consuming project's root or at the directive root you pass into Kernel.
 
-Use one of these models:
+Common ways to provide goals:
 
 1. Root goal file + resolver
    - keep `DIRECTIVE_GOAL.md` at the project root
-   - let your host read it and normalize it into one active goal envelope
+   - let your host read it and turn it into one goal object
 2. Per-request goal input
-   - every submission includes the current mission or operator goal
+   - each submission includes the current goal
 3. Project goal resolver
-   - your host project maps current product state, operator intent, or user request into one active goal envelope
+   - your host maps current product state or operator intent into one goal object
 4. Review-first fallback
-   - if your project has no goal model yet, keep Discovery submissions queue-only or review-first until an operator sets direction
+   - if your project has no goal model yet, keep Discovery review-first until an operator sets direction
 
-Read the canonical goal contract:
+Goal contract:
 - [shared/contracts/directive-kernel-goal-input.md](/C:/Users/User/projects/directive-kernel/shared/contracts/directive-kernel-goal-input.md)
 
-Use the shared helper when your host wants a kernel-owned reader:
+Shared helper:
 - `@directive/kernel/shared/directive-goal`
 
-If your project does not already have a goal system, start with this minimum envelope:
+If your project does not already have a goal system, start with one simple goal object like this:
 
 ```json
 {
@@ -76,9 +80,7 @@ If your project does not already have a goal system, start with this minimum env
 }
 ```
 
-Route that envelope into Discovery submissions through `mission_alignment`, host-local metadata, or a thin adapter that enriches the canonical request before it enters the Discovery front door.
-
-If `DIRECTIVE_GOAL.md` does not exist, fall back to per-request goal input and keep Discovery review-first or queue-only until the host has a stable goal resolver.
+Pass that goal into Discovery before the source enters the front door.
 
 ## Install
 
@@ -89,16 +91,14 @@ npm install
 npm run frontend:install
 ```
 
-For Research Engine live-provider use, also configure the optional provider keys described in:
+If you want live web/provider research, also configure the optional provider keys described in:
 - [discovery/research-engine/README.md](/C:/Users/User/projects/directive-kernel/discovery/research-engine/README.md)
-
-Without those keys, the system still works in bounded/local modes, but live acquisition quality drops.
 
 ## Fastest Bootstrap
 
 ### Standalone host
 
-Create a local working root:
+Create a local working folder:
 
 ```powershell
 node --experimental-strip-types ./hosts/standalone-host/cli.ts init --output-root ./local/standalone
@@ -117,7 +117,7 @@ node --experimental-strip-types ./hosts/standalone-host/cli.ts serve --config ./
 
 ### Web host
 
-Build the frontend and run the thin web host against the repo root:
+Build the frontend and run the web host:
 
 ```powershell
 npm run start
@@ -131,26 +131,19 @@ npm run dev
 
 ## Clone-And-Wire Into Another Project
 
-Recommended pattern:
+Recommended setup:
 
 1. clone `directive-kernel` into your project as a sibling repo, submodule, or vendored package
 2. add `DIRECTIVE_GOAL.md` at the consuming project root or directive root
-3. keep your host project's goal resolver outside the kernel
+3. keep the goal resolver in your host project
 4. submit sources through the canonical Discovery front door
 5. keep host adapters thin
-6. store project-specific records, logs, and sources in the consuming project, not in the kernel repo
+6. keep project-specific records, logs, and sources in the consuming project
 
-The integration starting point is:
+Start here for embedding:
 - [hosts/integration-kit/README.md](/C:/Users/User/projects/directive-kernel/hosts/integration-kit/README.md)
 
-## Operating Rule
-
-Directive Kernel keeps this core hierarchy:
-- product core
-- Engine as the shared adaptation core
-- Discovery / Runtime / Architecture as Engine lanes
-
-It does not carry historical authority surfaces from any prior project.
+## Ownership
 
 The consuming project owns:
 - current goals
@@ -160,8 +153,8 @@ The consuming project owns:
 - project-local approval policy
 
 The kernel owns:
-- lane vocabulary
-- bounded workflow machinery
-- canonical contracts and schemas
-- host starter surfaces
-- reusable Runtime and Architecture operating code
+- the workflow model
+- the lane logic
+- the shared contracts and schemas
+- the starter hosts
+- the reusable Runtime and Architecture code
