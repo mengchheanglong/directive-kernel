@@ -1,6 +1,6 @@
 # Directive Kernel
 
-Directive Kernel is the reusable system-only core extracted from Directive Workspace.
+Directive Kernel is a reusable source-adaptation system core for clone-and-wire use inside other projects.
 
 It keeps the operating code, contracts, hosts, and frontend needed to:
 - ingest sources through Discovery
@@ -8,22 +8,16 @@ It keeps the operating code, contracts, hosts, and frontend needed to:
 - evaluate self-improvement through Architecture
 - host the system through a standalone filesystem host or thin web host
 
-It does not ship the old workspace corpora:
-- no discovery history
-- no runtime promotion history
-- no architecture experiment history
+It intentionally ships the system surfaces only:
+- no historical lane corpora
+- no archived promotion history
+- no experiment backlog
 - no control logs or reports
 - no source dumps
 
 ## What This Repo Is For
 
 Use Directive Kernel when you want to clone a reusable source-adaptation system into another project and wire it to that project's own goals, operators, and storage.
-
-Keep using the original Directive Workspace repo when you need:
-- the historical lane corpora
-- the proof trail
-- the old control logs
-- the old source inventory
 
 ## Included Surfaces
 
@@ -39,7 +33,7 @@ Keep using the original Directive Workspace repo when you need:
 
 ## Goal Ownership
 
-Directive Kernel does not infer the consuming project's active goal from old workspace records.
+Directive Kernel does not infer the consuming project's active goal from historical project records.
 
 The host project must provide goal context explicitly.
 
@@ -151,12 +145,12 @@ The integration starting point is:
 
 ## Operating Rule
 
-Directive Kernel keeps the same core hierarchy:
+Directive Kernel keeps this core hierarchy:
 - product core
 - Engine as the shared adaptation core
 - Discovery / Runtime / Architecture as Engine lanes
 
-But it does not carry the old workspace's historical authority surfaces.
+It does not carry historical authority surfaces from any prior project.
 
 The consuming project owns:
 - current goals
