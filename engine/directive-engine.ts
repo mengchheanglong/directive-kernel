@@ -97,7 +97,7 @@ function escapeRegex(input: string) {
 
 function getSectionBody(markdown: string, heading: string) {
   const pattern = new RegExp(
-    `^## ${escapeRegex(heading)}\\r?\\n([\\s\\S]*?)(?=^##\\s|\\Z)`,
+    `^## ${escapeRegex(heading)}\\r?\\n([\\s\\S]*?)(?=^##\\s|$(?![\\s\\S]))`,
     "m",
   );
   return markdown.match(pattern)?.[1]?.trim() ?? "";

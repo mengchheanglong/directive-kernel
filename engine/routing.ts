@@ -40,7 +40,6 @@ const ARCHITECTURE_KEYWORDS = [
 
 const RUNTIME_KEYWORDS = [
   "runtime",
-  "runtime",
   "callable",
   "skill",
   "automation",

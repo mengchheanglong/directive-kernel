@@ -23,7 +23,7 @@ const SCIENTIFY_LITERATURE_ACCESS_CAPABILITY_ID =
   "dw-source-scientify-research-workflow-plugin-2026-03-27";
 const CODE_NORMALIZER_CAPABILITY_ID = "dw-transform-code-normalizer";
 const RESEARCH_VAULT_SOURCE_PACK_CAPABILITY_ID =
-  "research-engine-web-aakashsharan-com-research-va-20260407t052643z-20260407t052702.";
+  "research-engine-web-aakashsharan-com-research-va-20260407t052643z-20260407t052702";
 
 const KNOWN_CALLABLE_CAPABILITIES = {
   [SCIENTIFY_LITERATURE_ACCESS_CAPABILITY_ID]:

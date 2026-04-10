@@ -99,7 +99,7 @@ function buildRuntimeProofPlan(
   }
 
   return {
-    proofKind: "runtime_runtime_proof",
+    proofKind: "runtime_proof",
     objective:
       "Prove the candidate can become a bounded callable capability with clear objective, evaluator, and rollback behavior.",
     requiredEvidence: [
