@@ -87,6 +87,31 @@ function optionalFiniteNumber(value: number | null | undefined) {
   return value;
 }
 
+function normalizeSubmissionFingerprintText(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function deriveDiscoverySubmissionFingerprint(input: {
+  source_type?: DiscoverySourceType | null;
+  source_reference: string;
+  mission_alignment?: string | null;
+  capability_gap_id?: string | null;
+  operating_mode?: DiscoveryOperatingMode;
+  submission_origin?: DiscoverySubmissionOrigin;
+}) {
+  return JSON.stringify({
+    source_type: normalizeSubmissionFingerprintText(input.source_type ?? "internal-signal"),
+    source_reference: normalizeSubmissionFingerprintText(input.source_reference),
+    mission_alignment: normalizeSubmissionFingerprintText(input.mission_alignment),
+    capability_gap_id: normalizeSubmissionFingerprintText(input.capability_gap_id),
+    operating_mode: normalizeSubmissionFingerprintText(input.operating_mode),
+    submission_origin: normalizeSubmissionFingerprintText(input.submission_origin),
+  });
+}
+
 export function getDiscoveryIntakeArtifactPath(
   entry: Pick<DiscoveryIntakeQueueEntry, "intake_record_path" | "fast_path_record_path">,
 ) {
@@ -160,6 +185,16 @@ export function appendDiscoveryIntakeQueueEntry(input: {
     )
   ) {
     throw new Error(`Discovery queue already contains candidate_id: ${entry.candidate_id}`);
+  }
+
+  const submissionFingerprint = deriveDiscoverySubmissionFingerprint(input.submission);
+  const equivalentEntry = input.queue.entries.find((existing) =>
+    deriveDiscoverySubmissionFingerprint(existing) === submissionFingerprint
+  );
+  if (equivalentEntry) {
+    throw new Error(
+      `Discovery queue already contains an equivalent submission for source_reference "${entry.source_reference}" as candidate_id "${equivalentEntry.candidate_id}"`,
+    );
   }
 
   if (entry.capability_gap_id && input.unresolvedGapIds) {

@@ -8,6 +8,10 @@ import {
   resolveDirectiveWorkspaceRelativePath,
 } from "../../engine/approval-boundary.ts";
 import {
+  appendRoutingCorrection,
+  extractSourceSignalTokens,
+} from "../../engine/routing-correction-ledger.ts";
+import {
   readDirectiveDiscoveryRoutingArtifact,
   type DirectiveDiscoveryRoutingArtifact,
 } from "./discovery-route-opener.ts";
@@ -80,6 +84,13 @@ function resolveRouteDestination(
     case "defer":
       return originalDestination;
   }
+}
+
+function isRedirect(decision: DiscoveryRoutingReviewDecision): boolean {
+  return (
+    decision === "redirect_to_architecture"
+    || decision === "redirect_to_runtime"
+  );
 }
 
 function isRouteCleared(decision: DiscoveryRoutingReviewDecision): boolean {
@@ -291,6 +302,30 @@ export function writeDiscoveryRoutingReviewResolution(
 
   fs.mkdirSync(path.dirname(resolutionAbsolutePath), { recursive: true });
   fs.writeFileSync(resolutionAbsolutePath, renderReviewResolution(resolution), "utf8");
+
+  if (isRedirect(input.decision)) {
+    const sourceText = [
+      routing.candidateName,
+      routing.whyThisRoute,
+      routing.whyNotAlternatives,
+      routing.adoptionTarget,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    appendRoutingCorrection({
+      directiveRoot,
+      entry: {
+        correctedAt: resolution.reviewDate,
+        candidateId: routing.candidateId,
+        sourceType: routing.sourceType,
+        originalLaneId: routing.routeDestination,
+        correctedLaneId: resolution.resolvedRouteDestination,
+        reason: rationale,
+        sourceSignalTokens: extractSourceSignalTokens(sourceText),
+      },
+    });
+  }
 
   return {
     ok: true,

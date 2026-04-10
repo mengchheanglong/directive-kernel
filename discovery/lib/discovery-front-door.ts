@@ -2,9 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  createFilesystemDirectiveEngineStore,
   DirectiveEngine,
   createDirectiveWorkspaceEngineLanes,
   normalizeDirectiveEngineSourceTypeInput,
+  readRoutingCorrectionLedger,
+  resolveDirectiveEngineStoreRecordPath,
   type DirectiveEngineCapabilityGap,
   type DirectiveEngineMissionInput,
   type DirectiveEngineRunRecord,
@@ -25,6 +28,7 @@ import {
   resolveDiscoveryRoutingRecordPath,
   type DiscoveryRoutingDecisionState,
 } from "./discovery-routing-record-writer.ts";
+import { openDirectiveDiscoveryRoute } from "./discovery-route-opener.ts";
 import {
   syncDiscoveryIntakeLifecycle,
   type DiscoveryIntakeLifecycleSyncRequest,
@@ -67,6 +71,12 @@ export type DirectiveDiscoveryFrontDoorResult = {
     triageRecordPath: string;
     routingRecordPath: string;
   };
+  downstream: {
+    autoOpened: boolean;
+    routeDestination: "architecture" | "runtime" | null;
+    stubKind: "architecture_handoff" | "runtime_follow_up" | null;
+    stubRelativePath: string | null;
+  };
   discovery: {
     usefulnessLevel: string;
     usefulnessRationale: string;
@@ -95,15 +105,6 @@ function normalizeRelativeDirectivePath(
   filePath: string,
 ) {
   return path.relative(directiveRoot, filePath).replace(/\\/g, "/");
-}
-
-function sanitizePathSegment(value: string) {
-  return String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
 }
 
 function normalizeReceivedAt(value: string | undefined) {
@@ -204,16 +205,12 @@ function resolveEngineArtifactPaths(input: {
   record: DirectiveEngineRunRecord;
 }) {
   const runtimeArtifactsRoot = normalizeAbsolutePath(input.runtimeArtifactsRoot);
-  const artifactDir = path.resolve(runtimeArtifactsRoot, "engine-runs");
-  const timestamp = input.record.receivedAt.replace(/[:.]/g, "-");
-  const candidateSegment =
-    sanitizePathSegment(input.record.candidate.candidateId)
-    || sanitizePathSegment(input.record.runId)
-    || "directive-engine-run";
-  const runSegment = input.record.runId.slice(0, 8).toLowerCase();
-  const baseName = `${timestamp}-${candidateSegment}-${runSegment}`;
-  const recordPath = normalizeAbsolutePath(path.resolve(artifactDir, `${baseName}.json`));
-  const reportPath = normalizeAbsolutePath(path.resolve(artifactDir, `${baseName}.md`));
+  const engineRunsRoot = normalizeAbsolutePath(path.resolve(runtimeArtifactsRoot, "engine-runs"));
+  const recordPath = normalizeAbsolutePath(resolveDirectiveEngineStoreRecordPath({
+    engineRunsRoot,
+    record: input.record,
+  }));
+  const reportPath = normalizeAbsolutePath(recordPath.replace(/\.json$/u, ".md"));
 
   return {
     recordPath,
@@ -363,6 +360,7 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
     input.runtimeArtifactsRoot
       ?? path.join(directiveRoot, "runtime", "standalone-host"),
   );
+  const engineRunsRoot = normalizeAbsolutePath(path.resolve(runtimeArtifactsRoot, "engine-runs"));
   const queue = loadQueue(directiveRoot);
   const capabilityGaps = loadCapabilityGaps(directiveRoot);
   const activeMissionMarkdown = loadActiveMissionMarkdown(directiveRoot);
@@ -375,13 +373,18 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
     source_type: sourceTypeNormalization.canonicalSourceType,
   } satisfies DiscoverySubmissionRequest;
 
+  const correctionLedger = readRoutingCorrectionLedger(directiveRoot);
   const engine = new DirectiveEngine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
+    store: createFilesystemDirectiveEngineStore({
+      engineRunsRoot,
+    }),
   });
   const engineResult = await engine.processSource({
     source: buildDirectiveEngineSourceFromDiscoverySubmission(normalizedRequest),
     mission: buildDirectiveEngineMission(activeMissionMarkdown),
     gaps: buildDirectiveEngineCapabilityGaps(capabilityGaps),
+    corrections: correctionLedger.corrections,
     receivedAt,
   });
 
@@ -412,6 +415,10 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
     routeDate,
     triageRecordPath,
   });
+  const requiresHumanApproval = engineResult.record.decision.requiresHumanApproval;
+  const reviewBoundarySummary = requiresHumanApproval
+    ? "Human review remains explicit before downstream lane execution."
+    : "The route is bounded strongly enough for one automatic downstream handoff without an extra manual approval stop.";
   const filteredRoutingRationale = filterRoutingRationaleLines(
     engineResult.record.routingAssessment.rationale,
   );
@@ -517,7 +524,7 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
         engineResult.record.candidate.matchedGapId
           ? `Matched capability gap ${engineResult.record.candidate.matchedGapId}.`
           : "No open capability gap matched strongly enough.",
-        "Human review remains explicit before downstream lane execution.",
+        reviewBoundarySummary,
       ].join(" "),
     },
     triage: {
@@ -541,13 +548,17 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
           ? "Value remains useful without a host runtime surface."
           : "Value depends on a later host adapter boundary for repeated runtime use.",
       operational_risk:
-        "Discovery only recorded the route and proof boundary; downstream execution remains out of scope and human review is still required.",
+        requiresHumanApproval
+          ? "Discovery recorded the route and proof boundary, but downstream execution still waits on an explicit human review decision."
+          : "Discovery recorded the route and proof boundary and can auto-open one bounded downstream artifact without widening execution scope.",
       integration_cost:
         engineResult.record.integrationProposal.hostDependence === "host_adapter_required"
           ? "medium"
           : "low",
       can_current_gates_validate_safely:
-        `partially - proof plan ${engineResult.record.proofPlan.proofKind} defines required evidence and gates, but human review still decides whether to advance.`,
+        requiresHumanApproval
+          ? `partially - proof plan ${engineResult.record.proofPlan.proofKind} defines required evidence and gates, but human review still decides whether to advance.`
+          : `yes - proof plan ${engineResult.record.proofPlan.proofKind} defines the required evidence and gates, and the current route is bounded enough to open exactly one downstream stub automatically.`,
       immediate_risks:
         engineResult.record.proofPlan.requiredGates.join(", ") || "n/a",
       missing_evidence:
@@ -716,12 +727,42 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
       discoveryFrontDoor: projectionInput,
     },
   });
+  let downstream = {
+    autoOpened: false,
+    routeDestination: null,
+    stubKind: null,
+    stubRelativePath: null,
+  } satisfies DirectiveDiscoveryFrontDoorResult["downstream"];
+  if (
+    !requiresHumanApproval
+    && (
+      frontDoorDecision.routingTarget === "architecture"
+      || frontDoorDecision.routingTarget === "runtime"
+    )
+  ) {
+    const openedRoute = openDirectiveDiscoveryRoute({
+      directiveRoot,
+      routingPath: routingRecordPath,
+      approved: true,
+      approvedBy: "directive-engine-auto-approval",
+    });
+    downstream = {
+      autoOpened: true,
+      routeDestination: openedRoute.routeDestination,
+      stubKind: openedRoute.stubKind,
+      stubRelativePath: openedRoute.stubRelativePath,
+    };
+  }
+  const refreshedQueue = downstream.autoOpened ? loadQueue(directiveRoot) : lifecycleResult.queue;
+  const refreshedQueueEntry =
+    refreshedQueue.entries.find((entry) => entry.candidate_id === input.request.candidate_id)
+    ?? lifecycleResult.entry;
 
   return {
     ok: true,
     candidateId: input.request.candidate_id,
     queuePath,
-    queueEntry: lifecycleResult.entry,
+    queueEntry: refreshedQueueEntry,
     sourceType: {
       submittedType: sourceTypeNormalization.submittedSourceType,
       canonicalType: sourceTypeNormalization.canonicalSourceType,
@@ -733,6 +774,7 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
       triageRecordPath,
       routingRecordPath,
     },
+    downstream,
     discovery: {
       usefulnessLevel: engineResult.record.candidate.usefulnessLevel,
       usefulnessRationale: engineResult.record.analysis.usefulnessRationale,

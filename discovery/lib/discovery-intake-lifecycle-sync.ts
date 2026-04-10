@@ -3,6 +3,7 @@ import path from "node:path";
 import { readUtf8 } from "../../shared/lib/file-io.ts";
 import { isDirectiveWorkspaceArtifactReference } from "../../engine/artifact-link-validation.ts";
 import { optionalString } from "../../shared/lib/validation.ts";
+import { isDirectiveAbsolutePathWithinRoot } from "../../shared/lib/directive-relative-path.ts";
 import {
   type DiscoveryIntakeQueueDocument,
   type DiscoveryIntakeQueueEntry,
@@ -61,11 +62,7 @@ function resolveArtifactPath(input: {
   }
 
   const absolutePath = path.resolve(input.directiveRoot, input.relativePath);
-  const normalizedRoot = `${path.resolve(input.directiveRoot)}${path.sep}`;
-  if (
-    absolutePath !== path.resolve(input.directiveRoot) &&
-    !absolutePath.startsWith(normalizedRoot)
-  ) {
+  if (!isDirectiveAbsolutePathWithinRoot(input.directiveRoot, absolutePath)) {
     throw new Error(`${input.fieldName} must stay within directive-workspace`);
   }
 

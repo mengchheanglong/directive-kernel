@@ -18,8 +18,19 @@
     "check_count": 2,
     "summary": "Signal adapter accepted degraded signals through canonical Discovery submission and ignored healthy runtime state."
   },
+  "front_door_acceptance": {
+    "ok": true,
+    "check_count": 3,
+    "summary": "Engine-backed front-door submission routed to the expected lane and created routing plus engine run artifacts."
+  },
+  "engine_contract_surface": {
+    "ok": true,
+    "check_count": 8,
+    "summary": "Public Engine exports remained callable and preserved mission-specificity, deduplication, and correction-ledger behavior."
+  },
   "notes": [
     "Directive Workspace remains the product; the host is only accepted as a consumer of the canonical surface.",
-    "Passing acceptance does not authorize host-local redefinition of Discovery, Runtime, or Architecture vocabulary."
+    "Passing acceptance does not authorize host-local redefinition of Discovery, Runtime, or Architecture vocabulary.",
+    "Engine contract surface checks validate that critical engine exports remain accessible and correctly shaped."
   ]
 }

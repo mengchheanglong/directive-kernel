@@ -8,3 +8,5 @@ export * from "./source-type-normalization.ts";
 export * from "./workspace-truth.ts";
 export * from "./approval-boundary.ts";
 export * from "./artifact-link-validation.ts";
+export * from "./routing-correction-ledger.ts";
+export { assessDirectiveEngineRouting } from "./routing.ts";

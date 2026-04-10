@@ -6,6 +6,16 @@ export function normalizeDirectiveRelativePath(inputPath: string, fieldName = "p
   return requiredString(inputPath, fieldName).replace(/\\/g, "/");
 }
 
+export function isDirectiveAbsolutePathWithinRoot(
+  directiveRoot: string,
+  absolutePath: string,
+) {
+  const root = path.resolve(directiveRoot);
+  const candidate = path.resolve(absolutePath);
+  const relative = path.relative(root, candidate);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
 export function resolveDirectiveRelativePath(
   directiveRoot: string,
   inputPath: string,
@@ -16,9 +26,8 @@ export function resolveDirectiveRelativePath(
   const absolutePath = path.isAbsolute(normalizedInput)
     ? path.resolve(normalizedInput)
     : path.resolve(root, normalizedInput);
-  const normalizedRootPrefix = `${root}${path.sep}`;
 
-  if (absolutePath !== root && !absolutePath.startsWith(normalizedRootPrefix)) {
+  if (!isDirectiveAbsolutePathWithinRoot(root, absolutePath)) {
     throw new Error(`invalid_input: ${fieldName} must stay within directive-workspace`);
   }
 

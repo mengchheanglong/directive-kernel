@@ -4,7 +4,10 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createMemoryDirectiveEngineStore, type DirectiveEngineStore } from "./storage.ts";
+import {
+  createFilesystemDirectiveEngineStore,
+  type DirectiveEngineStore,
+} from "./storage.ts";
 import { assessDirectiveEngineRouting } from "./routing.ts";
 import {
   classifyDirectiveEngineUsefulness,
@@ -52,6 +55,13 @@ const DIRECTIVE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 function normalizeText(value: unknown) {
   return String(value ?? "").trim();
+}
+
+function normalizeFingerprintText(value: string | null | undefined) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 }
 
 function normalizeNotes(notes: string[] | null | undefined) {
@@ -186,6 +196,82 @@ function deriveCandidateId(source: DirectiveEngineSourceItem) {
     || sanitizeIdSegment(normalizeText(source.sourceRef))
     || `directive-source-${crypto.randomUUID().slice(0, 8)}`
   );
+}
+
+function validateDirectiveEngineSource(source: DirectiveEngineSourceItem) {
+  const sourceId = normalizeText(source.sourceId);
+  const sourceRef = normalizeText(source.sourceRef);
+  const title = normalizeText(source.title);
+  const summary = normalizeText(source.summary);
+
+  if (!sourceRef) {
+    throw new Error("invalid_input: source.sourceRef is required");
+  }
+
+  if (!title && !summary && !sourceId) {
+    throw new Error(
+      "invalid_input: source must include at least one non-empty title, summary, or sourceId field",
+    );
+  }
+}
+
+function deriveProcessFingerprint(input: {
+  source: DirectiveEngineSourceItem;
+  mission: DirectiveEngineMissionContext;
+}) {
+  return crypto.createHash("sha256").update(JSON.stringify({
+    sourceType: input.source.sourceType,
+    sourceRef: normalizeFingerprintText(input.source.sourceRef),
+    summary: normalizeFingerprintText(input.source.summary),
+    missionAlignmentHint: normalizeFingerprintText(input.source.missionAlignmentHint),
+    capabilityGapId: normalizeFingerprintText(input.source.capabilityGapId),
+    primaryAdoptionTarget: input.source.primaryAdoptionTarget ?? null,
+    containsExecutableCode: input.source.containsExecutableCode ?? null,
+    containsWorkflowPattern: input.source.containsWorkflowPattern ?? null,
+    improvesDirectiveWorkspace: input.source.improvesDirectiveWorkspace ?? null,
+    workflowBoundaryShape: input.source.workflowBoundaryShape ?? null,
+    missionId: normalizeFingerprintText(input.mission.missionId),
+    currentObjective: normalizeFingerprintText(input.mission.currentObjective),
+    usefulnessSignals: input.mission.usefulnessSignals.map((value) => normalizeFingerprintText(value)),
+    capabilityLanes: input.mission.capabilityLanes.map((value) => normalizeFingerprintText(value)),
+  })).digest("hex");
+}
+
+function recordMatchesProcessFingerprint(input: {
+  record: DirectiveEngineRunRecord;
+  fingerprint: string;
+}) {
+  return deriveProcessFingerprint({
+    source: input.record.source,
+    mission: input.record.mission,
+  }) === input.fingerprint;
+}
+
+function withTimeout<T>(
+  operation: Promise<T> | T,
+  timeoutMs: number,
+  label: string,
+) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    return Promise.resolve(operation);
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`timeout:${label}:${timeoutMs}ms`));
+    }, timeoutMs);
+
+    Promise.resolve(operation).then(
+      (value) => {
+        clearTimeout(timeout);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
 }
 
 function deriveIntegrationMode(input: {
@@ -876,15 +962,23 @@ function buildDecision(input: {
     decisionState = "route_to_runtime_follow_up";
   }
 
+  const requiresHumanApproval =
+    input.candidate.requiresHumanReview
+    || input.integrationProposal.requiresHumanReview;
+
   return {
     decisionState,
     adoptionTargetLaneId: input.lane.laneId,
     adoptionTargetLaneLabel: input.lane.label,
-    requiresHumanApproval: true,
+    requiresHumanApproval,
     summary:
       decisionState === "needs_human_review"
         ? `Preliminary engine decision: needs_human_review for ${input.lane.label}; the route is bounded but must be reviewed explicitly before downstream adoption.`
-        : `Preliminary engine decision: ${decisionState} for ${input.lane.label}${input.candidate.requiresHumanReview ? " with additional human review required" : ""}, pending human approval before final adoption.`,
+        : requiresHumanApproval
+          ? `Preliminary engine decision: ${decisionState} for ${input.lane.label}${input.candidate.requiresHumanReview ? " with additional human review required" : ""}, pending human approval before final adoption.`
+          : input.lane.laneId === "discovery"
+            ? `Preliminary engine decision: ${decisionState} for ${input.lane.label}; the source is held in Discovery without opening a separate manual approval step.`
+            : `Preliminary engine decision: ${decisionState} for ${input.lane.label}; the route is bounded strongly enough to proceed without an additional manual approval gate.`,
     rationale: [
       ...input.candidate.rationale,
       input.integrationProposal.nextAction,
@@ -995,11 +1089,15 @@ export class DirectiveEngine {
   readonly store: DirectiveEngineStore;
   readonly laneSet: DirectiveEngineLaneSet;
   readonly hostAdapters: DirectiveEngineHostAdapter[];
+  readonly storeTimeoutMs: number;
+  readonly hostAdapterTimeoutMs: number;
 
   constructor(input: {
     laneSet: DirectiveEngineLaneSet;
     store?: DirectiveEngineStore;
     hostAdapters?: DirectiveEngineHostAdapter[];
+    storeTimeoutMs?: number;
+    hostAdapterTimeoutMs?: number;
   }) {
     if (!input.laneSet) {
       throw new Error(
@@ -1008,8 +1106,10 @@ export class DirectiveEngine {
     }
 
     this.laneSet = input.laneSet;
-    this.store = input.store ?? createMemoryDirectiveEngineStore();
+    this.store = input.store ?? createFilesystemDirectiveEngineStore();
     this.hostAdapters = [...(input.hostAdapters ?? [])];
+    this.storeTimeoutMs = input.storeTimeoutMs ?? 5_000;
+    this.hostAdapterTimeoutMs = input.hostAdapterTimeoutMs ?? 5_000;
   }
 
   async processSource(
@@ -1020,9 +1120,13 @@ export class DirectiveEngine {
     const mission = resolveMissionContext(input.mission);
     const source: DirectiveEngineSourceItem = {
       ...input.source,
+      sourceId: normalizeText(input.source.sourceId) || null,
       sourceType: normalizeDirectiveEngineSourceType(input.source.sourceType),
       sourceRef: normalizeText(input.source.sourceRef),
-      title: normalizeText(input.source.title),
+      title:
+        normalizeText(input.source.title)
+        || normalizeText(input.source.sourceId)
+        || normalizeText(input.source.sourceRef),
       summary: normalizeText(input.source.summary) || null,
       missionAlignmentHint: normalizeText(input.source.missionAlignmentHint) || null,
       capabilityGapId: normalizeText(input.source.capabilityGapId) || null,
@@ -1033,12 +1137,40 @@ export class DirectiveEngine {
       workflowBoundaryShape: normalizeWorkflowBoundaryShape(input.source.workflowBoundaryShape),
       notes: normalizeNotes(input.source.notes),
     };
+    validateDirectiveEngineSource(source);
     const candidateId = deriveCandidateId(source);
+    const processFingerprint = deriveProcessFingerprint({
+      source,
+      mission,
+    });
+    const existingRuns = await withTimeout(
+      this.store.listRuns(),
+      this.storeTimeoutMs,
+      "store.listRuns",
+    );
+    const duplicateRecord = [...existingRuns]
+      .reverse()
+      .find((record) => recordMatchesProcessFingerprint({
+        record,
+        fingerprint: processFingerprint,
+      }));
+    if (duplicateRecord) {
+      return {
+        ok: true,
+        record: duplicateRecord,
+        adapterResults: [],
+        deduplicated: true,
+        duplicateOfRunId: duplicateRecord.runId,
+        duplicateReason: "matching source and mission fingerprint",
+      };
+    }
     const openGaps = [...(input.gaps ?? [])];
+    const corrections = [...(input.corrections ?? [])];
     const routingAssessment = assessDirectiveEngineRouting({
       source,
       mission,
       openGaps,
+      corrections,
     });
     const lane = resolveDirectiveEngineLane({
       laneSet: this.laneSet,
@@ -1176,18 +1308,30 @@ export class DirectiveEngine {
       }),
     };
 
-    await this.store.writeRun(runRecord);
+    await withTimeout(this.store.writeRun(runRecord), this.storeTimeoutMs, "store.writeRun");
 
     const adapterResults = [];
     for (const adapter of this.hostAdapters) {
-      const adapterResult = adapter.onRunRecorded
-        ? await adapter.onRunRecorded(runRecord)
-        : undefined;
-      adapterResults.push({
-        adapterId: adapter.id,
-        accepted: adapterResult?.accepted ?? true,
-        note: normalizeText(adapterResult?.note) || null,
-      });
+      try {
+        const adapterResult = adapter.onRunRecorded
+          ? await withTimeout(
+            adapter.onRunRecorded(runRecord),
+            this.hostAdapterTimeoutMs,
+            `hostAdapter:${adapter.id}:onRunRecorded`,
+          )
+          : undefined;
+        adapterResults.push({
+          adapterId: adapter.id,
+          accepted: adapterResult?.accepted ?? true,
+          note: normalizeText(adapterResult?.note) || null,
+        });
+      } catch (adapterError) {
+        adapterResults.push({
+          adapterId: adapter.id,
+          accepted: false,
+          note: `adapter error: ${adapterError instanceof Error ? adapterError.message : String(adapterError)}`,
+        });
+      }
     }
 
     return {
@@ -1198,10 +1342,10 @@ export class DirectiveEngine {
   }
 
   async getRun(runId: string) {
-    return this.store.readRun(runId);
+    return withTimeout(this.store.readRun(runId), this.storeTimeoutMs, "store.readRun");
   }
 
   async listRuns() {
-    return this.store.listRuns();
+    return withTimeout(this.store.listRuns(), this.storeTimeoutMs, "store.listRuns");
   }
 }

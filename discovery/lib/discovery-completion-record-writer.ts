@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { DiscoveryRoutingTarget } from "./discovery-intake-queue-writer.ts";
+import { isDirectiveAbsolutePathWithinRoot } from "../../shared/lib/directive-relative-path.ts";
 import {
   optionalString,
   requiredString,
@@ -92,11 +93,7 @@ export function resolveDiscoveryCompletionRecordAbsolutePath(input: {
 }) {
   const normalizedRelativePath = input.relativePath.replace(/\\/g, "/");
   const absolutePath = path.resolve(input.directiveRoot, normalizedRelativePath);
-  const normalizedRoot = `${path.resolve(input.directiveRoot)}${path.sep}`;
-  if (
-    absolutePath !== path.resolve(input.directiveRoot) &&
-    !absolutePath.startsWith(normalizedRoot)
-  ) {
+  if (!isDirectiveAbsolutePathWithinRoot(input.directiveRoot, absolutePath)) {
     throw new Error("completion record path must stay within directive-workspace");
   }
   return absolutePath;

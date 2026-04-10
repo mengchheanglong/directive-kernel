@@ -168,6 +168,7 @@ export type DirectiveEngineRunsOverview = {
     direct: number;
     structural: number;
     meta: number;
+    hybrid: number;
     humanReview: number;
     holdInDiscovery: number;
     routeToRuntime: number;
@@ -312,6 +313,7 @@ function zeroCounts() {
     direct: 0,
     structural: 0,
     meta: 0,
+    hybrid: 0,
     humanReview: 0,
     holdInDiscovery: 0,
     routeToRuntime: 0,
@@ -365,6 +367,7 @@ export function readDirectiveEngineRunsOverview(
     if (artifact.record.candidate.usefulnessLevel === "direct") counts.direct += 1;
     if (artifact.record.candidate.usefulnessLevel === "structural") counts.structural += 1;
     if (artifact.record.candidate.usefulnessLevel === "meta") counts.meta += 1;
+    if (artifact.record.candidate.usefulnessLevel === "hybrid") counts.hybrid += 1;
 
     if (
       artifact.record.candidate.requiresHumanReview

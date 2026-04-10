@@ -12,6 +12,8 @@
     "submission_acceptance",
     "overview_acceptance",
     "signal_acceptance",
+    "front_door_acceptance",
+    "engine_contract_surface",
     "notes"
   ],
   "properties": {
@@ -37,6 +39,12 @@
       "$ref": "#/$defs/acceptanceSection"
     },
     "signal_acceptance": {
+      "$ref": "#/$defs/acceptanceSection"
+    },
+    "front_door_acceptance": {
+      "$ref": "#/$defs/acceptanceSection"
+    },
+    "engine_contract_surface": {
       "$ref": "#/$defs/acceptanceSection"
     },
     "notes": {

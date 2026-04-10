@@ -121,6 +121,29 @@ function parseJsonBody<T>(body: string) {
   return JSON.parse(body) as T;
 }
 
+function resolveApiErrorStatus(error: unknown) {
+  const message = String((error as Error)?.message || error || "").toLowerCase();
+  if (
+    message.includes("already contains")
+    || message.includes("equivalent submission")
+    || message.includes("duplicate")
+  ) {
+    return 409;
+  }
+  if (
+    message.includes("invalid_input")
+    || message.includes("missing_")
+    || message.includes("required")
+    || message.includes("request_body_too_large")
+  ) {
+    return 400;
+  }
+  if (message.includes("not found") || message.includes("not_found")) {
+    return 404;
+  }
+  return 500;
+}
+
 function getContentType(filePath: string) {
   const ext = path.extname(filePath).toLowerCase();
   switch (ext) {
@@ -621,7 +644,11 @@ export function startDirectiveFrontendServer(
       return void writeStaticFile(res, FRONTEND_INDEX_PATH);
     } catch (error) {
       if (pathname.startsWith("/api/")) {
-        return void writeJson(res, 500, { ok: false, error: String((error as Error).message || error) });
+        return void writeJson(
+          res,
+          resolveApiErrorStatus(error),
+          { ok: false, error: String((error as Error).message || error) },
+        );
       }
       return void writeHtml(
         res,

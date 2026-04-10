@@ -7,7 +7,7 @@ A host is accepted only if it consumes the canonical product surface without red
 
 ## Acceptance rule
 
-A host integration is acceptable only if it proves all three of these:
+A host integration is acceptable only if it proves all five of these:
 
 1. **Submission path works**
    - the host can submit a canonical Discovery payload through the product-owned submission path
@@ -21,6 +21,16 @@ A host integration is acceptable only if it proves all three of these:
    - the host can convert upstream runtime or watchdog events into canonical Discovery submissions
    - the host does not bypass Discovery with a separate host-local incident intake model
 
+4. **Front-door path works**
+   - the host can submit through the Engine-backed Discovery front door, not only the queue writer
+   - routing records and engine run records are created on disk as canonical product artifacts
+   - a clear, bounded high-confidence route can auto-open exactly one downstream stub without host-local policy drift
+
+5. **Engine contract surface remains intact**
+   - the host can still import and call the public Engine surface the starter depends on
+   - routing assessments expose the fields the host needs to explain routing quality and mission specificity
+   - `processSource` still exposes deduplication and correction-ledger behavior through the public API
+
 ## Acceptance report
 
 An acceptance run should produce a bounded report that includes:
@@ -32,6 +42,8 @@ An acceptance run should produce a bounded report that includes:
 - `submission_acceptance`
 - `overview_acceptance`
 - `signal_acceptance`
+- `front_door_acceptance`
+- `engine_contract_surface`
 - `notes`
 
 The canonical machine-readable form is:
@@ -47,6 +59,9 @@ The host should prove:
 - overview reader returns status counts and recent entries from the canonical queue document
 - healthy signals do not submit
 - detected signals do submit through the canonical Discovery path
+- front-door submission creates routing and engine run artifacts and routes to the expected lane
+- engine routing exposes mission-specificity warnings for vague missions
+- engine `processSource` continues to expose deduplication and accepts correction-ledger input
 
 ## Product-boundary rule
 

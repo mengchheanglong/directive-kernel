@@ -1,4 +1,5 @@
 import path from "node:path";
+import { isDirectiveAbsolutePathWithinRoot } from "../../shared/lib/directive-relative-path.ts";
 import {
   type DiscoveryRoutingTarget,
   type DiscoverySourceType,
@@ -199,11 +200,7 @@ export function resolveDiscoveryRoutingRecordAbsolutePath(input: {
 }) {
   const normalizedRelativePath = input.relativePath.replace(/\\/g, "/");
   const absolutePath = path.resolve(input.directiveRoot, normalizedRelativePath);
-  const normalizedRoot = `${path.resolve(input.directiveRoot)}${path.sep}`;
-  if (
-    absolutePath !== path.resolve(input.directiveRoot) &&
-    !absolutePath.startsWith(normalizedRoot)
-  ) {
+  if (!isDirectiveAbsolutePathWithinRoot(input.directiveRoot, absolutePath)) {
     throw new Error("routing record path must stay within directive-workspace");
   }
   return absolutePath;

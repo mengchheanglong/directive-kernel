@@ -35,7 +35,7 @@
     },
     "usefulness_level": {
       "type": "string",
-      "enum": ["direct", "structural", "meta"]
+      "enum": ["direct", "structural", "meta", "hybrid"]
     },
     "capability_gap_addressed": {
       "type": "string",

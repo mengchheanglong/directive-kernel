@@ -5,6 +5,7 @@ import {
   ARCHITECTURE_DEEP_TAIL_STAGES,
   resolveArchitectureDeepTailStage,
 } from "../../architecture/lib/architecture-deep-tail-stage-map.ts";
+import { isDirectiveAbsolutePathWithinRoot } from "./directive-relative-path.ts";
 import { normalizeAbsolutePath } from "./path-normalization.ts";
 
 function normalizeRelativePath(relativePath: string) {
@@ -23,8 +24,7 @@ function resolveDirectiveRelativePathWithinRoot(directiveRoot: string, inputPath
 
   const root = path.resolve(directiveRoot);
   const absolutePath = path.resolve(root, normalizedInput);
-  const normalizedRootPrefix = `${root}${path.sep}`;
-  if (absolutePath !== root && !absolutePath.startsWith(normalizedRootPrefix)) {
+  if (!isDirectiveAbsolutePathWithinRoot(root, absolutePath)) {
     throw new Error("invalid_input: path must stay within directive-workspace");
   }
 

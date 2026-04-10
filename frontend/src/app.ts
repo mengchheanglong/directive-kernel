@@ -55,6 +55,7 @@ class DirectiveFrontendApp extends LitElement {
     page: { state: true },
     loading: { state: true },
     error: { state: true },
+    submitting: { state: true },
   };
 
   static styles = appStyles;
@@ -63,6 +64,7 @@ class DirectiveFrontendApp extends LitElement {
   declare page: any;
   declare loading: boolean;
   declare error: string;
+  declare submitting: boolean;
 
   constructor() {
     super();
@@ -70,6 +72,7 @@ class DirectiveFrontendApp extends LitElement {
     this.page = null;
     this.loading = true;
     this.error = "";
+    this.submitting = false;
   }
 
   connectedCallback() {
@@ -315,6 +318,72 @@ class DirectiveFrontendApp extends LitElement {
     href: string;
   }) {
     return renderLaneOverviewCard(input);
+  }
+
+  private slugifyCandidateId(value: string) {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 64);
+  }
+
+  private async submitDiscoveryFrontDoor(form: HTMLFormElement) {
+    try {
+      this.submitting = true;
+      this.error = "";
+      const data = new FormData(form);
+      const candidateName = String(data.get("candidate_name") || "").trim();
+      const sourceReference = String(data.get("source_reference") || "").trim();
+      const candidateIdInput = String(data.get("candidate_id") || "").trim();
+      const candidateId =
+        candidateIdInput
+        || this.slugifyCandidateId(candidateName)
+        || this.slugifyCandidateId(sourceReference);
+
+      if (!candidateName) {
+        throw new Error("candidate_name_required");
+      }
+      if (!sourceReference) {
+        throw new Error("source_reference_required");
+      }
+      if (!candidateId) {
+        throw new Error("candidate_id_required");
+      }
+
+      const payload = {
+        candidate_id: candidateId,
+        candidate_name: candidateName,
+        source_type: String(data.get("source_type") || "internal-signal").trim(),
+        source_reference: sourceReference,
+        mission_alignment: String(data.get("mission_alignment") || "").trim() || null,
+        capability_gap_id: String(data.get("capability_gap_id") || "").trim() || null,
+        notes: String(data.get("notes") || "").trim() || null,
+        primary_adoption_target: String(data.get("primary_adoption_target") || "").trim() || null,
+        workflow_boundary_shape: String(data.get("workflow_boundary_shape") || "").trim() || null,
+        contains_executable_code: data.get("contains_executable_code") === "on",
+        contains_workflow_pattern: data.get("contains_workflow_pattern") === "on",
+        improves_directive_workspace: data.get("improves_directive_workspace") === "on",
+      };
+      const result: any = await getJson("/api/discovery/front-door", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      form.reset();
+      if (result.downstream?.autoOpened && result.downstream?.stubRelativePath) {
+        navTo(`/handoffs/view?path=${encodeURIComponent(result.downstream.stubRelativePath)}`);
+        return;
+      }
+      navTo(
+        `/discovery-routing-records/view?path=${encodeURIComponent(result.createdPaths.routingRecordPath)}`,
+      );
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    } finally {
+      this.submitting = false;
+    }
   }
 
   private async approveDiscoveryRoute(routingPath: string) {
@@ -1034,7 +1103,7 @@ class DirectiveFrontendApp extends LitElement {
           : nothing}
         <section class="panel message">
           <h3>Discovery status</h3>
-          <p class="muted">Review pressure: ${queueReviewPressureCount}. Conflicted routes: ${queueConflictedCount}. Discovery remains explicit and does not auto-open downstream work.</p>
+          <p class="muted">Review pressure: ${queueReviewPressureCount}. Conflicted routes: ${queueConflictedCount}. Clear routes can now auto-open exactly one bounded downstream stub; conflicted or low-confidence routes still stay explicit.</p>
           <div class="actions">
             <a href="/discovery" @click=${(event: Event) => { event.preventDefault(); navTo("/discovery"); }}>Open Discovery</a>
             <a href="/architecture" @click=${(event: Event) => { event.preventDefault(); navTo("/architecture"); }}>Open Architecture</a>
@@ -1088,7 +1157,9 @@ class DirectiveFrontendApp extends LitElement {
       const record = detail.record;
       const queueEntry = (this.page.queue.entries || []).find((entry: any) => entry.candidate_id === record.candidate.candidateId) ?? null;
       const relatedHandoffs = (this.page.handoffs || []).filter((stub: any) => stub.candidateId === record.candidate.candidateId);
-      const noDownstream = queueEntry && !queueEntry.result_record_path ? "No downstream handoff was materialized from this path yet. The Engine run exists, but this frontend submission flow still stops before queue advancement into a lane-native handoff artifact." : "";
+      const noDownstream = queueEntry && !queueEntry.result_record_path
+        ? "No downstream handoff was materialized from this path yet. This run either stayed in Discovery or still requires explicit review before a lane-native stub can open."
+        : "";
       return html`
         <section class="panel"><h2>Engine run detail</h2><table><tbody>
           <tr><th>run id</th><td>${record.runId}</td></tr>
@@ -1157,6 +1228,82 @@ class DirectiveFrontendApp extends LitElement {
         <section class="panel">
           <h2>Discovery queue</h2>
           <p class="muted">Directive Kernel uses this queue as the live front door into Discovery, Architecture, and Runtime. The product surface now emphasizes current heads, current case stage, and the next legal step instead of treating queue state like a raw spreadsheet.</p>
+
+          <section class="queue-highlight">
+            <h3>Submit a source</h3>
+            <p class="muted">This sends a source through the Engine-backed Discovery front door. Leave candidate id blank to derive it from the candidate name automatically.</p>
+            <form @submit=${async (event: Event) => {
+              event.preventDefault();
+              await this.submitDiscoveryFrontDoor(event.currentTarget as HTMLFormElement);
+            }}>
+              <div class="form-grid">
+                <div class="row">
+                  <label>Candidate name</label>
+                  <input name="candidate_name" placeholder="Bounded Runtime Planning Paper" ?disabled=${this.submitting} />
+                </div>
+                <div class="row">
+                  <label>Candidate id</label>
+                  <input name="candidate_id" placeholder="optional-auto-slug" ?disabled=${this.submitting} />
+                </div>
+                <div class="row">
+                  <label>Source type</label>
+                  <select name="source_type" ?disabled=${this.submitting}>
+                    <option value="internal-signal">internal-signal</option>
+                    <option value="workflow-writeup">workflow-writeup</option>
+                    <option value="paper">paper</option>
+                    <option value="product-doc">product-doc</option>
+                    <option value="technical-essay">technical-essay</option>
+                    <option value="github-repo">github-repo</option>
+                    <option value="external-system">external-system</option>
+                    <option value="theory">theory</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <label>Primary adoption target</label>
+                  <select name="primary_adoption_target" ?disabled=${this.submitting}>
+                    <option value="">auto</option>
+                    <option value="discovery">discovery</option>
+                    <option value="architecture">architecture</option>
+                    <option value="runtime">runtime</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <label>Source reference</label>
+                <input name="source_reference" placeholder="https://example.com/source" ?disabled=${this.submitting} />
+              </div>
+              <div class="form-grid">
+                <div class="row">
+                  <label>Capability gap id</label>
+                  <input name="capability_gap_id" placeholder="optional-gap-id" ?disabled=${this.submitting} />
+                </div>
+                <div class="row">
+                  <label>Workflow boundary shape</label>
+                  <select name="workflow_boundary_shape" ?disabled=${this.submitting}>
+                    <option value="">auto</option>
+                    <option value="bounded_protocol">bounded_protocol</option>
+                    <option value="iterative_loop">iterative_loop</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <label>Mission alignment</label>
+                <textarea name="mission_alignment" placeholder="What problem this source helps solve under the active mission." ?disabled=${this.submitting}></textarea>
+              </div>
+              <div class="row">
+                <label>Notes</label>
+                <textarea name="notes" placeholder="Optional intake notes." ?disabled=${this.submitting}></textarea>
+              </div>
+              <div class="checkbox-grid">
+                <label class="checkbox-row"><input type="checkbox" name="contains_executable_code" ?disabled=${this.submitting} />Executable code present</label>
+                <label class="checkbox-row"><input type="checkbox" name="contains_workflow_pattern" ?disabled=${this.submitting} checked />Workflow pattern present</label>
+                <label class="checkbox-row"><input type="checkbox" name="improves_directive_workspace" ?disabled=${this.submitting} />Improves Directive Workspace itself</label>
+              </div>
+              <div class="actions">
+                <button type="submit" ?disabled=${this.submitting}>${this.submitting ? "Submitting..." : "Submit through front door"}</button>
+              </div>
+            </form>
+          </section>
 
           <section class="queue-summary-grid">
             ${this.renderQueueStat("Total queue entries", entries.length, "All persisted Discovery queue cases visible to the product frontend.")}

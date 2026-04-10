@@ -6,6 +6,7 @@
   "scripts": {
     "frontend:install": "npm --prefix ./frontend install",
     "frontend:build": "npm --prefix ./frontend run build",
+    "check:hardening": "node --experimental-strip-types ./scripts/check-system-hardening.ts",
     "dev": "node --experimental-strip-types ./scripts/run-frontend-dev.ts",
     "start": "npm run frontend:build && node --experimental-strip-types ./scripts/start-frontend.ts",
     "standalone:cli": "node --experimental-strip-types ./hosts/standalone-host/cli.ts",

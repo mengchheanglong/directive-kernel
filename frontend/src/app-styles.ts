@@ -37,6 +37,10 @@ export const appStyles = css`
   .queue-highlight { border:1px solid #2a2a2a; border-radius:12px; padding:14px; background:#151515; }
   .queue-highlight h3 { margin:0 0 8px; }
   .queue-highlight p { margin:0; }
+  .form-grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+  .checkbox-grid { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); margin:12px 0; }
+  .checkbox-row { display:flex; gap:8px; align-items:center; border:1px solid #2d2d2d; border-radius:10px; background:#111111; padding:10px 12px; color:#d7d1c5; }
+  .checkbox-row input { width:auto; margin:0; }
   .queue-count { font-size:28px; font-weight:700; line-height:1; margin:0 0 6px; }
   .queue-empty { text-align:center; padding:22px; border:1px dashed #343434; border-radius:12px; background:#151515; }
   .lane-case-strip { border:1px solid #2a2a2a; border-radius:14px; padding:16px; background:#141414; overflow:hidden; min-width:0; }
@@ -153,6 +157,7 @@ export const appStyles = css`
     .simple-row-meta { justify-content:flex-start; }
     .queue-card-header { flex-direction:column; }
     .queue-tag-row { justify-content:flex-start; }
+    .checkbox-row { align-items:flex-start; }
     .hero-meta { flex-direction:column; align-items:flex-start; }
     .runtime-lane-grid { grid-template-columns:1fr; }
     .lane-page-grid { grid-template-columns:1fr; }

@@ -11,46 +11,45 @@ function collectPlanText(input: DirectiveEngineLaneUsefulnessPlanningInput) {
   return values.join(" ").toLowerCase();
 }
 
-function hasPlanAwareRuntimeSignal(input: DirectiveEngineLaneUsefulnessPlanningInput) {
+function hasRuntimeUsefulnessSignal(input: DirectiveEngineLaneUsefulnessPlanningInput) {
   const planText = collectPlanText(input);
-  return input.planningInput.lane.laneId === "runtime"
-    && (
-      input.planningInput.source.primaryAdoptionTarget === "runtime"
-      || input.planningInput.source.containsExecutableCode
-      || /reusable runtime|runtime capability|callable capability|callable runtime|behavior-preserving|runtime reuse|host can call|host can run/.test(planText)
-    );
+  return (
+    input.planningInput.source.primaryAdoptionTarget === "runtime"
+    || input.planningInput.source.containsExecutableCode === true
+    || input.planningInput.lane.laneId === "runtime"
+    || /reusable runtime|runtime capability|callable capability|callable runtime|behavior-preserving|runtime reuse|host can call|host can run/.test(planText)
+  );
 }
 
-function hasPlanAwareMetaSignal(input: DirectiveEngineLaneUsefulnessPlanningInput) {
+function hasMetaUsefulnessSignal(input: DirectiveEngineLaneUsefulnessPlanningInput) {
   const planText = collectPlanText(input);
-  return input.planningInput.lane.laneId === "architecture"
-    && /engine-owned|engine self-improvement|future source adaptation quality|stage-aware engine analysis|control and evidence analysis|control\/evidence plans|loop-control plans|improve .*architecture adaptation quality|improve engine/.test(planText);
+  return (
+    input.planningInput.source.improvesDirectiveWorkspace === true
+    || (
+      input.planningInput.source.primaryAdoptionTarget === "architecture"
+      && input.planningInput.source.containsWorkflowPattern === true
+    )
+    || /engine-owned|engine self-improvement|future source adaptation quality|stage-aware engine analysis|control and evidence analysis|control\/evidence plans|loop-control plans|improve .*architecture adaptation quality|improve engine/.test(planText)
+  );
 }
 
 export function classifyDirectiveEngineUsefulness(
   input: DirectiveEngineLaneUsefulnessPlanningInput,
 ): DirectiveEngineUsefulnessLevel {
-  if (hasPlanAwareRuntimeSignal(input)) {
+  const hasRuntimeSignal = hasRuntimeUsefulnessSignal(input);
+  const hasMetaSignal = hasMetaUsefulnessSignal(input)
+    || input.planningInput.routingAssessment.scoreBreakdown.metaUsefulnessSignal > 0;
+
+  if (hasRuntimeSignal && hasMetaSignal) {
+    return "hybrid";
+  }
+
+  if (hasRuntimeSignal) {
     return "direct";
   }
 
-  if (hasPlanAwareMetaSignal(input)) {
+  if (hasMetaSignal) {
     return "meta";
-  }
-
-  if (
-    input.planningInput.source.primaryAdoptionTarget === "architecture"
-    && input.planningInput.source.containsWorkflowPattern
-  ) {
-    return "meta";
-  }
-
-  if (input.planningInput.routingAssessment.scoreBreakdown.metaUsefulnessSignal > 0) {
-    return "meta";
-  }
-
-  if (input.planningInput.lane.laneId === "runtime") {
-    return "direct";
   }
 
   return "structural";
@@ -60,8 +59,12 @@ export function explainDirectiveEngineUsefulness(
   input: DirectiveEngineLaneUsefulnessPlanningInput,
   usefulnessLevel: DirectiveEngineUsefulnessLevel,
 ) {
+  if (usefulnessLevel === "hybrid") {
+    return "Hybrid usefulness: the source carries reusable runtime value and meaningful Directive Workspace improvement value at the same time, so the system should preserve both signals instead of flattening it into only direct or only meta usefulness.";
+  }
+
   if (usefulnessLevel === "direct") {
-    if (hasPlanAwareRuntimeSignal(input)) {
+    if (hasRuntimeUsefulnessSignal(input)) {
       return "Direct usefulness: the generated Runtime adaptation and improvement plans target reusable callable runtime value with bounded behavior-preserving improvement, so the value is primarily useful as something the host can call or run again.";
     }
 
@@ -73,7 +76,7 @@ export function explainDirectiveEngineUsefulness(
   }
 
   if (usefulnessLevel === "meta") {
-    if (hasPlanAwareMetaSignal(input)) {
+    if (hasMetaUsefulnessSignal(input)) {
       return "Meta-usefulness: the generated adaptation and improvement plans are Engine-self-improvement oriented, so the value is primarily about improving how Directive Workspace discovers, judges, adapts, proves, or integrates future sources rather than exposing repeated host-call value.";
     }
     if (

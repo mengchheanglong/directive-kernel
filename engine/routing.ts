@@ -6,52 +6,72 @@ import type {
   DirectiveEngineRoutingConfidence,
   DirectiveEngineSourceItem,
 } from "./types.ts";
+import type { RoutingCorrectionEntry } from "./routing-correction-ledger.ts";
+import { deriveRoutingCorrectionAdjustments } from "./routing-correction-ledger.ts";
 
-const DISCOVERY_KEYWORDS = [
-  "discovery",
-  "front door",
-  "intake",
-  "queue",
-  "routing",
-  "route",
-  "monitor",
-  "review cadence",
-  "coverage",
-  "gap",
+/**
+ * Weighted keyword lists.  Each entry is [keyword, weight].
+ *
+ * Weight guidelines:
+ *   3 = highly discriminative, almost never ambiguous across lanes
+ *   2 = moderately discriminative
+ *   1 = low-weight or shared with another lane (prevents double-counting inflation)
+ *
+ * Multi-word phrases are checked first (longer match wins), so
+ * "runtime capability" scores as one phrase hit, not two singles.
+ */
+const DISCOVERY_KEYWORDS_WEIGHTED: Array<[string, number]> = [
+  ["discovery intake", 3],
+  ["front door", 3],
+  ["intake queue", 3],
+  ["review cadence", 3],
+  ["discovery", 2],
+  ["intake", 2],
+  ["queue", 1],
+  ["routing", 1],
+  ["route", 1],
+  ["monitor", 1],
+  ["coverage", 1],
+  ["gap", 1],
 ];
 
-const ARCHITECTURE_KEYWORDS = [
-  "architecture",
-  "contract",
-  "schema",
-  "policy",
-  "workflow",
-  "doctrine",
-  "evaluation",
-  "evaluator",
-  "adaptation",
-  "analysis",
-  "operating logic",
-  "operating code",
-  "structure",
-  "engine",
-  "self-improvement",
+const ARCHITECTURE_KEYWORDS_WEIGHTED: Array<[string, number]> = [
+  ["operating logic", 3],
+  ["operating code", 3],
+  ["self-improvement", 3],
+  ["architecture", 2],
+  ["contract", 2],
+  ["schema", 2],
+  ["policy", 2],
+  ["workflow", 2],
+  ["doctrine", 2],
+  ["adaptation", 2],
+  ["evaluation", 1],
+  ["evaluator", 1],
+  ["analysis", 1],
+  ["structure", 1],
+  ["engine", 1],
 ];
 
-const RUNTIME_KEYWORDS = [
-  "runtime",
-  "callable",
-  "skill",
-  "automation",
-  "workflow",
-  "latency",
-  "performance",
-  "cost",
-  "reliability",
-  "import",
-  "source-pack",
-  "runtime capability",
+const RUNTIME_KEYWORDS_WEIGHTED: Array<[string, number]> = [
+  ["runtime capability", 3],
+  ["source-pack", 3],
+  ["runtime", 2],
+  ["callable", 3],
+  ["skill", 2],
+  ["automation", 2],
+  ["latency", 1],
+  ["performance", 1],
+  ["cost", 1],
+  ["reliability", 1],
+  ["import", 1],
 ];
+
+// Flat keyword lists kept for backward-compat with countKeywordHits callers
+// (gap scoring, meta-usefulness, etc.) that don't need weighting.
+const DISCOVERY_KEYWORDS = DISCOVERY_KEYWORDS_WEIGHTED.map(([kw]) => kw);
+const ARCHITECTURE_KEYWORDS = ARCHITECTURE_KEYWORDS_WEIGHTED.map(([kw]) => kw);
+const RUNTIME_KEYWORDS = RUNTIME_KEYWORDS_WEIGHTED.map(([kw]) => kw);
 
 const TRANSFORMATION_KEYWORDS = [
   "transform",
@@ -124,6 +144,73 @@ const STOP_WORDS = new Set([
   "source",
 ]);
 
+const GENERIC_MISSION_TOKENS = new Set([
+  "active",
+  "better",
+  "bounded",
+  "capability",
+  "current",
+  "direction",
+  "directive",
+  "goal",
+  "improve",
+  "kernel",
+  "product",
+  "project",
+  "system",
+  "useful",
+  "workspace",
+]);
+
+const SEMANTIC_TOKEN_ALIASES: Record<string, string> = {
+  adaptable: "adaptation",
+  adapting: "adaptation",
+  adapts: "adaptation",
+  adapter: "integration",
+  adapters: "integration",
+  architecture: "architecture",
+  automation: "runtime",
+  automations: "runtime",
+  callable: "runtime",
+  callables: "runtime",
+  contracts: "contract",
+  discovery: "discovery",
+  evaluator: "evaluation",
+  evaluators: "evaluation",
+  execution: "runtime",
+  executions: "runtime",
+  integrating: "integration",
+  integration: "integration",
+  integrations: "integration",
+  orchestration: "workflow",
+  phase: "workflow",
+  phases: "workflow",
+  pipeline: "workflow",
+  pipelines: "workflow",
+  process: "workflow",
+  processes: "workflow",
+  processing: "workflow",
+  protocol: "workflow",
+  protocols: "workflow",
+  queueing: "queue",
+  queues: "queue",
+  route: "routing",
+  routed: "routing",
+  router: "routing",
+  routing: "routing",
+  runtime: "runtime",
+  scoring: "evaluation",
+  schema: "contract",
+  schemas: "contract",
+  structure: "architecture",
+  structured: "architecture",
+  structures: "architecture",
+  verification: "proof",
+  verify: "proof",
+  workflow: "workflow",
+  workflows: "workflow",
+};
+
 function clampInt(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) {
     return min;
@@ -151,6 +238,12 @@ function tokenize(input: string) {
     .filter((token) => token.length >= 3 && !STOP_WORDS.has(token));
 }
 
+function semanticTokenize(input: string) {
+  return tokenize(input)
+    .map((token) => SEMANTIC_TOKEN_ALIASES[token] ?? token)
+    .filter(Boolean);
+}
+
 function countKeywordHits(text: string, keywords: string[]) {
   const lowered = text.toLowerCase();
   return keywords.reduce(
@@ -159,9 +252,43 @@ function countKeywordHits(text: string, keywords: string[]) {
   );
 }
 
+/**
+ * Weighted keyword scoring with phrase priority and diminishing returns.
+ *
+ * 1. Phrases are checked longest-first so "runtime capability" consumes
+ *    both words before the single-word "runtime" entry can also fire.
+ * 2. Each match adds its weight to a raw total.
+ * 3. The raw total is softened via sqrt scaling: `floor(sqrt(raw) * 3)`.
+ *    This means the first few matches contribute strongly but repeating
+ *    the same vocabulary gives diminishing returns.
+ */
+function countWeightedKeywordHits(
+  text: string,
+  weightedKeywords: Array<[string, number]>,
+) {
+  const lowered = text.toLowerCase();
+  // Sort by phrase length descending so longer phrases match first.
+  const sorted = [...weightedKeywords].sort(
+    (a, b) => b[0].length - a[0].length,
+  );
+  let remaining = lowered;
+  let rawScore = 0;
+  for (const [keyword, weight] of sorted) {
+    if (remaining.includes(keyword)) {
+      rawScore += weight;
+      // Remove the first occurrence to prevent double-counting with
+      // sub-phrases (e.g. "runtime capability" vs "runtime").
+      remaining = remaining.replace(keyword, " ");
+    }
+  }
+  // Diminishing returns: sqrt scaling keeps first matches valuable
+  // but prevents keyword-stuffing from inflating scores.
+  return Math.floor(Math.sqrt(rawScore) * 3);
+}
+
 function countTokenOverlap(left: string, right: string) {
-  const leftTokens = new Set(tokenize(left));
-  const rightTokens = new Set(tokenize(right));
+  const leftTokens = new Set(semanticTokenize(left));
+  const rightTokens = new Set(semanticTokenize(right));
   let overlap = 0;
   for (const token of leftTokens) {
     if (rightTokens.has(token)) {
@@ -169,6 +296,12 @@ function countTokenOverlap(left: string, right: string) {
     }
   }
   return overlap;
+}
+
+function deriveMissionObjectiveSpecificity(currentObjective: string) {
+  return semanticTokenize(currentObjective)
+    .filter((token) => !GENERIC_MISSION_TOKENS.has(token))
+    .length;
 }
 
 function flattenSourceText(source: DirectiveEngineSourceItem) {
@@ -266,6 +399,7 @@ function findMatchedGap(input: {
         gap: rankedGaps[directIndex] ?? null,
         rank: directIndex + 1,
         structuredSignalScore: 0,
+        directReference: true,
       };
     }
   }
@@ -295,6 +429,7 @@ function findMatchedGap(input: {
       gap: null,
       rank: null,
       structuredSignalScore: 0,
+      directReference: false,
     };
   }
 
@@ -302,13 +437,16 @@ function findMatchedGap(input: {
     gap: bestGap,
     rank: bestRank,
     structuredSignalScore: bestStructuredSignalScore,
+    directReference: false,
   };
 }
 
 function deriveMissionFit(
+  source: DirectiveEngineSourceItem,
   sourceText: string,
   mission: DirectiveEngineMissionContext,
 ) {
+  const objectiveSpecificity = deriveMissionObjectiveSpecificity(mission.currentObjective);
   const objectiveOverlap = countTokenOverlap(sourceText, mission.currentObjective);
   const usefulnessOverlap = mission.usefulnessSignals.reduce(
     (score, signal) => score + countTokenOverlap(sourceText, signal),
@@ -318,7 +456,35 @@ function deriveMissionFit(
     (score, lane) => score + countTokenOverlap(sourceText, lane),
     0,
   );
-  return clampInt(objectiveOverlap + usefulnessOverlap + laneOverlap, 0, 5);
+  const structuredMissionBoost =
+    (source.primaryAdoptionTarget
+      && mission.capabilityLanes.some((lane) =>
+        countTokenOverlap(source.primaryAdoptionTarget ?? "", lane) > 0
+      )
+      ? 1
+      : 0)
+    + (
+      source.improvesDirectiveWorkspace === true
+      && mission.usefulnessSignals.some((signal) =>
+        countTokenOverlap("engine routing evaluation adaptation workflow", signal) > 0
+      )
+        ? 1
+        : 0
+    );
+  const weightedObjectiveOverlap =
+    objectiveSpecificity === 0
+      ? 0
+      : objectiveSpecificity === 1
+        ? Math.min(objectiveOverlap, 1)
+        : objectiveSpecificity === 2
+          ? Math.min(objectiveOverlap, 2)
+          : objectiveOverlap;
+
+  return clampInt(
+    weightedObjectiveOverlap + usefulnessOverlap + laneOverlap + structuredMissionBoost,
+    0,
+    5,
+  );
 }
 
 function deriveLaneScores(input: {
@@ -326,9 +492,9 @@ function deriveLaneScores(input: {
   sourceText: string;
   matchedGap: DirectiveEngineCapabilityGap | null;
 }) {
-  const discoverySignal = countKeywordHits(input.sourceText, DISCOVERY_KEYWORDS);
-  const architectureSignal = countKeywordHits(input.sourceText, ARCHITECTURE_KEYWORDS);
-  const baseRuntimeSignal = countKeywordHits(input.sourceText, RUNTIME_KEYWORDS);
+  const discoverySignal = countWeightedKeywordHits(input.sourceText, DISCOVERY_KEYWORDS_WEIGHTED);
+  const architectureSignal = countWeightedKeywordHits(input.sourceText, ARCHITECTURE_KEYWORDS_WEIGHTED);
+  const baseRuntimeSignal = countWeightedKeywordHits(input.sourceText, RUNTIME_KEYWORDS_WEIGHTED);
   const metaUsefulnessSignal = countKeywordHits(input.sourceText, META_USEFULNESS_KEYWORDS);
   const patternExtractionSignal = countKeywordHits(
     input.sourceText,
@@ -412,16 +578,16 @@ function deriveLaneScores(input: {
   const keywordLaneScores = {
     discovery: Math.max(
       0,
-      discoverySignal * 3 +
+      discoverySignal +
         (input.source.sourceType === "internal-signal" ? 2 : 0) -
         discoveryBoundaryPenalty,
     ),
     architecture:
-      structuralSignal * 3 +
+      structuralSignal +
       (runtimeOverreadCorrectionEligible ? patternExtractionSignal * 4 : 0) +
       architectureBoundaryBonus,
     runtime:
-      runtimeSignal * 3 +
+      runtimeSignal +
       transformationSignal * 2 -
       (runtimeOverreadCorrectionEligible ? patternExtractionSignal * 3 : 0),
   };
@@ -506,10 +672,10 @@ function deriveConfidence(
   ambiguityPenalty: number,
   routeConflict: boolean,
 ): DirectiveEngineRoutingConfidence {
-  if (!routeConflict && ambiguityPenalty === 0 && topLaneScore >= 10) {
+  if (!routeConflict && ambiguityPenalty === 0 && topLaneScore >= 8) {
     return "high";
   }
-  if (ambiguityPenalty <= 1 && topLaneScore >= 6) {
+  if (ambiguityPenalty <= 1 && topLaneScore >= 5) {
     return "medium";
   }
   return "low";
@@ -517,9 +683,10 @@ function deriveConfidence(
 
 function deriveSignalWinner(
   laneScores: Record<"discovery" | "architecture" | "runtime", number>,
+  minimumScore = 2,
 ) {
   const ranked = rankLaneScores(laneScores);
-  if ((ranked[0]?.[1] ?? 0) <= 0) {
+  if ((ranked[0]?.[1] ?? 0) < minimumScore) {
     return null;
   }
   return ranked[0]?.[0] ?? null;
@@ -679,18 +846,27 @@ export function assessDirectiveEngineRouting(input: {
   source: DirectiveEngineSourceItem;
   mission: DirectiveEngineMissionContext;
   openGaps: DirectiveEngineCapabilityGap[];
+  corrections?: RoutingCorrectionEntry[];
 }): DirectiveEngineRoutingAssessment {
   const sourceText = flattenSourceText(input.source);
   const {
     gap: matchedGap,
     rank: matchedGapRank,
     structuredSignalScore: matchedGapStructuredSignalScore,
+    directReference: matchedGapDirectReference,
   } = findMatchedGap({
     source: input.source,
     openGaps: input.openGaps,
     sourceText,
   });
-  const missionFit = deriveMissionFit(sourceText, input.mission);
+  const missionFit = deriveMissionFit(input.source, sourceText, input.mission);
+  const missionSpecificity = deriveMissionObjectiveSpecificity(input.mission.currentObjective);
+  const missionSpecificityWarning =
+    missionSpecificity === 0
+      ? "Mission objective contains only generic tokens (e.g. \"improve the system\"). All sources will match equally, making routing unreliable. Add specific terms describing what the mission actually targets."
+      : missionSpecificity === 1
+        ? "Mission objective has very low specificity (1 meaningful token). Routing may over-match. Consider adding 2-3 specific terms describing the capability or area being improved."
+        : null;
   const gapAlignment = matchedGap ? priorityWeight(matchedGap.priority) + 1 : 0;
   const {
     laneScores,
@@ -709,6 +885,20 @@ export function assessDirectiveEngineRouting(input: {
     sourceText,
     matchedGap,
   });
+  const correctionAdjustments = input.corrections?.length
+    ? deriveRoutingCorrectionAdjustments({
+      sourceText,
+      corrections: input.corrections,
+    })
+    : {};
+  for (const [laneId, adjustment] of Object.entries(correctionAdjustments)) {
+    if (laneId in laneScores) {
+      (laneScores as Record<string, number>)[laneId] = Math.max(
+        0,
+        (laneScores as Record<string, number>)[laneId] + adjustment,
+      );
+    }
+  }
   const scoreWinnerLaneId = deriveRecommendedLane(laneScores);
   const ambiguityPenalty = deriveAmbiguityPenalty(laneScores);
   const rankedLaneScores = rankLaneScores(laneScores);
@@ -717,9 +907,22 @@ export function assessDirectiveEngineRouting(input: {
   const scoreDelta = topLaneScore - (runnerUpLaneId ? laneScores[runnerUpLaneId] : 0);
   const keywordWinner = deriveSignalWinner(keywordLaneScores);
   const metadataWinner = deriveSignalWinner(metadataLaneScores);
-  const gapWinner = deriveSignalWinner(gapLaneScores);
+  const gapWinner = matchedGapDirectReference
+    ? null
+    : deriveSignalWinner(gapLaneScores);
+  // Metadata override: when metadata strongly favors the score winner (≥6 points,
+  // indicating an explicit primaryAdoptionTarget or similarly strong structured signal),
+  // keyword disagreement alone is not a meaningful conflict — the operator already
+  // declared ownership via structured metadata, so noisy keyword overlap in the source
+  // text shouldn't force human review.
+  const metadataStronglySupportsWinner =
+    metadataLaneScores[scoreWinnerLaneId] >= 6
+    && (metadataWinner === scoreWinnerLaneId || metadataWinner === null);
   const conflictingSignalFamilies = [
-    keywordWinner !== null && keywordWinner !== scoreWinnerLaneId ? "keyword" : null,
+    keywordWinner !== null && keywordWinner !== scoreWinnerLaneId
+      && !metadataStronglySupportsWinner
+      ? "keyword"
+      : null,
     metadataWinner !== null && metadataWinner !== scoreWinnerLaneId ? "metadata" : null,
     gapWinner !== null && gapWinner !== scoreWinnerLaneId ? "gap" : null,
   ].filter((value): value is "keyword" | "metadata" | "gap" => value !== null);
@@ -768,9 +971,9 @@ export function assessDirectiveEngineRouting(input: {
     );
   const needsHumanReview =
     routeConflict ||
-    confidence === "low" ||
+    (confidence === "low" && recommendedLaneId !== "discovery") ||
     (matchedGap === null && !noGapHighConfidenceBoundedRoute && recommendedRecordShape === "fast_path") ||
-    recommendedRecordShape === "queue_only";
+    (recommendedRecordShape === "queue_only" && recommendedLaneId !== "discovery");
   const reviewGuidance = deriveReviewGuidance({
     recommendedLaneId,
     confidence,
@@ -785,6 +988,19 @@ export function assessDirectiveEngineRouting(input: {
   const metadataSignals: string[] = [];
   const gapAlignmentSignals: string[] = [];
   const ambiguitySignals: string[] = [];
+  if (missionSpecificityWarning) {
+    rationale.push(missionSpecificityWarning);
+    ambiguitySignals.push(missionSpecificityWarning);
+  }
+  const appliedCorrectionLanes = Object.entries(correctionAdjustments).filter(
+    ([, adj]) => adj !== 0,
+  );
+  if (appliedCorrectionLanes.length > 0) {
+    const correctionLine =
+      `Routing correction ledger applied adjustments: ${appliedCorrectionLanes.map(([lane, adj]) => `${lane} ${adj > 0 ? "+" : ""}${adj}`).join(", ")}.`;
+    rationale.push(correctionLine);
+    keywordSignals.push(correctionLine);
+  }
   if (matchedGap && matchedGapRank !== null) {
     const line =
       `Matched open gap ${matchedGap.gapId} (rank ${matchedGapRank}) as the closest current mission pressure.`;
@@ -946,6 +1162,7 @@ export function assessDirectiveEngineRouting(input: {
     explicitRouteDestination: null,
     routeConflict,
     needsHumanReview,
+    missionSpecificityWarning,
     ambiguitySummary: {
       topLaneId: scoreWinnerLaneId,
       runnerUpLaneId,

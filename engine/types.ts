@@ -27,7 +27,7 @@ export type DirectiveEngineSourceType =
 export type DirectiveEngineIntegrationMode =
   (typeof DIRECTIVE_ENGINE_INTEGRATION_MODES)[number];
 
-export type DirectiveEngineUsefulnessLevel = "direct" | "structural" | "meta";
+export type DirectiveEngineUsefulnessLevel = "direct" | "structural" | "meta" | "hybrid";
 
 export type DirectiveEngineRoutingConfidence = "high" | "medium" | "low";
 
@@ -132,6 +132,7 @@ export type DirectiveEngineRoutingAssessment = {
     requiredChecks: string[];
     stopLine: string;
   } | null;
+  missionSpecificityWarning: string | null;
   scoreBreakdown: {
     missionFit: number;
     gapAlignment: number;
@@ -291,6 +292,8 @@ export type DirectiveEngineProcessSourceInput = {
   mission: DirectiveEngineMissionInput;
   gaps?: DirectiveEngineCapabilityGap[] | null;
   receivedAt?: string | null;
+  /** Past operator routing corrections to bias future lane scoring. */
+  corrections?: import("./routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
 };
 
 export type DirectiveEngineProcessSourceResult = {
@@ -301,4 +304,7 @@ export type DirectiveEngineProcessSourceResult = {
     accepted: boolean;
     note: string | null;
   }>;
+  deduplicated?: boolean;
+  duplicateOfRunId?: string | null;
+  duplicateReason?: string | null;
 };

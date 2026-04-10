@@ -9,9 +9,11 @@ import { openDirectiveRuntimeRecordProof } from "../../runtime/lib/runtime-recor
 import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../runtime/lib/runtime-proof-runtime-capability-boundary-opener.ts";
 import { openDirectiveRuntimePromotionReadiness } from "../../runtime/lib/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
 import {
+  createFilesystemDirectiveEngineStore,
   DirectiveEngine,
   createDirectiveWorkspaceEngineLanes,
   normalizeDirectiveEngineSourceTypeInput,
+  resolveDirectiveEngineStoreRecordPath,
   type DirectiveEngineMissionInput,
   type DirectiveEngineRunRecord,
   type DirectiveEngineSourceItem,
@@ -59,15 +61,6 @@ function normalizeRelativeDirectivePath(
   filePath: string,
 ) {
   return path.relative(directiveRoot, filePath).replace(/\\/g, "/");
-}
-
-function sanitizePathSegment(value: string) {
-  return String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
 }
 
 function normalizeStandaloneHostReceivedAt(value: string | undefined) {
@@ -140,16 +133,12 @@ function resolveStandaloneHostEngineArtifactPaths(input: {
   record: DirectiveEngineRunRecord;
 }) {
   const runtimeArtifactsRoot = normalizeAbsolutePath(input.runtimeArtifactsRoot);
-  const artifactDir = path.resolve(runtimeArtifactsRoot, "engine-runs");
-  const timestamp = input.record.receivedAt.replace(/[:.]/g, "-");
-  const candidateSegment =
-    sanitizePathSegment(input.record.candidate.candidateId)
-    || sanitizePathSegment(input.record.runId)
-    || "directive-engine-run";
-  const runSegment = input.record.runId.slice(0, 8).toLowerCase();
-  const baseName = `${timestamp}-${candidateSegment}-${runSegment}`;
-  const recordPath = normalizeAbsolutePath(path.resolve(artifactDir, `${baseName}.json`));
-  const reportPath = normalizeAbsolutePath(path.resolve(artifactDir, `${baseName}.md`));
+  const engineRunsRoot = normalizeAbsolutePath(path.resolve(runtimeArtifactsRoot, "engine-runs"));
+  const recordPath = normalizeAbsolutePath(resolveDirectiveEngineStoreRecordPath({
+    engineRunsRoot,
+    record: input.record,
+  }));
+  const reportPath = normalizeAbsolutePath(recordPath.replace(/\.json$/u, ".md"));
 
   return {
     recordPath,
@@ -387,6 +376,9 @@ export function createStandaloneFilesystemHost(
       try {
         const engine = new DirectiveEngine({
           laneSet: createDirectiveWorkspaceEngineLanes(),
+          store: createFilesystemDirectiveEngineStore({
+            engineRunsRoot: path.resolve(runtimeArtifactsRoot, "engine-runs"),
+          }),
         });
         const engineResult = await engine.processSource({
           source: buildDirectiveEngineSourceFromDiscoverySubmission(request),

@@ -131,7 +131,7 @@
         "candidateName": { "type": "string", "minLength": 1 },
         "recommendedLaneId": { "type": "string", "minLength": 1 },
         "recommendedRecordShape": { "type": "string", "minLength": 1 },
-        "usefulnessLevel": { "enum": ["direct", "structural", "meta"] },
+        "usefulnessLevel": { "enum": ["direct", "structural", "meta", "hybrid"] },
         "missionPriorityScore": { "type": "number" },
         "confidence": { "enum": ["high", "medium", "low"] },
         "matchedGapId": { "type": ["string", "null"] },
@@ -183,6 +183,7 @@
         "matchedGapRank": { "type": ["integer", "null"] },
         "routeConflict": { "type": "boolean" },
         "needsHumanReview": { "type": "boolean" },
+        "missionSpecificityWarning": { "type": ["string", "null"] },
         "ambiguitySummary": {
           "type": "object",
           "required": [

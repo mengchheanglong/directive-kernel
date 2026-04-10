@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveDirectiveWorkspaceState } from "./state/index.ts";
+import { isDirectiveAbsolutePathWithinRoot } from "../shared/lib/directive-relative-path.ts";
 
 export function normalizeDirectiveWorkspaceRoot(directiveRoot?: string) {
   const root = directiveRoot
@@ -30,9 +31,8 @@ export function resolveDirectiveWorkspaceRelativePath(
   const absolutePath = path.isAbsolute(normalizedInput)
     ? path.resolve(normalizedInput)
     : path.resolve(root, normalizedInput);
-  const normalizedRootPrefix = `${root}${path.sep}`;
 
-  if (absolutePath !== root && !absolutePath.startsWith(normalizedRootPrefix)) {
+  if (!isDirectiveAbsolutePathWithinRoot(root, absolutePath)) {
     throw new Error(`invalid_input: ${fieldName} must stay within directive-workspace`);
   }
 

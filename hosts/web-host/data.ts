@@ -83,6 +83,7 @@ import {
 import {
   resolveDirectiveWorkspaceArtifactAbsolutePath,
 } from "../../shared/lib/directive-workspace-artifact-storage.ts";
+import { isDirectiveAbsolutePathWithinRoot } from "../../shared/lib/directive-relative-path.ts";
 import { createStandaloneFilesystemHost } from "../standalone-host/runtime.ts";
 
 type StoredFrontendQueueEntry = {
@@ -1186,10 +1187,9 @@ function normalizeDirectiveWorkspaceArtifactReference(input: {
   const absolutePath = path.isAbsolute(normalizedValue)
     ? normalizeAbsolutePath(normalizedValue)
     : normalizeAbsolutePath(path.join(directiveRoot, normalizedValue));
-  const rootPrefix = `${directiveRoot}/`;
   const workspaceRootSegment = `/${path.basename(directiveRoot)}/`;
 
-  if (absolutePath === directiveRoot || absolutePath.startsWith(rootPrefix)) {
+  if (isDirectiveAbsolutePathWithinRoot(directiveRoot, absolutePath)) {
     return normalizeRelativePath(path.relative(directiveRoot, absolutePath));
   }
 
@@ -1666,8 +1666,7 @@ export function readDirectiveFrontendArtifactText(input: {
     relativePath,
     mode: "read",
   });
-  const rootPrefix = `${normalizeAbsolutePath(directiveRoot)}/`;
-  if (absolutePath !== directiveRoot && !absolutePath.startsWith(rootPrefix)) {
+  if (!isDirectiveAbsolutePathWithinRoot(directiveRoot, absolutePath)) {
     throw new Error("invalid_input: relativePath must stay within directive-workspace");
   }
   if (!fs.existsSync(absolutePath)) {
