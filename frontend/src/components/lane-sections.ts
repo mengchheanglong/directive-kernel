@@ -25,10 +25,14 @@ export function renderQueueTag(
   tone: "default" | "runtime" | "architecture" | "warning" = "default",
 ) {
   const style = {
-    default: "background:#fcf7ee;",
-    runtime: "background:#edf4ff; border-color:#b8ccef;",
-    architecture: "background:#f5eefc; border-color:#d6c1e8;",
-    warning: "background:#fff3da; border-color:#e7c88d;",
+    default:
+      "background:color-mix(in oklab, var(--accent) 84%, transparent); border-color:color-mix(in oklab, var(--foreground) 10%, var(--border)); color:var(--foreground);",
+    runtime:
+      "background:color-mix(in oklab, #60a5fa 16%, var(--accent)); border-color:color-mix(in oklab, #60a5fa 34%, var(--border)); color:var(--foreground);",
+    architecture:
+      "background:color-mix(in oklab, #a78bfa 15%, var(--accent)); border-color:color-mix(in oklab, #a78bfa 32%, var(--border)); color:var(--foreground);",
+    warning:
+      "background:color-mix(in oklab, #f59e0b 16%, var(--accent)); border-color:color-mix(in oklab, #f59e0b 30%, var(--border)); color:var(--foreground);",
   }[tone];
   return html`<span class="pill" style=${style}>${value}</span>`;
 }
