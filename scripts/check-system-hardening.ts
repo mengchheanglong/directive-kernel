@@ -10,7 +10,10 @@ import {
   createDirectiveWorkspaceEngineLanes,
   createMemoryDirectiveEngineStore,
   assessDirectiveEngineRouting,
+  appendDecisionPolicyEvent,
+  compileDecisionPolicySuggestions,
   readRoutingCorrectionLedger,
+  readDecisionPolicyLedger,
   appendRoutingCorrection,
   extractSourceSignalTokens,
   deriveRoutingCorrectionAdjustments,
@@ -20,6 +23,7 @@ import {
   type RoutingCorrectionEntry,
 } from "../engine/index.ts";
 import { appendDiscoveryIntakeQueueEntry } from "../discovery/lib/discovery-intake-queue-writer.ts";
+import { writeDiscoveryRoutingReviewResolution } from "../discovery/lib/discovery-routing-review-resolution.ts";
 import { startDirectiveFrontendServer } from "../hosts/web-host/server.ts";
 import {
   runDiscoveryStarterSmoke,
@@ -66,7 +70,100 @@ function buildArchitectureMission(): DirectiveEngineMissionInput {
       "discovery",
       "runtime",
     ],
+    constraints: [
+      "keep review explicit",
+      "stay reversible",
+      "keep the next change bounded",
+    ],
+    successSignal: "One bounded routing improvement is materially clearer than before.",
+    adoptionTarget: "architecture",
   };
+}
+
+function buildRecurringArchitecturePolicyEvents() {
+  return [
+    {
+      recordedAt: "2026-04-10T00:00:00.000Z",
+      source: "discovery_routing_review" as const,
+      candidateId: "autonomy-a",
+      sourceType: "workflow-writeup",
+      decision: "confirm_architecture",
+      originalLaneId: "architecture",
+      resolvedLaneId: "architecture",
+      originalConfidence: "medium",
+      resolvedConfidence: "high",
+      originalNeedsHumanReview: true,
+      resolvedNeedsHumanReview: false,
+      matchedGapId: null,
+      missionSpecificityWarning: null,
+      goalCopilotWarnings: [],
+      followUpRequestedFields: ["source.capabilityGapId"],
+      sourceSignalTokens: ["workflow", "architecture", "routing", "engine"],
+      rationale: "Architecture workflow routing case cleared after bounded review.",
+    },
+    {
+      recordedAt: "2026-04-11T00:00:00.000Z",
+      source: "discovery_routing_review" as const,
+      candidateId: "autonomy-b",
+      sourceType: "workflow-writeup",
+      decision: "confirm_architecture",
+      originalLaneId: "architecture",
+      resolvedLaneId: "architecture",
+      originalConfidence: "medium",
+      resolvedConfidence: "high",
+      originalNeedsHumanReview: true,
+      resolvedNeedsHumanReview: false,
+      matchedGapId: null,
+      missionSpecificityWarning: null,
+      goalCopilotWarnings: [],
+      followUpRequestedFields: ["source.capabilityGapId"],
+      sourceSignalTokens: ["workflow", "architecture", "routing", "engine"],
+      rationale: "Architecture workflow routing case cleared after bounded review.",
+    },
+  ];
+}
+
+function buildRecurringRuntimePolicyEvents() {
+  return [
+    {
+      recordedAt: "2026-04-10T00:00:00.000Z",
+      source: "discovery_routing_review" as const,
+      candidateId: "runtime-a",
+      sourceType: "technical-essay",
+      decision: "confirm_runtime",
+      originalLaneId: "runtime",
+      resolvedLaneId: "runtime",
+      originalConfidence: "medium",
+      resolvedConfidence: "high",
+      originalNeedsHumanReview: true,
+      resolvedNeedsHumanReview: false,
+      matchedGapId: null,
+      missionSpecificityWarning: null,
+      goalCopilotWarnings: [],
+      followUpRequestedFields: ["source.capabilityGapId"],
+      sourceSignalTokens: ["runtime", "automation", "performance", "reliability"],
+      rationale: "Runtime automation case cleared after bounded review.",
+    },
+    {
+      recordedAt: "2026-04-11T00:00:00.000Z",
+      source: "discovery_routing_review" as const,
+      candidateId: "runtime-b",
+      sourceType: "technical-essay",
+      decision: "confirm_runtime",
+      originalLaneId: "runtime",
+      resolvedLaneId: "runtime",
+      originalConfidence: "medium",
+      resolvedConfidence: "high",
+      originalNeedsHumanReview: true,
+      resolvedNeedsHumanReview: false,
+      matchedGapId: null,
+      missionSpecificityWarning: null,
+      goalCopilotWarnings: [],
+      followUpRequestedFields: ["source.capabilityGapId"],
+      sourceSignalTokens: ["runtime", "automation", "performance", "reliability"],
+      rationale: "Runtime automation case cleared after bounded review.",
+    },
+  ];
 }
 
 function buildArchitectureSourceInput(): DirectiveEngineProcessSourceInput {
@@ -185,6 +282,7 @@ async function runDirectiveEngineHardeningChecks() {
 }
 
 function runEngineContractSurfaceChecks() {
+  const recurringPolicyEvents = buildRecurringArchitecturePolicyEvents();
   // Verify routing assessment includes missionSpecificityWarning when mission is vague.
   const vagueResult = assessDirectiveEngineRouting({
     source: {
@@ -198,6 +296,9 @@ function runEngineContractSurfaceChecks() {
       currentObjective: "Improve the system",
       usefulnessSignals: [],
       capabilityLanes: ["architecture"],
+      constraints: [],
+      successSignal: null,
+      adoptionTarget: null,
       activeMissionMarkdown: "",
     },
     openGaps: [],
@@ -209,6 +310,22 @@ function runEngineContractSurfaceChecks() {
   assert.ok(
     vagueResult.missionSpecificityWarning.includes("generic tokens"),
     "Warning must mention generic tokens",
+  );
+  assert.ok(
+    vagueResult.goalCopilot.overallScore < 60,
+    "Vague mission should produce a weak Goal Copilot score",
+  );
+  assert.ok(
+    vagueResult.goalCopilot.suggestedObjective !== null,
+    "Weak mission should produce an objective rewrite suggestion",
+  );
+  assert.ok(
+    (vagueResult.confidenceRecovery?.requestedInputs.length ?? 0) > 0,
+    "Weak mission should produce confidence-recovery follow-up requests",
+  );
+  assert.ok(
+    typeof vagueResult.earnedAutonomy.overallScore === "number",
+    "Routing assessment must expose Earned Autonomy diagnostics",
   );
 
   // Verify specific mission does NOT produce a warning.
@@ -223,6 +340,9 @@ function runEngineContractSurfaceChecks() {
       currentObjective: "Improve directive workspace routing workflow architecture boundaries",
       usefulnessSignals: ["prefer engine routing improvements"],
       capabilityLanes: ["architecture", "discovery", "runtime"],
+      constraints: ["keep review explicit", "stay reversible"],
+      successSignal: "One bounded routing improvement is materially clearer than before.",
+      adoptionTarget: "architecture",
       activeMissionMarkdown: "",
     },
     openGaps: [],
@@ -231,6 +351,10 @@ function runEngineContractSurfaceChecks() {
     specificResult.missionSpecificityWarning,
     null,
     "Specific mission must not produce a specificity warning",
+  );
+  assert.ok(
+    specificResult.goalCopilot.overallScore >= 70,
+    "Specific mission should produce a healthy Goal Copilot score",
   );
 
   // Verify strong metadata prevents false keyword conflicts.
@@ -250,6 +374,9 @@ function runEngineContractSurfaceChecks() {
       currentObjective: "Improve directive workspace routing workflow architecture boundaries",
       usefulnessSignals: ["prefer engine routing improvements"],
       capabilityLanes: ["architecture", "discovery", "runtime"],
+      constraints: ["keep review explicit", "stay reversible"],
+      successSignal: "One bounded routing improvement is materially clearer than before.",
+      adoptionTarget: "architecture",
       activeMissionMarkdown: "",
     },
     openGaps: [],
@@ -268,6 +395,26 @@ function runEngineContractSurfaceChecks() {
     metadataOverrideResult.confidence,
     "high",
     "Strong metadata + no conflict must produce high confidence",
+  );
+
+  const radarResult = assessDirectiveEngineRouting({
+    source: {
+      sourceType: "workflow-writeup",
+      sourceRef: "https://example.com/test-gap-radar",
+      title: "Workflow architecture routing engine improvement",
+      summary: "Architecture workflow routing engine improvement without a current gap match.",
+      primaryAdoptionTarget: "architecture",
+      containsWorkflowPattern: true,
+      improvesDirectiveWorkspace: true,
+      workflowBoundaryShape: "bounded_protocol",
+    },
+    mission: buildArchitectureMission(),
+    openGaps: [],
+    policyEvents: recurringPolicyEvents,
+  });
+  assert.ok(
+    (radarResult.gapRadar?.suggestions.length ?? 0) > 0,
+    "Repeated no-gap history must produce Gap Radar suggestions",
   );
 }
 
@@ -361,6 +508,196 @@ async function runRoutingCorrectionLedgerChecks() {
   );
 }
 
+function runDecisionPolicyCompilerChecks() {
+  const ledgerRoot = path.resolve(
+    os.tmpdir(),
+    `directive-kernel-policy-check-${Date.now()}`,
+  );
+
+  appendDecisionPolicyEvent({
+    directiveRoot: ledgerRoot,
+    event: {
+      recordedAt: "2026-04-11",
+      source: "discovery_routing_review",
+      candidateId: "policy-a",
+      sourceType: "workflow-writeup",
+      decision: "redirect_to_architecture",
+      originalLaneId: "runtime",
+      resolvedLaneId: "architecture",
+      originalConfidence: "medium",
+      resolvedConfidence: "high",
+      originalNeedsHumanReview: true,
+      resolvedNeedsHumanReview: false,
+      matchedGapId: null,
+      missionSpecificityWarning:
+        "Mission objective contains only generic tokens (e.g. \"improve the system\").",
+      goalCopilotWarnings: [
+        "Constraints are missing or too weak; the goal does not explain how the next change must stay bounded.",
+        "Capability lanes list every lane without an explicit dominant target, which leaves lane ownership overly ambiguous.",
+      ],
+      followUpRequestedFields: [
+        "mission.currentObjective",
+        "source.primaryAdoptionTarget",
+      ],
+      sourceSignalTokens: ["workflow", "architecture", "routing", "engine"],
+      rationale: "Operator redirected runtime to architecture after clarifying workflow ownership.",
+    },
+  });
+  appendDecisionPolicyEvent({
+    directiveRoot: ledgerRoot,
+    event: {
+      recordedAt: "2026-04-12",
+      source: "discovery_routing_review",
+      candidateId: "policy-b",
+      sourceType: "workflow-writeup",
+      decision: "redirect_to_architecture",
+      originalLaneId: "runtime",
+      resolvedLaneId: "architecture",
+      originalConfidence: "low",
+      resolvedConfidence: "high",
+      originalNeedsHumanReview: true,
+      resolvedNeedsHumanReview: false,
+      matchedGapId: null,
+      missionSpecificityWarning:
+        "Mission objective has very low specificity (1 meaningful token).",
+      goalCopilotWarnings: [
+        "Constraints are missing or too weak; the goal does not explain how the next change must stay bounded.",
+      ],
+      followUpRequestedFields: [
+        "mission.currentObjective",
+        "source.primaryAdoptionTarget",
+      ],
+      sourceSignalTokens: ["workflow", "architecture", "routing", "policy"],
+      rationale: "Operator redirected runtime to architecture after clarifying routing policy ownership.",
+    },
+  });
+
+  const ledger = readDecisionPolicyLedger(ledgerRoot);
+  assert.equal(ledger.events.length, 2);
+  assert.ok(
+    ledger.suggestions.some((suggestion) => suggestion.policyKind === "routing_bias"),
+    "Policy compiler must emit routing-bias suggestions",
+  );
+  assert.ok(
+    ledger.suggestions.some((suggestion) => suggestion.policyKind === "goal_hint"),
+    "Policy compiler must emit goal-hint suggestions",
+  );
+  assert.ok(
+    ledger.suggestions.some((suggestion) => suggestion.policyKind === "approval_boundary"),
+    "Policy compiler must emit approval-boundary suggestions",
+  );
+
+  const compiled = compileDecisionPolicySuggestions(ledger.events);
+  assert.equal(compiled.length, ledger.suggestions.length);
+}
+
+async function runReviewResolutionPolicyCompilerIntegrationCheck() {
+  const starter = await runDiscoveryFrontDoorStarterSmoke();
+  const review = writeDiscoveryRoutingReviewResolution({
+    directiveRoot: starter.directiveRoot,
+    routingRecordPath: starter.routingRecordPath,
+    decision: "confirm_architecture",
+    rationale:
+      "Goal wording was generic, but Architecture ownership is still the clearest bounded route after review.",
+    reviewedBy: "hardening-smoke",
+    resolvedConfidence: "high",
+  });
+  assert.ok(review.policySuggestions.length > 0);
+
+  const ledger = readDecisionPolicyLedger(starter.directiveRoot);
+  assert.equal(ledger.events.length, 1);
+  assert.ok(
+    ledger.suggestions.some((suggestion) => suggestion.policyKind === "goal_hint"),
+    "Review-resolution integration must compile goal-hint suggestions",
+  );
+  assert.ok(
+    fs.existsSync(path.join(starter.directiveRoot, "engine", "gap-radar.json")),
+    "Review-resolution integration must refresh the Gap Radar report",
+  );
+}
+
+async function runEarnedAutonomyIntegrationCheck() {
+  const policyEvents = buildRecurringRuntimePolicyEvents();
+  const mission: DirectiveEngineMissionInput = {
+    missionId: "runtime-earned-autonomy",
+    currentObjective: "Improve runtime automation performance and reliability boundaries",
+    usefulnessSignals: ["prefer runtime improvements"],
+    capabilityLanes: ["runtime", "architecture"],
+    constraints: ["keep review explicit", "stay reversible"],
+    successSignal: "One bounded runtime improvement is materially clearer than before.",
+    adoptionTarget: "runtime",
+  };
+  const runtimeGap: DirectiveEngineCapabilityGap = {
+    gapId: "gap-runtime-automation",
+    description: "Runtime automation performance and reliability improvement",
+    priority: "high",
+    relatedMissionObjective: "Improve runtime automation performance and reliability boundaries",
+    currentState: "Clear runtime candidates still need manual follow-through",
+    desiredState: "Clean runtime cases can advance without extra review churn",
+    detectedAt: "2026-04-10T00:00:00.000Z",
+  };
+  const engine = new DirectiveEngine({
+    laneSet: createDirectiveWorkspaceEngineLanes(),
+    store: createMemoryDirectiveEngineStore(),
+  });
+
+  for (const [index, title] of ["Runtime automation reliability", "Automation reliability boundary"].entries()) {
+    await engine.processSource({
+      receivedAt: `2026-04-1${index}T00:00:00.000Z`,
+      mission,
+      gaps: [runtimeGap],
+      policyEvents,
+      source: {
+        sourceId: `runtime-prior-${index}`,
+        sourceType: "technical-essay",
+        sourceRef: `https://example.com/runtime-prior-${index}`,
+        title,
+        summary: "automation performance reliability",
+        capabilityGapId: runtimeGap.gapId,
+        primaryAdoptionTarget: "runtime",
+        containsExecutableCode: false,
+        containsWorkflowPattern: false,
+        improvesDirectiveWorkspace: false,
+        workflowBoundaryShape: null,
+      },
+    });
+  }
+
+  const current = assessDirectiveEngineRouting({
+    source: {
+      sourceType: "technical-essay",
+      sourceRef: "https://example.com/current-note",
+      title: "Reliability note",
+      summary: "automation",
+      containsExecutableCode: false,
+      containsWorkflowPattern: false,
+      improvesDirectiveWorkspace: false,
+      workflowBoundaryShape: null,
+    },
+    mission: {
+      ...mission,
+      activeMissionMarkdown: "",
+    },
+    openGaps: [],
+    policyEvents,
+    existingRuns: await engine.listRuns(),
+  });
+
+  assert.equal(current.recommendedLaneId, "runtime");
+  assert.equal(current.confidence, "medium");
+  assert.equal(current.recommendedRecordShape, "fast_path");
+  assert.equal(
+    current.earnedAutonomy.approvalReductionApplied,
+    true,
+    "Earned Autonomy should waive the extra review gate for clean medium-confidence runtime history",
+  );
+  assert.equal(
+    current.needsHumanReview,
+    false,
+    "Earned Autonomy should lower the effective review requirement when the route class is trusted",
+  );
+}
+
 async function runStarterAndHostChecks() {
   const discoveryStarter = await runDiscoveryStarterSmoke();
   assert.equal(discoveryStarter.ok, true);
@@ -451,8 +788,14 @@ async function runWebHostSmoke() {
     assert.equal(snapshotResponse.status, 200);
     const snapshot = await readJsonResponse(snapshotResponse) as {
       queue?: { totalEntries?: number };
+      learningSummary?: {
+        gapRadar?: { suggestionCount?: number };
+        earnedAutonomy?: { autoApprovedRecentRuns?: number; routeClasses?: unknown[] };
+      };
     };
     assert.equal(snapshot.queue?.totalEntries ?? 0, 0);
+    assert.equal(typeof snapshot.learningSummary?.gapRadar?.suggestionCount, "number");
+    assert.equal(typeof snapshot.learningSummary?.earnedAutonomy?.autoApprovedRecentRuns, "number");
 
     const submissionPayload = {
       candidate_id: "web-host-auto-architecture",
@@ -501,6 +844,15 @@ async function runWebHostSmoke() {
       frontDoorResult.downstream.stubRelativePath,
     );
     assert.ok(fs.existsSync(path.resolve(directiveRoot, frontDoorResult.createdPaths.routingRecordPath)));
+
+    const afterSubmissionResponse = await fetch(`${handle.origin}/api/snapshot`);
+    assert.equal(afterSubmissionResponse.status, 200);
+    const afterSubmission = await readJsonResponse(afterSubmissionResponse) as {
+      learningSummary?: {
+        earnedAutonomy?: { routeClasses?: unknown[] };
+      };
+    };
+    assert.ok((afterSubmission.learningSummary?.earnedAutonomy?.routeClasses?.length ?? 0) >= 1);
     assert.ok(fs.existsSync(path.resolve(directiveRoot, frontDoorResult.downstream.stubRelativePath ?? "")));
 
     const duplicateResponse = await fetch(`${handle.origin}/api/discovery/front-door`, {
@@ -533,6 +885,9 @@ async function main() {
   await runDirectiveEngineHardeningChecks();
   runEngineContractSurfaceChecks();
   await runRoutingCorrectionLedgerChecks();
+  runDecisionPolicyCompilerChecks();
+  await runReviewResolutionPolicyCompilerIntegrationCheck();
+  await runEarnedAutonomyIntegrationCheck();
   await runStarterAndHostChecks();
   await runWebHostSmoke();
   console.log("check-system-hardening: ok");

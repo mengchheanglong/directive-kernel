@@ -213,6 +213,207 @@ class DirectiveFrontendApp extends LitElement {
     return html`${gapPressure.matchedGapId} (rank ${gapPressure.matchedGapRank ?? "n/a"}, priority ${gapPressure.matchedGapPriority ?? "n/a"}): ${gapPressure.matchedGapDescription ?? "n/a"}`;
   }
 
+  private renderGoalCopilot(goalCopilot: {
+    overallScore: number;
+    objectiveSpecificityScore: number;
+    usefulnessSignalQualityScore: number;
+    constraintQualityScore: number;
+    laneClarityScore: number;
+    warnings: string[];
+    rationale: string[];
+    suggestedObjective: string | null;
+    suggestedConstraints: string[];
+    suggestedUsefulnessSignals: string[];
+    suggestedCapabilityLanes: string[];
+  } | null | undefined) {
+    if (!goalCopilot) {
+      return nothing;
+    }
+    return html`
+      <section class="panel">
+        <h3>Goal Copilot</h3>
+        <div class="muted">overall score ${goalCopilot.overallScore}/100</div>
+        <ul>
+          <li>Objective specificity: ${goalCopilot.objectiveSpecificityScore}/5</li>
+          <li>Usefulness signals: ${goalCopilot.usefulnessSignalQualityScore}/5</li>
+          <li>Constraints: ${goalCopilot.constraintQualityScore}/5</li>
+          <li>Lane clarity: ${goalCopilot.laneClarityScore}/5</li>
+        </ul>
+        ${goalCopilot.warnings.length > 0 ? html`
+          <h4>Warnings</h4>
+          <ul>${goalCopilot.warnings.map((entry) => html`<li>${entry}</li>`)}</ul>
+        ` : nothing}
+        ${goalCopilot.suggestedObjective ? html`
+          <h4>Suggested objective rewrite</h4>
+          <p>${goalCopilot.suggestedObjective}</p>
+        ` : nothing}
+        ${goalCopilot.suggestedConstraints.length > 0 ? html`
+          <h4>Suggested constraints</h4>
+          <ul>${goalCopilot.suggestedConstraints.map((entry) => html`<li>${entry}</li>`)}</ul>
+        ` : nothing}
+        ${goalCopilot.suggestedUsefulnessSignals.length > 0 ? html`
+          <h4>Suggested usefulness signals</h4>
+          <ul>${goalCopilot.suggestedUsefulnessSignals.map((entry) => html`<li>${entry}</li>`)}</ul>
+        ` : nothing}
+        ${goalCopilot.suggestedCapabilityLanes.length > 0 ? html`
+          <h4>Suggested lane order</h4>
+          <ul>${goalCopilot.suggestedCapabilityLanes.map((entry) => html`<li>${entry}</li>`)}</ul>
+        ` : nothing}
+      </section>
+    `;
+  }
+
+  private renderConfidenceRecovery(confidenceRecovery: {
+    summary: string;
+    confidenceLift: string;
+    requestedInputs: Array<{
+      field: string;
+      question: string;
+      whyItMatters: string;
+      exampleAnswer: string | null;
+    }>;
+  } | null | undefined) {
+    if (!confidenceRecovery) {
+      return nothing;
+    }
+    return html`
+      <section class="panel warning">
+        <h3>Confidence recovery follow-up</h3>
+        <p>${confidenceRecovery.summary}</p>
+        <p class="muted">${confidenceRecovery.confidenceLift}</p>
+        <ul>
+          ${confidenceRecovery.requestedInputs.map((entry) => html`
+            <li>
+              <strong>${entry.field}</strong>: ${entry.question}
+              <div class="muted">${entry.whyItMatters}</div>
+              <div class="muted">Example: ${entry.exampleAnswer ?? "n/a"}</div>
+            </li>
+          `)}
+        </ul>
+      </section>
+    `;
+  }
+
+  private renderGapRadar(gapRadar: {
+    summary: string;
+    suggestions: Array<{
+      radarId: string;
+      targetLaneId: string;
+      confidence: string;
+      evidenceCount: number;
+      summary: string;
+      recommendedChange: string;
+      signalTokens: string[];
+      relatedOpenGapId: string | null;
+      suggestedPriority: string;
+    }>;
+  } | null | undefined) {
+    if (!gapRadar) {
+      return nothing;
+    }
+    return html`
+      <section class="panel">
+        <h3>Gap Radar</h3>
+        <p>${gapRadar.summary}</p>
+        <ul>
+          ${gapRadar.suggestions.map((entry) => html`
+            <li>
+              <strong>${entry.targetLaneId}</strong> | ${entry.confidence} confidence | ${entry.evidenceCount} events
+              <div>${entry.summary}</div>
+              <div class="muted">${entry.recommendedChange}</div>
+              <div class="muted">Signals: ${entry.signalTokens.join(", ") || "none"} | related open gap: ${entry.relatedOpenGapId ?? "n/a"} | suggested priority: ${entry.suggestedPriority}</div>
+            </li>
+          `)}
+        </ul>
+      </section>
+    `;
+  }
+
+  private renderEarnedAutonomy(earnedAutonomy: {
+    routeClass: string;
+    overallScore: number;
+    evidenceCount: number;
+    operatorAgreementRate: number | null;
+    reviewClearRate: number | null;
+    reversalCount: number;
+    autoApprovalEligible: boolean;
+    approvalReductionApplied: boolean;
+    summary: string;
+    rationale: string[];
+  } | null | undefined) {
+    if (!earnedAutonomy) {
+      return nothing;
+    }
+    return html`
+      <section class=${earnedAutonomy.approvalReductionApplied ? "panel good" : "panel"}>
+        <h3>Earned Autonomy</h3>
+        <div class="muted">score ${earnedAutonomy.overallScore}/100 | evidence ${earnedAutonomy.evidenceCount} | route class ${earnedAutonomy.routeClass}</div>
+        <p>${earnedAutonomy.summary}</p>
+        <ul>
+          <li>Operator agreement: ${earnedAutonomy.operatorAgreementRate == null ? "n/a" : `${Math.round(earnedAutonomy.operatorAgreementRate * 100)}%`}</li>
+          <li>Review clear rate: ${earnedAutonomy.reviewClearRate == null ? "n/a" : `${Math.round(earnedAutonomy.reviewClearRate * 100)}%`}</li>
+          <li>Reversal count: ${earnedAutonomy.reversalCount}</li>
+          <li>Auto-approval eligible: ${earnedAutonomy.autoApprovalEligible ? "yes" : "no"}</li>
+          <li>Approval reduction applied: ${earnedAutonomy.approvalReductionApplied ? "yes" : "no"}</li>
+        </ul>
+        ${earnedAutonomy.rationale.length > 0 ? html`
+          <h4>Why</h4>
+          <ul>${earnedAutonomy.rationale.map((entry) => html`<li>${entry}</li>`)}</ul>
+        ` : nothing}
+      </section>
+    `;
+  }
+
+  private renderLearningSummary(summary: FrontendSnapshot["learningSummary"]) {
+    const gapRadar = summary.gapRadar;
+    const earnedAutonomy = summary.earnedAutonomy;
+    return html`
+      <section class="grid">
+        <section class="panel">
+          <h3>Gap Radar</h3>
+          <p class="muted">
+            ${gapRadar.generatedAt ? `Updated ${gapRadar.generatedAt}` : "No persisted radar report yet"}.
+            ${gapRadar.suggestionCount} active suggestion${gapRadar.suggestionCount === 1 ? "" : "s"}.
+          </p>
+          ${gapRadar.suggestions.length > 0 ? html`
+            <ul>
+              ${gapRadar.suggestions.map((entry) => html`
+                <li>
+                  <strong>${entry.targetLaneId}</strong> | ${entry.confidence} confidence | ${entry.evidenceCount} events
+                  <div>${entry.summary}</div>
+                  <div class="muted">${entry.recommendedChange}</div>
+                  <div class="muted">Signals: ${entry.signalTokens.join(", ") || "none"} | examples: ${entry.candidateExamples.join(", ") || "n/a"}</div>
+                </li>
+              `)}
+            </ul>
+          ` : html`<p class="muted">No repeated uncovered gap pressure is visible yet.</p>`}
+        </section>
+        <section class=${earnedAutonomy.autoApprovedRecentRuns > 0 ? "panel good" : "panel"}>
+          <h3>Earned Autonomy</h3>
+          <p class="muted">
+            ${earnedAutonomy.autoApprovedRecentRuns} recent run${earnedAutonomy.autoApprovedRecentRuns === 1 ? "" : "s"} waived an extra manual review gate.
+            ${earnedAutonomy.eligibleRouteClassCount} route class${earnedAutonomy.eligibleRouteClassCount === 1 ? "" : "es"} currently qualify.
+          </p>
+          ${earnedAutonomy.routeClasses.length > 0 ? html`
+            <ul>
+              ${earnedAutonomy.routeClasses.map((entry) => html`
+                <li>
+                  <strong>${entry.routeClass}</strong> | ${entry.overallScore}/100 | evidence ${entry.evidenceCount}
+                  <div>${entry.summary}</div>
+                  <div class="muted">
+                    ${entry.candidateName} (${entry.laneId})
+                    |
+                    <a href=${`/engine-runs/${encodeURIComponent(entry.runId)}`} @click=${(event: Event) => { event.preventDefault(); navTo(`/engine-runs/${encodeURIComponent(entry.runId)}`); }}>Open run</a>
+                  </div>
+                </li>
+              `)}
+            </ul>
+          ` : html`<p class="muted">No route classes have enough history to summarize yet.</p>`}
+        </section>
+      </section>
+    `;
+  }
+
   private renderRoutingExplanationBreakdown(detail: FrontendDiscoveryRoutingDetail | null | undefined) {
     const breakdown = detail?.explanationBreakdown;
     if (!breakdown) {
@@ -953,6 +1154,7 @@ class DirectiveFrontendApp extends LitElement {
           <span><strong>${inbox.summary.totalActionableEntries}</strong><small>Decisions</small></span>
         </div>
       </section>
+      ${this.renderLearningSummary(snapshot.learningSummary)}
       <section class="workflow-map">
         ${this.renderWorkflowMapGroup({
           title: "Research Engine / Engine Runs",
@@ -1071,6 +1273,7 @@ class DirectiveFrontendApp extends LitElement {
           ${this.renderQueueStat("Architecture", snapshot.architectureSummary.activeCases.length, "Active Architecture cases.")}
           ${this.renderQueueStat("Runtime", snapshot.runtimeSummary.activeCases.length, "Active Runtime cases.")}
         </section>
+        ${this.renderLearningSummary(snapshot.learningSummary)}
         <section class="grid">
           <section class="panel">
             <h3>Recent sources</h3>
@@ -1175,10 +1378,15 @@ class DirectiveFrontendApp extends LitElement {
           <tr><th>gap mission objective</th><td>${detail.gapPressure?.relatedMissionObjective ?? "n/a"}</td></tr>
           <tr><th>route conflict</th><td>${record.routingAssessment?.routeConflict === undefined ? "n/a" : record.routingAssessment?.routeConflict ? "yes" : "no"}</td></tr>
           <tr><th>needs human review</th><td>${record.routingAssessment?.needsHumanReview === undefined ? (record.candidate.requiresHumanReview === undefined ? "n/a" : record.candidate.requiresHumanReview ? "yes" : "no") : record.routingAssessment?.needsHumanReview ? "yes" : "no"}</td></tr>
+          <tr><th>mission specificity warning</th><td>${record.routingAssessment?.missionSpecificityWarning ?? "n/a"}</td></tr>
+          <tr><th>Goal Copilot score</th><td>${record.routingAssessment?.goalCopilot ? `${record.routingAssessment.goalCopilot.overallScore}/100` : "n/a"}</td></tr>
+          <tr><th>Gap Radar</th><td>${record.routingAssessment?.gapRadar?.summary ?? "n/a"}</td></tr>
           <tr><th>ambiguity summary</th><td>${record.routingAssessment?.ambiguitySummary
             ? `${record.routingAssessment.ambiguitySummary.topLaneId} over ${record.routingAssessment.ambiguitySummary.runnerUpLaneId ?? "none"} by ${record.routingAssessment.ambiguitySummary.scoreDelta}; conflicting signals: ${record.routingAssessment.ambiguitySummary.conflictingSignalFamilies.join(", ") || "none"}`
             : "n/a"}</td></tr>
           <tr><th>review guidance</th><td>${record.routingAssessment?.reviewGuidance?.summary ?? "n/a"}</td></tr>
+          <tr><th>confidence recovery</th><td>${record.routingAssessment?.confidenceRecovery?.summary ?? "n/a"}</td></tr>
+          <tr><th>Earned Autonomy</th><td>${record.routingAssessment?.earnedAutonomy ? `${record.routingAssessment.earnedAutonomy.overallScore}/100 | ${record.routingAssessment.earnedAutonomy.summary}` : "n/a"}</td></tr>
           <tr><th>decision state</th><td>${record.decision.decisionState}</td></tr>
           <tr><th>proof kind</th><td>${record.proofPlan.proofKind}</td></tr>
           <tr><th>integration mode</th><td>${record.integrationProposal.integrationMode}</td></tr>
@@ -1196,6 +1404,10 @@ class DirectiveFrontendApp extends LitElement {
             <p class="muted">Stop-line: ${record.routingAssessment.reviewGuidance.stopLine}</p>
           </section>
         ` : nothing}
+        ${this.renderConfidenceRecovery(record.routingAssessment?.confidenceRecovery)}
+        ${this.renderGapRadar(record.routingAssessment?.gapRadar)}
+        ${this.renderEarnedAutonomy(record.routingAssessment?.earnedAutonomy)}
+        ${this.renderGoalCopilot(record.routingAssessment?.goalCopilot)}
         <section class=${noDownstream ? "panel warning" : "panel message"}>
           <h3>Related queue and handoff state</h3>
           <div class="muted">queue status: ${queueEntry?.status ?? "n/a"} | routing target: ${queueEntry?.routing_target ?? "n/a"}</div>
@@ -1359,10 +1571,15 @@ class DirectiveFrontendApp extends LitElement {
           <tr><th>routing confidence</th><td>${detail.routingConfidence ?? "n/a"}</td></tr>
           <tr><th>route conflict</th><td>${detail.routeConflict === null || detail.routeConflict === undefined ? "n/a" : detail.routeConflict ? "yes" : "no"}</td></tr>
           <tr><th>needs human review</th><td>${detail.needsHumanReview === null || detail.needsHumanReview === undefined ? "n/a" : detail.needsHumanReview ? "yes" : "no"}</td></tr>
+          <tr><th>mission specificity warning</th><td>${detail.missionSpecificityWarning ?? "n/a"}</td></tr>
+          <tr><th>Goal Copilot score</th><td>${detail.goalCopilot ? `${detail.goalCopilot.overallScore}/100` : "n/a"}</td></tr>
+          <tr><th>Gap Radar</th><td>${detail.gapRadar?.summary ?? "n/a"}</td></tr>
           <tr><th>ambiguity summary</th><td>${detail.ambiguitySummary
             ? `${detail.ambiguitySummary.topLaneId} over ${detail.ambiguitySummary.runnerUpLaneId ?? "none"} by ${detail.ambiguitySummary.scoreDelta}; conflicting signals: ${detail.ambiguitySummary.conflictingSignalFamilies.join(", ") || "none"}`
             : "n/a"}</td></tr>
           <tr><th>review guidance</th><td>${detail.reviewGuidance?.summary ?? "n/a"}</td></tr>
+          <tr><th>confidence recovery</th><td>${detail.confidenceRecovery?.summary ?? "n/a"}</td></tr>
+          <tr><th>Earned Autonomy</th><td>${detail.earnedAutonomy ? `${detail.earnedAutonomy.overallScore}/100 | ${detail.earnedAutonomy.summary}` : "n/a"}</td></tr>
           <tr><th>Engine usefulness level</th><td>${detail.usefulnessLevel ?? "n/a"}</td></tr>
           <tr><th>Engine usefulness rationale</th><td>${detail.usefulnessRationale ?? "n/a"}</td></tr>
           <tr><th>linked intake record</th><td>${this.artifactLink(detail.linkedIntakeRecord)}</td></tr>
@@ -1380,6 +1597,10 @@ class DirectiveFrontendApp extends LitElement {
             <p class="muted">Stop-line: ${detail.reviewGuidance.stopLine}</p>
           </section>
         ` : nothing}
+        ${this.renderConfidenceRecovery(detail.confidenceRecovery)}
+        ${this.renderGapRadar(detail.gapRadar)}
+        ${this.renderEarnedAutonomy(detail.earnedAutonomy)}
+        ${this.renderGoalCopilot(detail.goalCopilot)}
         ${this.renderRoutingExplanationBreakdown(detail)}
         <section class=${detail.downstreamStubRelativePath ? "panel good" : detail.approvalAllowed ? "panel message" : "panel warning"}>
           <h3>Route approval</h3>

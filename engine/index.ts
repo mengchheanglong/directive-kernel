@@ -9,4 +9,7 @@ export * from "./workspace-truth.ts";
 export * from "./approval-boundary.ts";
 export * from "./artifact-link-validation.ts";
 export * from "./routing-correction-ledger.ts";
+export * from "./decision-policy-ledger.ts";
+export * from "./gap-radar.ts";
+export * from "./earned-autonomy.ts";
 export { assessDirectiveEngineRouting } from "./routing.ts";

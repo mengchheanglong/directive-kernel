@@ -44,6 +44,7 @@ export type StoredDirectiveEngineRunRecord = {
     matchedGapRank?: number | null;
     routeConflict?: boolean;
     needsHumanReview?: boolean;
+    missionSpecificityWarning?: string | null;
     ambiguitySummary?: {
       topLaneId: string;
       runnerUpLaneId: string | null;
@@ -57,6 +58,55 @@ export type StoredDirectiveEngineRunRecord = {
       operatorAction: string;
       requiredChecks: string[];
       stopLine: string;
+    } | null;
+    goalCopilot?: {
+      overallScore: number;
+      objectiveSpecificityScore: number;
+      usefulnessSignalQualityScore: number;
+      constraintQualityScore: number;
+      laneClarityScore: number;
+      warnings: string[];
+      rationale: string[];
+      suggestedObjective: string | null;
+      suggestedConstraints: string[];
+      suggestedUsefulnessSignals: string[];
+      suggestedCapabilityLanes: string[];
+    } | null;
+    confidenceRecovery?: {
+      summary: string;
+      confidenceLift: string;
+      requestedInputs: Array<{
+        field: string;
+        question: string;
+        whyItMatters: string;
+        exampleAnswer: string | null;
+      }>;
+    } | null;
+    gapRadar?: {
+      summary: string;
+      suggestions: Array<{
+        radarId: string;
+        targetLaneId: string;
+        confidence: string;
+        evidenceCount: number;
+        summary: string;
+        recommendedChange: string;
+        signalTokens: string[];
+        relatedOpenGapId: string | null;
+        suggestedPriority: string;
+      }>;
+    } | null;
+    earnedAutonomy?: {
+      routeClass: string;
+      overallScore: number;
+      evidenceCount: number;
+      operatorAgreementRate: number | null;
+      reviewClearRate: number | null;
+      reversalCount: number;
+      autoApprovalEligible: boolean;
+      approvalReductionApplied: boolean;
+      summary: string;
+      rationale: string[];
     } | null;
     scoreBreakdown?: {
       gapAlignment?: number;

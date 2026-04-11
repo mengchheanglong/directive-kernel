@@ -17,7 +17,7 @@ export const DIRECTIVE_ENGINE_INTEGRATION_MODES = [
 ] as const;
 
 export const DIRECTIVE_ENGINE_RUN_RECORD_KIND = "directive_engine_run_record" as const;
-export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 2 as const;
+export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 4 as const;
 export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF =
   "shared/schemas/directive-engine-run-record.schema.json" as const;
 
@@ -81,6 +81,9 @@ export type DirectiveEngineMissionInput = {
   currentObjective?: string | null;
   usefulnessSignals?: string[] | null;
   capabilityLanes?: string[] | null;
+  constraints?: string[] | null;
+  successSignal?: string | null;
+  adoptionTarget?: string | null;
   activeMissionMarkdown?: string | null;
 };
 
@@ -89,6 +92,9 @@ export type DirectiveEngineMissionContext = {
   currentObjective: string;
   usefulnessSignals: string[];
   capabilityLanes: string[];
+  constraints: string[];
+  successSignal: string | null;
+  adoptionTarget: string | null;
   activeMissionMarkdown: string;
 };
 
@@ -133,6 +139,55 @@ export type DirectiveEngineRoutingAssessment = {
     stopLine: string;
   } | null;
   missionSpecificityWarning: string | null;
+  goalCopilot: {
+    overallScore: number;
+    objectiveSpecificityScore: number;
+    usefulnessSignalQualityScore: number;
+    constraintQualityScore: number;
+    laneClarityScore: number;
+    warnings: string[];
+    rationale: string[];
+    suggestedObjective: string | null;
+    suggestedConstraints: string[];
+    suggestedUsefulnessSignals: string[];
+    suggestedCapabilityLanes: string[];
+  };
+  confidenceRecovery: {
+    summary: string;
+    confidenceLift: string;
+    requestedInputs: Array<{
+      field: string;
+      question: string;
+      whyItMatters: string;
+      exampleAnswer: string | null;
+    }>;
+  } | null;
+  gapRadar: {
+    summary: string;
+    suggestions: Array<{
+      radarId: string;
+      targetLaneId: DirectiveEngineLaneId;
+      confidence: "low" | "medium" | "high";
+      evidenceCount: number;
+      summary: string;
+      recommendedChange: string;
+      signalTokens: string[];
+      relatedOpenGapId: string | null;
+      suggestedPriority: DirectiveEngineCapabilityGapPriority;
+    }>;
+  } | null;
+  earnedAutonomy: {
+    routeClass: string;
+    overallScore: number;
+    evidenceCount: number;
+    operatorAgreementRate: number | null;
+    reviewClearRate: number | null;
+    reversalCount: number;
+    autoApprovalEligible: boolean;
+    approvalReductionApplied: boolean;
+    summary: string;
+    rationale: string[];
+  };
   scoreBreakdown: {
     missionFit: number;
     gapAlignment: number;
@@ -294,6 +349,8 @@ export type DirectiveEngineProcessSourceInput = {
   receivedAt?: string | null;
   /** Past operator routing corrections to bias future lane scoring. */
   corrections?: import("./routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
+  /** Past review-resolution policy events used for gap radar and earned autonomy. */
+  policyEvents?: import("./decision-policy-ledger.ts").DecisionPolicyEvent[] | null;
 };
 
 export type DirectiveEngineProcessSourceResult = {

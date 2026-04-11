@@ -114,7 +114,10 @@ function getSectionBody(markdown: string, heading: string) {
 }
 
 function parseMissionMarkdown(markdown: string) {
-  const currentObjective = getSectionBody(markdown, "Current Objective")
+  const currentObjective = (
+    getSectionBody(markdown, "Current Objective")
+    || getSectionBody(markdown, "Goal Statement")
+  )
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
@@ -125,17 +128,35 @@ function parseMissionMarkdown(markdown: string) {
   )
     .split(/\r?\n/)
     .map((line) => line.replace(/^- /, "").trim())
-    .filter(Boolean);
+    .filter((line) => line.length > 0 && !/not provided/i.test(line));
   const capabilityLanes = getSectionBody(markdown, "Capability Lanes That Matter Most")
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => /^\d+\.\s+/.test(line))
-    .map((line) => line.replace(/^\d+\.\s+/, "").trim());
+    .map((line) => line.replace(/^\d+\.\s+/, "").trim())
+    .filter((line) => line.length > 0 && !/not provided/i.test(line));
+  const constraints = getSectionBody(markdown, "Constraints")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^- /, "").trim())
+    .filter((line) => line.length > 0 && !/not provided/i.test(line));
+  const successSignal = getSectionBody(markdown, "Success Signal")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !/not provided/i.test(line))
+    .join(" ");
+  const adoptionTarget = getSectionBody(markdown, "Adoption Target")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !/not provided/i.test(line))
+    .join(" ");
 
   return {
     currentObjective,
     usefulnessSignals,
     capabilityLanes,
+    constraints,
+    successSignal,
+    adoptionTarget,
   };
 }
 
@@ -144,6 +165,9 @@ function buildMissionMarkdown(input: DirectiveEngineMissionInput) {
     normalizeText(input.currentObjective) || "Mission objective not provided.";
   const usefulnessSignals = (input.usefulnessSignals ?? []).filter(Boolean);
   const capabilityLanes = (input.capabilityLanes ?? []).filter(Boolean);
+  const constraints = (input.constraints ?? []).filter(Boolean);
+  const successSignal = normalizeText(input.successSignal);
+  const adoptionTarget = normalizeText(input.adoptionTarget);
 
   return [
     "# Active Mission",
@@ -151,6 +175,10 @@ function buildMissionMarkdown(input: DirectiveEngineMissionInput) {
     "## Current Objective",
     "",
     objective,
+    "",
+    "## Adoption Target",
+    "",
+    adoptionTarget || "Adoption target not provided.",
     "",
     "## What Usefulness Means Under This Objective",
     "",
@@ -163,6 +191,16 @@ function buildMissionMarkdown(input: DirectiveEngineMissionInput) {
     ...(capabilityLanes.length > 0
       ? capabilityLanes.map((lane, index) => `${index + 1}. ${lane}`)
       : ["1. Capability lanes not provided."]),
+    "",
+    "## Constraints",
+    "",
+    ...(constraints.length > 0
+      ? constraints.map((constraint) => `- ${constraint}`)
+      : ["- Constraints not provided."]),
+    "",
+    "## Success Signal",
+    "",
+    successSignal || "Success signal not provided.",
   ].join("\n");
 }
 
@@ -185,6 +223,14 @@ function resolveMissionContext(
       (input.capabilityLanes ?? []).filter(Boolean).length > 0
         ? (input.capabilityLanes ?? []).map((value) => normalizeText(value)).filter(Boolean)
         : parsed.capabilityLanes,
+    constraints:
+      (input.constraints ?? []).filter(Boolean).length > 0
+        ? (input.constraints ?? []).map((value) => normalizeText(value)).filter(Boolean)
+        : parsed.constraints,
+    successSignal:
+      normalizeText(input.successSignal) || parsed.successSignal || null,
+    adoptionTarget:
+      normalizeText(input.adoptionTarget) || parsed.adoptionTarget || null,
     activeMissionMarkdown,
   };
 }
@@ -234,6 +280,9 @@ function deriveProcessFingerprint(input: {
     currentObjective: normalizeFingerprintText(input.mission.currentObjective),
     usefulnessSignals: input.mission.usefulnessSignals.map((value) => normalizeFingerprintText(value)),
     capabilityLanes: input.mission.capabilityLanes.map((value) => normalizeFingerprintText(value)),
+    constraints: input.mission.constraints.map((value) => normalizeFingerprintText(value)),
+    successSignal: normalizeFingerprintText(input.mission.successSignal),
+    adoptionTarget: normalizeFingerprintText(input.mission.adoptionTarget),
   })).digest("hex");
 }
 
@@ -1171,6 +1220,8 @@ export class DirectiveEngine {
       mission,
       openGaps,
       corrections,
+      policyEvents: [...(input.policyEvents ?? [])],
+      existingRuns,
     });
     const lane = resolveDirectiveEngineLane({
       laneSet: this.laneSet,

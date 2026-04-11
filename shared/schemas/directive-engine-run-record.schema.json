@@ -31,7 +31,7 @@
       "const": "shared/schemas/directive-engine-run-record.schema.json"
     },
     "schemaVersion": {
-      "const": 2
+      "const": 3
     },
     "recordKind": {
       "const": "directive_engine_run_record"
@@ -63,12 +63,18 @@
         "currentObjective",
         "usefulnessSignals",
         "capabilityLanes",
+        "constraints",
+        "successSignal",
+        "adoptionTarget",
         "activeMissionMarkdown"
       ],
       "properties": {
         "currentObjective": { "type": "string", "minLength": 1 },
         "usefulnessSignals": { "type": "array", "items": { "type": "string" } },
         "capabilityLanes": { "type": "array", "items": { "type": "string" } },
+        "constraints": { "type": "array", "items": { "type": "string" } },
+        "successSignal": { "type": ["string", "null"] },
+        "adoptionTarget": { "type": ["string", "null"] },
         "activeMissionMarkdown": { "type": "string" }
       }
     },
@@ -168,6 +174,11 @@
           "matchedGapRank",
           "routeConflict",
           "needsHumanReview",
+          "missionSpecificityWarning",
+          "goalCopilot",
+          "confidenceRecovery",
+          "gapRadar",
+          "earnedAutonomy",
           "ambiguitySummary",
           "reviewGuidance",
           "scoreBreakdown",
@@ -216,6 +227,122 @@
             "operatorAction": { "type": "string", "minLength": 1 },
             "requiredChecks": { "type": "array", "items": { "type": "string" } },
             "stopLine": { "type": "string", "minLength": 1 }
+          }
+        },
+        "goalCopilot": {
+          "type": "object",
+          "required": [
+            "overallScore",
+            "objectiveSpecificityScore",
+            "usefulnessSignalQualityScore",
+            "constraintQualityScore",
+            "laneClarityScore",
+            "warnings",
+            "rationale",
+            "suggestedObjective",
+            "suggestedConstraints",
+            "suggestedUsefulnessSignals",
+            "suggestedCapabilityLanes"
+          ],
+          "properties": {
+            "overallScore": { "type": "number" },
+            "objectiveSpecificityScore": { "type": "number" },
+            "usefulnessSignalQualityScore": { "type": "number" },
+            "constraintQualityScore": { "type": "number" },
+            "laneClarityScore": { "type": "number" },
+            "warnings": { "type": "array", "items": { "type": "string" } },
+            "rationale": { "type": "array", "items": { "type": "string" } },
+            "suggestedObjective": { "type": ["string", "null"] },
+            "suggestedConstraints": { "type": "array", "items": { "type": "string" } },
+            "suggestedUsefulnessSignals": { "type": "array", "items": { "type": "string" } },
+            "suggestedCapabilityLanes": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "confidenceRecovery": {
+          "type": ["object", "null"],
+          "required": [
+            "summary",
+            "confidenceLift",
+            "requestedInputs"
+          ],
+          "properties": {
+            "summary": { "type": "string", "minLength": 1 },
+            "confidenceLift": { "type": "string", "minLength": 1 },
+            "requestedInputs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["field", "question", "whyItMatters", "exampleAnswer"],
+                "properties": {
+                  "field": { "type": "string", "minLength": 1 },
+                  "question": { "type": "string", "minLength": 1 },
+                  "whyItMatters": { "type": "string", "minLength": 1 },
+                  "exampleAnswer": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        },
+        "gapRadar": {
+          "type": ["object", "null"],
+          "required": ["summary", "suggestions"],
+          "properties": {
+            "summary": { "type": "string", "minLength": 1 },
+            "suggestions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "radarId",
+                  "targetLaneId",
+                  "confidence",
+                  "evidenceCount",
+                  "summary",
+                  "recommendedChange",
+                  "signalTokens",
+                  "relatedOpenGapId",
+                  "suggestedPriority"
+                ],
+                "properties": {
+                  "radarId": { "type": "string", "minLength": 1 },
+                  "targetLaneId": { "type": "string", "minLength": 1 },
+                  "confidence": { "enum": ["low", "medium", "high"] },
+                  "evidenceCount": { "type": "integer" },
+                  "summary": { "type": "string", "minLength": 1 },
+                  "recommendedChange": { "type": "string", "minLength": 1 },
+                  "signalTokens": { "type": "array", "items": { "type": "string" } },
+                  "relatedOpenGapId": { "type": ["string", "null"] },
+                  "suggestedPriority": { "enum": ["low", "medium", "high"] }
+                }
+              }
+            }
+          }
+        },
+        "earnedAutonomy": {
+          "type": "object",
+          "required": [
+            "routeClass",
+            "overallScore",
+            "evidenceCount",
+            "operatorAgreementRate",
+            "reviewClearRate",
+            "reversalCount",
+            "autoApprovalEligible",
+            "approvalReductionApplied",
+            "summary",
+            "rationale"
+          ],
+          "properties": {
+            "routeClass": { "type": "string", "minLength": 1 },
+            "overallScore": { "type": "number" },
+            "evidenceCount": { "type": "integer" },
+            "operatorAgreementRate": { "type": ["number", "null"] },
+            "reviewClearRate": { "type": ["number", "null"] },
+            "reversalCount": { "type": "integer" },
+            "autoApprovalEligible": { "type": "boolean" },
+            "approvalReductionApplied": { "type": "boolean" },
+            "summary": { "type": "string", "minLength": 1 },
+            "rationale": { "type": "array", "items": { "type": "string" } }
           }
         },
         "scoreBreakdown": {

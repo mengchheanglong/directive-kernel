@@ -6,8 +6,10 @@ import {
   DirectiveEngine,
   createDirectiveWorkspaceEngineLanes,
   normalizeDirectiveEngineSourceTypeInput,
+  readDecisionPolicyLedger,
   readRoutingCorrectionLedger,
   resolveDirectiveEngineStoreRecordPath,
+  writeDirectiveGapRadarReport,
   type DirectiveEngineCapabilityGap,
   type DirectiveEngineMissionInput,
   type DirectiveEngineRunRecord,
@@ -265,6 +267,47 @@ function renderDirectiveEngineRunReport(input: {
     ...record.routingAssessment.explanationBreakdown.gapAlignmentSignals.map((entry) => `- Gap: ${entry}`),
     ...record.routingAssessment.explanationBreakdown.ambiguitySignals.map((entry) => `- Ambiguity: ${entry}`),
     "",
+    "## Goal Copilot",
+    "",
+    `- Overall score: ${record.routingAssessment.goalCopilot.overallScore}/100`,
+    `- Objective specificity score: ${record.routingAssessment.goalCopilot.objectiveSpecificityScore}/5`,
+    `- Usefulness signal quality score: ${record.routingAssessment.goalCopilot.usefulnessSignalQualityScore}/5`,
+    `- Constraint quality score: ${record.routingAssessment.goalCopilot.constraintQualityScore}/5`,
+    `- Lane clarity score: ${record.routingAssessment.goalCopilot.laneClarityScore}/5`,
+    `- Warnings: ${record.routingAssessment.goalCopilot.warnings.join(" | ") || "none"}`,
+    `- Suggested objective: ${record.routingAssessment.goalCopilot.suggestedObjective ?? "n/a"}`,
+    `- Suggested constraints: ${record.routingAssessment.goalCopilot.suggestedConstraints.join(" | ") || "none"}`,
+    `- Suggested usefulness signals: ${record.routingAssessment.goalCopilot.suggestedUsefulnessSignals.join(" | ") || "none"}`,
+    `- Suggested capability lanes: ${record.routingAssessment.goalCopilot.suggestedCapabilityLanes.join(" | ") || "none"}`,
+    "",
+    "## Confidence Recovery Follow-Up",
+    "",
+    `- Summary: ${record.routingAssessment.confidenceRecovery?.summary ?? "n/a"}`,
+    `- Confidence lift: ${record.routingAssessment.confidenceRecovery?.confidenceLift ?? "n/a"}`,
+    ...(record.routingAssessment.confidenceRecovery?.requestedInputs.map((entry) =>
+      `- Requested input: ${entry.field} | Question: ${entry.question} | Why it matters: ${entry.whyItMatters} | Example answer: ${entry.exampleAnswer ?? "n/a"}`
+    ) ?? []),
+    "",
+    "## Gap Radar",
+    "",
+    `- Summary: ${record.routingAssessment.gapRadar?.summary ?? "n/a"}`,
+    ...(record.routingAssessment.gapRadar?.suggestions.map((entry) =>
+      `- Suggestion: ${entry.targetLaneId} | ${entry.confidence} confidence | ${entry.evidenceCount} events | ${entry.summary} | Recommended change: ${entry.recommendedChange} | Signals: ${entry.signalTokens.join(", ") || "none"} | Related open gap: ${entry.relatedOpenGapId ?? "n/a"} | Suggested priority: ${entry.suggestedPriority}`
+    ) ?? []),
+    "",
+    "## Earned Autonomy",
+    "",
+    `- Route class: ${record.routingAssessment.earnedAutonomy.routeClass}`,
+    `- Overall score: ${record.routingAssessment.earnedAutonomy.overallScore}/100`,
+    `- Evidence count: ${record.routingAssessment.earnedAutonomy.evidenceCount}`,
+    `- Operator agreement rate: ${record.routingAssessment.earnedAutonomy.operatorAgreementRate == null ? "n/a" : `${Math.round(record.routingAssessment.earnedAutonomy.operatorAgreementRate * 100)}%`}`,
+    `- Review clear rate: ${record.routingAssessment.earnedAutonomy.reviewClearRate == null ? "n/a" : `${Math.round(record.routingAssessment.earnedAutonomy.reviewClearRate * 100)}%`}`,
+    `- Reversal count: ${record.routingAssessment.earnedAutonomy.reversalCount}`,
+    `- Auto-approval eligible: ${record.routingAssessment.earnedAutonomy.autoApprovalEligible ? "yes" : "no"}`,
+    `- Approval reduction applied: ${record.routingAssessment.earnedAutonomy.approvalReductionApplied ? "yes" : "no"}`,
+    `- Summary: ${record.routingAssessment.earnedAutonomy.summary}`,
+    ...record.routingAssessment.earnedAutonomy.rationale.map((entry) => `- Rationale: ${entry}`),
+    "",
     "## Next Action",
     "",
     record.integrationProposal.nextAction,
@@ -374,6 +417,7 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
   } satisfies DiscoverySubmissionRequest;
 
   const correctionLedger = readRoutingCorrectionLedger(directiveRoot);
+  const policyLedger = readDecisionPolicyLedger(directiveRoot);
   const engine = new DirectiveEngine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
     store: createFilesystemDirectiveEngineStore({
@@ -385,7 +429,14 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
     mission: buildDirectiveEngineMission(activeMissionMarkdown),
     gaps: buildDirectiveEngineCapabilityGaps(capabilityGaps),
     corrections: correctionLedger.corrections,
+    policyEvents: policyLedger.events,
     receivedAt,
+  });
+  writeDirectiveGapRadarReport({
+    directiveRoot,
+    generatedAt: receivedAt,
+    events: policyLedger.events,
+    openGaps: buildDirectiveEngineCapabilityGaps(capabilityGaps),
   });
 
   const queueAppend = appendDiscoveryIntakeQueueEntry({
@@ -456,6 +507,8 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
     routing_confidence:
       engineResult.record.routingAssessment.confidence
       ?? engineResult.record.candidate.confidence,
+    mission_specificity_warning:
+      engineResult.record.routingAssessment.missionSpecificityWarning,
     matched_gap_id:
       engineResult.record.candidate.matchedGapId
       ?? engineResult.record.routingAssessment.matchedGapId,
@@ -488,6 +541,82 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
           stop_line: engineResult.record.routingAssessment.reviewGuidance.stopLine,
         }
       : null,
+    goal_copilot: {
+      overall_score: engineResult.record.routingAssessment.goalCopilot.overallScore,
+      objective_specificity_score:
+        engineResult.record.routingAssessment.goalCopilot.objectiveSpecificityScore,
+      usefulness_signal_quality_score:
+        engineResult.record.routingAssessment.goalCopilot.usefulnessSignalQualityScore,
+      constraint_quality_score:
+        engineResult.record.routingAssessment.goalCopilot.constraintQualityScore,
+      lane_clarity_score:
+        engineResult.record.routingAssessment.goalCopilot.laneClarityScore,
+      warnings: [
+        ...engineResult.record.routingAssessment.goalCopilot.warnings,
+      ],
+      rationale: [
+        ...engineResult.record.routingAssessment.goalCopilot.rationale,
+      ],
+      suggested_objective:
+        engineResult.record.routingAssessment.goalCopilot.suggestedObjective,
+      suggested_constraints: [
+        ...engineResult.record.routingAssessment.goalCopilot.suggestedConstraints,
+      ],
+      suggested_usefulness_signals: [
+        ...engineResult.record.routingAssessment.goalCopilot.suggestedUsefulnessSignals,
+      ],
+      suggested_capability_lanes: [
+        ...engineResult.record.routingAssessment.goalCopilot.suggestedCapabilityLanes,
+      ],
+    },
+    confidence_recovery: engineResult.record.routingAssessment.confidenceRecovery
+      ? {
+          summary: engineResult.record.routingAssessment.confidenceRecovery.summary,
+          confidence_lift:
+            engineResult.record.routingAssessment.confidenceRecovery.confidenceLift,
+          requested_inputs:
+            engineResult.record.routingAssessment.confidenceRecovery.requestedInputs.map((entry) => ({
+              field: entry.field,
+              question: entry.question,
+              why_it_matters: entry.whyItMatters,
+              example_answer: entry.exampleAnswer,
+            })),
+        }
+      : null,
+    gap_radar: engineResult.record.routingAssessment.gapRadar
+      ? {
+          summary: engineResult.record.routingAssessment.gapRadar.summary,
+          suggestions: engineResult.record.routingAssessment.gapRadar.suggestions.map((entry) => ({
+            radar_id: entry.radarId,
+            target_lane_id: entry.targetLaneId,
+            confidence: entry.confidence,
+            evidence_count: entry.evidenceCount,
+            summary: entry.summary,
+            recommended_change: entry.recommendedChange,
+            signal_tokens: [...entry.signalTokens],
+            related_open_gap_id: entry.relatedOpenGapId,
+            suggested_priority: entry.suggestedPriority,
+          })),
+        }
+      : null,
+    earned_autonomy: {
+      route_class: engineResult.record.routingAssessment.earnedAutonomy.routeClass,
+      overall_score: engineResult.record.routingAssessment.earnedAutonomy.overallScore,
+      evidence_count: engineResult.record.routingAssessment.earnedAutonomy.evidenceCount,
+      operator_agreement_rate:
+        engineResult.record.routingAssessment.earnedAutonomy.operatorAgreementRate,
+      review_clear_rate:
+        engineResult.record.routingAssessment.earnedAutonomy.reviewClearRate,
+      reversal_count: engineResult.record.routingAssessment.earnedAutonomy.reversalCount,
+      auto_approval_eligible:
+        engineResult.record.routingAssessment.earnedAutonomy.autoApprovalEligible,
+      approval_reduction_applied:
+        engineResult.record.routingAssessment.earnedAutonomy.approvalReductionApplied,
+      summary: engineResult.record.routingAssessment.earnedAutonomy.summary,
+      rationale: [
+        ...engineResult.record.routingAssessment.earnedAutonomy.rationale,
+      ],
+    },
     explanation_breakdown: {
       keyword_signals: [
         ...engineResult.record.routingAssessment.explanationBreakdown.keywordSignals,

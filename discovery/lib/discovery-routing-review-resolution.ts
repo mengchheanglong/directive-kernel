@@ -11,10 +11,13 @@ import {
   appendRoutingCorrection,
   extractSourceSignalTokens,
 } from "../../engine/routing-correction-ledger.ts";
+import { appendDecisionPolicyEvent } from "../../engine/decision-policy-ledger.ts";
+import { writeDirectiveGapRadarReport } from "../../engine/gap-radar.ts";
 import {
   readDirectiveDiscoveryRoutingArtifact,
   type DirectiveDiscoveryRoutingArtifact,
 } from "./discovery-route-opener.ts";
+import type { CapabilityGapRecord } from "./discovery-gap-worklist-generator.ts";
 
 export type DiscoveryRoutingReviewDecision =
   | "confirm_architecture"
@@ -57,6 +60,12 @@ export type WriteDiscoveryRoutingReviewResolutionResult = {
   created: boolean;
   resolution: DiscoveryRoutingReviewResolution;
   reviewResolutionRelativePath: string;
+  policySuggestions: Array<{
+    suggestionId: string;
+    policyKind: string;
+    confidence: string;
+    summary: string;
+  }>;
 };
 
 function deriveReviewResolutionPath(routingRecordPath: string): string {
@@ -118,7 +127,10 @@ function validateDecisionAgainstRoute(
   }
 }
 
-function renderReviewResolution(resolution: DiscoveryRoutingReviewResolution): string {
+function renderReviewResolution(
+  resolution: DiscoveryRoutingReviewResolution,
+  policySummaryLines: string[] = [],
+): string {
   const boolText = (value: boolean | null) =>
     value === true ? "yes" : value === false ? "no" : "n/a";
 
@@ -163,6 +175,14 @@ function renderReviewResolution(resolution: DiscoveryRoutingReviewResolution): s
     "- Rollback: Delete this review resolution artifact. The original routing record remains unchanged and the system returns to its pre-resolution state.",
     "- No-op path: Leave the review resolution in place; downstream lane work proceeds based on the resolved state.",
     "",
+    ...(policySummaryLines.length > 0
+      ? [
+          "## Decision-to-Policy Compiler",
+          "",
+          ...policySummaryLines.map((line) => `- ${line}`),
+          "",
+        ]
+      : []),
   ].join("\n");
 }
 
@@ -182,6 +202,33 @@ function parseYesNoBoolean(value: string | null): boolean | null {
   if (normalized === "yes") return true;
   if (normalized === "no") return false;
   return null;
+}
+
+function loadOpenCapabilityGaps(directiveRoot: string) {
+  const gapsPath = path.join(directiveRoot, "discovery", "capability-gaps.json");
+  if (!fs.existsSync(gapsPath)) {
+    return [];
+  }
+  try {
+    const payload = JSON.parse(fs.readFileSync(gapsPath, "utf8")) as {
+      gaps?: CapabilityGapRecord[];
+    };
+    return (payload.gaps ?? [])
+      .filter((gap) => !gap.resolved_at)
+      .map((gap) => ({
+        gapId: gap.gap_id,
+        description: gap.description,
+        priority: gap.priority,
+        relatedMissionObjective: gap.related_mission_objective,
+        currentState: gap.current_state,
+        desiredState: gap.desired_state,
+        detectedAt: gap.detected_at,
+        resolvedAt: gap.resolved_at ?? null,
+        resolutionNotes: gap.resolution_notes ?? null,
+      }));
+  } catch {
+    return [];
+  }
 }
 
 export function resolveDiscoveryRoutingReviewResolutionPath(input: {
@@ -300,19 +347,18 @@ export function writeDiscoveryRoutingReviewResolution(
     originalNeedsHumanReview: routing.needsHumanReview,
   };
 
-  fs.mkdirSync(path.dirname(resolutionAbsolutePath), { recursive: true });
-  fs.writeFileSync(resolutionAbsolutePath, renderReviewResolution(resolution), "utf8");
+  const sourceText = [
+    routing.candidateName,
+    routing.whyThisRoute,
+    routing.whyNotAlternatives,
+    routing.adoptionTarget,
+    routing.usefulnessRationale ?? "",
+    routing.goalCopilot?.suggestedObjective ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   if (isRedirect(input.decision)) {
-    const sourceText = [
-      routing.candidateName,
-      routing.whyThisRoute,
-      routing.whyNotAlternatives,
-      routing.adoptionTarget,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
     appendRoutingCorrection({
       directiveRoot,
       entry: {
@@ -327,10 +373,68 @@ export function writeDiscoveryRoutingReviewResolution(
     });
   }
 
+  const policyUpdate = appendDecisionPolicyEvent({
+    directiveRoot,
+    event: {
+      recordedAt: resolution.reviewDate,
+      source: "discovery_routing_review",
+      candidateId: routing.candidateId,
+      sourceType: routing.sourceType,
+      decision: input.decision,
+      originalLaneId: routing.routeDestination,
+      resolvedLaneId: resolution.resolvedRouteDestination,
+      originalConfidence: routing.routingConfidence,
+      resolvedConfidence: resolution.resolvedConfidence,
+      originalNeedsHumanReview: routing.needsHumanReview,
+      resolvedNeedsHumanReview: resolution.resolvedNeedsHumanReview,
+      matchedGapId: routing.matchedGapId,
+      missionSpecificityWarning: routing.missionSpecificityWarning,
+      goalCopilotWarnings: [...(routing.goalCopilot?.warnings ?? [])],
+      followUpRequestedFields: [
+        ...(routing.confidenceRecovery?.requestedInputs.map((entry) => entry.field) ?? []),
+      ],
+      sourceSignalTokens: extractSourceSignalTokens(sourceText),
+      rationale,
+    },
+  });
+  const policySummaryLines = [
+    `Policy ledger path: ${path.relative(directiveRoot, policyUpdate.ledgerPath).replace(/\\/g, "/")}`,
+    ...policyUpdate.suggestions.slice(0, 3).map((suggestion) =>
+      `[${suggestion.policyKind}] ${suggestion.confidence} confidence from ${suggestion.evidenceCount} decisions: ${suggestion.summary}`
+    ),
+  ];
+  const gapRadar = writeDirectiveGapRadarReport({
+    directiveRoot,
+    generatedAt: `${resolution.reviewDate}T00:00:00.000Z`,
+    events: policyUpdate.ledger.events,
+    openGaps: loadOpenCapabilityGaps(directiveRoot),
+  });
+  if (gapRadar.report.suggestions.length > 0) {
+    policySummaryLines.push(
+      `Gap Radar path: ${path.relative(directiveRoot, gapRadar.reportPath).replace(/\\/g, "/")}`,
+      ...gapRadar.report.suggestions.slice(0, 2).map((suggestion) =>
+        `[gap_radar] ${suggestion.confidence} confidence from ${suggestion.evidenceCount} decisions: ${suggestion.summary}`
+      ),
+    );
+  }
+
+  fs.mkdirSync(path.dirname(resolutionAbsolutePath), { recursive: true });
+  fs.writeFileSync(
+    resolutionAbsolutePath,
+    renderReviewResolution(resolution, policySummaryLines),
+    "utf8",
+  );
+
   return {
     ok: true,
     created,
     resolution,
     reviewResolutionRelativePath: resolutionRelativePath.replace(/\\/g, "/"),
+    policySuggestions: policyUpdate.suggestions.map((suggestion) => ({
+      suggestionId: suggestion.suggestionId,
+      policyKind: suggestion.policyKind,
+      confidence: suggestion.confidence,
+      summary: suggestion.summary,
+    })),
   };
 }

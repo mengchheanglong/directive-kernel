@@ -4,10 +4,17 @@ import type {
   DirectiveEngineMissionContext,
   DirectiveEngineRoutingAssessment,
   DirectiveEngineRoutingConfidence,
+  DirectiveEngineRunRecord,
   DirectiveEngineSourceItem,
 } from "./types.ts";
+import type { DecisionPolicyEvent } from "./decision-policy-ledger.ts";
 import type { RoutingCorrectionEntry } from "./routing-correction-ledger.ts";
 import { deriveRoutingCorrectionAdjustments } from "./routing-correction-ledger.ts";
+import {
+  deriveDirectiveGapRadarAssessment,
+  compileDirectiveGapRadarSuggestions,
+} from "./gap-radar.ts";
+import { deriveDirectiveEngineEarnedAutonomyAssessment } from "./earned-autonomy.ts";
 
 /**
  * Weighted keyword lists.  Each entry is [keyword, weight].
@@ -162,6 +169,35 @@ const GENERIC_MISSION_TOKENS = new Set([
   "workspace",
 ]);
 
+const GENERIC_GOAL_COPILOT_TOKENS = new Set([
+  ...GENERIC_MISSION_TOKENS,
+  "change",
+  "changes",
+  "clarity",
+  "clearer",
+  "confidence",
+  "constraint",
+  "constraints",
+  "explicit",
+  "focus",
+  "goal",
+  "goals",
+  "guidance",
+  "means",
+  "matter",
+  "objective",
+  "provided",
+  "quality",
+  "result",
+  "results",
+  "review",
+  "signal",
+  "signals",
+  "success",
+  "target",
+  "targets",
+]);
+
 const SEMANTIC_TOKEN_ALIASES: Record<string, string> = {
   adaptable: "adaptation",
   adapting: "adaptation",
@@ -299,9 +335,483 @@ function countTokenOverlap(left: string, right: string) {
 }
 
 function deriveMissionObjectiveSpecificity(currentObjective: string) {
+  if (/not provided/i.test(currentObjective)) {
+    return 0;
+  }
   return semanticTokenize(currentObjective)
     .filter((token) => !GENERIC_MISSION_TOKENS.has(token))
     .length;
+}
+
+function uniqueNormalizedStrings(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(
+      values
+        .map((value) => String(value ?? "").trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function collectMissionSpecificTokens(mission: DirectiveEngineMissionContext) {
+  return uniqueNormalizedStrings([
+    ...semanticTokenize(mission.currentObjective),
+    ...mission.usefulnessSignals.flatMap((signal) => semanticTokenize(signal)),
+    ...mission.constraints.flatMap((constraint) => semanticTokenize(constraint)),
+    ...mission.capabilityLanes.flatMap((lane) => semanticTokenize(lane)),
+    ...semanticTokenize(mission.successSignal ?? ""),
+    ...semanticTokenize(mission.adoptionTarget ?? ""),
+  ])
+    .filter((token) => token.length >= 4)
+    .filter((token) => !GENERIC_GOAL_COPILOT_TOKENS.has(token));
+}
+
+function inferMissionFocusLane(mission: DirectiveEngineMissionContext) {
+  if (
+    mission.adoptionTarget === "architecture"
+    || mission.adoptionTarget === "runtime"
+    || mission.adoptionTarget === "discovery"
+  ) {
+    return mission.adoptionTarget;
+  }
+
+  const missionText = [
+    mission.currentObjective,
+    ...mission.usefulnessSignals,
+    ...mission.constraints,
+    mission.successSignal ?? "",
+    ...mission.capabilityLanes,
+  ].join(" ");
+
+  const laneScores = {
+    discovery: countWeightedKeywordHits(missionText, DISCOVERY_KEYWORDS_WEIGHTED),
+    architecture: countWeightedKeywordHits(missionText, ARCHITECTURE_KEYWORDS_WEIGHTED),
+    runtime: countWeightedKeywordHits(missionText, RUNTIME_KEYWORDS_WEIGHTED),
+  };
+  const winner = deriveRecommendedLane(laneScores);
+  return laneScores[winner] > 0 ? winner : (mission.capabilityLanes[0]?.toLowerCase() || null);
+}
+
+function buildSuggestedObjective(input: {
+  mission: DirectiveEngineMissionContext;
+  focusLane: string | null;
+}) {
+  const tokens = collectMissionSpecificTokens(input.mission).slice(0, 4);
+  const tokenPhrase = tokens.length > 0
+    ? tokens.join(", ")
+    : input.focusLane === "architecture"
+      ? "routing quality, workflow boundaries, and evaluation policy"
+      : input.focusLane === "runtime"
+        ? "runtime capability boundaries, repeated execution value, and integration clarity"
+        : "intake quality, routing clarity, and gap alignment";
+  const lanePhrase = input.focusLane ? ` for the ${input.focusLane} lane` : "";
+  return `Improve ${tokenPhrase}${lanePhrase} with one bounded, reviewable change.`;
+}
+
+function buildSuggestedUsefulnessSignals(input: {
+  mission: DirectiveEngineMissionContext;
+  focusLane: string | null;
+}) {
+  const existing = uniqueNormalizedStrings(input.mission.usefulnessSignals);
+  const suggestions = [...existing];
+
+  const defaults = input.focusLane === "architecture"
+    ? [
+        "Prefer Engine workflow, routing, evaluation, or policy improvements when the source improves Directive Workspace itself.",
+        "Keep runtime reuse secondary unless repeated executable value is clearly dominant.",
+      ]
+    : input.focusLane === "runtime"
+      ? [
+          "Prefer repeated runtime capability only when the value survives as reusable execution or transformation.",
+          "Keep Architecture work secondary unless the source primarily improves Directive Workspace itself.",
+        ]
+      : [
+          "Prefer clearer intake, routing, and gap evidence when downstream lane ownership is still ambiguous.",
+          "Keep the candidate in Discovery until one stronger lane signal is recorded explicitly.",
+        ];
+
+  for (const suggestion of defaults) {
+    if (suggestions.length >= 3) {
+      break;
+    }
+    if (!suggestions.some((entry) => entry.toLowerCase() === suggestion.toLowerCase())) {
+      suggestions.push(suggestion);
+    }
+  }
+
+  return suggestions.slice(0, 3);
+}
+
+function buildSuggestedConstraints(mission: DirectiveEngineMissionContext) {
+  const existing = uniqueNormalizedStrings(mission.constraints);
+  const suggestions = [...existing];
+
+  const defaults = [
+    {
+      test: /\b(review|approval|human)\b/i,
+      value: "Keep review explicit until the route is high-confidence and bounded.",
+    },
+    {
+      test: /\b(bound|scope|single|one slice)\b/i,
+      value: "Keep the next change to one bounded slice.",
+    },
+    {
+      test: /\b(rollback|revers|undo)\b/i,
+      value: "Stay reversible and keep the rollback boundary explicit.",
+    },
+  ];
+
+  for (const item of defaults) {
+    if (suggestions.some((entry) => item.test.test(entry))) {
+      continue;
+    }
+    suggestions.push(item.value);
+  }
+
+  return suggestions.slice(0, 3);
+}
+
+function buildSuggestedCapabilityLanes(input: {
+  mission: DirectiveEngineMissionContext;
+  focusLane: string | null;
+}) {
+  const normalized = uniqueNormalizedStrings(
+    input.mission.capabilityLanes.map((lane) => lane.toLowerCase()),
+  );
+  const allowed = normalized.filter((lane) =>
+    lane === "discovery" || lane === "architecture" || lane === "runtime"
+  );
+
+  if (!input.focusLane) {
+    return allowed.slice(0, 3);
+  }
+
+  const ordered = [
+    input.focusLane,
+    ...allowed.filter((lane) => lane !== input.focusLane),
+  ];
+  return uniqueNormalizedStrings(ordered).slice(0, 3);
+}
+
+function deriveGoalCopilotAssessment(mission: DirectiveEngineMissionContext) {
+  const objectiveSpecificity = deriveMissionObjectiveSpecificity(mission.currentObjective);
+  const objectiveSpecificityScore = clampInt(
+    objectiveSpecificity >= 4 ? 5 : objectiveSpecificity,
+    0,
+    5,
+  );
+  const usefulnessSignals = uniqueNormalizedStrings(mission.usefulnessSignals);
+  const usefulSignalSpecificityCount = usefulnessSignals.filter((signal) =>
+    semanticTokenize(signal)
+      .filter((token) => !GENERIC_GOAL_COPILOT_TOKENS.has(token))
+      .length >= 2
+  ).length;
+  const usefulnessSignalQualityScore = clampInt(
+    (usefulnessSignals.length > 0 ? 1 : 0)
+      + (usefulnessSignals.length >= 2 ? 1 : 0)
+      + (usefulSignalSpecificityCount > 0 ? 1 : 0)
+      + (usefulSignalSpecificityCount >= 2 ? 1 : 0)
+      + (
+        usefulnessSignals.some((signal) =>
+          countWeightedKeywordHits(
+            signal,
+            DISCOVERY_KEYWORDS_WEIGHTED,
+          )
+          + countWeightedKeywordHits(signal, ARCHITECTURE_KEYWORDS_WEIGHTED)
+          + countWeightedKeywordHits(signal, RUNTIME_KEYWORDS_WEIGHTED) > 0
+        )
+          ? 1
+          : 0
+      ),
+    0,
+    5,
+  );
+  const constraints = uniqueNormalizedStrings(mission.constraints);
+  const constraintQualityScore = clampInt(
+    (constraints.length > 0 ? 1 : 0)
+      + (constraints.length >= 2 ? 1 : 0)
+      + (
+        constraints.some((constraint) =>
+          /\b(keep|stay|avoid|require|preserve|limit|do not|never|only)\b/i.test(constraint)
+        )
+          ? 1
+          : 0
+      )
+      + (
+        constraints.some((constraint) =>
+          /\b(bound|review|rollback|revers|scope|explicit|execute|automation|host)\b/i.test(constraint)
+        )
+          ? 1
+          : 0
+      )
+      + (
+        constraints.some((constraint) =>
+          semanticTokenize(constraint)
+            .filter((token) => !GENERIC_GOAL_COPILOT_TOKENS.has(token))
+            .length >= 1
+        )
+          ? 1
+          : 0
+      ),
+    0,
+    5,
+  );
+  const normalizedLanes = uniqueNormalizedStrings(
+    mission.capabilityLanes.map((lane) => lane.toLowerCase()),
+  ).filter((lane) => lane === "discovery" || lane === "architecture" || lane === "runtime");
+  const focusLane = inferMissionFocusLane(mission);
+  const laneClarityScore = clampInt(
+    (normalizedLanes.length > 0 ? 1 : 0)
+      + (normalizedLanes.length === 1 ? 2 : 0)
+      + (
+        focusLane !== null && mission.adoptionTarget && mission.adoptionTarget === focusLane
+          ? 1
+          : 0
+      )
+      + (
+        focusLane !== null && normalizedLanes[0] === focusLane
+          ? 1
+          : 0
+      )
+      + (
+        normalizedLanes.length === 2 && !mission.adoptionTarget
+          ? 1
+          : 0
+      ),
+    0,
+    5,
+  );
+  const overallScore = clampInt(
+    (
+      objectiveSpecificityScore
+      + usefulnessSignalQualityScore
+      + constraintQualityScore
+      + laneClarityScore
+    ) * 5,
+    0,
+    100,
+  );
+
+  const warnings: string[] = [];
+  const rationale: string[] = [];
+
+  if (objectiveSpecificityScore <= 1) {
+    warnings.push("Current objective is too generic to guide routing reliably.");
+  }
+  if (usefulnessSignalQualityScore <= 2) {
+    warnings.push("Usefulness signals are too sparse or generic; the Engine lacks a strong definition of what 'useful' means right now.");
+  }
+  if (constraintQualityScore <= 2) {
+    warnings.push("Constraints are missing or too weak; the goal does not explain how the next change must stay bounded.");
+  }
+  if (normalizedLanes.length === 0) {
+    warnings.push("Capability lanes are missing, so the mission does not state where value should land.");
+  } else if (normalizedLanes.length === 3 && !mission.adoptionTarget) {
+    warnings.push("Capability lanes list every lane without an explicit dominant target, which leaves lane ownership overly ambiguous.");
+  }
+  if (!mission.successSignal) {
+    warnings.push("Success signal is missing, so the system has no explicit definition of what improvement would count as enough.");
+  }
+
+  rationale.push(
+    `Goal Copilot scored objective specificity ${objectiveSpecificityScore}/5, usefulness signals ${usefulnessSignalQualityScore}/5, constraints ${constraintQualityScore}/5, and lane clarity ${laneClarityScore}/5.`,
+  );
+  if (mission.adoptionTarget) {
+    rationale.push(
+      `Mission adoption target is set to ${mission.adoptionTarget}, which improves lane clarity when it matches the actual goal focus.`,
+    );
+  }
+
+  return {
+    overallScore,
+    objectiveSpecificityScore,
+    usefulnessSignalQualityScore,
+    constraintQualityScore,
+    laneClarityScore,
+    warnings,
+    rationale,
+    suggestedObjective: overallScore >= 85 ? null : buildSuggestedObjective({
+      mission,
+      focusLane,
+    }),
+    suggestedConstraints: buildSuggestedConstraints(mission),
+    suggestedUsefulnessSignals: buildSuggestedUsefulnessSignals({
+      mission,
+      focusLane,
+    }),
+    suggestedCapabilityLanes: buildSuggestedCapabilityLanes({
+      mission,
+      focusLane,
+    }),
+  };
+}
+
+function deriveConfidenceRecovery(input: {
+  source: DirectiveEngineSourceItem;
+  mission: DirectiveEngineMissionContext;
+  missionFit: number;
+  missionSpecificityWarning: string | null;
+  recommendedLaneId: "discovery" | "architecture" | "runtime";
+  confidence: DirectiveEngineRoutingConfidence;
+  routeConflict: boolean;
+  matchedGap: DirectiveEngineCapabilityGap | null;
+  openGaps: DirectiveEngineCapabilityGap[];
+  conflictingLaneIds: Array<"discovery" | "architecture" | "runtime">;
+  goalCopilot: ReturnType<typeof deriveGoalCopilotAssessment>;
+}) {
+  const runtimeInPlay =
+    input.recommendedLaneId === "runtime" || input.conflictingLaneIds.includes("runtime");
+  const architectureInPlay =
+    input.recommendedLaneId === "architecture" || input.conflictingLaneIds.includes("architecture");
+  const goalNeedsFollowUp =
+    Boolean(input.missionSpecificityWarning)
+    || input.goalCopilot.overallScore < 60
+    || input.goalCopilot.objectiveSpecificityScore <= 1
+    || input.goalCopilot.usefulnessSignalQualityScore <= 1
+    || input.goalCopilot.constraintQualityScore <= 1
+    || input.goalCopilot.laneClarityScore <= 2;
+  const requestedInputs: Array<{
+    field: string;
+    question: string;
+    whyItMatters: string;
+    exampleAnswer: string | null;
+  }> = [];
+
+  const pushRequest = (request: {
+    field: string;
+    question: string;
+    whyItMatters: string;
+    exampleAnswer: string | null;
+  }) => {
+    if (requestedInputs.some((entry) => entry.field === request.field)) {
+      return;
+    }
+    requestedInputs.push(request);
+  };
+
+  if (goalNeedsFollowUp) {
+    if (input.missionSpecificityWarning || input.goalCopilot.objectiveSpecificityScore <= 1) {
+      pushRequest({
+        field: "mission.currentObjective",
+        question: "Rewrite the mission objective with 2-3 concrete capability nouns instead of generic improvement language.",
+        whyItMatters: "Generic mission text over-matches everything and keeps routing confidence artificially low.",
+        exampleAnswer: input.goalCopilot.suggestedObjective,
+      });
+    }
+    if (input.goalCopilot.usefulnessSignalQualityScore <= 1) {
+      pushRequest({
+        field: "mission.usefulnessSignals",
+        question: "List 1-2 concrete usefulness signals that say what 'better' means for this mission.",
+        whyItMatters: "Specific usefulness signals sharpen mission-fit and make downstream triage less subjective.",
+        exampleAnswer: input.goalCopilot.suggestedUsefulnessSignals[0] ?? null,
+      });
+    }
+    if (input.goalCopilot.constraintQualityScore <= 1) {
+      pushRequest({
+        field: "mission.constraints",
+        question: "Add 1-3 explicit constraints that keep the next change bounded, reviewable, and reversible.",
+        whyItMatters: "Constraints stop the mission from rewarding broad but unsafe changes.",
+        exampleAnswer: input.goalCopilot.suggestedConstraints[0] ?? null,
+      });
+    }
+    if (!input.mission.successSignal) {
+      pushRequest({
+        field: "mission.successSignal",
+        question: "What observable outcome would count as a sufficient improvement for this mission?",
+        whyItMatters: "An explicit success signal helps the Engine distinguish meaningful progress from generic relevance.",
+        exampleAnswer: "One bounded routing decision becomes materially clearer and requires less manual review.",
+      });
+    }
+    if (
+      input.goalCopilot.laneClarityScore <= 2
+      && !input.mission.adoptionTarget
+      && input.goalCopilot.suggestedCapabilityLanes.length > 0
+    ) {
+      pushRequest({
+        field: "mission.adoptionTarget",
+        question: "Which lane should be treated as the default owner when the source matches this mission most strongly?",
+        whyItMatters: "A default mission-level owner reduces avoidable cross-lane ambiguity before source metadata is available.",
+        exampleAnswer: input.goalCopilot.suggestedCapabilityLanes[0] ?? null,
+      });
+    }
+  }
+
+  if (input.routeConflict || input.confidence === "low") {
+    if (!input.source.primaryAdoptionTarget) {
+      pushRequest({
+        field: "source.primaryAdoptionTarget",
+        question: "If you had to choose one owner now, should this land in Discovery, Architecture, or Runtime?",
+        whyItMatters: "Explicit ownership metadata is the strongest structured routing signal and breaks many lane ties immediately.",
+        exampleAnswer: architectureInPlay ? "architecture" : runtimeInPlay ? "runtime" : "discovery",
+      });
+    }
+    if (runtimeInPlay && input.source.containsExecutableCode == null) {
+      pushRequest({
+        field: "source.containsExecutableCode",
+        question: "Does the source contain executable code or a repeated operational mechanism that should become reusable runtime capability?",
+        whyItMatters: "Executable repeated value is the cleanest separator between Runtime and non-Runtime routes.",
+        exampleAnswer: "true - includes callable code that should be reused",
+      });
+    }
+    if (architectureInPlay && input.source.improvesDirectiveWorkspace == null) {
+      pushRequest({
+        field: "source.improvesDirectiveWorkspace",
+        question: "Is the primary value improving Directive Workspace itself rather than a host/runtime capability?",
+        whyItMatters: "This is the strongest structured signal for Architecture ownership.",
+        exampleAnswer: "true - improves routing, evaluation, or workflow logic",
+      });
+    }
+    if (input.source.containsWorkflowPattern === true && !input.source.workflowBoundaryShape) {
+      pushRequest({
+        field: "source.workflowBoundaryShape",
+        question: "Is the workflow value a bounded protocol or an iterative loop?",
+        whyItMatters: "Boundary shape helps distinguish Architecture workflow logic from generic automation wording.",
+        exampleAnswer: "bounded_protocol",
+      });
+    }
+    if (!input.matchedGap && !input.source.capabilityGapId && input.openGaps.length > 0) {
+      pushRequest({
+        field: "source.capabilityGapId",
+        question: "Which currently open capability gap does this source close most directly?",
+        whyItMatters: "Explicit gap alignment often resolves low-confidence ties without adding more prose.",
+        exampleAnswer: input.openGaps[0]?.gapId ?? null,
+      });
+    }
+    if (!input.source.missionAlignmentHint || input.missionFit <= 1) {
+      pushRequest({
+        field: "source.missionAlignmentHint",
+        question: "Give one sentence that ties this source directly to the current mission objective.",
+        whyItMatters: "A crisp mission-alignment sentence raises mission-fit and reduces generic over-match.",
+        exampleAnswer:
+          "This improves directive workspace routing quality by clarifying bounded architecture ownership.",
+      });
+    }
+  }
+
+  if (requestedInputs.length === 0) {
+    return null;
+  }
+
+  const summary = input.routeConflict
+    ? "Answer one or two structured follow-up questions to break the current lane conflict."
+    : input.missionSpecificityWarning
+      ? "Sharpen the mission and one ownership signal so this route is backed by explicit, non-generic intent."
+      : goalNeedsFollowUp
+        ? "Fill the highest-leverage mission gaps so this route is supported by stronger explicit intent."
+      : "Add one or two explicit structured signals to raise routing confidence.";
+  const confidenceLift = input.routeConflict
+    ? "Likely to resolve the current lane disagreement."
+    : goalNeedsFollowUp && input.confidence !== "low"
+      ? "Likely to harden this route by replacing weak goal inputs with explicit intent."
+    : input.recommendedLaneId === "discovery"
+      ? "Likely to move this from Discovery hold to a bounded lane recommendation."
+      : "Likely to move this from low-confidence review to a clearer bounded route.";
+
+  return {
+    summary,
+    confidenceLift,
+    requestedInputs: requestedInputs.slice(0, 3),
+  };
 }
 
 function flattenSourceText(source: DirectiveEngineSourceItem) {
@@ -776,17 +1286,21 @@ function deriveReviewGuidance(input: {
   routeConflict: boolean;
   needsHumanReview: boolean;
   recommendedRecordShape: string;
+  confidenceRecoverySummary?: string | null;
 }) {
   if (input.routeConflict && input.recommendedLaneId === "architecture") {
     return {
       guidanceKind: "conflicted_architecture_review" as const,
       summary: "Conflicted Architecture route requires explicit structural review before downstream adoption.",
       operatorAction:
-        "Review the competing Runtime-vs-Architecture signals, confirm Architecture ownership explicitly, and keep the fuller split-case record until the conflict is resolved.",
+        `Review the competing Runtime-vs-Architecture signals, confirm Architecture ownership explicitly, and keep the fuller split-case record until the conflict is resolved.${input.confidenceRecoverySummary ? ` ${input.confidenceRecoverySummary}` : ""}`,
       requiredChecks: [
         "Confirm why Architecture still owns the candidate despite the competing Runtime signal.",
         "Record why the alternative lane was rejected before any downstream adoption step.",
         "Keep the split-case structural record explicit during review.",
+        ...(input.confidenceRecoverySummary
+          ? ["Capture the requested confidence-recovery inputs before rerouting."]
+          : []),
       ],
       stopLine:
         "Do not treat this as a fast-path Architecture adoption or open downstream Runtime follow-through until the conflict is explicitly resolved.",
@@ -798,11 +1312,14 @@ function deriveReviewGuidance(input: {
       guidanceKind: "conflicted_runtime_review" as const,
       summary: "Conflicted Runtime route requires explicit review before any bounded Runtime follow-up opens.",
       operatorAction:
-        "Review the competing signals, confirm Runtime ownership explicitly, and keep the case queue-only until that review is recorded.",
+        `Review the competing signals, confirm Runtime ownership explicitly, and keep the case queue-only until that review is recorded.${input.confidenceRecoverySummary ? ` ${input.confidenceRecoverySummary}` : ""}`,
       requiredChecks: [
         "Confirm why Runtime still owns the candidate despite the competing lane signal.",
         "Record why the alternative lane was rejected before opening follow-up.",
         "Keep the case queue-only until review completes.",
+        ...(input.confidenceRecoverySummary
+          ? ["Capture the requested confidence-recovery inputs before rerouting."]
+          : []),
       ],
       stopLine:
         "Do not open fast-path Runtime follow-through while the route conflict remains unresolved.",
@@ -814,10 +1331,13 @@ function deriveReviewGuidance(input: {
       guidanceKind: "low_confidence_discovery_hold" as const,
       summary: "Low-confidence route stays in Discovery until routing clarity improves.",
       operatorAction:
-        "Keep the candidate in Discovery, gather clearer routing evidence, and avoid assigning Architecture or Runtime ownership early.",
+        `Keep the candidate in Discovery, gather clearer routing evidence, and avoid assigning Architecture or Runtime ownership early.${input.confidenceRecoverySummary ? ` ${input.confidenceRecoverySummary}` : ""}`,
       requiredChecks: [
         "Record what evidence is still missing for lane ownership.",
         "Prefer new routing evidence or open-gap alignment before rerouting.",
+        ...(input.confidenceRecoverySummary
+          ? ["Capture the requested confidence-recovery inputs before rerouting."]
+          : []),
       ],
       stopLine:
         "Do not assign downstream lane ownership while confidence remains low and no stronger routing signal exists.",
@@ -829,10 +1349,13 @@ function deriveReviewGuidance(input: {
       guidanceKind: "bounded_lane_review" as const,
       summary: "Bounded lane review remains required before downstream adoption.",
       operatorAction:
-        "Keep the bounded lane recommendation visible, review the remaining uncertainty explicitly, and only proceed after that review is recorded.",
+        `Keep the bounded lane recommendation visible, review the remaining uncertainty explicitly, and only proceed after that review is recorded.${input.confidenceRecoverySummary ? ` ${input.confidenceRecoverySummary}` : ""}`,
       requiredChecks: [
         "Confirm the lane still matches the best bounded interpretation.",
         "Record the remaining uncertainty before downstream advancement.",
+        ...(input.confidenceRecoverySummary
+          ? ["Capture the requested confidence-recovery inputs before rerouting."]
+          : []),
       ],
       stopLine:
         "Do not widen downstream work while this bounded review requirement remains open.",
@@ -847,6 +1370,8 @@ export function assessDirectiveEngineRouting(input: {
   mission: DirectiveEngineMissionContext;
   openGaps: DirectiveEngineCapabilityGap[];
   corrections?: RoutingCorrectionEntry[];
+  policyEvents?: DecisionPolicyEvent[];
+  existingRuns?: DirectiveEngineRunRecord[];
 }): DirectiveEngineRoutingAssessment {
   const sourceText = flattenSourceText(input.source);
   const {
@@ -867,6 +1392,7 @@ export function assessDirectiveEngineRouting(input: {
       : missionSpecificity === 1
         ? "Mission objective has very low specificity (1 meaningful token). Routing may over-match. Consider adding 2-3 specific terms describing the capability or area being improved."
         : null;
+  const goalCopilot = deriveGoalCopilotAssessment(input.mission);
   const gapAlignment = matchedGap ? priorityWeight(matchedGap.priority) + 1 : 0;
   const {
     laneScores,
@@ -969,11 +1495,46 @@ export function assessDirectiveEngineRouting(input: {
       recommendedRecordShape === "fast_path" ||
       recommendedRecordShape === "split_case"
     );
-  const needsHumanReview =
+  const baseNeedsHumanReview =
     routeConflict ||
     (confidence === "low" && recommendedLaneId !== "discovery") ||
     (matchedGap === null && !noGapHighConfidenceBoundedRoute && recommendedRecordShape === "fast_path") ||
     (recommendedRecordShape === "queue_only" && recommendedLaneId !== "discovery");
+  const gapRadarSuggestions = compileDirectiveGapRadarSuggestions({
+    events: [...(input.policyEvents ?? [])],
+    openGaps: input.openGaps,
+  });
+  const gapRadar = deriveDirectiveGapRadarAssessment({
+    sourceText,
+    recommendedLaneId,
+    matchedGapId: matchedGap?.gapId ?? null,
+    suggestions: gapRadarSuggestions,
+  });
+  const earnedAutonomy = deriveDirectiveEngineEarnedAutonomyAssessment({
+    source: input.source,
+    recommendedLaneId,
+    recommendedRecordShape,
+    confidence,
+    routeConflict,
+    baseNeedsHumanReview,
+    existingRuns: [...(input.existingRuns ?? [])],
+    policyEvents: [...(input.policyEvents ?? [])],
+  });
+  const needsHumanReview =
+    baseNeedsHumanReview && !earnedAutonomy.approvalReductionApplied;
+  const confidenceRecovery = deriveConfidenceRecovery({
+    source: input.source,
+    mission: input.mission,
+    missionFit,
+    missionSpecificityWarning,
+    recommendedLaneId,
+    confidence,
+    routeConflict,
+    matchedGap,
+    openGaps: input.openGaps,
+    conflictingLaneIds,
+    goalCopilot,
+  });
   const reviewGuidance = deriveReviewGuidance({
     recommendedLaneId,
     confidence,
@@ -981,6 +1542,7 @@ export function assessDirectiveEngineRouting(input: {
     routeConflict,
     needsHumanReview,
     recommendedRecordShape,
+    confidenceRecoverySummary: confidenceRecovery?.summary ?? null,
   });
 
   const rationale: string[] = [];
@@ -991,6 +1553,19 @@ export function assessDirectiveEngineRouting(input: {
   if (missionSpecificityWarning) {
     rationale.push(missionSpecificityWarning);
     ambiguitySignals.push(missionSpecificityWarning);
+  }
+  rationale.push(
+    `Goal Copilot overall score is ${goalCopilot.overallScore}/100.`,
+  );
+  if (goalCopilot.warnings.length > 0) {
+    const goalWarningLine = `Goal Copilot warnings: ${goalCopilot.warnings.join(" ")}`;
+    rationale.push(goalWarningLine);
+    ambiguitySignals.push(goalWarningLine);
+  }
+  if (goalCopilot.suggestedObjective) {
+    const goalRewriteLine = `Goal Copilot suggested objective rewrite: ${goalCopilot.suggestedObjective}`;
+    rationale.push(goalRewriteLine);
+    metadataSignals.push(goalRewriteLine);
   }
   const appliedCorrectionLanes = Object.entries(correctionAdjustments).filter(
     ([, adj]) => adj !== 0,
@@ -1017,6 +1592,33 @@ export function assessDirectiveEngineRouting(input: {
       "No unresolved gap matched strongly enough, so the assessment relied on mission-fit and lane-signal scoring.";
     rationale.push(line);
     gapAlignmentSignals.push(line);
+  }
+  if (gapRadar) {
+    const gapRadarLine = `Gap Radar summary: ${gapRadar.summary}`;
+    rationale.push(gapRadarLine);
+    gapAlignmentSignals.push(gapRadarLine);
+    for (const suggestion of gapRadar.suggestions) {
+      const suggestionLine =
+        `Gap Radar suggestion (${suggestion.confidence}, ${suggestion.evidenceCount} events): ${suggestion.summary} ${suggestion.recommendedChange}`;
+      rationale.push(suggestionLine);
+      gapAlignmentSignals.push(suggestionLine);
+    }
+  }
+  rationale.push(`Earned Autonomy score is ${earnedAutonomy.overallScore}/100 for route class ${earnedAutonomy.routeClass}.`);
+  for (const autonomyLine of earnedAutonomy.rationale) {
+    rationale.push(`Earned Autonomy: ${autonomyLine}`);
+    ambiguitySignals.push(`Earned Autonomy: ${autonomyLine}`);
+  }
+  if (earnedAutonomy.approvalReductionApplied) {
+    const autonomyAppliedLine =
+      "Earned Autonomy waived the extra human-review gate because this route class has enough clean operator-confirmed history.";
+    rationale.push(autonomyAppliedLine);
+    ambiguitySignals.push(autonomyAppliedLine);
+  } else if (baseNeedsHumanReview) {
+    const autonomyBlockedLine =
+      "Earned Autonomy did not waive review because the route class still lacks enough clean history or has contrary evidence.";
+    rationale.push(autonomyBlockedLine);
+    ambiguitySignals.push(autonomyBlockedLine);
   }
   rationale.push(
     `Recommended ${scoreWinnerLaneId} because its lane score (${laneScores[scoreWinnerLaneId]}) exceeded the alternatives.`,
@@ -1097,6 +1699,12 @@ export function assessDirectiveEngineRouting(input: {
       `No material signal-family disagreement remained after scoring; keyword, metadata, and gap alignment all supported ${scoreWinnerLaneId} or had no competing winner.`,
     );
   }
+  if (confidenceRecovery) {
+    const followUpLine =
+      `Confidence recovery asks for: ${confidenceRecovery.requestedInputs.map((entry) => entry.field).join(", ")}.`;
+    rationale.push(followUpLine);
+    ambiguitySignals.push(followUpLine);
+  }
   rationale.push(
     `Route explanation breakdown for ${recommendedLaneId}: keyword=${keywordLaneScores[recommendedLaneId]}, metadata=${metadataLaneScores[recommendedLaneId]}, gap=${gapLaneScores[recommendedLaneId]}.`,
   );
@@ -1163,6 +1771,10 @@ export function assessDirectiveEngineRouting(input: {
     routeConflict,
     needsHumanReview,
     missionSpecificityWarning,
+    goalCopilot,
+    confidenceRecovery,
+    gapRadar,
+    earnedAutonomy,
     ambiguitySummary: {
       topLaneId: scoreWinnerLaneId,
       runnerUpLaneId,

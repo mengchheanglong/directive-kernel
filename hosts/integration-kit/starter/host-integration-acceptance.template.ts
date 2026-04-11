@@ -91,6 +91,9 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
         currentObjective: "Improve the system",
         usefulnessSignals: [],
         capabilityLanes: ["architecture", "discovery", "runtime"],
+        constraints: [],
+        successSignal: null,
+        adoptionTarget: null,
         activeMissionMarkdown: "",
       },
       openGaps: [],
@@ -103,6 +106,89 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
     check(
       "routing assessment exposes scoreBreakdown.missionFit",
       typeof vagueRoute.scoreBreakdown.missionFit === "number",
+    );
+    check(
+      "routing assessment exposes Goal Copilot diagnostics",
+      typeof vagueRoute.goalCopilot?.overallScore === "number",
+    );
+    check(
+      "routing assessment exposes confidence-recovery prompts for weak missions",
+      Array.isArray(vagueRoute.confidenceRecovery?.requestedInputs)
+        && (vagueRoute.confidenceRecovery?.requestedInputs.length ?? 0) > 0,
+    );
+    check(
+      "routing assessment exposes Earned Autonomy diagnostics",
+      typeof vagueRoute.earnedAutonomy?.overallScore === "number",
+    );
+
+    const recurringPolicyEvents = [
+      {
+        recordedAt: "2026-04-10T00:00:00.000Z",
+        source: "discovery_routing_review" as const,
+        candidateId: "acceptance-gap-a",
+        sourceType: "workflow-writeup",
+        decision: "confirm_architecture",
+        originalLaneId: "architecture",
+        resolvedLaneId: "architecture",
+        originalConfidence: "medium",
+        resolvedConfidence: "high",
+        originalNeedsHumanReview: true,
+        resolvedNeedsHumanReview: false,
+        matchedGapId: null,
+        missionSpecificityWarning: null,
+        goalCopilotWarnings: [],
+        followUpRequestedFields: ["source.capabilityGapId"],
+        sourceSignalTokens: ["workflow", "architecture", "routing", "engine"],
+        rationale: "Repeated architecture workflow routing case without a clean open-gap match.",
+      },
+      {
+        recordedAt: "2026-04-11T00:00:00.000Z",
+        source: "discovery_routing_review" as const,
+        candidateId: "acceptance-gap-b",
+        sourceType: "workflow-writeup",
+        decision: "confirm_architecture",
+        originalLaneId: "architecture",
+        resolvedLaneId: "architecture",
+        originalConfidence: "medium",
+        resolvedConfidence: "high",
+        originalNeedsHumanReview: true,
+        resolvedNeedsHumanReview: false,
+        matchedGapId: null,
+        missionSpecificityWarning: null,
+        goalCopilotWarnings: [],
+        followUpRequestedFields: ["source.capabilityGapId"],
+        sourceSignalTokens: ["workflow", "architecture", "routing", "engine"],
+        rationale: "Repeated architecture workflow routing case without a clean open-gap match.",
+      },
+    ];
+    const radarRoute = assessDirectiveEngineRouting({
+      source: {
+        sourceType: "workflow-writeup",
+        sourceRef: "https://example.com/acceptance-gap-radar",
+        title: "Workflow architecture routing engine improvement",
+        summary: "Architecture workflow routing engine improvement without a current gap match.",
+        primaryAdoptionTarget: "architecture",
+        containsWorkflowPattern: true,
+        improvesDirectiveWorkspace: true,
+        workflowBoundaryShape: "bounded_protocol",
+      },
+      mission: {
+        missionId: "acceptance-radar",
+        currentObjective: "Improve directive workspace routing workflow architecture boundaries",
+        usefulnessSignals: ["prefer engine routing improvements"],
+        capabilityLanes: ["architecture", "discovery", "runtime"],
+        constraints: ["keep review explicit", "stay reversible"],
+        successSignal: "One bounded routing improvement is materially clearer than before.",
+        adoptionTarget: "architecture",
+        activeMissionMarkdown: "",
+      },
+      openGaps: [],
+      policyEvents: recurringPolicyEvents,
+    });
+    check(
+      "routing assessment exposes Gap Radar suggestions from policy history",
+      Array.isArray(radarRoute.gapRadar?.suggestions)
+        && (radarRoute.gapRadar?.suggestions.length ?? 0) > 0,
     );
 
     const directiveRoot = path.resolve(
@@ -152,6 +238,12 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
           "prefer engine routing improvements when the source improves directive workspace judgment",
         ],
         capabilityLanes: ["architecture", "discovery", "runtime"],
+        constraints: [
+          "keep review explicit",
+          "stay reversible",
+        ],
+        successSignal: "One bounded routing improvement is materially clearer than before.",
+        adoptionTarget: "architecture",
       },
       gaps: [
         {
@@ -166,6 +258,7 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
         },
       ],
       corrections: ledger.corrections,
+      policyEvents: recurringPolicyEvents,
       source: {
         sourceId: "acceptance-engine-source",
         sourceType: "workflow-writeup",
@@ -193,6 +286,14 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
       first.record.routingAssessment.rationale.some((line) =>
         line.includes("Routing correction ledger applied adjustments:")
       ),
+    );
+    check(
+      "DirectiveEngine processSource preserves Earned Autonomy and Gap Radar surfaces",
+      typeof first.record.routingAssessment.earnedAutonomy.overallScore === "number"
+        && (
+          first.record.routingAssessment.gapRadar === null
+          || Array.isArray(first.record.routingAssessment.gapRadar.suggestions)
+        ),
     );
   } catch (error) {
     ok = false;

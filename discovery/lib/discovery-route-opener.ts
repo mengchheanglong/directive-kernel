@@ -66,6 +66,7 @@ type DirectiveEngineRunRecordLike = {
     matchedGapRank?: number | null;
     routeConflict?: boolean;
     needsHumanReview?: boolean;
+    missionSpecificityWarning?: string | null;
     ambiguitySummary?: {
       topLaneId: string;
       runnerUpLaneId: string | null;
@@ -73,6 +74,55 @@ type DirectiveEngineRunRecordLike = {
       conflictingSignalFamilies: string[];
       conflictingLaneIds: string[];
     } | null;
+    goalCopilot?: {
+      overallScore: number;
+      objectiveSpecificityScore: number;
+      usefulnessSignalQualityScore: number;
+      constraintQualityScore: number;
+      laneClarityScore: number;
+      warnings: string[];
+      rationale: string[];
+      suggestedObjective: string | null;
+      suggestedConstraints: string[];
+      suggestedUsefulnessSignals: string[];
+      suggestedCapabilityLanes: string[];
+    } | null;
+    confidenceRecovery?: {
+      summary: string;
+      confidenceLift: string;
+      requestedInputs: Array<{
+        field: string;
+        question: string;
+        whyItMatters: string;
+        exampleAnswer: string | null;
+      }>;
+    } | null;
+    gapRadar?: {
+      summary: string;
+      suggestions: Array<{
+        radarId: string;
+        targetLaneId: string;
+        confidence: string;
+        evidenceCount: number;
+        summary: string;
+        recommendedChange: string;
+        signalTokens: string[];
+        relatedOpenGapId: string | null;
+        suggestedPriority: string;
+      }>;
+    } | null;
+    earnedAutonomy?: {
+      routeClass: string;
+      overallScore: number;
+      evidenceCount: number;
+      operatorAgreementRate: number | null;
+      reviewClearRate: number | null;
+      reversalCount: number;
+      autoApprovalEligible: boolean;
+      approvalReductionApplied: boolean;
+      summary: string;
+      rationale: string[];
+    };
     scoreBreakdown?: {
       gapAlignment?: number;
     };
@@ -135,6 +185,7 @@ export type DirectiveDiscoveryRoutingArtifact = {
   routingConfidence: string | null;
   routeConflict: boolean | null;
   needsHumanReview: boolean | null;
+  missionSpecificityWarning: string | null;
   explanationBreakdown: {
     keywordSignals: string[];
     metadataSignals: string[];
@@ -154,6 +205,55 @@ export type DirectiveDiscoveryRoutingArtifact = {
     operatorAction: string;
     requiredChecks: string[];
     stopLine: string;
+  } | null;
+  goalCopilot: {
+    overallScore: number;
+    objectiveSpecificityScore: number;
+    usefulnessSignalQualityScore: number;
+    constraintQualityScore: number;
+    laneClarityScore: number;
+    warnings: string[];
+    rationale: string[];
+    suggestedObjective: string | null;
+    suggestedConstraints: string[];
+    suggestedUsefulnessSignals: string[];
+    suggestedCapabilityLanes: string[];
+  } | null;
+  confidenceRecovery: {
+    summary: string;
+    confidenceLift: string;
+    requestedInputs: Array<{
+      field: string;
+      question: string;
+      whyItMatters: string;
+      exampleAnswer: string | null;
+    }>;
+  } | null;
+  gapRadar: {
+    summary: string;
+    suggestions: Array<{
+      radarId: string;
+      targetLaneId: string;
+      confidence: string;
+      evidenceCount: number;
+      summary: string;
+      recommendedChange: string;
+      signalTokens: string[];
+      relatedOpenGapId: string | null;
+      suggestedPriority: string;
+    }>;
+  } | null;
+  earnedAutonomy: {
+    routeClass: string;
+    overallScore: number;
+    evidenceCount: number;
+    operatorAgreementRate: number | null;
+    reviewClearRate: number | null;
+    reversalCount: number;
+    autoApprovalEligible: boolean;
+    approvalReductionApplied: boolean;
+    summary: string;
+    rationale: string[];
   } | null;
 };
 
@@ -221,10 +321,17 @@ function parseYesNoBoolean(value: string | null) {
 
 function extractSection(markdown: string, heading: string) {
   const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = markdown.match(
-    new RegExp(`^## ${escaped}\\r?\\n\\r?\\n([\\s\\S]*?)(?=^## |\\s*$)`, "m"),
-  );
-  return match?.[1]?.trim() ?? null;
+  const headingMatch = new RegExp(`^## ${escaped}\\r?\\n`, "m").exec(markdown);
+  if (!headingMatch || typeof headingMatch.index !== "number") {
+    return null;
+  }
+  const sectionStart = headingMatch.index + headingMatch[0].length;
+  const remainingMarkdown = markdown.slice(sectionStart);
+  const nextHeadingMatch = /^## .*(?:\r?\n|$)/m.exec(remainingMarkdown);
+  const sectionBody = nextHeadingMatch && typeof nextHeadingMatch.index === "number"
+    ? remainingMarkdown.slice(0, nextHeadingMatch.index)
+    : remainingMarkdown;
+  return optionalString(sectionBody.trim());
 }
 
 function extractSectionLines(markdown: string, heading: string, prefix: string) {
@@ -238,6 +345,22 @@ function extractSectionLines(markdown: string, heading: string, prefix: string) 
     .filter((line) => line.startsWith(prefix))
     .map((line) => line.slice(prefix.length).trim())
     .filter(Boolean);
+}
+
+function readSectionBullet(markdown: string, heading: string, label: string) {
+  const section = extractSection(markdown, heading);
+  if (!section) {
+    return null;
+  }
+  const prefix = `- ${label}:`;
+  const line = section
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(prefix));
+  if (!line) {
+    return null;
+  }
+  return optionalString(line.slice(prefix.length).trim());
 }
 
 function parseDiscoveryRoutingMarkdown(markdown: string) {
@@ -279,6 +402,7 @@ function parseDiscoveryRoutingMarkdown(markdown: string) {
       : Number(readOptionalBullet(markdown, "Matched gap rank")),
     routeConflict: parseYesNoBoolean(readOptionalBullet(markdown, "Route conflict")),
     needsHumanReview: parseYesNoBoolean(readOptionalBullet(markdown, "Needs human review")),
+    missionSpecificityWarning: readOptionalBullet(markdown, "Mission specificity warning"),
     linkedIntakeRecord: extractBulletValue(markdown, "Linked intake record", 'invalid_input: missing "Linked intake record" in Discovery routing record'),
     linkedTriageRecord: optionalString(extractBulletValue(markdown, "Linked triage record", 'invalid_input: missing "Linked triage record" in Discovery routing record')),
     linkedEngineRunRecord: optionalString(
@@ -295,14 +419,14 @@ function parseDiscoveryRoutingMarkdown(markdown: string) {
     ),
     ambiguitySummary: extractSection(markdown, "Ambiguity Summary")
       ? {
-          topTrack: readOptionalBullet(markdown, "Top track") ?? "discovery",
-          runnerUpTrack: readOptionalBullet(markdown, "Runner-up track"),
-          scoreDelta: Number(readOptionalBullet(markdown, "Score delta") ?? "0"),
-          conflictingSignalFamilies: (readOptionalBullet(markdown, "Conflicting signal families") ?? "none")
+          topTrack: readSectionBullet(markdown, "Ambiguity Summary", "Top track") ?? "discovery",
+          runnerUpTrack: readSectionBullet(markdown, "Ambiguity Summary", "Runner-up track"),
+          scoreDelta: Number(readSectionBullet(markdown, "Ambiguity Summary", "Score delta") ?? "0"),
+          conflictingSignalFamilies: (readSectionBullet(markdown, "Ambiguity Summary", "Conflicting signal families") ?? "none")
             .split(/\s*,\s*/)
             .map((entry) => entry.trim())
             .filter((entry) => entry && entry !== "none"),
-          conflictingTracks: (readOptionalBullet(markdown, "Conflicting tracks") ?? "none")
+          conflictingTracks: (readSectionBullet(markdown, "Ambiguity Summary", "Conflicting tracks") ?? "none")
             .split(/\s*,\s*/)
             .map((entry) => entry.trim())
             .filter((entry) => entry && entry !== "none"),
@@ -310,14 +434,140 @@ function parseDiscoveryRoutingMarkdown(markdown: string) {
       : null,
     reviewGuidance: extractSection(markdown, "Review Guidance")
       ? {
-          guidanceKind: readOptionalBullet(markdown, "Guidance kind") ?? "bounded_lane_review",
-          summary: readOptionalBullet(markdown, "Summary") ?? "",
-          operatorAction: readOptionalBullet(markdown, "Operator action") ?? "",
-          requiredChecks: (readOptionalBullet(markdown, "Required checks") ?? "none")
+          guidanceKind: readSectionBullet(markdown, "Review Guidance", "Guidance kind") ?? "bounded_lane_review",
+          summary: readSectionBullet(markdown, "Review Guidance", "Summary") ?? "",
+          operatorAction: readSectionBullet(markdown, "Review Guidance", "Operator action") ?? "",
+          requiredChecks: (readSectionBullet(markdown, "Review Guidance", "Required checks") ?? "none")
             .split(/\s*\|\s*/)
             .map((entry) => entry.trim())
             .filter((entry) => entry && entry !== "none"),
-          stopLine: readOptionalBullet(markdown, "Stop-line") ?? "",
+          stopLine: readSectionBullet(markdown, "Review Guidance", "Stop-line") ?? "",
+        }
+      : null,
+    goalCopilot: extractSection(markdown, "Goal Copilot")
+      ? {
+          overallScore: Number(readSectionBullet(markdown, "Goal Copilot", "Overall score")?.replace(/\/100$/, "") ?? "0"),
+          objectiveSpecificityScore: Number(
+            readSectionBullet(markdown, "Goal Copilot", "Objective specificity score")?.replace(/\/5$/, "") ?? "0",
+          ),
+          usefulnessSignalQualityScore: Number(
+            readSectionBullet(markdown, "Goal Copilot", "Usefulness signal quality score")?.replace(/\/5$/, "") ?? "0",
+          ),
+          constraintQualityScore: Number(
+            readSectionBullet(markdown, "Goal Copilot", "Constraint quality score")?.replace(/\/5$/, "") ?? "0",
+          ),
+          laneClarityScore: Number(
+            readSectionBullet(markdown, "Goal Copilot", "Lane clarity score")?.replace(/\/5$/, "") ?? "0",
+          ),
+          warnings: (readSectionBullet(markdown, "Goal Copilot", "Warnings") ?? "none")
+            .split(/\s*\|\s*/)
+            .map((entry) => entry.trim())
+            .filter((entry) => entry && entry !== "none"),
+          rationale: extractSectionLines(markdown, "Goal Copilot", "- Rationale:"),
+          suggestedObjective: readSectionBullet(markdown, "Goal Copilot", "Suggested objective"),
+          suggestedConstraints: (readSectionBullet(markdown, "Goal Copilot", "Suggested constraints") ?? "none")
+            .split(/\s*\|\s*/)
+            .map((entry) => entry.trim())
+            .filter((entry) => entry && entry !== "none"),
+          suggestedUsefulnessSignals:
+            (readSectionBullet(markdown, "Goal Copilot", "Suggested usefulness signals") ?? "none")
+              .split(/\s*\|\s*/)
+              .map((entry) => entry.trim())
+              .filter((entry) => entry && entry !== "none"),
+          suggestedCapabilityLanes:
+            (readSectionBullet(markdown, "Goal Copilot", "Suggested capability lanes") ?? "none")
+              .split(/\s*\|\s*/)
+              .map((entry) => entry.trim())
+              .filter((entry) => entry && entry !== "none"),
+        }
+      : null,
+    confidenceRecovery: extractSection(markdown, "Confidence Recovery Follow-Up")
+      ? {
+          summary: readSectionBullet(markdown, "Confidence Recovery Follow-Up", "Summary") ?? "",
+          confidenceLift: readSectionBullet(markdown, "Confidence Recovery Follow-Up", "Confidence lift") ?? "",
+          requestedInputs: extractSectionLines(
+            markdown,
+            "Confidence Recovery Follow-Up",
+            "- Requested input:",
+          ).map((entry) => {
+            const [fieldPart, questionPart, whyPart, examplePart] = entry.split(/\s+\|\s+/);
+            return {
+              field: fieldPart.trim(),
+              question: questionPart?.replace(/^Question:\s*/, "").trim() ?? "",
+              whyItMatters: whyPart?.replace(/^Why it matters:\s*/, "").trim() ?? "",
+              exampleAnswer: optionalString(examplePart?.replace(/^Example answer:\s*/, "").trim()),
+            };
+          }),
+        }
+      : null,
+    gapRadar: extractSection(markdown, "Gap Radar")
+      ? {
+          summary: readSectionBullet(markdown, "Gap Radar", "Summary") ?? "",
+          suggestions: extractSectionLines(markdown, "Gap Radar", "- Suggestion:").map((entry) => {
+            const [
+              targetLanePart,
+              confidencePart,
+              evidencePart,
+              summaryPart,
+              recommendedChangePart,
+              signalsPart,
+              relatedGapPart,
+              suggestedPriorityPart,
+            ] = entry.split(/\s+\|\s+/);
+            return {
+              radarId: [
+                targetLanePart?.trim() ?? "gap",
+                summaryPart?.trim() ?? "suggestion",
+              ]
+                .join("-")
+                .toLowerCase()
+                .replace(/[^a-z0-9-]+/g, "-")
+                .replace(/-+/g, "-")
+                .replace(/^-|-$/g, "")
+                .slice(0, 96),
+              targetLaneId: targetLanePart?.trim() ?? "",
+              confidence: confidencePart?.replace(/\s+confidence$/i, "").trim() ?? "low",
+              evidenceCount: Number(evidencePart?.replace(/\s+events$/i, "").trim() ?? "0"),
+              summary: summaryPart?.trim() ?? "",
+              recommendedChange:
+                recommendedChangePart?.replace(/^Recommended change:\s*/i, "").trim() ?? "",
+              signalTokens:
+                signalsPart?.replace(/^Signals:\s*/i, "").split(/\s*,\s*/).map((value) => value.trim()).filter(Boolean)
+                ?? [],
+              relatedOpenGapId:
+                optionalString(relatedGapPart?.replace(/^Related open gap:\s*/i, "").trim()),
+              suggestedPriority:
+                suggestedPriorityPart?.replace(/^Suggested priority:\s*/i, "").trim() ?? "low",
+            };
+          }),
+        }
+      : null,
+    earnedAutonomy: extractSection(markdown, "Earned Autonomy")
+      ? {
+          routeClass: readSectionBullet(markdown, "Earned Autonomy", "Route class") ?? "",
+          overallScore: Number(readSectionBullet(markdown, "Earned Autonomy", "Overall score")?.replace(/\/100$/, "") ?? "0"),
+          evidenceCount: Number(readSectionBullet(markdown, "Earned Autonomy", "Evidence count") ?? "0"),
+          operatorAgreementRate: (() => {
+            const value = readSectionBullet(markdown, "Earned Autonomy", "Operator agreement rate");
+            if (!value || value === "n/a") {
+              return null;
+            }
+            return Number(value.replace(/%$/, "")) / 100;
+          })(),
+          reviewClearRate: (() => {
+            const value = readSectionBullet(markdown, "Earned Autonomy", "Review clear rate");
+            if (!value || value === "n/a") {
+              return null;
+            }
+            return Number(value.replace(/%$/, "")) / 100;
+          })(),
+          reversalCount: Number(readSectionBullet(markdown, "Earned Autonomy", "Reversal count") ?? "0"),
+          autoApprovalEligible:
+            parseYesNoBoolean(readSectionBullet(markdown, "Earned Autonomy", "Auto-approval eligible")) ?? false,
+          approvalReductionApplied:
+            parseYesNoBoolean(readSectionBullet(markdown, "Earned Autonomy", "Approval reduction applied")) ?? false,
+          summary: readSectionBullet(markdown, "Earned Autonomy", "Summary") ?? "",
+          rationale: extractSectionLines(markdown, "Earned Autonomy", "- Rationale:"),
         }
       : null,
     explanationBreakdown: extractSection(markdown, "Routing Explanation Breakdown")
@@ -717,6 +967,10 @@ function readRoutingArtifact(input: {
       ?? engineRun?.record.routingAssessment?.confidence
       ?? engineRun?.record.candidate.confidence
       ?? null,
+    missionSpecificityWarning:
+      parsed.missionSpecificityWarning
+      ?? engineRun?.record.routingAssessment?.missionSpecificityWarning
+      ?? null,
     routeConflict: parsed.routeConflict ?? engineRun?.record.routingAssessment?.routeConflict ?? null,
     needsHumanReview:
       parsed.needsHumanReview
@@ -753,6 +1007,67 @@ function readRoutingArtifact(input: {
           stopLine: parsed.reviewGuidance.stopLine,
         }
       : engineRun?.record.routingAssessment?.reviewGuidance ?? null,
+    goalCopilot:
+      parsed.goalCopilot
+      ? {
+          overallScore: parsed.goalCopilot.overallScore,
+          objectiveSpecificityScore: parsed.goalCopilot.objectiveSpecificityScore,
+          usefulnessSignalQualityScore: parsed.goalCopilot.usefulnessSignalQualityScore,
+          constraintQualityScore: parsed.goalCopilot.constraintQualityScore,
+          laneClarityScore: parsed.goalCopilot.laneClarityScore,
+          warnings: [...parsed.goalCopilot.warnings],
+          rationale: [...parsed.goalCopilot.rationale],
+          suggestedObjective: parsed.goalCopilot.suggestedObjective,
+          suggestedConstraints: [...parsed.goalCopilot.suggestedConstraints],
+          suggestedUsefulnessSignals: [...parsed.goalCopilot.suggestedUsefulnessSignals],
+          suggestedCapabilityLanes: [...parsed.goalCopilot.suggestedCapabilityLanes],
+        }
+      : engineRun?.record.routingAssessment?.goalCopilot ?? null,
+    confidenceRecovery:
+      parsed.confidenceRecovery
+      ? {
+          summary: parsed.confidenceRecovery.summary,
+          confidenceLift: parsed.confidenceRecovery.confidenceLift,
+          requestedInputs: parsed.confidenceRecovery.requestedInputs.map((entry) => ({
+            field: entry.field,
+            question: entry.question,
+            whyItMatters: entry.whyItMatters,
+            exampleAnswer: entry.exampleAnswer,
+          })),
+        }
+      : engineRun?.record.routingAssessment?.confidenceRecovery ?? null,
+    gapRadar:
+      parsed.gapRadar
+      ? {
+          summary: parsed.gapRadar.summary,
+          suggestions: parsed.gapRadar.suggestions.map((entry) => ({
+            radarId: entry.radarId,
+            targetLaneId: entry.targetLaneId,
+            confidence: entry.confidence,
+            evidenceCount: entry.evidenceCount,
+            summary: entry.summary,
+            recommendedChange: entry.recommendedChange,
+            signalTokens: [...entry.signalTokens],
+            relatedOpenGapId: entry.relatedOpenGapId,
+            suggestedPriority: entry.suggestedPriority,
+          })),
+        }
+      : engineRun?.record.routingAssessment?.gapRadar ?? null,
+    earnedAutonomy:
+      parsed.earnedAutonomy
+      ? {
+          routeClass: parsed.earnedAutonomy.routeClass,
+          overallScore: parsed.earnedAutonomy.overallScore,
+          evidenceCount: parsed.earnedAutonomy.evidenceCount,
+          operatorAgreementRate: parsed.earnedAutonomy.operatorAgreementRate,
+          reviewClearRate: parsed.earnedAutonomy.reviewClearRate,
+          reversalCount: parsed.earnedAutonomy.reversalCount,
+          autoApprovalEligible: parsed.earnedAutonomy.autoApprovalEligible,
+          approvalReductionApplied: parsed.earnedAutonomy.approvalReductionApplied,
+          summary: parsed.earnedAutonomy.summary,
+          rationale: [...parsed.earnedAutonomy.rationale],
+        }
+      : engineRun?.record.routingAssessment?.earnedAutonomy ?? null,
   };
 }
 

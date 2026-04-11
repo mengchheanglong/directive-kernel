@@ -36,6 +36,7 @@ export type DiscoveryRoutingRecordRequest = {
   review_cadence?: string | null;
   mission_priority_score?: number | null;
   routing_confidence?: string | null;
+  mission_specificity_warning?: string | null;
   matched_gap_id?: string | null;
   matched_gap_rank?: number | null;
   route_conflict?: boolean | null;
@@ -53,6 +54,55 @@ export type DiscoveryRoutingRecordRequest = {
     operator_action: string;
     required_checks: string[];
     stop_line: string;
+  } | null;
+  goal_copilot?: {
+    overall_score: number;
+    objective_specificity_score: number;
+    usefulness_signal_quality_score: number;
+    constraint_quality_score: number;
+    lane_clarity_score: number;
+    warnings: string[];
+    rationale: string[];
+    suggested_objective: string | null;
+    suggested_constraints: string[];
+    suggested_usefulness_signals: string[];
+    suggested_capability_lanes: string[];
+  } | null;
+  confidence_recovery?: {
+    summary: string;
+    confidence_lift: string;
+    requested_inputs: Array<{
+      field: string;
+      question: string;
+      why_it_matters: string;
+      example_answer: string | null;
+    }>;
+  } | null;
+  gap_radar?: {
+    summary: string;
+    suggestions: Array<{
+      radar_id: string;
+      target_lane_id: string;
+      confidence: string;
+      evidence_count: number;
+      summary: string;
+      recommended_change: string;
+      signal_tokens: string[];
+      related_open_gap_id: string | null;
+      suggested_priority: string;
+    }>;
+  } | null;
+  earned_autonomy?: {
+    route_class: string;
+    overall_score: number;
+    evidence_count: number;
+    operator_agreement_rate: number | null;
+    review_clear_rate: number | null;
+    reversal_count: number;
+    auto_approval_eligible: boolean;
+    approval_reduction_applied: boolean;
+    summary: string;
+    rationale: string[];
   } | null;
   explanation_breakdown?: {
     keyword_signals: string[];
@@ -123,6 +173,7 @@ export function renderDiscoveryRoutingRecord(
       ? String(Math.round(request.mission_priority_score))
       : null;
   const routingConfidence = optionalString(request.routing_confidence);
+  const missionSpecificityWarning = optionalString(request.mission_specificity_warning);
   const matchedGapId = optionalString(request.matched_gap_id);
   const matchedGapRank =
     typeof request.matched_gap_rank === "number" && Number.isFinite(request.matched_gap_rank)
@@ -138,6 +189,10 @@ export function renderDiscoveryRoutingRecord(
       : null;
   const ambiguitySummary = request.ambiguity_summary ?? null;
   const reviewGuidance = request.review_guidance ?? null;
+  const goalCopilot = request.goal_copilot ?? null;
+  const confidenceRecovery = request.confidence_recovery ?? null;
+  const gapRadar = request.gap_radar ?? null;
+  const earnedAutonomy = request.earned_autonomy ?? null;
   const explanationBreakdown = request.explanation_breakdown ?? null;
 
   return `# Discovery Routing Record: ${candidateName}
@@ -160,6 +215,7 @@ Date: ${routeDate}
 - Review cadence: ${reviewCadence ?? "n/a"}
 - Mission priority score: ${missionPriorityScore ?? "n/a"}
 - Routing confidence: ${routingConfidence ?? "n/a"}
+- Mission specificity warning: ${missionSpecificityWarning ?? "n/a"}
 - Matched gap id: ${matchedGapId ?? "n/a"}
 - Matched gap rank: ${matchedGapRank ?? "n/a"}
 - Route conflict: ${routeConflict ?? "n/a"}
@@ -184,6 +240,45 @@ ${ambiguitySummary ? `## Ambiguity Summary
 - Operator action: ${reviewGuidance.operator_action}
 - Required checks: ${reviewGuidance.required_checks.join(" | ") || "none"}
 - Stop-line: ${reviewGuidance.stop_line}
+
+` : ""}${goalCopilot ? `## Goal Copilot
+
+- Overall score: ${goalCopilot.overall_score}/100
+- Objective specificity score: ${goalCopilot.objective_specificity_score}/5
+- Usefulness signal quality score: ${goalCopilot.usefulness_signal_quality_score}/5
+- Constraint quality score: ${goalCopilot.constraint_quality_score}/5
+- Lane clarity score: ${goalCopilot.lane_clarity_score}/5
+- Warnings: ${goalCopilot.warnings.join(" | ") || "none"}
+- Suggested objective: ${goalCopilot.suggested_objective ?? "n/a"}
+- Suggested constraints: ${goalCopilot.suggested_constraints.join(" | ") || "none"}
+- Suggested usefulness signals: ${goalCopilot.suggested_usefulness_signals.join(" | ") || "none"}
+- Suggested capability lanes: ${goalCopilot.suggested_capability_lanes.join(" | ") || "none"}
+
+${goalCopilot.rationale.map((entry) => `- Rationale: ${entry}`).join("\n")}
+
+` : ""}${confidenceRecovery ? `## Confidence Recovery Follow-Up
+
+- Summary: ${confidenceRecovery.summary}
+- Confidence lift: ${confidenceRecovery.confidence_lift}
+${confidenceRecovery.requested_inputs.map((entry) => `- Requested input: ${entry.field} | Question: ${entry.question} | Why it matters: ${entry.why_it_matters} | Example answer: ${entry.example_answer ?? "n/a"}`).join("\n")}
+
+` : ""}${gapRadar ? `## Gap Radar
+
+- Summary: ${gapRadar.summary}
+${gapRadar.suggestions.map((entry) => `- Suggestion: ${entry.target_lane_id} | ${entry.confidence} confidence | ${entry.evidence_count} events | ${entry.summary} | Recommended change: ${entry.recommended_change} | Signals: ${entry.signal_tokens.join(", ") || "none"} | Related open gap: ${entry.related_open_gap_id ?? "n/a"} | Suggested priority: ${entry.suggested_priority}`).join("\n")}
+
+` : ""}${earnedAutonomy ? `## Earned Autonomy
+
+- Route class: ${earnedAutonomy.route_class}
+- Overall score: ${earnedAutonomy.overall_score}/100
+- Evidence count: ${earnedAutonomy.evidence_count}
+- Operator agreement rate: ${earnedAutonomy.operator_agreement_rate == null ? "n/a" : `${Math.round(earnedAutonomy.operator_agreement_rate * 100)}%`}
+- Review clear rate: ${earnedAutonomy.review_clear_rate == null ? "n/a" : `${Math.round(earnedAutonomy.review_clear_rate * 100)}%`}
+- Reversal count: ${earnedAutonomy.reversal_count}
+- Auto-approval eligible: ${earnedAutonomy.auto_approval_eligible ? "yes" : "no"}
+- Approval reduction applied: ${earnedAutonomy.approval_reduction_applied ? "yes" : "no"}
+- Summary: ${earnedAutonomy.summary}
+${earnedAutonomy.rationale.map((entry) => `- Rationale: ${entry}`).join("\n")}
 
 ` : ""}${explanationBreakdown ? `## Routing Explanation Breakdown
 
