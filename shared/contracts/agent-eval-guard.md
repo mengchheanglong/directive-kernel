@@ -18,7 +18,7 @@ Canonical proof shape:
 - `agent_eval_guard_snapshot/v1`
 
 Primary host checker:
-- `npm run check:directive-promptfoo-runtime`
+- `pnpm run check:directive-promptfoo-runtime`
 
 Baseline thresholds:
 - score >= `0.8`
@@ -29,7 +29,7 @@ Required evidence:
 - promotion record declares `Quality gate profile: agent_eval_guard/v1`
 - promotion record declares `Promotion profile family: bounded_agent_eval`
 - promotion record declares `Proof shape: agent_eval_guard_snapshot/v1`
-- promotion record declares `Primary host checker: npm run check:directive-promptfoo-runtime`
+- promotion record declares `Primary host checker: pnpm run check:directive-promptfoo-runtime`
 - promotion record links the host compile artifact and proof artifact
 - proof artifact records:
   - promotion profile family
@@ -42,9 +42,9 @@ Required evidence:
   - failure rate
   - cost USD
   - gate outcomes for:
-    - `npm run eval:agents`
-    - `npm run check:agent-evals`
-    - `npm run check:agent-eval-regression`
+    - `pnpm run eval:agents`
+    - `pnpm run check:agent-evals`
+    - `pnpm run check:agent-eval-regression`
 
 Decision rules:
 1. A bounded eval lane may claim `pass` only when all observed metrics satisfy thresholds.
@@ -52,8 +52,8 @@ Decision rules:
 3. Rollback must remove slice-specific Runtime artifacts and checker wiring without disturbing unrelated host eval infrastructure.
 
 Validation hooks:
-- `npm run check:directive-promptfoo-runtime`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-promptfoo-runtime`
+- `pnpm run check:ops-stack`
 
 Canonical inventory:
 - `runtime/meta/PROMOTION_PROFILES.json`

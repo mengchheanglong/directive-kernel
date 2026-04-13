@@ -36,6 +36,6 @@ Boilerplate boundary:
 - a broad scaffolder/runtime import requires a separate explicit decision
 
 Validation hooks:
-- `npm run check:directive-celtrix-contracts`
-- `npm run check:directive-workflow-doctrine`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-celtrix-contracts`
+- `pnpm run check:directive-workflow-doctrine`
+- `pnpm run check:ops-stack`

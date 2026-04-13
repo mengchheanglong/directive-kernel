@@ -55,5 +55,5 @@ Current rule:
 - all other classes remain hard-deny until a later explicit promotion decision exists
 
 Validation hooks:
-- `npm run check:directive-cli-anything-reentry`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-cli-anything-reentry`
+- `pnpm run check:ops-stack`

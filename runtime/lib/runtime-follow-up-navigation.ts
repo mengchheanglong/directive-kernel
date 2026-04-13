@@ -85,8 +85,10 @@ export function buildDirectiveRuntimeFollowUpNavigationReport(input: {
     ok: true,
     reportId: "runtime_follow_up_navigation",
     directiveRoot: input.directiveRoot,
+    // `npmCommand` is retained for compatibility with older host snapshots.
     canonicalOperatorSurface: {
-      npmCommand: "npm run report:runtime-follow-up-navigation",
+      packageManagerCommand: "pnpm run report:runtime-follow-up-navigation",
+      npmCommand: "pnpm run report:runtime-follow-up-navigation",
       folderPath: "runtime/00-follow-up/",
       defaultNavigationRule:
         "Use this report as the canonical operator entry surface. Do not use raw folder recency as the default navigation method.",

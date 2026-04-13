@@ -43,6 +43,6 @@ Rules:
 - when a structured review must resolve into an actual next-state recommendation, use `architecture/lib/architecture-review-resolution.ts` instead of ad hoc score or outcome logic
 
 Validation hooks:
-- `npm run check:directive-impeccable-contracts`
-- `npm run check:directive-workflow-doctrine`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-impeccable-contracts`
+- `pnpm run check:directive-workflow-doctrine`
+- `pnpm run check:ops-stack`

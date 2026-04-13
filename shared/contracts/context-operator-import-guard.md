@@ -18,7 +18,7 @@ Canonical proof shape:
 - `agent_pack_import_snapshot/v1`
 
 Primary host checker:
-- `npm run check:directive-arscontexta-runtime`
+- `pnpm run check:directive-arscontexta-runtime`
 
 Baseline thresholds:
 - explicit import route returns `200`
@@ -41,7 +41,7 @@ Required evidence:
 - promotion record declares `Quality gate profile: context_operator_import_guard/v1`
 - promotion record declares `Promotion profile family: bounded_context_operator_import`
 - promotion record declares `Proof shape: agent_pack_import_snapshot/v1`
-- promotion record declares `Primary host checker: npm run check:directive-arscontexta-runtime`
+- promotion record declares `Primary host checker: pnpm run check:directive-arscontexta-runtime`
 - promotion record links the host compile artifact and proof artifact
 - proof artifact records:
   - import smoke report path
@@ -53,10 +53,10 @@ Required evidence:
   - imported workflow modes
   - imported pack asset labels
   - gate outcomes for:
-    - `npm run runtime:arscontexta:smoke`
-    - `npm run check:directive-arscontexta-runtime`
-    - `npm run check:agents-import-packs-api-backend`
-    - `npm run check:ops-stack`
+    - `pnpm run runtime:arscontexta:smoke`
+    - `pnpm run check:directive-arscontexta-runtime`
+    - `pnpm run check:agents-import-packs-api-backend`
+    - `pnpm run check:ops-stack`
 
 Decision rules:
 1. A bounded context-operator lane may claim `pass` only when the import smoke artifact proves `arscontexta` imports by explicit request and stays out of the default import path.
@@ -64,8 +64,8 @@ Decision rules:
 3. Rollback must remove slice-specific Runtime artifacts and checker wiring without disturbing unrelated import-pack API behavior.
 
 Validation hooks:
-- `npm run check:directive-arscontexta-runtime`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-arscontexta-runtime`
+- `pnpm run check:ops-stack`
 
 Canonical inventory:
 - `runtime/meta/PROMOTION_PROFILES.json`

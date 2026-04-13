@@ -64,6 +64,10 @@ function parseBacktickItems(content: string) {
   );
 }
 
+function isPackageManagerRunCommand(item: string) {
+  return item.startsWith("npm run ") || item.startsWith("pnpm run ");
+}
+
 function parseBulletLines(content: string) {
   return unique(
     content
@@ -83,7 +87,7 @@ export function extractFromExperimentArtifact(markdown: string): ExperimentExtra
 
   const validationSection = section(content, "Validation Gates");
   const validationGates = unique(
-    parseBacktickItems(validationSection).filter((item) => item.startsWith("npm run ")),
+    parseBacktickItems(validationSection).filter(isPackageManagerRunCommand),
   );
 
   const outputSection =
@@ -128,7 +132,7 @@ export function generateIntegrationArtifacts(input: {
   const requiredGates =
     extraction.validationGates.length > 0
       ? extraction.validationGates
-      : ["npm run check:directive-v0", "npm run check:ops-stack"];
+      : ["pnpm run check:directive-v0", "pnpm run check:ops-stack"];
   const requiredArtifacts =
     extraction.requiredOutputArtifacts.length > 0
       ? extraction.requiredOutputArtifacts

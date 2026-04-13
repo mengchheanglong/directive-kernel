@@ -18,7 +18,7 @@ Canonical proof shape:
 - `ui_smoke_snapshot/v1`
 
 Primary host checker:
-- `npm run check:directive-puppeteer-runtime`
+- `pnpm run check:directive-puppeteer-runtime`
 
 Baseline thresholds:
 - smoke report `ok` must be `true`
@@ -30,7 +30,7 @@ Required evidence:
 - promotion record declares `Quality gate profile: browser_smoke_guard/v1`
 - promotion record declares `Promotion profile family: bounded_browser_smoke`
 - promotion record declares `Proof shape: ui_smoke_snapshot/v1`
-- promotion record declares `Primary host checker: npm run check:directive-puppeteer-runtime`
+- promotion record declares `Primary host checker: pnpm run check:directive-puppeteer-runtime`
 - promotion record links the host smoke runner and proof artifact
 - proof artifact records:
   - smoke report path
@@ -41,10 +41,10 @@ Required evidence:
   - expected flow ids
   - screenshot artifact paths
   - gate outcomes for:
-    - `npm run ui:smoke`
-    - `npm run check:ui-smoke`
-    - `npm run check:directive-puppeteer-runtime`
-    - `npm run check:ops-stack`
+    - `pnpm run ui:smoke`
+    - `pnpm run check:ui-smoke`
+    - `pnpm run check:directive-puppeteer-runtime`
+    - `pnpm run check:ops-stack`
 
 Decision rules:
 1. A bounded browser lane may claim `pass` only when the linked smoke report passes with zero failed flows and zero issue leaks.
@@ -52,8 +52,8 @@ Decision rules:
 3. Rollback may remove slice-specific Runtime artifacts and checker wiring while keeping generic host smoke scripts if they remain independently useful.
 
 Validation hooks:
-- `npm run check:directive-puppeteer-runtime`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-puppeteer-runtime`
+- `pnpm run check:ops-stack`
 
 Canonical inventory:
 - `runtime/meta/PROMOTION_PROFILES.json`

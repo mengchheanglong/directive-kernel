@@ -16,8 +16,8 @@
   - protocol:
 - boundary_check_result:
 - required_gates:
-  - `npm run check:directive-v0`
-  - `npm run check:ops-stack`
+  - `pnpm run check:directive-v0`
+  - `pnpm run check:ops-stack`
 - expected_output_artifacts:
 - objective_summary:
 - rollback_plan:

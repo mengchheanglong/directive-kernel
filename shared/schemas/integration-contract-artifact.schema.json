@@ -33,7 +33,7 @@
       "minItems": 1,
       "items": {
         "type": "string",
-        "pattern": "^npm run "
+        "pattern": "^(npm|pnpm) run "
       }
     },
     "owner": {

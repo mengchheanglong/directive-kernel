@@ -57,5 +57,5 @@ Boundary:
 - this contract defines Architecture truth for index/query state disclosure only
 
 Validation hooks:
-- `npm run check:directive-codegraphcontext-contracts`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-codegraphcontext-contracts`
+- `pnpm run check:ops-stack`

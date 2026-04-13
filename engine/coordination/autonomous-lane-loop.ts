@@ -713,7 +713,7 @@ function writeAutonomousRuntimePromotionRecord(input: {
     quality_gate_profile: "autonomous_pre_host_promotion_guard/v1",
     promotion_profile_family: "bounded_autonomous_pre_host_promotion",
     proof_shape: "autonomous_pre_host_promotion_snapshot/v1",
-    primary_host_checker: "npm run check:pre-host-promotion-record-prerequisites",
+    primary_host_checker: "pnpm run check:pre-host-promotion-record-prerequisites",
     full_text_coverage_threshold: "n/a",
     evidence_binding_threshold: "n/a",
     citation_error_threshold: "n/a",
@@ -725,7 +725,7 @@ function writeAutonomousRuntimePromotionRecord(input: {
     quality_gate_fail_reasons: [],
     required_gates: [
       ...prerequisites.requiredGates,
-      "npm run check:pre-host-promotion-record-prerequisites",
+      "pnpm run check:pre-host-promotion-record-prerequisites",
     ],
     validation_result:
       `This promotion record was opened automatically from ${input.promotionReadinessPath} after repo-native pre-host prerequisites and promotion specification generation passed. Registry acceptance, host integration, runtime execution, and promotion automation remain closed.`,

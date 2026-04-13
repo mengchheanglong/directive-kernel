@@ -33,5 +33,5 @@ Current re-entry meaning:
 - candidate remains deferred until bounded rollback/no-op evidence exists
 
 Validation hooks:
-- `npm run check:directive-cli-anything-reentry`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-cli-anything-reentry`
+- `pnpm run check:ops-stack`

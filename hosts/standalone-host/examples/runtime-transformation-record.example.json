@@ -15,7 +15,7 @@
   "expected_target_value": "1",
   "expected_measurement_method": "count the remaining operator step once canonical writers exist",
   "evaluator_type": "automated",
-  "evaluator_command": "npm run check:directive-standalone-runtime-host && npm run check:directive-standalone-api-host",
+  "evaluator_command": "pnpm run check:directive-standalone-runtime-host && pnpm run check:directive-standalone-api-host",
   "comparison_mode": "before-after",
   "baseline_artifact_path": "runtime/03-proof/2026-03-23-standalone-transformation-example-transformation-proof.json",
   "result_artifact_path": "runtime/03-proof/2026-03-23-standalone-transformation-example-transformation-proof.json",

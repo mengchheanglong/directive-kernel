@@ -26,5 +26,5 @@ Disallowed behavior:
 - coercing malformed content into typed artifacts without explicit fallback path
 
 Validation hooks:
-- `npm run check:directive-structured-output-fallback`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-structured-output-fallback`
+- `pnpm run check:ops-stack`

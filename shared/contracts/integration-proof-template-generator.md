@@ -28,9 +28,9 @@ Rules:
 - do not infer runtime-callable state
 - preserve extracted gates verbatim when available
 - if required gates are missing, apply fallback baseline:
-  - `npm run check:directive-v0`
-  - `npm run check:ops-stack`
+  - `pnpm run check:directive-v0`
+  - `pnpm run check:ops-stack`
 
 Validation hooks:
-- `npm run check:directive-integration-artifact-templates`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-integration-artifact-templates`
+- `pnpm run check:ops-stack`

@@ -12,14 +12,14 @@ Use it when you want:
 Quickstart:
 
 ```powershell
-npm run ui:install
-npm run start
+pnpm install
+pnpm run start
 ```
 
 Dev mode:
 
 ```powershell
-npm run dev
+pnpm run dev
 ```
 
 The UI stays thin. Engine, Discovery, Runtime, and Architecture behavior still live in the kernel codebase.

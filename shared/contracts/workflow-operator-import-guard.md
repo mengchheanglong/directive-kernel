@@ -3,11 +3,11 @@
 - Contract id: `workflow_operator_import_guard/v1`
 - Contract family: `bounded_workflow_operator_import`
 - Proof shape: `agent_pack_import_snapshot/v1`
-- Primary host checker: `npm run check:directive-superpowers-runtime`
+- Primary host checker: `pnpm run check:directive-superpowers-runtime`
 - Supporting host evidence:
-  - `npm run runtime:superpowers:smoke`
-  - `npm run check:agents-import-packs-api-backend`
-  - `npm run check:ops-stack`
+  - `pnpm run runtime:superpowers:smoke`
+  - `pnpm run check:agents-import-packs-api-backend`
+  - `pnpm run check:ops-stack`
 
 ## Intent
 

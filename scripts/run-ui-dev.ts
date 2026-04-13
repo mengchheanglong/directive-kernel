@@ -90,7 +90,7 @@ async function main() {
     throw new Error("Invalid DIRECTIVE_UI_API_PORT");
   }
   if (!fs.existsSync(VITE_BIN)) {
-    throw new Error("Missing UI dev dependency: vite. Run `npm --prefix ./ui install`.");
+    throw new Error("Missing UI dev dependency: vite. Run `pnpm install` from the repo root.");
   }
 
   const resolvedApiPort = await resolveOpenPort(DEV_HOST, API_PORT, "ui API");

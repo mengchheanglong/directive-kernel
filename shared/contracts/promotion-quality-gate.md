@@ -22,7 +22,7 @@ Canonical proof shape:
 - `quality_metric_snapshot/v1`
 
 Primary host checker:
-- `npm run check:directive-promotion-quality-contracts`
+- `pnpm run check:directive-promotion-quality-contracts`
 
 Baseline thresholds:
 - full-text coverage >= `80%`
@@ -52,8 +52,8 @@ Decision rules:
 5. Promotion artifacts and proof artifacts must agree on candidate id and quality gate result.
 
 Validation hooks:
-- `npm run check:directive-promotion-quality-contracts`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-promotion-quality-contracts`
+- `pnpm run check:ops-stack`
 
 Canonical inventory:
 - `runtime/meta/PROMOTION_PROFILES.json`

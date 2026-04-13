@@ -30,4 +30,4 @@ Define deterministic handling for `CitationSetArtifact` when source outputs are 
 
 ## Validation Hook
 
-- `npm run check:directive-citation-contracts`
+- `pnpm run check:directive-citation-contracts`

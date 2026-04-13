@@ -53,5 +53,5 @@ Validation rules:
 - bypass mode must not silently drop fields
 
 Validation hooks:
-- `npm run check:directive-hermes-contracts`
-- `npm run check:ops-stack`
+- `pnpm run check:directive-hermes-contracts`
+- `pnpm run check:ops-stack`

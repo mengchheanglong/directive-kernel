@@ -9,8 +9,8 @@
   - `Gate snapshot JSON`
   - `Rollback verification note`
 - validation_commands:
-  - `npm run check:directive-v0`
-  - `npm run check:ops-stack`
+  - `pnpm run check:directive-v0`
+  - `pnpm run check:ops-stack`
 - gate_snapshot:
 - pass_fail_summary:
 - rollback_verification:

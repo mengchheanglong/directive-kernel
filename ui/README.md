@@ -14,16 +14,11 @@ Role:
 It is served by:
 - `hosts/web-host/`
 
-Build:
+Canonical root-level commands:
 
 ```bash
-npm run build
+pnpm --filter @directive/kernel-ui build
+pnpm run dev
 ```
 
-The canonical browser-level host check lives at:
-
-```bash
-npm run dev
-```
-
-from the Directive Kernel root.
+If you are working directly inside `ui/`, `pnpm run build` also works.

@@ -783,8 +783,8 @@ export function renderStandaloneScientifyHostConsumptionReport(input: {
     proof: {
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
-        "npm run check:standalone-scientify-host-adapter",
-        "npm run check:directive-scientify-runtime-promotion",
+        "pnpm run check:standalone-scientify-host-adapter",
+        "pnpm run check:directive-scientify-runtime-promotion",
         ...(input.supportingCheckers ?? []),
       ],
     },
@@ -832,10 +832,10 @@ export function renderStandaloneResearchVaultHostConsumptionReport(input: {
           input.descriptor.linkedArtifacts.runtimeHostSelectionResolutionPath,
       },
       proof: {
-        primaryChecker: "npm run check:standalone-research-vault-host-callable",
+        primaryChecker: "pnpm run check:standalone-research-vault-host-callable",
         supportingCheckers: [
-          "npm run check:standalone-research-vault-host-adapter",
-          "npm run check:standalone-research-vault-host-adapter-boundary",
+          "pnpm run check:standalone-research-vault-host-adapter",
+          "pnpm run check:standalone-research-vault-host-adapter-boundary",
         ],
       },
       stopLine:
@@ -867,8 +867,8 @@ export function renderStandaloneResearchVaultHostConsumptionReport(input: {
     proof: {
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
-        "npm run check:standalone-research-vault-host-adapter",
-        "npm run check:standalone-research-vault-host-adapter-boundary",
+        "pnpm run check:standalone-research-vault-host-adapter",
+        "pnpm run check:standalone-research-vault-host-adapter-boundary",
         ...(input.supportingCheckers ?? []),
       ],
     },
@@ -933,9 +933,9 @@ export function renderStandaloneResearchVaultHostCallableExecutionReport(input: 
     proof: {
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
-        "npm run check:standalone-research-vault-host-callable",
-        "npm run check:standalone-research-vault-host-adapter",
-        "npm run check:standalone-research-vault-host-adapter-boundary",
+        "pnpm run check:standalone-research-vault-host-callable",
+        "pnpm run check:standalone-research-vault-host-adapter",
+        "pnpm run check:standalone-research-vault-host-adapter-boundary",
         ...(input.supportingCheckers ?? []),
       ],
     },
@@ -1014,8 +1014,8 @@ export function renderStandaloneResearchVaultSourcePackExecutionReport(input: {
     proof: {
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
-        "npm run check:standalone-research-vault-host-callable",
-        "npm run check:runtime-host-callable-adapter-contract",
+        "pnpm run check:standalone-research-vault-host-callable",
+        "pnpm run check:runtime-host-callable-adapter-contract",
         ...(input.supportingCheckers ?? []),
       ],
     },
@@ -1061,9 +1061,9 @@ export function renderStandaloneBlisspixelDeeprHostConsumptionReport(input: {
           input.descriptor.linkedArtifacts.runtimePromotionSpecificationPath,
       },
       proof: {
-        primaryChecker: "npm run check:standalone-blisspixel-deepr-host-callable",
+        primaryChecker: "pnpm run check:standalone-blisspixel-deepr-host-callable",
         supportingCheckers: [
-          "npm run check:runtime-host-callable-adapter-contract",
+          "pnpm run check:runtime-host-callable-adapter-contract",
         ],
       },
       stopLine:
@@ -1093,8 +1093,8 @@ export function renderStandaloneBlisspixelDeeprHostConsumptionReport(input: {
     proof: {
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
-        "npm run check:standalone-blisspixel-deepr-host-callable",
-        "npm run check:runtime-host-callable-adapter-contract",
+        "pnpm run check:standalone-blisspixel-deepr-host-callable",
+        "pnpm run check:runtime-host-callable-adapter-contract",
         ...(input.supportingCheckers ?? []),
       ],
     },
@@ -1157,8 +1157,8 @@ export function renderStandaloneBlisspixelDeeprHostCallableExecutionReport(input
     proof: {
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
-        "npm run check:standalone-blisspixel-deepr-host-callable",
-        "npm run check:runtime-host-callable-adapter-contract",
+        "pnpm run check:standalone-blisspixel-deepr-host-callable",
+        "pnpm run check:runtime-host-callable-adapter-contract",
         ...(input.supportingCheckers ?? []),
       ],
     },
@@ -1707,10 +1707,10 @@ export async function invokeStandaloneScientifyLiteratureAccessTool(input: {
         executionEvidencePath: execution.record.artifacts.recordPath,
       },
       proof: {
-        primaryChecker: "npm run check:standalone-scientify-host-consumption",
+        primaryChecker: "pnpm run check:standalone-scientify-host-consumption",
         supportingCheckers: [
-          "npm run check:standalone-scientify-host-adapter",
-          "npm run check:directive-scientify-runtime-promotion",
+          "pnpm run check:standalone-scientify-host-adapter",
+          "pnpm run check:directive-scientify-runtime-promotion",
         ],
       },
       stopLine:
@@ -1891,10 +1891,10 @@ export function invokeStandaloneResearchVaultDescriptorCallable(input: {
           descriptor.linkedArtifacts.runtimeHostSelectionResolutionPath,
       },
       proof: {
-        primaryChecker: "npm run check:standalone-research-vault-host-callable",
+        primaryChecker: "pnpm run check:standalone-research-vault-host-callable",
         supportingCheckers: [
-          "npm run check:standalone-research-vault-host-adapter",
-          "npm run check:standalone-research-vault-host-adapter-boundary",
+          "pnpm run check:standalone-research-vault-host-adapter",
+          "pnpm run check:standalone-research-vault-host-adapter-boundary",
         ],
       },
       stopLine:
@@ -2016,10 +2016,10 @@ export async function invokeStandaloneResearchVaultSourcePackTool(input: {
         executionEvidencePath: execution.record.artifacts.recordPath,
       },
       proof: {
-        primaryChecker: "npm run check:standalone-research-vault-source-pack-execution",
+        primaryChecker: "pnpm run check:standalone-research-vault-source-pack-execution",
         supportingCheckers: [
-          "npm run check:standalone-research-vault-host-callable",
-          "npm run check:runtime-host-callable-adapter-contract",
+          "pnpm run check:standalone-research-vault-host-callable",
+          "pnpm run check:runtime-host-callable-adapter-contract",
         ],
       },
       stopLine:
@@ -2171,9 +2171,9 @@ export function invokeStandaloneBlisspixelDeeprDescriptorCallable(input: {
           descriptor.linkedArtifacts.runtimePromotionSpecificationPath,
       },
       proof: {
-        primaryChecker: "npm run check:standalone-blisspixel-deepr-host-callable",
+        primaryChecker: "pnpm run check:standalone-blisspixel-deepr-host-callable",
         supportingCheckers: [
-          "npm run check:runtime-host-callable-adapter-contract",
+          "pnpm run check:runtime-host-callable-adapter-contract",
         ],
       },
       stopLine:

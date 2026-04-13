@@ -1,0 +1,4 @@
+packages:
+  - "ui"
+  - "discovery/research-engine"
+  - "hosts/integration-kit"

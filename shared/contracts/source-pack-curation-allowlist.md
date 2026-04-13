@@ -60,4 +60,4 @@ The following must not be promoted by default:
 
 ## Validation Hook
 
-- `npm run check:directive-orchestration-allowlist-contracts`
+- `pnpm run check:directive-orchestration-allowlist-contracts`

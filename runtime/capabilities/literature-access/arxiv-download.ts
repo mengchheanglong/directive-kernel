@@ -11,7 +11,7 @@
  * - Same tar extraction logic
  *
  * Uses system `tar` command for archive extraction (available on
- * Windows 10+, macOS, and Linux without additional npm dependencies).
+ * Windows 10+, macOS, and Linux without additional Node package installs).
  */
 
 import * as fs from "node:fs";

@@ -304,7 +304,7 @@ function createTransformationRecordExample(receivedAt: string): JsonValue {
       "count the remaining operator step once canonical writers exist",
     evaluator_type: "automated",
     evaluator_command:
-      "npm run check:directive-standalone-runtime-host && npm run check:directive-standalone-api-host",
+      "pnpm run check:directive-standalone-runtime-host && pnpm run check:directive-standalone-api-host",
     comparison_mode: "before-after",
     baseline_artifact_path:
       `runtime/03-proof/${receivedAt}-dw-bootstrap-transformation-example-transformation-proof.json`,
@@ -346,7 +346,7 @@ function createRuntimePromotionExample(receivedAt: string): JsonValue {
     quality_gate_profile: "bounded_local_reference_guard/v1",
     promotion_profile_family: "bounded_local_reference",
     proof_shape: "runtime_local_artifact_proof/v1",
-    primary_host_checker: "npm run check:directive-standalone-runtime-host",
+    primary_host_checker: "pnpm run check:directive-standalone-runtime-host",
     full_text_coverage_threshold: "0",
     evidence_binding_threshold: "100",
     citation_error_threshold: "0",

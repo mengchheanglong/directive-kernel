@@ -38,4 +38,4 @@ Define mandatory separation between read-only planning/evaluation and constraine
 
 ## Validation Hook
 
-- `npm run check:directive-gh-aw-contracts`
+- `pnpm run check:directive-gh-aw-contracts`

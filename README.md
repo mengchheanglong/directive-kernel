@@ -87,8 +87,7 @@ Pass that goal into Discovery before the source enters the front door.
 From the repo root:
 
 ```powershell
-npm install
-npm run ui:install
+pnpm install
 ```
 
 If you want live web/provider research, also configure the optional provider keys described in:
@@ -120,13 +119,13 @@ node --experimental-strip-types ./hosts/standalone-host/cli.ts serve --config ./
 Build the UI and run the web host:
 
 ```powershell
-npm run start
+pnpm run start
 ```
 
 Or for dev:
 
 ```powershell
-npm run dev
+pnpm run dev
 ```
 
 ## Clone-And-Wire Into Another Project
