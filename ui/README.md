@@ -23,7 +23,7 @@ npm run build
 The canonical browser-level host check lives at:
 
 ```bash
-npm run check:frontend-host
+npm run dev
 ```
 
 from the Directive Kernel root.

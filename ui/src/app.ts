@@ -93,7 +93,7 @@ import {
   workflowDecisionForCandidate as workflowDecisionForCandidateView,
 } from "./renderers/workflow";
 
-class DirectiveFrontendApp extends LitElement {
+class DirectiveUiApp extends LitElement {
   static properties = {
     route: { state: true },
     page: { state: true },
@@ -1675,7 +1675,7 @@ class DirectiveFrontendApp extends LitElement {
           </section>
 
           <section class="queue-summary-grid">
-            ${this.renderQueueStat("Total queue entries", entries.length, "All persisted Discovery queue cases visible to the product frontend.")}
+            ${this.renderQueueStat("Total queue entries", entries.length, "All persisted Discovery queue cases visible to the product UI.")}
             ${this.renderQueueStat("Runtime-tracked cases", runtimeEntries.length, "Cases whose current head or route is now in the Runtime lane.")}
             ${this.renderQueueStat("Architecture-tracked cases", architectureEntries.length, "Cases whose current head or route is now in the Architecture lane.")}
             ${this.renderQueueStat("Cases with live next steps", pendingActionEntries.length, "Entries that still expose an explicit continue-from-here action in current truth.")}
@@ -1794,7 +1794,7 @@ class DirectiveFrontendApp extends LitElement {
     if (this.page.kind === "handoffs") {
       const data = this.page.data;
       return html`
-        ${data.handoffWarnings?.length ? html`<section class="panel warning"><h3>Invalid handoff artifacts</h3><p class="muted">These are shown as raw files so the frontend remains operable even when one handoff artifact is malformed.</p></section>` : nothing}
+        ${data.handoffWarnings?.length ? html`<section class="panel warning"><h3>Invalid handoff artifacts</h3><p class="muted">These are shown as raw files so the UI remains operable even when one handoff artifact is malformed.</p></section>` : nothing}
         <section class="panel"><h2>Handoff stubs</h2><table><thead><tr><th>title</th><th>lane</th><th>status</th><th>candidate id</th><th>artifact</th><th>bounded start</th></tr></thead><tbody>
           ${data.handoffStubs.length ? data.handoffStubs.map((stub: any) => html`
             <tr>
@@ -2042,7 +2042,7 @@ class DirectiveFrontendApp extends LitElement {
       return html`
         <section class="hero">
           <h2>OpenMOSS Runtime seam review</h2>
-          <p>This is the current product-facing Runtime stop for Directive Kernel. The frontend shows the live Runtime truth, but Runtime and Engine still own blocker judgment, progression rules, and any later implementation, integration, or execution work.</p>
+          <p>This is the current product-facing Runtime stop for Directive Kernel. The UI shows the live Runtime truth, but Runtime and Engine still own blocker judgment, progression rules, and any later implementation, integration, or execution work.</p>
           <div class="hero-meta">
             ${this.renderQueueTag(detail.currentStage || "runtime.promotion_readiness.opened", "runtime")}
             ${this.renderQueueTag(detail.currentStatus || "promotion_readiness_opened")}
@@ -2122,8 +2122,8 @@ class DirectiveFrontendApp extends LitElement {
 
         <section class="panel message">
           <h3>Directive Kernel product boundary</h3>
-          <p>The Directive Kernel frontend is the active review surface here. It exposes current stage, next legal step, proposed host, blockers, and linked artifacts, while Runtime and Engine continue to own all real gating and progression logic.</p>
-          <p class="muted">DW frontend capability: ${detail.frontendCapabilityDecision || "not explicitly recorded"} | host-facing promotion decision: ${detail.hostFacingPromotionDecision || "not explicitly recorded"}</p>
+          <p>The Directive Kernel UI is the active review surface here. It exposes current stage, next legal step, proposed host, blockers, and linked artifacts, while Runtime and Engine continue to own all real gating and progression logic.</p>
+          <p class="muted">DW UI capability: ${detail.frontendCapabilityDecision || "not explicitly recorded"} | host-facing promotion decision: ${detail.hostFacingPromotionDecision || "not explicitly recorded"}</p>
         </section>
 
         <section class="panel"><h3>Raw promotion-readiness artifact</h3><pre>${detail.content}</pre></section>
@@ -2528,5 +2528,5 @@ class DirectiveFrontendApp extends LitElement {
   }
 }
 
-customElements.define("directive-frontend-app", DirectiveFrontendApp);
+customElements.define("directive-ui-app", DirectiveUiApp);
 

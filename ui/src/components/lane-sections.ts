@@ -295,7 +295,7 @@ export function renderRuntimeLaneSummary(
         <section class="runtime-lane-stack">
           <div class="queue-highlight">
             <h3>Active Runtime cases</h3>
-            <p class="muted">Cases currently routed into the Runtime lane and visible through the product frontend.</p>
+            <p class="muted">Cases currently routed into the Runtime lane and visible through the product UI.</p>
           </div>
           ${summary.activeCases.length
             ? summary.activeCases.map((entry) => renderRuntimeCaseStrip(entry, context))
@@ -360,7 +360,7 @@ export function renderArchitectureCaseStrip(
   return renderLaneCaseStrip({
     tone: "architecture",
     title: entry.candidate_name,
-    summary: `${entry.candidate_name} remains visible through the Architecture lane as a truth-backed case summary. The frontend shows the current live head and next legal step, while Architecture keeps ownership of downstream legality and progression.`,
+    summary: `${entry.candidate_name} remains visible through the Architecture lane as a truth-backed case summary. The UI shows the current live head and next legal step, while Architecture keeps ownership of downstream legality and progression.`,
     tags: [
       { value: entry.current_case_stage ?? "architecture state not resolved", tone: "architecture" },
       { value: entry.candidate_id, tone: "architecture" },
@@ -384,7 +384,7 @@ export function renderArchitectureCaseStrip(
           : html`<p class="muted">Current head not resolved.</p>`,
       },
     ],
-    boundaryNote: "Architecture is a real lane with retained outputs and downstream chains. This strip stays read-only and truth-backed rather than reopening closed work from the frontend.",
+    boundaryNote: "Architecture is a real lane with retained outputs and downstream chains. This strip stays read-only and truth-backed rather than reopening closed work from the UI.",
     action: head
       ? {
           href: head.view_path,
@@ -401,7 +401,7 @@ export function renderArchitectureLaneSummary(
   return html`
     <section class="panel">
       <h2>Architecture lane</h2>
-      <p class="muted">Architecture is already a real product lane with bounded starts, results, adoption, retention, integration, consumption, and evaluation history. The frontend now surfaces that lane directly instead of hiding it behind artifact-only drill-down.</p>
+      <p class="muted">Architecture is already a real product lane with bounded starts, results, adoption, retention, integration, consumption, and evaluation history. The UI now surfaces that lane directly instead of hiding it behind artifact-only drill-down.</p>
       <div class="lane-page-grid" style="margin-top:14px;">
         <section class="lane-page-stack">
           <div class="queue-highlight">

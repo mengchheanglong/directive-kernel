@@ -67,7 +67,7 @@ In particular, hosts must not become the canonical owner of:
 ## Current Host State
 
 - `hosts/standalone-host/` is the filesystem reference host.
-- `hosts/web-host/` is the product-owned frontend/API host.
+- `hosts/web-host/` is the product-owned UI/API host.
 - `hosts/integration-kit/` is the starter surface for external hosts.
 - Future hosts should be able to integrate Directive Workspace through the same product-owned contracts and shared operating assets.
 

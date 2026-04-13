@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { startDirectiveFrontendServer } from "../hosts/web-host/server.ts";
+import { startDirectiveUiServer } from "../hosts/web-host/server.ts";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DIRECTIVE_ROOT = path.resolve(SCRIPT_DIR, "..");
@@ -26,22 +26,22 @@ function parseArgs(argv: string[]) {
 
 async function main() {
   const flags = parseArgs(process.argv.slice(2));
-  const host = String(flags.host || process.env.DIRECTIVE_FRONTEND_HOST || "127.0.0.1").trim();
-  const portValue = String(flags.port || process.env.DIRECTIVE_FRONTEND_PORT || "43127").trim();
+  const host = String(flags.host || process.env.DIRECTIVE_UI_HOST || process.env.DIRECTIVE_FRONTEND_HOST || "127.0.0.1").trim();
+  const portValue = String(flags.port || process.env.DIRECTIVE_UI_PORT || process.env.DIRECTIVE_FRONTEND_PORT || "43127").trim();
   const port = portValue ? Number(portValue) : undefined;
 
   if (port !== undefined && (!Number.isInteger(port) || port < 0 || port > 65535)) {
-    throw new Error("Invalid frontend port");
+    throw new Error("Invalid ui port");
   }
 
-  const handle = await startDirectiveFrontendServer({
+  const handle = await startDirectiveUiServer({
     directiveRoot: DIRECTIVE_ROOT,
     host,
     port,
   });
 
   process.stdout.write(
-    `Directive Kernel frontend host running\norigin: ${handle.origin}\ndirectiveRoot: ${handle.directiveRoot}\n`,
+    `Directive Kernel UI host running\norigin: ${handle.origin}\ndirectiveRoot: ${handle.directiveRoot}\n`,
   );
 
   const close = async () => {

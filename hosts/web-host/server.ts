@@ -60,13 +60,13 @@ import {
   readDirectiveFrontendSnapshot,
 } from "./data.ts";
 
-export type StartDirectiveFrontendServerOptions = {
+export type StartDirectiveUiServerOptions = {
   directiveRoot: string;
   host?: string;
   port?: number;
 };
 
-export type DirectiveFrontendServerHandle = {
+export type DirectiveUiServerHandle = {
   server: NodeHttpServer;
   host: string;
   port: number;
@@ -75,10 +75,14 @@ export type DirectiveFrontendServerHandle = {
   close(): Promise<void>;
 };
 
+export type StartDirectiveFrontendServerOptions = StartDirectiveUiServerOptions;
+export type DirectiveFrontendServerHandle = DirectiveUiServerHandle;
+
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
-const FRONTEND_APP_ROOT = path.resolve(MODULE_DIR, "..", "..", "ui");
-const FRONTEND_DIST_ROOT = path.join(FRONTEND_APP_ROOT, "dist");
-const FRONTEND_INDEX_PATH = path.join(FRONTEND_DIST_ROOT, "index.html");
+const UI_APP_ROOT = path.resolve(MODULE_DIR, "..", "..", "ui");
+const UI_DIST_ROOT = path.join(UI_APP_ROOT, "dist");
+const UI_INDEX_PATH = path.join(UI_DIST_ROOT, "index.html");
+const UI_OPERATOR_ACTOR = "directive-ui-operator";
 
 function writeJson(res: ServerResponse, statusCode: number, payload: unknown) {
   res.statusCode = statusCode;
@@ -175,10 +179,10 @@ function getContentType(filePath: string) {
 
 function resolveStaticFile(requestPath: string) {
   const candidate = decodeURIComponent(requestPath).replace(/^\/+/, "");
-  const absolutePath = path.resolve(FRONTEND_DIST_ROOT, candidate);
-  const prefix = `${normalizeAbsolutePath(FRONTEND_DIST_ROOT)}/`;
+  const absolutePath = path.resolve(UI_DIST_ROOT, candidate);
+  const prefix = `${normalizeAbsolutePath(UI_DIST_ROOT)}/`;
   const normalized = normalizeAbsolutePath(absolutePath);
-  if (normalized !== normalizeAbsolutePath(FRONTEND_DIST_ROOT) && !normalized.startsWith(prefix)) {
+  if (normalized !== normalizeAbsolutePath(UI_DIST_ROOT) && !normalized.startsWith(prefix)) {
     return null;
   }
   if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
@@ -200,9 +204,9 @@ npm --prefix ./ui run build
 node --experimental-strip-types ./hosts/web-host/cli.ts serve --directive-root ${escapedRoot}</pre></section></main></body></html>`;
 }
 
-export function startDirectiveFrontendServer(
-  options: StartDirectiveFrontendServerOptions,
-): Promise<DirectiveFrontendServerHandle> {
+export function startDirectiveUiServer(
+  options: StartDirectiveUiServerOptions,
+): Promise<DirectiveUiServerHandle> {
   const directiveRoot = normalizeAbsolutePath(options.directiveRoot);
   const host = options.host || "127.0.0.1";
   const port = options.port ?? 0;
@@ -342,7 +346,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, await runtimeHost.openDiscoveryRoute({
           routingPath: payload.routingPath,
           approved: payload.approved,
-          approvedBy: "directive-frontend-operator",
+          approvedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/runtime/open-follow-up") {
@@ -353,7 +357,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, await runtimeHost.openRuntimeFollowUp({
           followUpPath: payload.followUpPath,
           approved: payload.approved,
-          approvedBy: "directive-frontend-operator",
+          approvedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/runtime/open-proof") {
@@ -364,7 +368,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, await runtimeHost.openRuntimeRecordProof({
           runtimeRecordPath: payload.runtimeRecordPath,
           approved: payload.approved,
-          approvedBy: "directive-frontend-operator",
+          approvedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/runtime/open-runtime-capability-boundary") {
@@ -375,7 +379,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, await runtimeHost.openRuntimeProofRuntimeCapabilityBoundary({
           runtimeProofPath: payload.runtimeProofPath,
           approved: payload.approved,
-          approvedBy: "directive-frontend-operator",
+          approvedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/runtime/open-promotion-readiness") {
@@ -386,7 +390,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, await runtimeHost.openRuntimePromotionReadiness({
           capabilityBoundaryPath: payload.capabilityBoundaryPath,
           approved: payload.approved,
-          approvedBy: "directive-frontend-operator",
+          approvedBy: UI_OPERATOR_ACTOR,
         }));
       }
 
@@ -395,7 +399,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, startDirectiveArchitectureFromHandoff({
           directiveRoot,
           handoffPath: payload.handoffPath,
-          startedBy: "directive-frontend-operator",
+          startedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/bounded-closeout") {
@@ -429,7 +433,7 @@ export function startDirectiveFrontendServer(
           deltaEvidencePresent: payload.deltaEvidencePresent,
           noUnresolvedBaggage: payload.noUnresolvedBaggage,
           productArtifactMaterialized: payload.productArtifactMaterialized,
-          closedBy: "directive-frontend-operator",
+          closedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/note-handoff-closeout") {
@@ -463,7 +467,7 @@ export function startDirectiveFrontendServer(
           deltaEvidencePresent: payload.deltaEvidencePresent,
           noUnresolvedBaggage: payload.noUnresolvedBaggage,
           productArtifactMaterialized: payload.productArtifactMaterialized,
-          closedBy: "directive-frontend-operator",
+          closedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/bounded-continuation") {
@@ -473,7 +477,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, continueDirectiveArchitectureFromBoundedResult({
           directiveRoot,
           resultPath: payload.resultPath,
-          continuedBy: "directive-frontend-operator",
+          continuedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/adopt-result") {
@@ -483,7 +487,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, adoptDirectiveArchitectureResult({
           directiveRoot,
           resultPath: payload.resultPath,
-          adoptedBy: "directive-frontend-operator",
+          adoptedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/create-implementation-target") {
@@ -499,7 +503,7 @@ export function startDirectiveFrontendServer(
           selectedBoundedSlice: payload.selectedBoundedSlice,
           mechanicalSuccessCriteria: payload.mechanicalSuccessCriteria,
           explicitLimitations: payload.explicitLimitations,
-          createdBy: "directive-frontend-operator",
+          createdBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/create-implementation-result") {
@@ -521,7 +525,7 @@ export function startDirectiveFrontendServer(
           evidence: payload.evidence,
           validationResult: payload.validationResult,
           rollbackNote: payload.rollbackNote,
-          completedBy: "directive-frontend-operator",
+          completedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/confirm-retention") {
@@ -541,7 +545,7 @@ export function startDirectiveFrontendServer(
           reuseScope: payload.reuseScope,
           confirmationDecision: payload.confirmationDecision,
           rollbackBoundary: payload.rollbackBoundary,
-          confirmedBy: "directive-frontend-operator",
+          confirmedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/create-integration-record") {
@@ -563,7 +567,7 @@ export function startDirectiveFrontendServer(
           validationBoundary: payload.validationBoundary,
           integrationDecision: payload.integrationDecision,
           rollbackBoundary: payload.rollbackBoundary,
-          createdBy: "directive-frontend-operator",
+          createdBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/record-consumption") {
@@ -585,7 +589,7 @@ export function startDirectiveFrontendServer(
           validationResult: payload.validationResult,
           outcome: payload.outcome,
           rollbackNote: payload.rollbackNote,
-          recordedBy: "directive-frontend-operator",
+          recordedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/evaluate-consumption") {
@@ -607,7 +611,7 @@ export function startDirectiveFrontendServer(
           retainedUsefulnessAssessment: payload.retainedUsefulnessAssessment,
           nextBoundedAction: payload.nextBoundedAction,
           rollbackNote: payload.rollbackNote,
-          evaluatedBy: "directive-frontend-operator",
+          evaluatedBy: UI_OPERATOR_ACTOR,
         }));
       }
       if (method === "POST" && pathname === "/api/architecture/reopen-from-evaluation") {
@@ -617,7 +621,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 200, reopenDirectiveArchitectureFromEvaluation({
           directiveRoot,
           evaluationPath: payload.evaluationPath,
-          reopenedBy: "directive-frontend-operator",
+          reopenedBy: UI_OPERATOR_ACTOR,
         }));
       }
 
@@ -625,7 +629,7 @@ export function startDirectiveFrontendServer(
         return void writeJson(res, 404, { ok: false, error: "not_found" });
       }
 
-      if (!fs.existsSync(FRONTEND_INDEX_PATH)) {
+      if (!fs.existsSync(UI_INDEX_PATH)) {
         return void writeHtml(res, 503, renderMissingBuildPage(directiveRoot));
       }
 
@@ -641,7 +645,7 @@ export function startDirectiveFrontendServer(
         return void writeStaticFile(res, staticFile);
       }
 
-      return void writeStaticFile(res, FRONTEND_INDEX_PATH);
+      return void writeStaticFile(res, UI_INDEX_PATH);
     } catch (error) {
       if (pathname.startsWith("/api/")) {
         return void writeJson(
@@ -653,7 +657,7 @@ export function startDirectiveFrontendServer(
       return void writeHtml(
         res,
         500,
-        `<html lang="en"><head><meta charset="utf-8" /><title>Directive Kernel Frontend Error</title></head><body><main><h1>Directive Kernel Frontend Error</h1><pre>${escapeHtml(String((error as Error).message || error))}</pre></main></body></html>`,
+        `<html lang="en"><head><meta charset="utf-8" /><title>Directive Kernel UI Error</title></head><body><main><h1>Directive Kernel UI Error</h1><pre>${escapeHtml(String((error as Error).message || error))}</pre></main></body></html>`,
       );
     }
   });
@@ -663,7 +667,7 @@ export function startDirectiveFrontendServer(
     server.listen(port, host, () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        reject(new Error("directive_frontend_server_failed_to_bind"));
+        reject(new Error("directive_ui_server_failed_to_bind"));
         return;
       }
 
@@ -684,6 +688,7 @@ export function startDirectiveFrontendServer(
   });
 }
 
-export type StartDirectiveWorkbenchServerOptions = StartDirectiveFrontendServerOptions;
-export type DirectiveWorkbenchServerHandle = DirectiveFrontendServerHandle;
-export const startDirectiveWorkbenchServer = startDirectiveFrontendServer;
+export const startDirectiveFrontendServer = startDirectiveUiServer;
+export type StartDirectiveWorkbenchServerOptions = StartDirectiveUiServerOptions;
+export type DirectiveWorkbenchServerHandle = DirectiveUiServerHandle;
+export const startDirectiveWorkbenchServer = startDirectiveUiServer;

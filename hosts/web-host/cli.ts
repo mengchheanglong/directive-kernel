@@ -1,7 +1,7 @@
-import { startDirectiveFrontendServer } from "./server.ts";
+import { startDirectiveUiServer } from "./server.ts";
 
 function printUsage() {
-  process.stdout.write(`Directive Kernel Frontend CLI
+  process.stdout.write(`Directive Kernel UI CLI
 
 Commands:
   serve --directive-root <path> [--host <host>] [--port <port>]
@@ -49,7 +49,7 @@ async function main() {
     throw new Error("Invalid value for --port");
   }
 
-  const handle = await startDirectiveFrontendServer({
+  const handle = await startDirectiveUiServer({
     directiveRoot,
     host: flags.host,
     port,

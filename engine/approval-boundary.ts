@@ -49,8 +49,8 @@ export function requireDirectiveExplicitApproval(input: {
 }
 
 export function normalizeDirectiveApprovalActor(actor: string | null | undefined) {
-  return String(actor || "directive-frontend-operator").trim()
-    || "directive-frontend-operator";
+  return String(actor || "directive-ui-operator").trim()
+    || "directive-ui-operator";
 }
 
 export function requireDirectiveEligibleStatus(input: {

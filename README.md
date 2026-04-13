@@ -7,7 +7,7 @@ Use it when you want your project to:
 - decide which sources are worth keeping
 - route useful work into the right next step
 - turn useful results into something reusable
-- see the current state in a simple host or frontend
+- see the current state in a simple host or UI
 
 ## What This Repo Is For
 
@@ -20,7 +20,7 @@ Use Directive Kernel when you want your project to take in outside sources, judg
 3. Discovery decides whether to hold, review, or route the source
 4. Runtime turns useful routed work into reusable capability
 5. Architecture handles system-improvement work
-6. the host and frontend show the current state and artifact detail
+6. the host and UI show the current state and artifact detail
 
 The three main lanes are:
 - `Discovery` for intake and routing
@@ -117,7 +117,7 @@ node --experimental-strip-types ./hosts/standalone-host/cli.ts serve --config ./
 
 ### Web host
 
-Build the frontend and run the web host:
+Build the UI and run the web host:
 
 ```powershell
 npm run start

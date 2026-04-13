@@ -3,5 +3,5 @@ import "./app";
 
 const mount = document.querySelector("#app");
 if (mount) {
-  mount.append(document.createElement("directive-frontend-app"));
+  mount.append(document.createElement("directive-ui-app"));
 }

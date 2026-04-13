@@ -6,12 +6,16 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DIRECTIVE_ROOT = path.resolve(SCRIPT_DIR, "..");
-const FRONTEND_ROOT = path.join(DIRECTIVE_ROOT, "ui");
+const UI_ROOT = path.join(DIRECTIVE_ROOT, "ui");
 const VITE_BIN = path.join(DIRECTIVE_ROOT, "ui", "node_modules", "vite", "bin", "vite.js");
 
-const DEV_HOST = process.env.DIRECTIVE_FRONTEND_DEV_HOST || "127.0.0.1";
-const DEV_PORT = Number(process.env.DIRECTIVE_FRONTEND_DEV_PORT || "4173");
-const API_PORT = Number(process.env.DIRECTIVE_FRONTEND_API_PORT || "43128");
+function readEnv(name: string, legacyName: string, fallback: string) {
+  return process.env[name] || process.env[legacyName] || fallback;
+}
+
+const DEV_HOST = readEnv("DIRECTIVE_UI_DEV_HOST", "DIRECTIVE_FRONTEND_DEV_HOST", "127.0.0.1");
+const DEV_PORT = Number(readEnv("DIRECTIVE_UI_DEV_PORT", "DIRECTIVE_FRONTEND_DEV_PORT", "4173"));
+const API_PORT = Number(readEnv("DIRECTIVE_UI_API_PORT", "DIRECTIVE_FRONTEND_API_PORT", "43128"));
 function spawnChild(command: string, args: string[], options?: {
   env?: NodeJS.ProcessEnv;
   cwd?: string;
@@ -80,23 +84,23 @@ async function stopChild(child: ChildProcess | null) {
 
 async function main() {
   if (!Number.isInteger(DEV_PORT) || DEV_PORT < 1 || DEV_PORT > 65535) {
-    throw new Error("Invalid DIRECTIVE_FRONTEND_DEV_PORT");
+    throw new Error("Invalid DIRECTIVE_UI_DEV_PORT");
   }
   if (!Number.isInteger(API_PORT) || API_PORT < 1 || API_PORT > 65535) {
-    throw new Error("Invalid DIRECTIVE_FRONTEND_API_PORT");
+    throw new Error("Invalid DIRECTIVE_UI_API_PORT");
   }
   if (!fs.existsSync(VITE_BIN)) {
     throw new Error("Missing UI dev dependency: vite. Run `npm --prefix ./ui install`.");
   }
 
-  const resolvedApiPort = await resolveOpenPort(DEV_HOST, API_PORT, "frontend API");
-  const resolvedDevPort = await resolveOpenPort(DEV_HOST, DEV_PORT, "frontend dev");
+  const resolvedApiPort = await resolveOpenPort(DEV_HOST, API_PORT, "ui API");
+  const resolvedDevPort = await resolveOpenPort(DEV_HOST, DEV_PORT, "ui dev");
   const apiOrigin = `http://${DEV_HOST}:${resolvedApiPort}`;
   const appOrigin = `http://${DEV_HOST}:${resolvedDevPort}`;
 
   const hostProcess = spawnChild(process.execPath, [
     "--experimental-strip-types",
-    "./scripts/start-frontend.ts",
+    "./scripts/start-ui.ts",
     "--host",
     DEV_HOST,
     "--port",
@@ -114,15 +118,15 @@ async function main() {
       "--strictPort",
     ],
     {
-      cwd: FRONTEND_ROOT,
+      cwd: UI_ROOT,
       env: {
-        DIRECTIVE_FRONTEND_API_ORIGIN: apiOrigin,
+        DIRECTIVE_UI_API_ORIGIN: apiOrigin,
       },
     },
   );
 
   process.stdout.write(
-    `Directive Kernel dev stack\nfrontend: ${appOrigin}\napi-host: ${apiOrigin}\n`,
+    `Directive Kernel dev stack\nui: ${appOrigin}\napi-host: ${apiOrigin}\n`,
   );
 
   let shuttingDown = false;
