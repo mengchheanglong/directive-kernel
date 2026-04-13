@@ -21,6 +21,7 @@
     "adaptationPlan",
     "improvementPlan",
     "proofPlan",
+    "priorPlanContext",
     "decision",
     "integrationProposal",
     "reportPlan",
@@ -31,7 +32,7 @@
       "const": "shared/schemas/directive-engine-run-record.schema.json"
     },
     "schemaVersion": {
-      "const": 3
+      "const": 5
     },
     "recordKind": {
       "const": "directive_engine_run_record"
@@ -175,10 +176,16 @@
           "routeConflict",
           "needsHumanReview",
           "missionSpecificityWarning",
+          "missionHealth",
           "goalCopilot",
           "confidenceRecovery",
+          "followUpQuestions",
           "gapRadar",
           "earnedAutonomy",
+          "sourceMemory",
+          "sourceSimilarity",
+          "laneProportions",
+          "secondaryLanes",
           "ambiguitySummary",
           "reviewGuidance",
           "scoreBreakdown",
@@ -195,6 +202,39 @@
         "routeConflict": { "type": "boolean" },
         "needsHumanReview": { "type": "boolean" },
         "missionSpecificityWarning": { "type": ["string", "null"] },
+        "missionHealth": {
+          "type": ["object", "null"],
+          "required": [
+            "overallScore",
+            "healthGrade",
+            "objectiveSpecificityScore",
+            "usefulnessSignalQualityScore",
+            "constraintQualityScore",
+            "lanePriorityClarityScore",
+            "overmatchRiskScore",
+            "stalenessRiskScore",
+            "warnings",
+            "tensionSignals",
+            "rationale",
+            "suggestedObjectiveRewrite",
+            "suggestedConstraintAdditions"
+          ],
+          "properties": {
+            "overallScore": { "type": "number" },
+            "healthGrade": { "enum": ["A", "B", "C", "D", "F"] },
+            "objectiveSpecificityScore": { "type": "number" },
+            "usefulnessSignalQualityScore": { "type": "number" },
+            "constraintQualityScore": { "type": "number" },
+            "lanePriorityClarityScore": { "type": "number" },
+            "overmatchRiskScore": { "type": "number" },
+            "stalenessRiskScore": { "type": "number" },
+            "warnings": { "type": "array", "items": { "type": "string" } },
+            "tensionSignals": { "type": "array", "items": { "type": "string" } },
+            "rationale": { "type": "array", "items": { "type": "string" } },
+            "suggestedObjectiveRewrite": { "type": ["string", "null"] },
+            "suggestedConstraintAdditions": { "type": "array", "items": { "type": "string" } }
+          }
+        },
         "ambiguitySummary": {
           "type": "object",
           "required": [
@@ -283,6 +323,30 @@
             }
           }
         },
+        "followUpQuestions": {
+          "type": ["object", "null"],
+          "required": [
+            "summary",
+            "questions"
+          ],
+          "properties": {
+            "summary": { "type": "string", "minLength": 1 },
+            "questions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["field", "question", "whyItMatters", "exampleAnswer", "predictedEffect"],
+                "properties": {
+                  "field": { "type": "string", "minLength": 1 },
+                  "question": { "type": "string", "minLength": 1 },
+                  "whyItMatters": { "type": "string", "minLength": 1 },
+                  "exampleAnswer": { "type": ["string", "null"] },
+                  "predictedEffect": { "type": "string", "minLength": 1 }
+                }
+              }
+            }
+          }
+        },
         "gapRadar": {
           "type": ["object", "null"],
           "required": ["summary", "suggestions"],
@@ -343,6 +407,78 @@
             "approvalReductionApplied": { "type": "boolean" },
             "summary": { "type": "string", "minLength": 1 },
             "rationale": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "sourceMemory": {
+          "type": ["object", "null"],
+          "required": ["summary", "biasAdjustments", "matchingTopics", "matchingRouteClass", "rationale"],
+          "properties": {
+            "summary": { "type": "string", "minLength": 1 },
+            "biasAdjustments": { "type": "object" },
+            "matchingTopics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["token", "recentCount", "totalCount", "dominantLaneId"],
+                "properties": {
+                  "token": { "type": "string", "minLength": 1 },
+                  "recentCount": { "type": "integer" },
+                  "totalCount": { "type": "integer" },
+                  "dominantLaneId": { "type": "string", "minLength": 1 }
+                }
+              }
+            },
+            "matchingRouteClass": {
+              "type": ["object", "null"],
+              "required": ["routeClass", "laneId", "sourceType", "recentCount", "totalCount", "lastSeenAt"],
+              "properties": {
+                "routeClass": { "type": "string", "minLength": 1 },
+                "laneId": { "type": "string", "minLength": 1 },
+                "sourceType": { "type": "string", "minLength": 1 },
+                "recentCount": { "type": "integer" },
+                "totalCount": { "type": "integer" },
+                "lastSeenAt": { "type": "string", "minLength": 1 }
+              }
+            },
+            "rationale": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "sourceSimilarity": {
+          "type": ["object", "null"],
+          "required": ["summary", "relatedSources"],
+          "properties": {
+            "summary": { "type": "string", "minLength": 1 },
+            "relatedSources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["runId", "candidateId", "candidateName", "laneId", "decisionState", "receivedAt", "similarityScore", "sharedTokens", "summary"],
+                "properties": {
+                  "runId": { "type": "string", "minLength": 1 },
+                  "candidateId": { "type": "string", "minLength": 1 },
+                  "candidateName": { "type": "string", "minLength": 1 },
+                  "laneId": { "type": "string", "minLength": 1 },
+                  "decisionState": { "type": "string", "minLength": 1 },
+                  "receivedAt": { "type": "string", "minLength": 1 },
+                  "similarityScore": { "type": "number" },
+                  "sharedTokens": { "type": "array", "items": { "type": "string" } },
+                  "summary": { "type": "string", "minLength": 1 }
+                }
+              }
+            }
+          }
+        },
+        "laneProportions": { "type": "object" },
+        "secondaryLanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["laneId", "proportion", "reason"],
+            "properties": {
+              "laneId": { "type": "string", "minLength": 1 },
+              "proportion": { "type": "number" },
+              "reason": { "type": "string", "minLength": 1 }
+            }
           }
         },
         "scoreBreakdown": {
@@ -465,6 +601,54 @@
         "handoffArtifactFamily": { "type": "string", "minLength": 1 },
         "nextAction": { "type": "string", "minLength": 1 },
         "requiresHumanReview": { "type": "boolean" }
+      }
+    },
+    "priorPlanContext": {
+      "type": ["object", "null"],
+      "required": [
+        "routeClass",
+        "summary",
+        "matchingRunCount",
+        "successfulFollowThroughCount",
+        "stalledRunCount",
+        "recurringImprovementGoals",
+        "recurringProofKinds",
+        "adaptationPatterns",
+        "relatedRunIds"
+      ],
+      "properties": {
+        "routeClass": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "matchingRunCount": { "type": "integer" },
+        "successfulFollowThroughCount": { "type": "integer" },
+        "stalledRunCount": { "type": "integer" },
+        "recurringImprovementGoals": { "type": "array", "items": { "type": "string" } },
+        "recurringProofKinds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["proofKind", "count", "status"],
+            "properties": {
+              "proofKind": { "type": "string", "minLength": 1 },
+              "count": { "type": "integer" },
+              "status": { "enum": ["successful", "stalled", "mixed"] }
+            }
+          }
+        },
+        "adaptationPatterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["directiveOwnedForm", "count", "successfulCount", "stalledCount"],
+            "properties": {
+              "directiveOwnedForm": { "type": "string", "minLength": 1 },
+              "count": { "type": "integer" },
+              "successfulCount": { "type": "integer" },
+              "stalledCount": { "type": "integer" }
+            }
+          }
+        },
+        "relatedRunIds": { "type": "array", "items": { "type": "string" } }
       }
     },
     "reportPlan": {

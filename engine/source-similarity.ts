@@ -1,0 +1,91 @@
+import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
+import type {
+  DirectiveEngineLaneId,
+  DirectiveEngineRunRecord,
+  DirectiveEngineSourceItem,
+} from "./types.ts";
+
+export type DirectiveSourceSimilarityMatch = {
+  runId: string;
+  candidateId: string;
+  candidateName: string;
+  laneId: DirectiveEngineLaneId;
+  decisionState: string;
+  receivedAt: string;
+  similarityScore: number;
+  sharedTokens: string[];
+  summary: string;
+};
+
+export type DirectiveSourceSimilarityAssessment = {
+  summary: string;
+  relatedSources: DirectiveSourceSimilarityMatch[];
+} | null;
+
+function flattenSource(source: DirectiveEngineSourceItem) {
+  return [
+    source.title,
+    source.summary ?? "",
+    source.sourceRef,
+    source.missionAlignmentHint ?? "",
+    ...(source.notes ?? []),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function findSharedTokens(left: string[], right: string[]) {
+  const rightSet = new Set(right);
+  return left.filter((token) => rightSet.has(token));
+}
+
+export function deriveDirectiveSourceSimilarityAssessment(input: {
+  source: DirectiveEngineSourceItem;
+  sourceText: string;
+  existingRuns: DirectiveEngineRunRecord[];
+  recommendedLaneId?: DirectiveEngineLaneId | null;
+}) {
+  const sourceTokens = extractSourceSignalTokens(input.sourceText);
+  const relatedSources = input.existingRuns
+    .map((run) => {
+      const runTokens = extractSourceSignalTokens(flattenSource(run.source));
+      const sharedTokens = findSharedTokens(sourceTokens, runTokens);
+      const unionSize = new Set([...sourceTokens, ...runTokens]).size || 1;
+      const similarityScore = Math.round((sharedTokens.length / unionSize) * 100);
+      return {
+        runId: run.runId,
+        candidateId: run.candidate.candidateId,
+        candidateName: run.candidate.candidateName,
+        laneId: run.selectedLane.laneId,
+        decisionState: run.decision.decisionState,
+        receivedAt: run.receivedAt,
+        similarityScore,
+        sharedTokens: sharedTokens.slice(0, 6),
+        summary:
+          `${run.candidate.candidateName} routed to ${run.selectedLane.laneId} (${run.decision.decisionState}) with ${sharedTokens.length} shared signal tokens.`,
+      } satisfies DirectiveSourceSimilarityMatch;
+    })
+    .filter((entry) => entry.sharedTokens.length >= 2)
+    .sort((left, right) => {
+      if (right.similarityScore !== left.similarityScore) {
+        return right.similarityScore - left.similarityScore;
+      }
+      return right.receivedAt.localeCompare(left.receivedAt);
+    })
+    .slice(0, 3);
+
+  if (relatedSources.length === 0) {
+    return null;
+  }
+
+  const matchingLaneCount = input.recommendedLaneId
+    ? relatedSources.filter((entry) => entry.laneId === input.recommendedLaneId).length
+    : 0;
+
+  return {
+    summary: input.recommendedLaneId
+      ? `${matchingLaneCount}/${relatedSources.length} related sources previously landed in ${input.recommendedLaneId}.`
+      : `Found ${relatedSources.length} related prior sources.`,
+    relatedSources,
+  };
+}

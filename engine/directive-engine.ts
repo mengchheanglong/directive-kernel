@@ -48,6 +48,7 @@ import {
   type DirectiveEngineSourceItem,
   type DirectiveEngineWorkflowBoundaryShape,
 } from "./types.ts";
+import { deriveDirectivePriorPlanContext } from "./plan-consumption.ts";
 import { buildRuntimeCallableExecutionEvidenceReport } from "../runtime/lib/runtime-callable-execution-evidence.ts";
 import { buildDirectiveRuntimePromotionAssistanceReport } from "../runtime/lib/runtime-promotion-assistance.ts";
 
@@ -1307,6 +1308,11 @@ export class DirectiveEngine {
         adaptationPlan,
         improvementPlan,
       });
+    const priorPlanContext = deriveDirectivePriorPlanContext({
+      source,
+      recommendedLaneId: selectedLane.laneId,
+      existingRuns,
+    });
     const integrationProposal = buildIntegrationProposal({
       planningInput,
       extractionPlan,
@@ -1342,6 +1348,7 @@ export class DirectiveEngine {
       adaptationPlan,
       improvementPlan,
       proofPlan,
+      priorPlanContext,
       decision,
       integrationProposal,
       reportPlan,

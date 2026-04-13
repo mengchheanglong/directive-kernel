@@ -15,6 +15,10 @@ import {
   compileDirectiveGapRadarSuggestions,
 } from "./gap-radar.ts";
 import { deriveDirectiveEngineEarnedAutonomyAssessment } from "./earned-autonomy.ts";
+import { createDirectiveSourceMemorySnapshot, deriveDirectiveSourceMemoryAssessment } from "./source-memory.ts";
+import { deriveDirectiveSourceSimilarityAssessment } from "./source-similarity.ts";
+import { deriveDirectiveMissionHealth } from "./mission-health.ts";
+import { deriveDirectiveFollowUpQuestionSet } from "./follow-up-questions.ts";
 
 /**
  * Weighted keyword lists.  Each entry is [keyword, weight].
@@ -1164,6 +1168,31 @@ function rankLaneScores(
     }) as Array<["discovery" | "architecture" | "runtime", number]>;
 }
 
+function deriveLaneProportions(
+  laneScores: Record<"discovery" | "architecture" | "runtime", number>,
+) {
+  const total = Object.values(laneScores).reduce((sum, score) => sum + Math.max(0, score), 0);
+  if (total <= 0) {
+    return {
+      discovery: 34,
+      architecture: 33,
+      runtime: 33,
+    };
+  }
+  const raw = {
+    discovery: Math.round((Math.max(0, laneScores.discovery) / total) * 100),
+    architecture: Math.round((Math.max(0, laneScores.architecture) / total) * 100),
+    runtime: Math.round((Math.max(0, laneScores.runtime) / total) * 100),
+  };
+  const sum = raw.discovery + raw.architecture + raw.runtime;
+  if (sum === 100) {
+    return raw;
+  }
+  const winner = deriveRecommendedLane(laneScores);
+  raw[winner] += 100 - sum;
+  return raw;
+}
+
 function deriveAmbiguityPenalty(
   laneScores: Record<"discovery" | "architecture" | "runtime", number>,
 ) {
@@ -1393,6 +1422,10 @@ export function assessDirectiveEngineRouting(input: {
         ? "Mission objective has very low specificity (1 meaningful token). Routing may over-match. Consider adding 2-3 specific terms describing the capability or area being improved."
         : null;
   const goalCopilot = deriveGoalCopilotAssessment(input.mission);
+  const missionHealth = deriveDirectiveMissionHealth({
+    mission: input.mission,
+    existingRuns: [...(input.existingRuns ?? [])],
+  });
   const gapAlignment = matchedGap ? priorityWeight(matchedGap.priority) + 1 : 0;
   const {
     laneScores,
@@ -1425,9 +1458,27 @@ export function assessDirectiveEngineRouting(input: {
       );
     }
   }
+  const sourceMemorySnapshot = createDirectiveSourceMemorySnapshot({
+    runs: [...(input.existingRuns ?? [])],
+  });
+  const provisionalLaneId = deriveRecommendedLane(laneScores);
+  const sourceMemoryPreAssessment = deriveDirectiveSourceMemoryAssessment({
+    snapshot: sourceMemorySnapshot,
+    sourceText,
+    recommendedLaneId: provisionalLaneId,
+    source: input.source,
+  });
+  if (sourceMemoryPreAssessment) {
+    for (const [laneId, adjustment] of Object.entries(sourceMemoryPreAssessment.biasAdjustments)) {
+      if (adjustment > 0 && laneId in laneScores) {
+        (laneScores as Record<string, number>)[laneId] += adjustment;
+      }
+    }
+  }
   const scoreWinnerLaneId = deriveRecommendedLane(laneScores);
   const ambiguityPenalty = deriveAmbiguityPenalty(laneScores);
   const rankedLaneScores = rankLaneScores(laneScores);
+  const laneProportions = deriveLaneProportions(laneScores);
   const topLaneScore = laneScores[scoreWinnerLaneId];
   const runnerUpLaneId = rankedLaneScores[1]?.[0] ?? null;
   const scoreDelta = topLaneScore - (runnerUpLaneId ? laneScores[runnerUpLaneId] : 0);
@@ -1475,6 +1526,24 @@ export function assessDirectiveEngineRouting(input: {
   })
     ? "discovery"
     : scoreWinnerLaneId;
+  const sourceMemory = deriveDirectiveSourceMemoryAssessment({
+    snapshot: sourceMemorySnapshot,
+    sourceText,
+    recommendedLaneId,
+    source: input.source,
+  });
+  const secondaryLanes = rankedLaneScores
+    .filter(([laneId]) => laneId !== recommendedLaneId)
+    .map(([laneId]) => ({
+      laneId,
+      proportion: laneProportions[laneId],
+      reason:
+        laneProportions[laneId] >= 25
+          ? `${laneId} still claims ${laneProportions[laneId]}% of the route score, so this is a material secondary concern.`
+          : `${laneId} remains visible but is not a material secondary owner.`,
+    }))
+    .filter((entry) => entry.proportion >= 25)
+    .slice(0, 2);
   const recommendedRecordShape = deriveRecommendedRecordShape({
     recommendedLaneId,
     confidence,
@@ -1522,6 +1591,24 @@ export function assessDirectiveEngineRouting(input: {
   });
   const needsHumanReview =
     baseNeedsHumanReview && !earnedAutonomy.approvalReductionApplied;
+  const sourceSimilarity = deriveDirectiveSourceSimilarityAssessment({
+    source: input.source,
+    sourceText,
+    existingRuns: [...(input.existingRuns ?? [])],
+    recommendedLaneId,
+  });
+  const followUpQuestions = deriveDirectiveFollowUpQuestionSet({
+    source: input.source,
+    mission: input.mission,
+    missionHealth,
+    goalCopilot,
+    recommendedLaneId,
+    laneProportions,
+    confidence,
+    routeConflict,
+    matchedGap,
+    openGaps: input.openGaps,
+  });
   const confidenceRecovery = deriveConfidenceRecovery({
     source: input.source,
     mission: input.mission,
@@ -1553,6 +1640,27 @@ export function assessDirectiveEngineRouting(input: {
   if (missionSpecificityWarning) {
     rationale.push(missionSpecificityWarning);
     ambiguitySignals.push(missionSpecificityWarning);
+  }
+  if (missionHealth) {
+    const missionHealthLine =
+      `Mission Health scored ${missionHealth.overallScore}/100 (${missionHealth.healthGrade}); over-match risk ${missionHealth.overmatchRiskScore}/5 and staleness risk ${missionHealth.stalenessRiskScore}/5.`;
+    rationale.push(missionHealthLine);
+    metadataSignals.push(missionHealthLine);
+    for (const warning of missionHealth.warnings) {
+      const warningLine = `Mission Health warning: ${warning}`;
+      rationale.push(warningLine);
+      ambiguitySignals.push(warningLine);
+    }
+    for (const tensionLine of missionHealth.tensionSignals) {
+      const fullLine = `Mission Health tension: ${tensionLine}`;
+      rationale.push(fullLine);
+      ambiguitySignals.push(fullLine);
+    }
+    if (missionHealth.suggestedObjectiveRewrite) {
+      const rewriteLine = `Mission Health suggested rewrite: ${missionHealth.suggestedObjectiveRewrite}`;
+      rationale.push(rewriteLine);
+      metadataSignals.push(rewriteLine);
+    }
   }
   rationale.push(
     `Goal Copilot overall score is ${goalCopilot.overallScore}/100.`,
@@ -1593,6 +1701,14 @@ export function assessDirectiveEngineRouting(input: {
     rationale.push(line);
     gapAlignmentSignals.push(line);
   }
+  if (sourceMemory) {
+    rationale.push(`Source Memory summary: ${sourceMemory.summary}`);
+    for (const line of sourceMemory.rationale) {
+      const fullLine = `Source Memory: ${line}`;
+      rationale.push(fullLine);
+      keywordSignals.push(fullLine);
+    }
+  }
   if (gapRadar) {
     const gapRadarLine = `Gap Radar summary: ${gapRadar.summary}`;
     rationale.push(gapRadarLine);
@@ -1619,6 +1735,16 @@ export function assessDirectiveEngineRouting(input: {
       "Earned Autonomy did not waive review because the route class still lacks enough clean history or has contrary evidence.";
     rationale.push(autonomyBlockedLine);
     ambiguitySignals.push(autonomyBlockedLine);
+  }
+  rationale.push(
+    `Lane proportions: discovery=${laneProportions.discovery}%, architecture=${laneProportions.architecture}%, runtime=${laneProportions.runtime}%.`,
+  );
+  if (secondaryLanes.length > 0) {
+    for (const secondaryLane of secondaryLanes) {
+      const secondaryLine = `Secondary lane signal: ${secondaryLane.reason}`;
+      rationale.push(secondaryLine);
+      ambiguitySignals.push(secondaryLine);
+    }
   }
   rationale.push(
     `Recommended ${scoreWinnerLaneId} because its lane score (${laneScores[scoreWinnerLaneId]}) exceeded the alternatives.`,
@@ -1705,6 +1831,17 @@ export function assessDirectiveEngineRouting(input: {
     rationale.push(followUpLine);
     ambiguitySignals.push(followUpLine);
   }
+  if (followUpQuestions) {
+    const questionLine =
+      `Follow-up questions target: ${followUpQuestions.questions.map((entry) => entry.field).join(", ")}.`;
+    rationale.push(questionLine);
+    ambiguitySignals.push(questionLine);
+  }
+  if (sourceSimilarity) {
+    const similarityLine = `Source similarity summary: ${sourceSimilarity.summary}`;
+    rationale.push(similarityLine);
+    keywordSignals.push(similarityLine);
+  }
   rationale.push(
     `Route explanation breakdown for ${recommendedLaneId}: keyword=${keywordLaneScores[recommendedLaneId]}, metadata=${metadataLaneScores[recommendedLaneId]}, gap=${gapLaneScores[recommendedLaneId]}.`,
   );
@@ -1771,10 +1908,16 @@ export function assessDirectiveEngineRouting(input: {
     routeConflict,
     needsHumanReview,
     missionSpecificityWarning,
+    missionHealth,
     goalCopilot,
     confidenceRecovery,
+    followUpQuestions,
     gapRadar,
     earnedAutonomy,
+    sourceMemory,
+    sourceSimilarity,
+    laneProportions,
+    secondaryLanes,
     ambiguitySummary: {
       topLaneId: scoreWinnerLaneId,
       runnerUpLaneId,

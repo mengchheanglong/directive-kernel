@@ -361,6 +361,7 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
       routeConflict: boolean | null;
       needsHumanReview: boolean | null;
       missionSpecificityWarning: string | null;
+      missionHealth: DirectiveDiscoveryRoutingArtifact["missionHealth"] | null;
       explanationBreakdown: {
         keywordSignals: string[];
         metadataSignals: string[];
@@ -404,6 +405,7 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
           exampleAnswer: string | null;
         }>;
       } | null;
+      followUpQuestions: DirectiveDiscoveryRoutingArtifact["followUpQuestions"] | null;
       gapRadar: {
         summary: string;
         suggestions: Array<{
@@ -430,6 +432,10 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
         summary: string;
         rationale: string[];
       } | null;
+      sourceMemory: DirectiveDiscoveryRoutingArtifact["sourceMemory"] | null;
+      sourceSimilarity: DirectiveDiscoveryRoutingArtifact["sourceSimilarity"] | null;
+      laneProportions: DirectiveDiscoveryRoutingArtifact["laneProportions"] | null;
+      secondaryLanes: DirectiveDiscoveryRoutingArtifact["secondaryLanes"] | null;
       downstreamStubRelativePath: string | null;
       approvalAllowed: boolean;
       content: string;
@@ -1969,13 +1975,19 @@ export function readDirectiveFrontendDiscoveryRoutingDetail(input: {
       routeConflict: artifact.routeConflict,
       needsHumanReview: artifact.needsHumanReview,
       missionSpecificityWarning: artifact.missionSpecificityWarning,
+      missionHealth: artifact.missionHealth,
       explanationBreakdown: artifact.explanationBreakdown,
       ambiguitySummary: artifact.ambiguitySummary,
       reviewGuidance: artifact.reviewGuidance,
       goalCopilot: artifact.goalCopilot,
       confidenceRecovery: artifact.confidenceRecovery,
+      followUpQuestions: artifact.followUpQuestions,
       gapRadar: artifact.gapRadar,
       earnedAutonomy: artifact.earnedAutonomy,
+      sourceMemory: artifact.sourceMemory,
+      sourceSimilarity: artifact.sourceSimilarity,
+      laneProportions: artifact.laneProportions,
+      secondaryLanes: artifact.secondaryLanes,
       downstreamStubRelativePath: artifact.downstreamStubRelativePath,
       approvalAllowed: artifact.approvalAllowed,
       content: artifactText.content,

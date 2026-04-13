@@ -104,6 +104,21 @@ export type FrontendDiscoveryRoutingDetail = {
   routeConflict?: boolean | null;
   needsHumanReview?: boolean | null;
   missionSpecificityWarning?: string | null;
+  missionHealth?: {
+    overallScore: number;
+    healthGrade: "A" | "B" | "C" | "D" | "F";
+    objectiveSpecificityScore: number;
+    usefulnessSignalQualityScore: number;
+    constraintQualityScore: number;
+    lanePriorityClarityScore: number;
+    overmatchRiskScore: number;
+    stalenessRiskScore: number;
+    warnings: string[];
+    tensionSignals: string[];
+    rationale: string[];
+    suggestedObjectiveRewrite: string | null;
+    suggestedConstraintAdditions: string[];
+  } | null;
   explanationBreakdown?: {
     keywordSignals: string[];
     metadataSignals: string[];
@@ -147,6 +162,16 @@ export type FrontendDiscoveryRoutingDetail = {
       exampleAnswer: string | null;
     }>;
   } | null;
+  followUpQuestions?: {
+    summary: string;
+    questions: Array<{
+      field: string;
+      question: string;
+      whyItMatters: string;
+      exampleAnswer: string | null;
+      predictedEffect: string;
+    }>;
+  } | null;
   gapRadar?: {
     summary: string;
     suggestions: Array<{
@@ -173,6 +198,45 @@ export type FrontendDiscoveryRoutingDetail = {
     summary: string;
     rationale: string[];
   } | null;
+  sourceMemory?: {
+    summary: string;
+    biasAdjustments: Record<string, number>;
+    matchingTopics: Array<{
+      token: string;
+      recentCount: number;
+      totalCount: number;
+      dominantLaneId: string;
+    }>;
+    matchingRouteClass: {
+      routeClass: string;
+      laneId: string;
+      sourceType: string;
+      recentCount: number;
+      totalCount: number;
+      lastSeenAt: string;
+    } | null;
+    rationale: string[];
+  } | null;
+  sourceSimilarity?: {
+    summary: string;
+    relatedSources: Array<{
+      runId: string;
+      candidateId: string;
+      candidateName: string;
+      laneId: string;
+      decisionState: string;
+      receivedAt: string;
+      similarityScore: number;
+      sharedTokens: string[];
+      summary: string;
+    }>;
+  } | null;
+  laneProportions?: Record<string, number> | null;
+  secondaryLanes?: Array<{
+    laneId: string;
+    proportion: number;
+    reason: string;
+  }> | null;
   downstreamStubRelativePath?: string | null;
   approvalAllowed?: boolean;
   content?: string;
@@ -588,6 +652,21 @@ export type FrontendEngineRunRecord = {
     routeConflict?: boolean;
     needsHumanReview?: boolean;
     missionSpecificityWarning?: string | null;
+    missionHealth?: {
+      overallScore: number;
+      healthGrade: "A" | "B" | "C" | "D" | "F";
+      objectiveSpecificityScore: number;
+      usefulnessSignalQualityScore: number;
+      constraintQualityScore: number;
+      lanePriorityClarityScore: number;
+      overmatchRiskScore: number;
+      stalenessRiskScore: number;
+      warnings: string[];
+      tensionSignals: string[];
+      rationale: string[];
+      suggestedObjectiveRewrite: string | null;
+      suggestedConstraintAdditions: string[];
+    } | null;
     ambiguitySummary?: {
       topLaneId: string;
       runnerUpLaneId: string | null;
@@ -625,6 +704,16 @@ export type FrontendEngineRunRecord = {
         exampleAnswer: string | null;
       }>;
     } | null;
+    followUpQuestions?: {
+      summary: string;
+      questions: Array<{
+        field: string;
+        question: string;
+        whyItMatters: string;
+        exampleAnswer: string | null;
+        predictedEffect: string;
+      }>;
+    } | null;
     gapRadar?: {
       summary: string;
       suggestions: Array<{
@@ -651,6 +740,45 @@ export type FrontendEngineRunRecord = {
       summary: string;
       rationale: string[];
     } | null;
+    sourceMemory?: {
+      summary: string;
+      biasAdjustments: Record<string, number>;
+      matchingTopics: Array<{
+        token: string;
+        recentCount: number;
+        totalCount: number;
+        dominantLaneId: string;
+      }>;
+      matchingRouteClass: {
+        routeClass: string;
+        laneId: string;
+        sourceType: string;
+        recentCount: number;
+        totalCount: number;
+        lastSeenAt: string;
+      } | null;
+      rationale: string[];
+    } | null;
+    sourceSimilarity?: {
+      summary: string;
+      relatedSources: Array<{
+        runId: string;
+        candidateId: string;
+        candidateName: string;
+        laneId: string;
+        decisionState: string;
+        receivedAt: string;
+        similarityScore: number;
+        sharedTokens: string[];
+        summary: string;
+      }>;
+    } | null;
+    laneProportions?: Record<string, number>;
+    secondaryLanes?: Array<{
+      laneId: string;
+      proportion: number;
+      reason: string;
+    }>;
   };
   selectedLane: {
     laneId: string;
@@ -667,6 +795,26 @@ export type FrontendEngineRunRecord = {
   integrationProposal: {
     integrationMode: string;
   };
+  priorPlanContext?: {
+    routeClass: string;
+    summary: string;
+    matchingRunCount: number;
+    successfulFollowThroughCount: number;
+    stalledRunCount: number;
+    recurringImprovementGoals: string[];
+    recurringProofKinds: Array<{
+      proofKind: string;
+      count: number;
+      status: "successful" | "stalled" | "mixed";
+    }>;
+    adaptationPatterns: Array<{
+      directiveOwnedForm: string;
+      count: number;
+      successfulCount: number;
+      stalledCount: number;
+    }>;
+    relatedRunIds: string[];
+  } | null;
   reportPlan: {
     summary: string;
   };

@@ -364,6 +364,195 @@ class DirectiveFrontendApp extends LitElement {
     `;
   }
 
+  private renderMissionHealth(missionHealth: {
+    overallScore: number;
+    healthGrade: "A" | "B" | "C" | "D" | "F";
+    objectiveSpecificityScore: number;
+    usefulnessSignalQualityScore: number;
+    constraintQualityScore: number;
+    lanePriorityClarityScore: number;
+    overmatchRiskScore: number;
+    stalenessRiskScore: number;
+    warnings: string[];
+    tensionSignals: string[];
+    rationale: string[];
+    suggestedObjectiveRewrite: string | null;
+    suggestedConstraintAdditions: string[];
+  } | null | undefined) {
+    if (!missionHealth) {
+      return nothing;
+    }
+    return html`
+      <section class="panel">
+        <h3>Mission Health</h3>
+        <div class="muted">score ${missionHealth.overallScore}/100 | grade ${missionHealth.healthGrade}</div>
+        <ul>
+          <li>Objective specificity: ${missionHealth.objectiveSpecificityScore}/5</li>
+          <li>Usefulness quality: ${missionHealth.usefulnessSignalQualityScore}/5</li>
+          <li>Constraint quality: ${missionHealth.constraintQualityScore}/5</li>
+          <li>Lane clarity: ${missionHealth.lanePriorityClarityScore}/5</li>
+          <li>Over-match risk: ${missionHealth.overmatchRiskScore}/5</li>
+          <li>Staleness risk: ${missionHealth.stalenessRiskScore}/5</li>
+        </ul>
+        ${missionHealth.warnings.length > 0 ? html`<ul>${missionHealth.warnings.map((entry) => html`<li>${entry}</li>`)}</ul>` : nothing}
+        ${missionHealth.tensionSignals.length > 0 ? html`<ul>${missionHealth.tensionSignals.map((entry) => html`<li>${entry}</li>`)}</ul>` : nothing}
+        ${missionHealth.suggestedObjectiveRewrite ? html`<p>${missionHealth.suggestedObjectiveRewrite}</p>` : nothing}
+      </section>
+    `;
+  }
+
+  private renderFollowUpQuestions(followUpQuestions: {
+    summary: string;
+    questions: Array<{
+      field: string;
+      question: string;
+      whyItMatters: string;
+      exampleAnswer: string | null;
+      predictedEffect: string;
+    }>;
+  } | null | undefined) {
+    if (!followUpQuestions) {
+      return nothing;
+    }
+    return html`
+      <section class="panel warning">
+        <h3>Active Follow-Up Questions</h3>
+        <p>${followUpQuestions.summary}</p>
+        <ul>
+          ${followUpQuestions.questions.map((entry) => html`
+            <li>
+              <strong>${entry.field}</strong>: ${entry.question}
+              <div class="muted">${entry.whyItMatters}</div>
+              <div class="muted">Effect: ${entry.predictedEffect}</div>
+              <div class="muted">Example: ${entry.exampleAnswer ?? "n/a"}</div>
+            </li>
+          `)}
+        </ul>
+      </section>
+    `;
+  }
+
+  private renderSourceMemory(sourceMemory: {
+    summary: string;
+    biasAdjustments: Record<string, number>;
+    matchingTopics: Array<{
+      token: string;
+      recentCount: number;
+      totalCount: number;
+      dominantLaneId: string;
+    }>;
+    matchingRouteClass: {
+      routeClass: string;
+      laneId: string;
+      sourceType: string;
+      recentCount: number;
+      totalCount: number;
+      lastSeenAt: string;
+    } | null;
+    rationale: string[];
+  } | null | undefined) {
+    if (!sourceMemory) {
+      return nothing;
+    }
+    return html`
+      <section class="panel">
+        <h3>Source Memory</h3>
+        <p>${sourceMemory.summary}</p>
+        <div class="muted">
+          Bias: ${Object.entries(sourceMemory.biasAdjustments).map(([lane, score]) => `${lane} ${score >= 0 ? "+" : ""}${score}`).join(" | ")}
+        </div>
+        ${sourceMemory.matchingTopics.length > 0 ? html`
+          <ul>${sourceMemory.matchingTopics.map((entry) => html`<li>${entry.token}: ${entry.recentCount} recent / ${entry.totalCount} total, dominant lane ${entry.dominantLaneId}</li>`)}</ul>
+        ` : nothing}
+      </section>
+    `;
+  }
+
+  private renderSourceSimilarity(sourceSimilarity: {
+    summary: string;
+    relatedSources: Array<{
+      runId: string;
+      candidateId: string;
+      candidateName: string;
+      laneId: string;
+      decisionState: string;
+      receivedAt: string;
+      similarityScore: number;
+      sharedTokens: string[];
+      summary: string;
+    }>;
+  } | null | undefined) {
+    if (!sourceSimilarity) {
+      return nothing;
+    }
+    return html`
+      <section class="panel">
+        <h3>Source Similarity</h3>
+        <p>${sourceSimilarity.summary}</p>
+        <ul>
+          ${sourceSimilarity.relatedSources.map((entry) => html`
+            <li>
+              <strong>${entry.candidateName}</strong> | ${entry.laneId} | ${entry.similarityScore}% similarity
+              <div class="muted">Shared tokens: ${entry.sharedTokens.join(", ") || "none"}</div>
+              <div class="muted">
+                <a href=${`/engine-runs/${encodeURIComponent(entry.runId)}`} @click=${(event: Event) => { event.preventDefault(); navTo(`/engine-runs/${encodeURIComponent(entry.runId)}`); }}>Open related run</a>
+              </div>
+            </li>
+          `)}
+        </ul>
+      </section>
+    `;
+  }
+
+  private renderLaneProportions(
+    laneProportions: Record<string, number> | null | undefined,
+    secondaryLanes: Array<{ laneId: string; proportion: number; reason: string; }> | null | undefined,
+  ) {
+    if (!laneProportions) {
+      return nothing;
+    }
+    return html`
+      <section class="panel">
+        <h3>Lane Proportions</h3>
+        <div class="muted">
+          ${Object.entries(laneProportions).map(([lane, value]) => `${lane} ${value}%`).join(" | ")}
+        </div>
+        ${secondaryLanes && secondaryLanes.length > 0 ? html`
+          <ul>${secondaryLanes.map((entry) => html`<li>${entry.laneId}: ${entry.proportion}% - ${entry.reason}</li>`)}</ul>
+        ` : nothing}
+      </section>
+    `;
+  }
+
+  private renderPriorPlanContext(priorPlanContext: {
+    routeClass: string;
+    summary: string;
+    matchingRunCount: number;
+    successfulFollowThroughCount: number;
+    stalledRunCount: number;
+    recurringImprovementGoals: string[];
+    recurringProofKinds: Array<{ proofKind: string; count: number; status: "successful" | "stalled" | "mixed"; }>;
+    adaptationPatterns: Array<{ directiveOwnedForm: string; count: number; successfulCount: number; stalledCount: number; }>;
+    relatedRunIds: string[];
+  } | null | undefined) {
+    if (!priorPlanContext) {
+      return nothing;
+    }
+    return html`
+      <section class="panel">
+        <h3>Prior Plan Context</h3>
+        <p>${priorPlanContext.summary}</p>
+        <ul>
+          <li>Route class: ${priorPlanContext.routeClass}</li>
+          <li>Matching runs: ${priorPlanContext.matchingRunCount}</li>
+          <li>Successful follow-through: ${priorPlanContext.successfulFollowThroughCount}</li>
+          <li>Stalled runs: ${priorPlanContext.stalledRunCount}</li>
+        </ul>
+        ${priorPlanContext.recurringImprovementGoals.length > 0 ? html`<ul>${priorPlanContext.recurringImprovementGoals.map((entry) => html`<li>${entry}</li>`)}</ul>` : nothing}
+      </section>
+    `;
+  }
+
   private renderLearningSummary(summary: FrontendSnapshot["learningSummary"]) {
     const gapRadar = summary.gapRadar;
     const earnedAutonomy = summary.earnedAutonomy;
@@ -1379,7 +1568,12 @@ class DirectiveFrontendApp extends LitElement {
           <tr><th>route conflict</th><td>${record.routingAssessment?.routeConflict === undefined ? "n/a" : record.routingAssessment?.routeConflict ? "yes" : "no"}</td></tr>
           <tr><th>needs human review</th><td>${record.routingAssessment?.needsHumanReview === undefined ? (record.candidate.requiresHumanReview === undefined ? "n/a" : record.candidate.requiresHumanReview ? "yes" : "no") : record.routingAssessment?.needsHumanReview ? "yes" : "no"}</td></tr>
           <tr><th>mission specificity warning</th><td>${record.routingAssessment?.missionSpecificityWarning ?? "n/a"}</td></tr>
+          <tr><th>Mission Health</th><td>${record.routingAssessment?.missionHealth ? `${record.routingAssessment.missionHealth.overallScore}/100 | ${record.routingAssessment.missionHealth.healthGrade}` : "n/a"}</td></tr>
           <tr><th>Goal Copilot score</th><td>${record.routingAssessment?.goalCopilot ? `${record.routingAssessment.goalCopilot.overallScore}/100` : "n/a"}</td></tr>
+          <tr><th>active follow-up questions</th><td>${record.routingAssessment?.followUpQuestions?.summary ?? "n/a"}</td></tr>
+          <tr><th>Source Memory</th><td>${record.routingAssessment?.sourceMemory?.summary ?? "n/a"}</td></tr>
+          <tr><th>Source Similarity</th><td>${record.routingAssessment?.sourceSimilarity?.summary ?? "n/a"}</td></tr>
+          <tr><th>lane proportions</th><td>${record.routingAssessment?.laneProportions ? Object.entries(record.routingAssessment.laneProportions).map(([lane, value]) => `${lane} ${value}%`).join(" | ") : "n/a"}</td></tr>
           <tr><th>Gap Radar</th><td>${record.routingAssessment?.gapRadar?.summary ?? "n/a"}</td></tr>
           <tr><th>ambiguity summary</th><td>${record.routingAssessment?.ambiguitySummary
             ? `${record.routingAssessment.ambiguitySummary.topLaneId} over ${record.routingAssessment.ambiguitySummary.runnerUpLaneId ?? "none"} by ${record.routingAssessment.ambiguitySummary.scoreDelta}; conflicting signals: ${record.routingAssessment.ambiguitySummary.conflictingSignalFamilies.join(", ") || "none"}`
@@ -1387,6 +1581,7 @@ class DirectiveFrontendApp extends LitElement {
           <tr><th>review guidance</th><td>${record.routingAssessment?.reviewGuidance?.summary ?? "n/a"}</td></tr>
           <tr><th>confidence recovery</th><td>${record.routingAssessment?.confidenceRecovery?.summary ?? "n/a"}</td></tr>
           <tr><th>Earned Autonomy</th><td>${record.routingAssessment?.earnedAutonomy ? `${record.routingAssessment.earnedAutonomy.overallScore}/100 | ${record.routingAssessment.earnedAutonomy.summary}` : "n/a"}</td></tr>
+          <tr><th>prior plan context</th><td>${record.priorPlanContext?.summary ?? "n/a"}</td></tr>
           <tr><th>decision state</th><td>${record.decision.decisionState}</td></tr>
           <tr><th>proof kind</th><td>${record.proofPlan.proofKind}</td></tr>
           <tr><th>integration mode</th><td>${record.integrationProposal.integrationMode}</td></tr>
@@ -1405,9 +1600,15 @@ class DirectiveFrontendApp extends LitElement {
           </section>
         ` : nothing}
         ${this.renderConfidenceRecovery(record.routingAssessment?.confidenceRecovery)}
+        ${this.renderFollowUpQuestions(record.routingAssessment?.followUpQuestions)}
+        ${this.renderMissionHealth(record.routingAssessment?.missionHealth)}
+        ${this.renderSourceMemory(record.routingAssessment?.sourceMemory)}
+        ${this.renderSourceSimilarity(record.routingAssessment?.sourceSimilarity)}
+        ${this.renderLaneProportions(record.routingAssessment?.laneProportions, record.routingAssessment?.secondaryLanes)}
         ${this.renderGapRadar(record.routingAssessment?.gapRadar)}
         ${this.renderEarnedAutonomy(record.routingAssessment?.earnedAutonomy)}
         ${this.renderGoalCopilot(record.routingAssessment?.goalCopilot)}
+        ${this.renderPriorPlanContext(record.priorPlanContext)}
         <section class=${noDownstream ? "panel warning" : "panel message"}>
           <h3>Related queue and handoff state</h3>
           <div class="muted">queue status: ${queueEntry?.status ?? "n/a"} | routing target: ${queueEntry?.routing_target ?? "n/a"}</div>
@@ -1572,7 +1773,12 @@ class DirectiveFrontendApp extends LitElement {
           <tr><th>route conflict</th><td>${detail.routeConflict === null || detail.routeConflict === undefined ? "n/a" : detail.routeConflict ? "yes" : "no"}</td></tr>
           <tr><th>needs human review</th><td>${detail.needsHumanReview === null || detail.needsHumanReview === undefined ? "n/a" : detail.needsHumanReview ? "yes" : "no"}</td></tr>
           <tr><th>mission specificity warning</th><td>${detail.missionSpecificityWarning ?? "n/a"}</td></tr>
+          <tr><th>Mission Health</th><td>${detail.missionHealth ? `${detail.missionHealth.overallScore}/100 | ${detail.missionHealth.healthGrade}` : "n/a"}</td></tr>
           <tr><th>Goal Copilot score</th><td>${detail.goalCopilot ? `${detail.goalCopilot.overallScore}/100` : "n/a"}</td></tr>
+          <tr><th>active follow-up questions</th><td>${detail.followUpQuestions?.summary ?? "n/a"}</td></tr>
+          <tr><th>Source Memory</th><td>${detail.sourceMemory?.summary ?? "n/a"}</td></tr>
+          <tr><th>Source Similarity</th><td>${detail.sourceSimilarity?.summary ?? "n/a"}</td></tr>
+          <tr><th>lane proportions</th><td>${detail.laneProportions ? Object.entries(detail.laneProportions).map(([lane, value]) => `${lane} ${value}%`).join(" | ") : "n/a"}</td></tr>
           <tr><th>Gap Radar</th><td>${detail.gapRadar?.summary ?? "n/a"}</td></tr>
           <tr><th>ambiguity summary</th><td>${detail.ambiguitySummary
             ? `${detail.ambiguitySummary.topLaneId} over ${detail.ambiguitySummary.runnerUpLaneId ?? "none"} by ${detail.ambiguitySummary.scoreDelta}; conflicting signals: ${detail.ambiguitySummary.conflictingSignalFamilies.join(", ") || "none"}`
@@ -1598,6 +1804,11 @@ class DirectiveFrontendApp extends LitElement {
           </section>
         ` : nothing}
         ${this.renderConfidenceRecovery(detail.confidenceRecovery)}
+        ${this.renderFollowUpQuestions(detail.followUpQuestions)}
+        ${this.renderMissionHealth(detail.missionHealth)}
+        ${this.renderSourceMemory(detail.sourceMemory)}
+        ${this.renderSourceSimilarity(detail.sourceSimilarity)}
+        ${this.renderLaneProportions(detail.laneProportions, detail.secondaryLanes)}
         ${this.renderGapRadar(detail.gapRadar)}
         ${this.renderEarnedAutonomy(detail.earnedAutonomy)}
         ${this.renderGoalCopilot(detail.goalCopilot)}

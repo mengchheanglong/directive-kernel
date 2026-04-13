@@ -28,7 +28,7 @@ function countOverlap(left: string[], right: string[]) {
   return left.reduce((count, token) => count + (rightSet.has(token) ? 1 : 0), 0);
 }
 
-function deriveRouteClass(input: {
+export function deriveDirectiveEngineRouteClass(input: {
   recommendedLaneId: string;
   source: DirectiveEngineSourceItem;
 }) {
@@ -63,14 +63,14 @@ export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
   existingRuns: DirectiveEngineRunRecord[];
   policyEvents: DecisionPolicyEvent[];
 }) {
-  const routeClass = deriveRouteClass({
+  const routeClass = deriveDirectiveEngineRouteClass({
     recommendedLaneId: input.recommendedLaneId,
     source: input.source,
   });
   const sourceTokens = extractSourceSignalTokens(flattenSourceText(input.source));
 
   const similarRuns = input.existingRuns.filter((record) =>
-    deriveRouteClass({
+    deriveDirectiveEngineRouteClass({
       recommendedLaneId: record.selectedLane.laneId,
       source: record.source,
     }) === routeClass

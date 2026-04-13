@@ -67,6 +67,21 @@ type DirectiveEngineRunRecordLike = {
     routeConflict?: boolean;
     needsHumanReview?: boolean;
     missionSpecificityWarning?: string | null;
+    missionHealth?: {
+      overallScore: number;
+      healthGrade: "A" | "B" | "C" | "D" | "F";
+      objectiveSpecificityScore: number;
+      usefulnessSignalQualityScore: number;
+      constraintQualityScore: number;
+      lanePriorityClarityScore: number;
+      overmatchRiskScore: number;
+      stalenessRiskScore: number;
+      warnings: string[];
+      tensionSignals: string[];
+      rationale: string[];
+      suggestedObjectiveRewrite: string | null;
+      suggestedConstraintAdditions: string[];
+    } | null;
     ambiguitySummary?: {
       topLaneId: string;
       runnerUpLaneId: string | null;
@@ -97,6 +112,16 @@ type DirectiveEngineRunRecordLike = {
         exampleAnswer: string | null;
       }>;
     } | null;
+    followUpQuestions?: {
+      summary: string;
+      questions: Array<{
+        field: string;
+        question: string;
+        whyItMatters: string;
+        exampleAnswer: string | null;
+        predictedEffect: string;
+      }>;
+    } | null;
     gapRadar?: {
       summary: string;
       suggestions: Array<{
@@ -122,7 +147,46 @@ type DirectiveEngineRunRecordLike = {
       approvalReductionApplied: boolean;
       summary: string;
       rationale: string[];
-    };
+    } | null;
+    sourceMemory?: {
+      summary: string;
+      biasAdjustments: Record<string, number>;
+      matchingTopics: Array<{
+        token: string;
+        recentCount: number;
+        totalCount: number;
+        dominantLaneId: string;
+      }>;
+      matchingRouteClass: {
+        routeClass: string;
+        laneId: string;
+        sourceType: string;
+        recentCount: number;
+        totalCount: number;
+        lastSeenAt: string;
+      } | null;
+      rationale: string[];
+    } | null;
+    sourceSimilarity?: {
+      summary: string;
+      relatedSources: Array<{
+        runId: string;
+        candidateId: string;
+        candidateName: string;
+        laneId: string;
+        decisionState: string;
+        receivedAt: string;
+        similarityScore: number;
+        sharedTokens: string[];
+        summary: string;
+      }>;
+    } | null;
+    laneProportions?: Record<string, number>;
+    secondaryLanes?: Array<{
+      laneId: string;
+      proportion: number;
+      reason: string;
+    }>;
     scoreBreakdown?: {
       gapAlignment?: number;
     };
@@ -186,6 +250,7 @@ export type DirectiveDiscoveryRoutingArtifact = {
   routeConflict: boolean | null;
   needsHumanReview: boolean | null;
   missionSpecificityWarning: string | null;
+  missionHealth: DirectiveEngineRunRecordLike["routingAssessment"]["missionHealth"] | null;
   explanationBreakdown: {
     keywordSignals: string[];
     metadataSignals: string[];
@@ -229,6 +294,7 @@ export type DirectiveDiscoveryRoutingArtifact = {
       exampleAnswer: string | null;
     }>;
   } | null;
+  followUpQuestions: DirectiveEngineRunRecordLike["routingAssessment"]["followUpQuestions"] | null;
   gapRadar: {
     summary: string;
     suggestions: Array<{
@@ -255,6 +321,14 @@ export type DirectiveDiscoveryRoutingArtifact = {
     summary: string;
     rationale: string[];
   } | null;
+  sourceMemory: DirectiveEngineRunRecordLike["routingAssessment"]["sourceMemory"] | null;
+  sourceSimilarity: DirectiveEngineRunRecordLike["routingAssessment"]["sourceSimilarity"] | null;
+  laneProportions: Record<string, number> | null;
+  secondaryLanes: Array<{
+    laneId: string;
+    proportion: number;
+    reason: string;
+  }> | null;
 };
 
 export type DirectiveDiscoveryRouteOpenResult = {
@@ -971,6 +1045,8 @@ function readRoutingArtifact(input: {
       parsed.missionSpecificityWarning
       ?? engineRun?.record.routingAssessment?.missionSpecificityWarning
       ?? null,
+    missionHealth:
+      engineRun?.record.routingAssessment?.missionHealth ?? null,
     routeConflict: parsed.routeConflict ?? engineRun?.record.routingAssessment?.routeConflict ?? null,
     needsHumanReview:
       parsed.needsHumanReview
@@ -1036,6 +1112,8 @@ function readRoutingArtifact(input: {
           })),
         }
       : engineRun?.record.routingAssessment?.confidenceRecovery ?? null,
+    followUpQuestions:
+      engineRun?.record.routingAssessment?.followUpQuestions ?? null,
     gapRadar:
       parsed.gapRadar
       ? {
@@ -1068,6 +1146,14 @@ function readRoutingArtifact(input: {
           rationale: [...parsed.earnedAutonomy.rationale],
         }
       : engineRun?.record.routingAssessment?.earnedAutonomy ?? null,
+    sourceMemory:
+      engineRun?.record.routingAssessment?.sourceMemory ?? null,
+    sourceSimilarity:
+      engineRun?.record.routingAssessment?.sourceSimilarity ?? null,
+    laneProportions:
+      engineRun?.record.routingAssessment?.laneProportions ?? null,
+    secondaryLanes:
+      engineRun?.record.routingAssessment?.secondaryLanes ?? null,
   };
 }
 

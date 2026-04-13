@@ -17,7 +17,7 @@ export const DIRECTIVE_ENGINE_INTEGRATION_MODES = [
 ] as const;
 
 export const DIRECTIVE_ENGINE_RUN_RECORD_KIND = "directive_engine_run_record" as const;
-export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 4 as const;
+export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 5 as const;
 export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF =
   "shared/schemas/directive-engine-run-record.schema.json" as const;
 
@@ -139,6 +139,21 @@ export type DirectiveEngineRoutingAssessment = {
     stopLine: string;
   } | null;
   missionSpecificityWarning: string | null;
+  missionHealth: {
+    overallScore: number;
+    healthGrade: "A" | "B" | "C" | "D" | "F";
+    objectiveSpecificityScore: number;
+    usefulnessSignalQualityScore: number;
+    constraintQualityScore: number;
+    lanePriorityClarityScore: number;
+    overmatchRiskScore: number;
+    stalenessRiskScore: number;
+    warnings: string[];
+    tensionSignals: string[];
+    rationale: string[];
+    suggestedObjectiveRewrite: string | null;
+    suggestedConstraintAdditions: string[];
+  } | null;
   goalCopilot: {
     overallScore: number;
     objectiveSpecificityScore: number;
@@ -160,6 +175,16 @@ export type DirectiveEngineRoutingAssessment = {
       question: string;
       whyItMatters: string;
       exampleAnswer: string | null;
+    }>;
+  } | null;
+  followUpQuestions: {
+    summary: string;
+    questions: Array<{
+      field: string;
+      question: string;
+      whyItMatters: string;
+      exampleAnswer: string | null;
+      predictedEffect: string;
     }>;
   } | null;
   gapRadar: {
@@ -188,6 +213,45 @@ export type DirectiveEngineRoutingAssessment = {
     summary: string;
     rationale: string[];
   };
+  sourceMemory: {
+    summary: string;
+    biasAdjustments: Record<DirectiveEngineLaneId, number>;
+    matchingTopics: Array<{
+      token: string;
+      recentCount: number;
+      totalCount: number;
+      dominantLaneId: DirectiveEngineLaneId;
+    }>;
+    matchingRouteClass: {
+      routeClass: string;
+      laneId: DirectiveEngineLaneId;
+      sourceType: string;
+      recentCount: number;
+      totalCount: number;
+      lastSeenAt: string;
+    } | null;
+    rationale: string[];
+  } | null;
+  sourceSimilarity: {
+    summary: string;
+    relatedSources: Array<{
+      runId: string;
+      candidateId: string;
+      candidateName: string;
+      laneId: DirectiveEngineLaneId;
+      decisionState: string;
+      receivedAt: string;
+      similarityScore: number;
+      sharedTokens: string[];
+      summary: string;
+    }>;
+  } | null;
+  laneProportions: Record<DirectiveEngineLaneId, number>;
+  secondaryLanes: Array<{
+    laneId: DirectiveEngineLaneId;
+    proportion: number;
+    reason: string;
+  }>;
   scoreBreakdown: {
     missionFit: number;
     gapAlignment: number;
@@ -321,6 +385,7 @@ export type DirectiveEngineRunRecord = {
   adaptationPlan: DirectiveEngineAdaptationPlan;
   improvementPlan: DirectiveEngineImprovementPlan;
   proofPlan: DirectiveEngineProofPlan;
+  priorPlanContext: import("./plan-consumption.ts").DirectivePriorPlanContext;
   decision: DirectiveEngineDecision;
   integrationProposal: DirectiveEngineIntegrationProposal;
   reportPlan: DirectiveEngineReportPlan;

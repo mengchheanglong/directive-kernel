@@ -117,6 +117,15 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
         && (vagueRoute.confidenceRecovery?.requestedInputs.length ?? 0) > 0,
     );
     check(
+      "routing assessment exposes Mission Health diagnostics",
+      typeof vagueRoute.missionHealth?.overallScore === "number",
+    );
+    check(
+      "routing assessment exposes explicit follow-up questions",
+      Array.isArray(vagueRoute.followUpQuestions?.questions)
+        && (vagueRoute.followUpQuestions?.questions.length ?? 0) > 0,
+    );
+    check(
       "routing assessment exposes Earned Autonomy diagnostics",
       typeof vagueRoute.earnedAutonomy?.overallScore === "number",
     );
@@ -189,6 +198,10 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
       "routing assessment exposes Gap Radar suggestions from policy history",
       Array.isArray(radarRoute.gapRadar?.suggestions)
         && (radarRoute.gapRadar?.suggestions.length ?? 0) > 0,
+    );
+    check(
+      "routing assessment exposes normalized lane proportions",
+      Object.values(radarRoute.laneProportions).reduce((sum, value) => sum + value, 0) === 100,
     );
 
     const directiveRoot = path.resolve(
@@ -294,6 +307,22 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
           first.record.routingAssessment.gapRadar === null
           || Array.isArray(first.record.routingAssessment.gapRadar.suggestions)
         ),
+    );
+    const related = await engine.processSource({
+      ...processInput,
+      receivedAt: "2026-04-10T01:00:00.000Z",
+      source: {
+        ...processInput.source,
+        sourceId: "acceptance-engine-source-related",
+        sourceRef: "https://example.com/acceptance-engine-source-related",
+        title: "Workflow architecture routing engine improvement related",
+      },
+    });
+    check(
+      "DirectiveEngine processSource preserves source-memory, source-similarity, and prior-plan-context surfaces",
+      related.record.routingAssessment.sourceMemory !== null
+        && related.record.routingAssessment.sourceSimilarity !== null
+        && related.record.priorPlanContext !== null,
     );
   } catch (error) {
     ok = false;
