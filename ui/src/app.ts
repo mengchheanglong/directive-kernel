@@ -48,6 +48,50 @@ import {
   renderRuntimeCaseStrip,
   renderRuntimeLaneSummary,
 } from "./components/lane-sections";
+import {
+  renderCompactDecisionList as renderCompactDecisionListView,
+  renderCompactSourceList as renderCompactSourceListView,
+  renderDashboardFocusCard as renderDashboardFocusCardView,
+  renderHomePage,
+  renderOperatorDecisionEntry as renderOperatorDecisionEntryView,
+  renderOperatorDecisionInboxPage as renderOperatorDecisionInboxPageView,
+} from "./renderers/dashboard";
+import {
+  renderConfidenceRecovery as renderConfidenceRecoveryPanel,
+  renderEarnedAutonomy as renderEarnedAutonomyPanel,
+  renderFollowUpQuestions as renderFollowUpQuestionsPanel,
+  renderGapPressureSummary as renderGapPressureSummaryView,
+  renderGapRadar as renderGapRadarPanel,
+  renderGoalCopilot as renderGoalCopilotPanel,
+  renderLaneProportions as renderLaneProportionsPanel,
+  renderMissionHealth as renderMissionHealthPanel,
+  renderNarrativeContext as renderNarrativeContextPanel,
+  renderPriorPlanContext as renderPriorPlanContextPanel,
+  renderRoutingExplanationBreakdown as renderRoutingExplanationBreakdownView,
+  renderSourceMemory as renderSourceMemoryPanel,
+  renderSourceSimilarity as renderSourceSimilarityPanel,
+} from "./renderers/insight-panels";
+import { renderLearningSummary as renderLearningSummaryView } from "./renderers/learning-summary";
+import {
+  getPageChrome as getPageChromeView,
+  getShellInbox as getShellInboxView,
+  getShellSnapshot as getShellSnapshotView,
+  renderActionLink as renderActionLinkView,
+  renderShellIcon as renderShellIconView,
+  renderSidebar as renderSidebarView,
+  renderSidebarLink as renderSidebarLinkView,
+} from "./renderers/shell";
+import {
+  artifactLink as artifactLinkView,
+  currentHeadLink as currentHeadLinkView,
+  currentHeadSummary as currentHeadSummaryView,
+} from "./renderers/shared";
+import {
+  renderWorkflowMapGroup as renderWorkflowMapGroupView,
+  renderWorkflowMapPage as renderWorkflowMapPageView,
+  renderWorkflowMapRow as renderWorkflowMapRowView,
+  workflowDecisionForCandidate as workflowDecisionForCandidateView,
+} from "./renderers/workflow";
 
 class DirectiveFrontendApp extends LitElement {
   static properties = {
@@ -191,26 +235,304 @@ class DirectiveFrontendApp extends LitElement {
     }
   };
 
-  private link(path: string, label: string, active = false) {
-    return html`<a class=${active ? "nav active" : "nav"} href=${path} @click=${(event: Event) => { event.preventDefault(); navTo(path); }}>${label}</a>`;
+  private currentPath() {
+    return window.location.pathname;
+  }
+
+  private renderShellIcon(name: string) {
+    return renderShellIconView(name);
+  }
+
+  private renderActionLink(
+    href: string,
+    label: string,
+    tone: "primary" | "secondary" = "secondary",
+  ) {
+    return renderActionLinkView(href, label, tone);
+  }
+
+  private renderSidebarLink(input: {
+    current: string;
+    href: string;
+    label: string;
+    caption: string;
+    icon: string;
+    badge?: string | number | null;
+    active: (path: string) => boolean;
+  }) {
+    return renderSidebarLinkView(input);
+  }
+
+  private getShellSnapshot() {
+    return getShellSnapshotView(this.page);
+  }
+
+  private getShellInbox() {
+    return getShellInboxView(this.page);
+  }
+
+  private getPageChrome(current: string) {
+    if (current === "/") {
+      return {
+        eyebrow: "",
+        title: "Dashboard",
+        description: "",
+        actions: [],
+      };
+    }
+
+    if (current === "/queue") {
+      return {
+        eyebrow: "Discovery surface",
+        title: "Sources",
+        description:
+          "Track the live intake queue, routing posture, downstream pointers, and current legal next steps.",
+        actions: [
+          { href: "/discovery", label: "Open discovery lane", tone: "primary" as const },
+          { href: "/workflow-map", label: "See workflow map", tone: "secondary" as const },
+        ],
+      };
+    }
+
+    if (current === "/workflow-map") {
+      return {
+        eyebrow: "Flow visibility",
+        title: "Workflow Map",
+        description:
+          "A compact source-to-runtime map for live routing, lane heads, and operator decision gates.",
+        actions: [
+          { href: "/", label: "Back to overview", tone: "secondary" as const },
+          { href: "/operator-inbox", label: "Open inbox", tone: "primary" as const },
+        ],
+      };
+    }
+
+    if (current === "/operator-inbox") {
+      return {
+        eyebrow: "Operator coordination",
+        title: "Decision Inbox",
+        description:
+          "Read-only triage over the explicit Discovery, Architecture, and Runtime decisions blocking forward motion.",
+        actions: [
+          { href: "/workflow-map", label: "View workflow map", tone: "secondary" as const },
+          { href: "/runtime", label: "Open runtime lane", tone: "primary" as const },
+        ],
+      };
+    }
+
+    if (current === "/discovery") {
+      return {
+        eyebrow: "Lane surface",
+        title: "Discovery",
+        description:
+          "See intake pressure, routing outcomes, and the explicit handoff boundary before deeper drill-down.",
+        actions: [
+          { href: "/queue", label: "Open sources", tone: "primary" as const },
+          { href: "/workflow-map", label: "See flow map", tone: "secondary" as const },
+        ],
+      };
+    }
+
+    if (current === "/architecture") {
+      return {
+        eyebrow: "Lane surface",
+        title: "Architecture",
+        description:
+          "Monitor live Architecture heads, retained outputs, and recent canonical anchors without breaking lane ownership.",
+        actions: [
+          { href: "/handoffs", label: "Open handoffs", tone: "secondary" as const },
+          { href: "/workflow-map", label: "See flow map", tone: "primary" as const },
+        ],
+      };
+    }
+
+    if (current === "/runtime") {
+      return {
+        eyebrow: "Lane surface",
+        title: "Runtime",
+        description:
+          "Watch active Runtime cases, current blockers, and host-facing capability progression from one place.",
+        actions: [
+          { href: "/engine-runs", label: "Open engine runs", tone: "secondary" as const },
+          { href: "/workflow-map", label: "See flow map", tone: "primary" as const },
+        ],
+      };
+    }
+
+    if (current === "/engine-runs" || current.startsWith("/engine-runs/")) {
+      return {
+        eyebrow: "Execution trace",
+        title: "Engine Runs",
+        description:
+          "Inspect recent routing decisions, proof planning, and downstream lane selection with direct traceability.",
+        actions: [
+          { href: "/", label: "Back to overview", tone: "secondary" as const },
+          { href: "/workflow-map", label: "Open workflow map", tone: "primary" as const },
+        ],
+      };
+    }
+
+    if (current === "/handoffs" || current.startsWith("/handoffs/")) {
+      return {
+        eyebrow: "Downstream continuity",
+        title: "Handoffs",
+        description:
+          "Review bounded Architecture and Runtime continuation stubs before they become lane-native records.",
+        actions: [
+          { href: "/architecture", label: "Open architecture lane", tone: "secondary" as const },
+          { href: "/runtime", label: "Open runtime lane", tone: "primary" as const },
+        ],
+      };
+    }
+
+    return {
+      eyebrow: "Artifact surface",
+      title: "Detail View",
+      description:
+        "Deep artifact detail, lane-native records, and proof surfaces stay accessible without losing shell context.",
+      actions: [
+        { href: "/", label: "Back to overview", tone: "secondary" as const },
+        { href: "/queue", label: "Open sources", tone: "primary" as const },
+      ],
+    };
+  }
+
+  private renderSidebar(current: string) {
+    const snapshot = this.getShellSnapshot();
+    const inbox = this.getShellInbox();
+    const reviewPressure = snapshot
+      ? snapshot.queue.entries.filter((entry) => Boolean(entry.review_pressure)).length
+      : null;
+
+    return html`
+      <aside class="sidebar-shell">
+        <div class="sidebar-brand">
+          <strong>Directive Kernel</strong>
+          <span class="muted">Research dashboard</span>
+        </div>
+
+        <div class="sidebar-group">
+          <div class="sidebar-group-label">Workspace</div>
+          ${this.renderSidebarLink({
+            current,
+            href: "/",
+            label: "Dashboard",
+            caption: "Live posture and lane heads",
+            icon: "overview",
+            active: (path) => path === "/",
+          })}
+          ${this.renderSidebarLink({
+            current,
+            href: "/workflow-map",
+            label: "Workflow map",
+            caption: "System flow across phases",
+            icon: "workflow",
+            active: (path) => path === "/workflow-map",
+          })}
+          ${this.renderSidebarLink({
+            current,
+            href: "/operator-inbox",
+            label: "Decision inbox",
+            caption: "Human review gates and blockers",
+            icon: "inbox",
+            badge: inbox?.summary.totalActionableEntries || null,
+            active: (path) => path === "/operator-inbox",
+          })}
+        </div>
+
+        <div class="sidebar-group">
+          <div class="sidebar-group-label">Lanes</div>
+          ${this.renderSidebarLink({
+            current,
+            href: "/queue",
+            label: "Sources",
+            caption: "Queue, routing, and downstream state",
+            icon: "sources",
+            active: (path) => path === "/queue" || path.startsWith("/discovery-routing-records/"),
+          })}
+          ${this.renderSidebarLink({
+            current,
+            href: "/discovery",
+            label: "Discovery",
+            caption: "Front-door intake and routing pressure",
+            icon: "discovery",
+            active: (path) => path === "/discovery",
+          })}
+          ${this.renderSidebarLink({
+            current,
+            href: "/architecture",
+            label: "Architecture",
+            caption: "Lane heads and retained outputs",
+            icon: "architecture",
+            active: (path) => path === "/architecture" || path.startsWith("/architecture-"),
+          })}
+          ${this.renderSidebarLink({
+            current,
+            href: "/runtime",
+            label: "Runtime",
+            caption: "Capability progression and blockers",
+            icon: "runtime",
+            active: (path) => path === "/runtime" || path.startsWith("/runtime-"),
+          })}
+        </div>
+
+        <div class="sidebar-group">
+          <div class="sidebar-group-label">Trace</div>
+          ${this.renderSidebarLink({
+            current,
+            href: "/engine-runs",
+            label: "Engine runs",
+            caption: "Decision traces and proof planning",
+            icon: "runs",
+            active: (path) => path === "/engine-runs" || path.startsWith("/engine-runs/"),
+          })}
+          ${this.renderSidebarLink({
+            current,
+            href: "/handoffs",
+            label: "Handoffs",
+            caption: "Bounded downstream continuation",
+            icon: "handoffs",
+            active: (path) => path === "/handoffs" || path.startsWith("/handoffs/"),
+          })}
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-footer-heading">
+            <span class="eyebrow">Live posture</span>
+            <strong>System pulse</strong>
+          </div>
+          <div class="sidebar-pulse-grid">
+            <div class="sidebar-pulse">
+              <span>Sources</span>
+              <strong>${snapshot?.queue.totalEntries ?? "—"}</strong>
+            </div>
+            <div class="sidebar-pulse">
+              <span>Decisions</span>
+              <strong>${inbox?.summary.totalActionableEntries ?? "—"}</strong>
+            </div>
+            <div class="sidebar-pulse">
+              <span>Pressure</span>
+              <strong>${reviewPressure ?? "—"}</strong>
+            </div>
+            <div class="sidebar-pulse">
+              <span>Runtime</span>
+              <strong>${snapshot?.runtimeSummary.activeCases.length ?? "—"}</strong>
+            </div>
+          </div>
+          <p class="muted sidebar-footnote">
+            This shell stays read-only and lane-aware. Decisions remain explicit, traceable, and bounded by the underlying workflow.
+          </p>
+        </div>
+      </aside>
+    `;
   }
 
   private artifactLink(pathValue: string | null | undefined) {
-    if (!pathValue) return html`<span class="muted">n/a</span>`;
-    const href = `/artifacts?path=${encodeURIComponent(pathValue)}`;
-    return html`<a href=${href} @click=${(event: Event) => { event.preventDefault(); navTo(href); }}>${pathValue}</a>`;
+    return artifactLinkView(pathValue);
   }
 
   private renderGapPressureSummary(gapPressure: FrontendGapPressureDetail | null | undefined) {
-    if (!gapPressure) {
-      return html`<span class="muted">n/a</span>`;
-    }
-
-    if (!gapPressure.matchedGapId) {
-      return html`No matched open gap. Open gaps considered: ${gapPressure.openGapCount}; gap alignment score: ${gapPressure.gapAlignmentScore ?? "n/a"}.`;
-    }
-
-    return html`${gapPressure.matchedGapId} (rank ${gapPressure.matchedGapRank ?? "n/a"}, priority ${gapPressure.matchedGapPriority ?? "n/a"}): ${gapPressure.matchedGapDescription ?? "n/a"}`;
+    return renderGapPressureSummaryView(gapPressure);
   }
 
   private renderGoalCopilot(goalCopilot: {
@@ -226,41 +548,7 @@ class DirectiveFrontendApp extends LitElement {
     suggestedUsefulnessSignals: string[];
     suggestedCapabilityLanes: string[];
   } | null | undefined) {
-    if (!goalCopilot) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Goal Copilot</h3>
-        <div class="muted">overall score ${goalCopilot.overallScore}/100</div>
-        <ul>
-          <li>Objective specificity: ${goalCopilot.objectiveSpecificityScore}/5</li>
-          <li>Usefulness signals: ${goalCopilot.usefulnessSignalQualityScore}/5</li>
-          <li>Constraints: ${goalCopilot.constraintQualityScore}/5</li>
-          <li>Lane clarity: ${goalCopilot.laneClarityScore}/5</li>
-        </ul>
-        ${goalCopilot.warnings.length > 0 ? html`
-          <h4>Warnings</h4>
-          <ul>${goalCopilot.warnings.map((entry) => html`<li>${entry}</li>`)}</ul>
-        ` : nothing}
-        ${goalCopilot.suggestedObjective ? html`
-          <h4>Suggested objective rewrite</h4>
-          <p>${goalCopilot.suggestedObjective}</p>
-        ` : nothing}
-        ${goalCopilot.suggestedConstraints.length > 0 ? html`
-          <h4>Suggested constraints</h4>
-          <ul>${goalCopilot.suggestedConstraints.map((entry) => html`<li>${entry}</li>`)}</ul>
-        ` : nothing}
-        ${goalCopilot.suggestedUsefulnessSignals.length > 0 ? html`
-          <h4>Suggested usefulness signals</h4>
-          <ul>${goalCopilot.suggestedUsefulnessSignals.map((entry) => html`<li>${entry}</li>`)}</ul>
-        ` : nothing}
-        ${goalCopilot.suggestedCapabilityLanes.length > 0 ? html`
-          <h4>Suggested lane order</h4>
-          <ul>${goalCopilot.suggestedCapabilityLanes.map((entry) => html`<li>${entry}</li>`)}</ul>
-        ` : nothing}
-      </section>
-    `;
+    return renderGoalCopilotPanel(goalCopilot);
   }
 
   private renderConfidenceRecovery(confidenceRecovery: {
@@ -273,25 +561,7 @@ class DirectiveFrontendApp extends LitElement {
       exampleAnswer: string | null;
     }>;
   } | null | undefined) {
-    if (!confidenceRecovery) {
-      return nothing;
-    }
-    return html`
-      <section class="panel warning">
-        <h3>Confidence recovery follow-up</h3>
-        <p>${confidenceRecovery.summary}</p>
-        <p class="muted">${confidenceRecovery.confidenceLift}</p>
-        <ul>
-          ${confidenceRecovery.requestedInputs.map((entry) => html`
-            <li>
-              <strong>${entry.field}</strong>: ${entry.question}
-              <div class="muted">${entry.whyItMatters}</div>
-              <div class="muted">Example: ${entry.exampleAnswer ?? "n/a"}</div>
-            </li>
-          `)}
-        </ul>
-      </section>
-    `;
+    return renderConfidenceRecoveryPanel(confidenceRecovery);
   }
 
   private renderGapRadar(gapRadar: {
@@ -308,25 +578,7 @@ class DirectiveFrontendApp extends LitElement {
       suggestedPriority: string;
     }>;
   } | null | undefined) {
-    if (!gapRadar) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Gap Radar</h3>
-        <p>${gapRadar.summary}</p>
-        <ul>
-          ${gapRadar.suggestions.map((entry) => html`
-            <li>
-              <strong>${entry.targetLaneId}</strong> | ${entry.confidence} confidence | ${entry.evidenceCount} events
-              <div>${entry.summary}</div>
-              <div class="muted">${entry.recommendedChange}</div>
-              <div class="muted">Signals: ${entry.signalTokens.join(", ") || "none"} | related open gap: ${entry.relatedOpenGapId ?? "n/a"} | suggested priority: ${entry.suggestedPriority}</div>
-            </li>
-          `)}
-        </ul>
-      </section>
-    `;
+    return renderGapRadarPanel(gapRadar);
   }
 
   private renderEarnedAutonomy(earnedAutonomy: {
@@ -341,27 +593,7 @@ class DirectiveFrontendApp extends LitElement {
     summary: string;
     rationale: string[];
   } | null | undefined) {
-    if (!earnedAutonomy) {
-      return nothing;
-    }
-    return html`
-      <section class=${earnedAutonomy.approvalReductionApplied ? "panel good" : "panel"}>
-        <h3>Earned Autonomy</h3>
-        <div class="muted">score ${earnedAutonomy.overallScore}/100 | evidence ${earnedAutonomy.evidenceCount} | route class ${earnedAutonomy.routeClass}</div>
-        <p>${earnedAutonomy.summary}</p>
-        <ul>
-          <li>Operator agreement: ${earnedAutonomy.operatorAgreementRate == null ? "n/a" : `${Math.round(earnedAutonomy.operatorAgreementRate * 100)}%`}</li>
-          <li>Review clear rate: ${earnedAutonomy.reviewClearRate == null ? "n/a" : `${Math.round(earnedAutonomy.reviewClearRate * 100)}%`}</li>
-          <li>Reversal count: ${earnedAutonomy.reversalCount}</li>
-          <li>Auto-approval eligible: ${earnedAutonomy.autoApprovalEligible ? "yes" : "no"}</li>
-          <li>Approval reduction applied: ${earnedAutonomy.approvalReductionApplied ? "yes" : "no"}</li>
-        </ul>
-        ${earnedAutonomy.rationale.length > 0 ? html`
-          <h4>Why</h4>
-          <ul>${earnedAutonomy.rationale.map((entry) => html`<li>${entry}</li>`)}</ul>
-        ` : nothing}
-      </section>
-    `;
+    return renderEarnedAutonomyPanel(earnedAutonomy);
   }
 
   private renderMissionHealth(missionHealth: {
@@ -379,26 +611,7 @@ class DirectiveFrontendApp extends LitElement {
     suggestedObjectiveRewrite: string | null;
     suggestedConstraintAdditions: string[];
   } | null | undefined) {
-    if (!missionHealth) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Mission Health</h3>
-        <div class="muted">score ${missionHealth.overallScore}/100 | grade ${missionHealth.healthGrade}</div>
-        <ul>
-          <li>Objective specificity: ${missionHealth.objectiveSpecificityScore}/5</li>
-          <li>Usefulness quality: ${missionHealth.usefulnessSignalQualityScore}/5</li>
-          <li>Constraint quality: ${missionHealth.constraintQualityScore}/5</li>
-          <li>Lane clarity: ${missionHealth.lanePriorityClarityScore}/5</li>
-          <li>Over-match risk: ${missionHealth.overmatchRiskScore}/5</li>
-          <li>Staleness risk: ${missionHealth.stalenessRiskScore}/5</li>
-        </ul>
-        ${missionHealth.warnings.length > 0 ? html`<ul>${missionHealth.warnings.map((entry) => html`<li>${entry}</li>`)}</ul>` : nothing}
-        ${missionHealth.tensionSignals.length > 0 ? html`<ul>${missionHealth.tensionSignals.map((entry) => html`<li>${entry}</li>`)}</ul>` : nothing}
-        ${missionHealth.suggestedObjectiveRewrite ? html`<p>${missionHealth.suggestedObjectiveRewrite}</p>` : nothing}
-      </section>
-    `;
+    return renderMissionHealthPanel(missionHealth);
   }
 
   private renderFollowUpQuestions(followUpQuestions: {
@@ -411,25 +624,7 @@ class DirectiveFrontendApp extends LitElement {
       predictedEffect: string;
     }>;
   } | null | undefined) {
-    if (!followUpQuestions) {
-      return nothing;
-    }
-    return html`
-      <section class="panel warning">
-        <h3>Active Follow-Up Questions</h3>
-        <p>${followUpQuestions.summary}</p>
-        <ul>
-          ${followUpQuestions.questions.map((entry) => html`
-            <li>
-              <strong>${entry.field}</strong>: ${entry.question}
-              <div class="muted">${entry.whyItMatters}</div>
-              <div class="muted">Effect: ${entry.predictedEffect}</div>
-              <div class="muted">Example: ${entry.exampleAnswer ?? "n/a"}</div>
-            </li>
-          `)}
-        </ul>
-      </section>
-    `;
+    return renderFollowUpQuestionsPanel(followUpQuestions);
   }
 
   private renderSourceMemory(sourceMemory: {
@@ -451,21 +646,7 @@ class DirectiveFrontendApp extends LitElement {
     } | null;
     rationale: string[];
   } | null | undefined) {
-    if (!sourceMemory) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Source Memory</h3>
-        <p>${sourceMemory.summary}</p>
-        <div class="muted">
-          Bias: ${Object.entries(sourceMemory.biasAdjustments).map(([lane, score]) => `${lane} ${score >= 0 ? "+" : ""}${score}`).join(" | ")}
-        </div>
-        ${sourceMemory.matchingTopics.length > 0 ? html`
-          <ul>${sourceMemory.matchingTopics.map((entry) => html`<li>${entry.token}: ${entry.recentCount} recent / ${entry.totalCount} total, dominant lane ${entry.dominantLaneId}</li>`)}</ul>
-        ` : nothing}
-      </section>
-    `;
+    return renderSourceMemoryPanel(sourceMemory);
   }
 
   private renderSourceSimilarity(sourceSimilarity: {
@@ -482,26 +663,7 @@ class DirectiveFrontendApp extends LitElement {
       summary: string;
     }>;
   } | null | undefined) {
-    if (!sourceSimilarity) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Source Similarity</h3>
-        <p>${sourceSimilarity.summary}</p>
-        <ul>
-          ${sourceSimilarity.relatedSources.map((entry) => html`
-            <li>
-              <strong>${entry.candidateName}</strong> | ${entry.laneId} | ${entry.similarityScore}% similarity
-              <div class="muted">Shared tokens: ${entry.sharedTokens.join(", ") || "none"}</div>
-              <div class="muted">
-                <a href=${`/engine-runs/${encodeURIComponent(entry.runId)}`} @click=${(event: Event) => { event.preventDefault(); navTo(`/engine-runs/${encodeURIComponent(entry.runId)}`); }}>Open related run</a>
-              </div>
-            </li>
-          `)}
-        </ul>
-      </section>
-    `;
+    return renderSourceSimilarityPanel(sourceSimilarity);
   }
 
   private renderNarrativeContext(narrativeContext: {
@@ -585,61 +747,14 @@ class DirectiveFrontendApp extends LitElement {
     }>;
     rationale: string[];
   } | null | undefined) {
-    if (!narrativeContext) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Narrative Threading</h3>
-        <p>${narrativeContext.summary}</p>
-        <div class="muted">
-          Bias: ${Object.entries(narrativeContext.biasAdjustments).map(([lane, score]) => `${lane} ${score >= 0 ? "+" : ""}${score}`).join(" | ")}
-        </div>
-        ${narrativeContext.primaryThread ? html`
-          <ul>
-            <li>Primary thread: ${narrativeContext.primaryThread.name}</li>
-            <li>State: ${narrativeContext.primaryThread.state}</li>
-            <li>Lane tendency: ${narrativeContext.primaryThread.laneTendency.dominantLaneId} (${narrativeContext.primaryThread.laneTendency.dominancePercent}%)</li>
-            <li>Follow-through: ${narrativeContext.primaryThread.followThrough.followThroughRate}% (${narrativeContext.primaryThread.followThrough.completedProofCount} completed / ${narrativeContext.primaryThread.followThrough.stalledProofCount} stalled)</li>
-            <li>Gap coverage: ${narrativeContext.primaryThread.gapCoverage.dominantGapId ?? "n/a"} | ${narrativeContext.primaryThread.gapCoverage.status}</li>
-          </ul>
-        ` : nothing}
-        ${narrativeContext.demandSignals.length > 0 ? html`
-          <h4>Thread demand</h4>
-          <ul>${narrativeContext.demandSignals.map((entry) => html`<li>${entry.priority}: ${entry.summary}</li>`)}</ul>
-        ` : nothing}
-        ${narrativeContext.relatedThreads.length > 0 ? html`
-          <h4>Related threads</h4>
-          <ul>
-            ${narrativeContext.relatedThreads.map((entry) => html`
-              <li>
-                <strong>${entry.name}</strong> | ${entry.state} | ${entry.currentSourceOverlap} shared tokens | ${entry.laneTendency.dominantLaneId} ${entry.laneTendency.dominancePercent}%
-              </li>
-            `)}
-          </ul>
-        ` : nothing}
-      </section>
-    `;
+    return renderNarrativeContextPanel(narrativeContext);
   }
 
   private renderLaneProportions(
     laneProportions: Record<string, number> | null | undefined,
     secondaryLanes: Array<{ laneId: string; proportion: number; reason: string; }> | null | undefined,
   ) {
-    if (!laneProportions) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Lane Proportions</h3>
-        <div class="muted">
-          ${Object.entries(laneProportions).map(([lane, value]) => `${lane} ${value}%`).join(" | ")}
-        </div>
-        ${secondaryLanes && secondaryLanes.length > 0 ? html`
-          <ul>${secondaryLanes.map((entry) => html`<li>${entry.laneId}: ${entry.proportion}% - ${entry.reason}</li>`)}</ul>
-        ` : nothing}
-      </section>
-    `;
+    return renderLaneProportionsPanel(laneProportions, secondaryLanes);
   }
 
   private renderPriorPlanContext(priorPlanContext: {
@@ -653,111 +768,23 @@ class DirectiveFrontendApp extends LitElement {
     adaptationPatterns: Array<{ directiveOwnedForm: string; count: number; successfulCount: number; stalledCount: number; }>;
     relatedRunIds: string[];
   } | null | undefined) {
-    if (!priorPlanContext) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Prior Plan Context</h3>
-        <p>${priorPlanContext.summary}</p>
-        <ul>
-          <li>Route class: ${priorPlanContext.routeClass}</li>
-          <li>Matching runs: ${priorPlanContext.matchingRunCount}</li>
-          <li>Successful follow-through: ${priorPlanContext.successfulFollowThroughCount}</li>
-          <li>Stalled runs: ${priorPlanContext.stalledRunCount}</li>
-        </ul>
-        ${priorPlanContext.recurringImprovementGoals.length > 0 ? html`<ul>${priorPlanContext.recurringImprovementGoals.map((entry) => html`<li>${entry}</li>`)}</ul>` : nothing}
-      </section>
-    `;
+    return renderPriorPlanContextPanel(priorPlanContext);
   }
 
   private renderLearningSummary(summary: FrontendSnapshot["learningSummary"]) {
-    const gapRadar = summary.gapRadar;
-    const earnedAutonomy = summary.earnedAutonomy;
-    return html`
-      <section class="grid">
-        <section class="panel">
-          <h3>Gap Radar</h3>
-          <p class="muted">
-            ${gapRadar.generatedAt ? `Updated ${gapRadar.generatedAt}` : "No persisted radar report yet"}.
-            ${gapRadar.suggestionCount} active suggestion${gapRadar.suggestionCount === 1 ? "" : "s"}.
-          </p>
-          ${gapRadar.suggestions.length > 0 ? html`
-            <ul>
-              ${gapRadar.suggestions.map((entry) => html`
-                <li>
-                  <strong>${entry.targetLaneId}</strong> | ${entry.confidence} confidence | ${entry.evidenceCount} events
-                  <div>${entry.summary}</div>
-                  <div class="muted">${entry.recommendedChange}</div>
-                  <div class="muted">Signals: ${entry.signalTokens.join(", ") || "none"} | examples: ${entry.candidateExamples.join(", ") || "n/a"}</div>
-                </li>
-              `)}
-            </ul>
-          ` : html`<p class="muted">No repeated uncovered gap pressure is visible yet.</p>`}
-        </section>
-        <section class=${earnedAutonomy.autoApprovedRecentRuns > 0 ? "panel good" : "panel"}>
-          <h3>Earned Autonomy</h3>
-          <p class="muted">
-            ${earnedAutonomy.autoApprovedRecentRuns} recent run${earnedAutonomy.autoApprovedRecentRuns === 1 ? "" : "s"} waived an extra manual review gate.
-            ${earnedAutonomy.eligibleRouteClassCount} route class${earnedAutonomy.eligibleRouteClassCount === 1 ? "" : "es"} currently qualify.
-          </p>
-          ${earnedAutonomy.routeClasses.length > 0 ? html`
-            <ul>
-              ${earnedAutonomy.routeClasses.map((entry) => html`
-                <li>
-                  <strong>${entry.routeClass}</strong> | ${entry.overallScore}/100 | evidence ${entry.evidenceCount}
-                  <div>${entry.summary}</div>
-                  <div class="muted">
-                    ${entry.candidateName} (${entry.laneId})
-                    |
-                    <a href=${`/engine-runs/${encodeURIComponent(entry.runId)}`} @click=${(event: Event) => { event.preventDefault(); navTo(`/engine-runs/${encodeURIComponent(entry.runId)}`); }}>Open run</a>
-                  </div>
-                </li>
-              `)}
-            </ul>
-          ` : html`<p class="muted">No route classes have enough history to summarize yet.</p>`}
-        </section>
-      </section>
-    `;
+    return renderLearningSummaryView(summary);
   }
 
   private renderRoutingExplanationBreakdown(detail: FrontendDiscoveryRoutingDetail | null | undefined) {
-    const breakdown = detail?.explanationBreakdown;
-    if (!breakdown) {
-      return nothing;
-    }
-    return html`
-      <section class="panel">
-        <h3>Routing explanation breakdown</h3>
-        <ul>
-          ${breakdown.keywordSignals.map((entry) => html`<li>Keyword: ${entry}</li>`)}
-          ${breakdown.metadataSignals.map((entry) => html`<li>Metadata: ${entry}</li>`)}
-          ${breakdown.gapAlignmentSignals.map((entry) => html`<li>Gap: ${entry}</li>`)}
-          ${breakdown.ambiguitySignals.map((entry) => html`<li>Ambiguity: ${entry}</li>`)}
-        </ul>
-      </section>
-    `;
+    return renderRoutingExplanationBreakdownView(detail);
   }
 
   private currentHeadLink(entry: FrontendQueueEntry) {
-    const head = entry.current_head;
-    if (!head) {
-      return html`<span class="muted">n/a</span>`;
-    }
-
-    return html`<a href=${head.view_path} @click=${(event: Event) => { event.preventDefault(); navTo(head.view_path); }}>${head.artifact_path}</a>`;
+    return currentHeadLinkView(entry);
   }
 
   private currentHeadSummary(entry: FrontendQueueEntry) {
-    const head = entry.current_head;
-    if (!head) {
-      return html`<span class="muted">not resolved yet</span>`;
-    }
-
-    return html`
-      <div>${this.currentHeadLink(entry)}</div>
-      <div class="muted">${head.artifact_stage} | ${head.artifact_lane}</div>
-    `;
+    return currentHeadSummaryView(entry);
   }
 
   private renderQueueTag(value: string, tone: "default" | "runtime" | "architecture" | "warning" = "default") {
@@ -1212,152 +1239,42 @@ class DirectiveFrontendApp extends LitElement {
   }
 
   private renderOperatorDecisionEntry(entry: FrontendOperatorDecisionInboxEntry) {
-    return html`
-      <article class=${`decision-entry ${entry.decisionSurface}`}>
-        <div class="queue-card-header">
-          <div>
-            <h3 class="queue-card-title">${entry.candidateName ?? entry.candidateId ?? entry.entryId}</h3>
-            <div class="queue-card-subtitle">${entry.entryId}</div>
-          </div>
-          <div class="queue-tag-row">
-            ${this.renderQueueTag(entry.lane, entry.lane === "runtime" ? "runtime" : entry.lane === "architecture" ? "architecture" : "default")}
-            ${this.renderQueueTag(entry.decisionSurface, "warning")}
-          </div>
-        </div>
-        <div class="queue-kv-grid">
-          <div class="queue-kv"><h4>Current stage</h4><p>${entry.currentStage ?? "n/a"}</p></div>
-          <div class="queue-kv"><h4>Blocked because</h4><p>${entry.blockReason}</p></div>
-          <div class="queue-kv"><h4>Next action</h4><p>${entry.eligibleNextAction}</p></div>
-          <div class="queue-kv"><h4>Source artifact</h4><p>${this.artifactLink(entry.artifactPath)}</p></div>
-        </div>
-        <section class="queue-highlight">
-          <h4>Required proof</h4>
-          <ul>${entry.requiredProof.map((proof) => html`<li>${proof}</li>`)}</ul>
-        </section>
-        <section class="queue-highlight">
-          <h4>Resolver command or artifact</h4>
-          <pre>${entry.resolverCommandOrArtifact}</pre>
-        </section>
-        ${entry.relatedArtifacts.length
-          ? html`<section class="queue-highlight"><h4>Related artifacts</h4><ul>${entry.relatedArtifacts.map((artifact) => html`<li>${this.artifactLink(artifact)}</li>`)}</ul></section>`
-          : nothing}
-        <p class="muted">Stop-line: ${entry.stopLine}</p>
-      </article>
-    `;
+    return renderOperatorDecisionEntryView(entry);
   }
 
   private renderCompactSourceList(entries: FrontendQueueEntry[]) {
-    const rows = entries.slice(0, 8);
-    if (!rows.length) {
-      return html`<div class="queue-empty muted">No sources have entered Discovery yet.</div>`;
-    }
+    return renderCompactSourceListView(entries);
+  }
 
-    return html`
-      <div class="simple-list">
-        ${rows.map((entry) => {
-          const href = entry.current_head?.view_path
-            ?? (entry.routing_record_path
-              ? `/discovery-routing-records/view?path=${encodeURIComponent(entry.routing_record_path)}`
-              : "/queue");
-          const tone = entry.routing_target === "runtime"
-            ? "runtime"
-            : entry.routing_target === "architecture"
-              ? "architecture"
-              : "default";
-          return html`
-            <a class="simple-row" href=${href} @click=${(event: Event) => {
-              event.preventDefault();
-              navTo(href);
-            }}>
-              <span class="simple-row-main">
-                <strong>${entry.candidate_name}</strong>
-                <span class="muted mono">${entry.candidate_id}</span>
-              </span>
-              <span class="simple-row-meta">
-                ${this.renderQueueTag(entry.status_effective, "default")}
-                ${entry.routing_target ? this.renderQueueTag(entry.routing_target, tone) : nothing}
-              </span>
-            </a>
-          `;
-        })}
-      </div>
-    `;
+  private formatDecisionSurface(surface: FrontendOperatorDecisionInboxEntry["decisionSurface"]) {
+    return formatDecisionSurface(surface);
   }
 
   private renderCompactDecisionList(entries: FrontendOperatorDecisionInboxEntry[]) {
-    const rows = entries.slice(0, 5);
-    if (!rows.length) {
-      return html`<div class="queue-empty muted">No active operator decisions.</div>`;
-    }
+    return renderCompactDecisionListView(entries);
+  }
 
-    return html`
-      <div class="simple-list">
-        ${rows.map((entry) => html`
-          <a class="simple-row" href="/operator-inbox" @click=${(event: Event) => {
-            event.preventDefault();
-            navTo("/operator-inbox");
-          }}>
-            <span class="simple-row-main">
-              <strong>${entry.candidateName ?? entry.candidateId ?? entry.entryId}</strong>
-              <span class="muted">${entry.blockReason}</span>
-            </span>
-            <span class="simple-row-meta">
-              ${this.renderQueueTag(entry.lane, entry.lane === "runtime" ? "runtime" : entry.lane === "architecture" ? "architecture" : "default")}
-            </span>
-          </a>
-        `)}
-      </div>
-    `;
+  private renderDashboardFocusCard(input: {
+    kicker: string;
+    title: string;
+    meta: string;
+    body: string;
+    href: string;
+    cta: string;
+    badge?: string | number | null;
+  }) {
+    return renderDashboardFocusCardView(input);
   }
 
   private renderOperatorDecisionInboxPage(inbox: FrontendOperatorDecisionInboxReport) {
-    const runtimeHostSelection = inbox.entries.filter((entry) => entry.decisionSurface === "runtime_host_selection");
-    const runtimePromotionSeamDecision = inbox.entries.filter((entry) => entry.decisionSurface === "runtime_promotion_seam_decision");
-    const runtimeRegistryAcceptance = inbox.entries.filter((entry) => entry.decisionSurface === "runtime_registry_acceptance");
-    const architectureMaterialization = inbox.entries.filter((entry) => entry.decisionSurface === "architecture_materialization_due");
-    const discoveryRoutingReview = inbox.entries.filter((entry) => entry.decisionSurface === "discovery_routing_review");
-    const renderGroup = (title: string, description: string, entries: FrontendOperatorDecisionInboxEntry[]) => html`
-      <section class="panel">
-        <h2>${title}</h2>
-        <p class="muted">${description}</p>
-        ${entries.length
-          ? html`<div class="decision-entry-list">${entries.map((entry) => this.renderOperatorDecisionEntry(entry))}</div>`
-          : html`<div class="queue-empty muted">No actionable entries for this group.</div>`}
-      </section>
-    `;
-
-    return html`
-      <section class="panel">
-        <h2>Operator Decision Inbox</h2>
-        <p class="muted">Live read-only triage over current Discovery, Architecture, and Runtime decision gates. This page is API-backed by Engine coordination state; it does not resolve routes, write host-selection artifacts, run host adapters, create Architecture materialization artifacts, or write registry entries.</p>
-        <div class="queue-summary-grid">
-          ${this.renderQueueStat("Actionable entries", inbox.summary.totalActionableEntries, "Current Discovery, Architecture, and Runtime decisions requiring explicit operator attention.")}
-          ${this.renderQueueStat("Runtime host selections", inbox.summary.runtimeHostSelectionCount, "Runtime promotion paths blocked on explicit host selection.")}
-          ${this.renderQueueStat("Runtime seam decisions", inbox.summary.runtimePromotionSeamDecisionCount, "Runtime promotion paths ready for explicit manual promotion-seam review.")}
-          ${this.renderQueueStat("Architecture materialization", inbox.summary.architectureMaterializationDueCount, "Architecture adoptions or implementation targets awaiting explicit lane-native materialization.")}
-          ${this.renderQueueStat("Registry acceptance", inbox.summary.runtimeRegistryAcceptanceCount, "Proof-backed Runtime registry decisions requiring explicit acceptance.")}
-          ${this.renderQueueStat("Discovery routing reviews", inbox.summary.discoveryRoutingReviewCount, "Conflicted or non-high-confidence Discovery routes requiring review.")}
-        </div>
-        <p class="muted">Snapshot: ${inbox.snapshotAt} | version: ${inbox.inboxVersion}</p>
-      </section>
-      <section class="panel message">
-        <h3>Guardrails</h3>
-        <p>Read-only: ${String(inbox.guardrails.readOnly)} | mutates workflow state: ${String(inbox.guardrails.mutatesWorkflowState)} | bypasses review: ${String(inbox.guardrails.bypassesReview)} | writes registry entries: ${String(inbox.guardrails.writesRegistryEntries)} | runs host adapters: ${String(inbox.guardrails.runsHostAdapters)}</p>
-      </section>
-      ${renderGroup("Runtime Host Selection", "Highest-priority review work because it unblocks Runtime promotion paths without claiming execution or registry acceptance.", runtimeHostSelection)}
-      ${renderGroup("Runtime Promotion Seam Decision", "Runtime cases with host selection resolved that still require an explicit manual promotion-seam decision.", runtimePromotionSeamDecision)}
-      ${renderGroup("Architecture Materialization", "Explicit Architecture due items only: implementation-target creation or implementation-result recording. This group can be empty when Architecture is clean.", architectureMaterialization)}
-      ${renderGroup("Runtime Registry Acceptance", "Proof-backed registry acceptance remains explicitly gated and disabled by default.", runtimeRegistryAcceptance)}
-      ${renderGroup("Discovery Routing Review", "Discovery remains the front door; conflicted or medium-confidence routes need explicit review before downstream continuation.", discoveryRoutingReview)}
-    `;
+    return renderOperatorDecisionInboxPageView(inbox);
   }
 
   private workflowDecisionForCandidate(
     inbox: FrontendOperatorDecisionInboxReport,
     candidateId: string | null | undefined,
   ) {
-    if (!candidateId) return null;
-    return inbox.entries.find((entry) => entry.candidateId === candidateId) ?? null;
+    return workflowDecisionForCandidateView(inbox, candidateId);
   }
 
   private renderWorkflowMapRow(input: {
@@ -1371,44 +1288,7 @@ class DirectiveFrontendApp extends LitElement {
     decision?: FrontendOperatorDecisionInboxEntry | null;
     meta?: string | null;
   }) {
-    const decision = input.decision ?? null;
-    const tone = input.lane === "runtime"
-      ? "runtime"
-      : input.lane === "architecture"
-      ? "architecture"
-      : "default";
-    const status = decision ? "decision needed" : input.stage ?? "live";
-    return html`
-      <details class=${`workflow-row ${input.lane}`}>
-        <summary>
-          <span class="workflow-main">
-            <strong>${input.title}</strong>
-            <span class="muted">${input.stage ?? "stage not resolved"}</span>
-          </span>
-          <span class="workflow-tags">
-            ${this.renderQueueTag(input.lane, tone)}
-            ${decision ? this.renderQueueTag("decision", "warning") : this.renderQueueTag("live", "default")}
-          </span>
-        </summary>
-        <div class="workflow-row-detail">
-          <div class="workflow-detail-grid">
-            <div><h4>Status</h4><p>${status}</p></div>
-            <div><h4>Next legal step</h4><p>${input.nextStep ?? "n/a"}</p></div>
-            <div><h4>Current artifact</h4><p>${input.artifactPath ? this.artifactLink(input.artifactPath) : html`<span class="muted">n/a</span>`}</p></div>
-            <div><h4>Decision gate</h4><p>${decision ? `${decision.decisionSurface}: ${decision.blockReason}` : "none currently surfaced"}</p></div>
-          </div>
-          ${input.meta ? html`<p class="muted">${input.meta}</p>` : nothing}
-          <div class="actions">
-            ${input.actionHref
-              ? html`<a href=${input.actionHref} @click=${(event: Event) => { event.preventDefault(); navTo(input.actionHref || ""); }}>${input.actionLabel ?? "Open detail"}</a>`
-              : nothing}
-            ${decision
-              ? html`<a href="/operator-inbox" @click=${(event: Event) => { event.preventDefault(); navTo("/operator-inbox"); }}>Open inbox decision</a>`
-              : nothing}
-          </div>
-        </div>
-      </details>
-    `;
+    return renderWorkflowMapRowView(input);
   }
 
   private renderWorkflowMapGroup(input: {
@@ -1417,134 +1297,11 @@ class DirectiveFrontendApp extends LitElement {
     rows: unknown[];
     renderRow: (row: any) => unknown;
   }) {
-    return html`
-      <section class="workflow-group">
-        <div class="workflow-group-heading">
-          <div>
-            <h2>${input.title}</h2>
-            <p class="muted">${input.description}</p>
-          </div>
-          <span class="pill">${input.rows.length}</span>
-        </div>
-        ${input.rows.length
-          ? html`<div class="workflow-row-list">${input.rows.map((row) => input.renderRow(row))}</div>`
-          : html`<div class="queue-empty muted">No live rows in this phase.</div>`}
-      </section>
-    `;
+    return renderWorkflowMapGroupView(input);
   }
 
   private renderWorkflowMapPage(snapshot: FrontendSnapshot, inbox: FrontendOperatorDecisionInboxReport) {
-    const recentRuns = (snapshot.engineRuns.recentRuns || []).slice(0, 6);
-    const discoveryRows = (snapshot.queue.entries || []).slice(0, 12);
-    const architectureRows = [
-      ...(snapshot.architectureSummary.activeCases || []),
-      ...(snapshot.architectureSummary.recentAnchors || []),
-    ].slice(0, 8);
-    const runtimeRows = [
-      ...(snapshot.runtimeSummary.activeCases || []),
-      ...(snapshot.runtimeSummary.recentAnchors || []),
-    ].slice(0, 8);
-    const hostRows = (snapshot.runtimeSummary.activeCases || [])
-      .filter((entry) => (entry.current_case_stage || "").includes("registry") || (entry.current_case_stage || "").includes("promotion_record"))
-      .slice(0, 8);
-
-    return html`
-      <section class="workflow-hero">
-        <div>
-          <h2>Workflow Map</h2>
-          <p>Live source-to-usefulness map. Rows stay compact; open a row for detail.</p>
-        </div>
-        <div class="workflow-hero-stats">
-          <span><strong>${snapshot.queue.totalEntries}</strong><small>Discovery</small></span>
-          <span><strong>${snapshot.architectureSummary.activeCases.length}</strong><small>Architecture</small></span>
-          <span><strong>${snapshot.runtimeSummary.activeCases.length}</strong><small>Runtime</small></span>
-          <span><strong>${inbox.summary.totalActionableEntries}</strong><small>Decisions</small></span>
-        </div>
-      </section>
-      ${this.renderLearningSummary(snapshot.learningSummary)}
-      <section class="workflow-map">
-        ${this.renderWorkflowMapGroup({
-          title: "Research Engine / Engine Runs",
-          description: "Recent live analysis and routing records before lane handoff.",
-          rows: recentRuns,
-          renderRow: (run: { record: FrontendEngineRunRecord }) => this.renderWorkflowMapRow({
-            lane: "research",
-            title: run.record.candidate.candidateName,
-            stage: `engine.route.${run.record.selectedLane.laneId}`,
-            nextStep: run.record.integrationProposal?.nextAction,
-            artifactPath: null,
-            actionHref: `/engine-runs/${encodeURIComponent(run.record.runId)}`,
-            actionLabel: "Open run",
-            decision: this.workflowDecisionForCandidate(inbox, run.record.candidate.candidateId),
-            meta: `Usefulness: ${run.record.candidate.usefulnessLevel}; proof: ${run.record.proofPlan?.proofKind ?? "n/a"}`,
-          }),
-        })}
-        ${this.renderWorkflowMapGroup({
-          title: "Discovery",
-          description: "Front-door intake, routing, review pressure, and current downstream pointer.",
-          rows: discoveryRows,
-          renderRow: (entry: FrontendQueueEntry) => this.renderWorkflowMapRow({
-            lane: "discovery",
-            title: entry.candidate_name,
-            stage: entry.current_case_stage ?? entry.status_effective ?? entry.status,
-            nextStep: entry.current_case_next_legal_step,
-            artifactPath: entry.current_head?.artifact_path ?? entry.result_record_path ?? entry.routing_record_path,
-            actionHref: entry.current_head?.view_path ?? (entry.routing_record_path ? `/discovery-routing-records/view?path=${encodeURIComponent(entry.routing_record_path)}` : null),
-            actionLabel: "Open current artifact",
-            decision: this.workflowDecisionForCandidate(inbox, entry.candidate_id),
-            meta: `Route: ${entry.routing_target ?? "n/a"}; integrity: ${entry.integrity_state ?? "n/a"}`,
-          }),
-        })}
-        ${this.renderWorkflowMapGroup({
-          title: "Architecture",
-          description: "Engine-improvement lane heads and materialization due items when they exist.",
-          rows: architectureRows,
-          renderRow: (entry: FrontendArchitectureSummaryCase | FrontendLaneAnchor) => this.renderWorkflowMapRow({
-            lane: "architecture",
-            title: "label" in entry ? entry.label : entry.candidate_name,
-            stage: "currentStage" in entry ? entry.currentStage : entry.current_case_stage,
-            nextStep: "nextLegalStep" in entry ? entry.nextLegalStep : entry.current_case_next_legal_step,
-            artifactPath: "artifactPath" in entry ? entry.artifactPath : entry.current_head?.artifact_path,
-            actionHref: "artifactPath" in entry ? artifactPathToViewPath(entry.artifactPath) : entry.current_head?.view_path,
-            actionLabel: "Open Architecture detail",
-            decision: this.workflowDecisionForCandidate(inbox, "candidateId" in entry ? entry.candidateId : entry.candidate_id),
-            meta: "Architecture rows are live lane heads or recent canonical anchors, not static roadmap items.",
-          }),
-        })}
-        ${this.renderWorkflowMapGroup({
-          title: "Runtime",
-          description: "Reusable capability conversion, proof, promotion, and parked host-selection work.",
-          rows: runtimeRows,
-          renderRow: (entry: FrontendRuntimeSummaryCase | FrontendLaneAnchor) => this.renderWorkflowMapRow({
-            lane: "runtime",
-            title: "label" in entry ? entry.label : entry.candidate_name,
-            stage: "currentStage" in entry ? entry.currentStage : entry.current_case_stage,
-            nextStep: "nextLegalStep" in entry ? entry.nextLegalStep : entry.current_case_next_legal_step,
-            artifactPath: "artifactPath" in entry ? entry.artifactPath : entry.current_head?.artifact_path,
-            actionHref: "artifactPath" in entry ? artifactPathToViewPath(entry.artifactPath) : entry.current_head?.view_path,
-            actionLabel: "Open Runtime detail",
-            decision: this.workflowDecisionForCandidate(inbox, "candidateId" in entry ? entry.candidateId : entry.candidate_id),
-            meta: "runtime_summary" in entry ? `Proposed host: ${entry.runtime_summary?.proposed_host ?? "n/a"}` : "Runtime canonical anchor.",
-          }),
-        })}
-        ${this.renderWorkflowMapGroup({
-          title: "Registry / Host",
-          description: "Host-backed or registry-adjacent Runtime heads; still read-only here.",
-          rows: hostRows,
-          renderRow: (entry: FrontendRuntimeSummaryCase) => this.renderWorkflowMapRow({
-            lane: "host",
-            title: entry.candidate_name,
-            stage: entry.current_case_stage,
-            nextStep: entry.current_case_next_legal_step,
-            artifactPath: entry.current_head?.artifact_path,
-            actionHref: entry.current_head?.view_path,
-            actionLabel: "Open host/runtime artifact",
-            decision: this.workflowDecisionForCandidate(inbox, entry.candidate_id),
-            meta: `Proposed host: ${entry.runtime_summary?.proposed_host ?? "n/a"}`,
-          }),
-        })}
-      </section>
-    `;
+    return renderWorkflowMapPageView(snapshot, inbox);
   }
 
   private renderContent() {
@@ -1559,66 +1316,145 @@ class DirectiveFrontendApp extends LitElement {
     if (this.page.kind === "home") {
       const snapshot = this.page.data;
       const inbox = this.page.inbox as FrontendOperatorDecisionInboxReport;
+      const queueLead = snapshot.queue.entries[0] ?? null;
       const runtimePrimary = snapshot.runtimeSummary.activeCases[0] ?? null;
       const architecturePrimary = snapshot.architectureSummary.activeCases[0] ?? null;
+      const topDecision = inbox.entries[0] ?? null;
       const queueReviewPressureCount = snapshot.queue.entries.filter((entry) => Boolean(entry.review_pressure)).length;
       const queueConflictedCount = snapshot.queue.entries.filter((entry) => entry.review_pressure?.route_conflict).length;
       return html`
-        <section class="panel shell-hero">
-          <div>
-            <h2>System overview</h2>
-            <p class="muted">Use this frontend to see what sources entered the system, where they currently sit, and what still needs review. Deep artifact detail stays behind click-through.</p>
-          </div>
-          <div class="actions">
-            <a href="/workflow-map" @click=${(event: Event) => { event.preventDefault(); navTo("/workflow-map"); }}>Open workflow map</a>
+        <section class="dashboard-section">
+          <div class="dashboard-section-heading">Active Surfaces</div>
+          <div class="dashboard-focus-grid">
+            ${this.renderDashboardFocusCard({
+              kicker: "Sources",
+              title: `${snapshot.queue.totalEntries} queue entries`,
+              meta: `${queueReviewPressureCount} under review · ${queueConflictedCount} conflicted`,
+              body: queueLead?.current_case_next_legal_step ?? "Discovery is clear. No pending next legal step is exposed right now.",
+              href: "/queue",
+              cta: "Open sources",
+              badge: snapshot.queue.totalEntries,
+            })}
+            ${this.renderDashboardFocusCard({
+              kicker: "Architecture",
+              title: architecturePrimary?.candidate_name ?? "No active architecture head",
+              meta: `${snapshot.architectureSummary.activeCases.length} active case${snapshot.architectureSummary.activeCases.length === 1 ? "" : "s"}`,
+              body: architecturePrimary?.current_case_next_legal_step ?? "Architecture has no current lane head blocking forward motion.",
+              href: "/architecture",
+              cta: "Open architecture",
+            })}
+            ${this.renderDashboardFocusCard({
+              kicker: "Runtime",
+              title: runtimePrimary?.candidate_name ?? "No active runtime head",
+              meta: runtimePrimary?.runtime_summary?.proposed_host ?? `${snapshot.runtimeSummary.activeCases.length} active runtime case${snapshot.runtimeSummary.activeCases.length === 1 ? "" : "s"}`,
+              body: runtimePrimary?.current_case_next_legal_step ?? "Runtime has no current lane head blocking forward motion.",
+              href: "/runtime",
+              cta: "Open runtime",
+            })}
+            ${this.renderDashboardFocusCard({
+              kicker: "Decision inbox",
+              title: topDecision?.candidateName ?? topDecision?.candidateId ?? "No active blockers",
+              meta: `${inbox.summary.totalActionableEntries} actionable decision${inbox.summary.totalActionableEntries === 1 ? "" : "s"}`,
+              body: topDecision?.blockReason ?? "The operator inbox is currently clear across Discovery, Architecture, and Runtime.",
+              href: "/operator-inbox",
+              cta: "Open inbox",
+              badge: inbox.summary.totalActionableEntries,
+            })}
           </div>
         </section>
         ${snapshot.handoffWarnings?.length ? html`<section class="panel warning"><h3>Handoff artifact warnings</h3><ul>${snapshot.handoffWarnings.map((warning: string) => html`<li>${warning}</li>`)}</ul></section>` : nothing}
-        <section class="simple-stat-grid">
-          ${this.renderQueueStat("Sources", snapshot.queue.totalEntries, "Discovery entries currently tracked.")}
-          ${this.renderQueueStat("Decisions", inbox.summary.totalActionableEntries, "Current operator reviews across lanes.")}
-          ${this.renderQueueStat("Architecture", snapshot.architectureSummary.activeCases.length, "Active Architecture cases.")}
-          ${this.renderQueueStat("Runtime", snapshot.runtimeSummary.activeCases.length, "Active Runtime cases.")}
-        </section>
-        ${this.renderLearningSummary(snapshot.learningSummary)}
-        <section class="grid">
-          <section class="panel">
-            <h3>Recent sources</h3>
-            <p class="muted">Latest source entries and their current route/state.</p>
-            ${this.renderCompactSourceList(snapshot.queue.entries)}
-            <div class="actions" style="margin-top:12px;">
-              <a href="/queue" @click=${(event: Event) => { event.preventDefault(); navTo("/queue"); }}>Open all sources</a>
-            </div>
-          </section>
-          <section class="panel">
-            <h3>Next decisions</h3>
-            <p class="muted">Only active operator work. Deep decision detail stays in the inbox.</p>
-            ${this.renderCompactDecisionList(inbox.entries)}
-            <div class="actions" style="margin-top:12px;">
-              <a href="/operator-inbox" @click=${(event: Event) => { event.preventDefault(); navTo("/operator-inbox"); }}>Open inbox</a>
-            </div>
+        <section class="dashboard-section">
+          <div class="dashboard-section-heading">System Metrics</div>
+          <section class="simple-stat-grid">
+            ${this.renderQueueStat("Sources", snapshot.queue.totalEntries, "Discovery entries currently tracked.")}
+            ${this.renderQueueStat("Decisions", inbox.summary.totalActionableEntries, "Current operator reviews across lanes.")}
+            ${this.renderQueueStat("Architecture", snapshot.architectureSummary.activeCases.length, "Active Architecture cases.")}
+            ${this.renderQueueStat("Runtime", snapshot.runtimeSummary.activeCases.length, "Active Runtime cases.")}
           </section>
         </section>
-        ${(runtimePrimary || architecturePrimary)
-          ? html`
-              <section class="panel">
-                <h2>Current lane heads</h2>
-                <p class="muted">The main live heads for Architecture and Runtime.</p>
-                <div class="lane-head-strip-grid" style="margin-top:14px;">
-                  ${runtimePrimary ? this.renderRuntimeCaseStrip(runtimePrimary) : nothing}
-                  ${architecturePrimary ? this.renderArchitectureCaseStrip(architecturePrimary) : nothing}
+        <section class="dashboard-section">
+          <div class="dashboard-section-heading">Operations</div>
+          <section class="dashboard-grid">
+          <section class="dashboard-column">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Recent sources</h3>
+                  <p class="muted">Latest source entries, their current lane posture, and the next legal move.</p>
                 </div>
-              </section>
-            `
-          : nothing}
-        <section class="panel message">
-          <h3>Discovery status</h3>
-          <p class="muted">Review pressure: ${queueReviewPressureCount}. Conflicted routes: ${queueConflictedCount}. Clear routes can now auto-open exactly one bounded downstream stub; conflicted or low-confidence routes still stay explicit.</p>
-          <div class="actions">
-            <a href="/discovery" @click=${(event: Event) => { event.preventDefault(); navTo("/discovery"); }}>Open Discovery</a>
-            <a href="/architecture" @click=${(event: Event) => { event.preventDefault(); navTo("/architecture"); }}>Open Architecture</a>
-            <a href="/runtime" @click=${(event: Event) => { event.preventDefault(); navTo("/runtime"); }}>Open Runtime</a>
-          </div>
+                ${this.renderQueueTag("Discovery", "default")}
+              </div>
+              ${this.renderCompactSourceList(snapshot.queue.entries)}
+              <div class="actions" style="margin-top:12px;">
+                ${this.renderActionLink("/queue", "Open all sources", "secondary")}
+              </div>
+            </section>
+            ${this.renderLearningSummary(snapshot.learningSummary)}
+            ${(runtimePrimary || architecturePrimary)
+              ? html`
+                  <section class="panel">
+                    <div class="panel-heading">
+                      <div>
+                        <h3>Live lane heads</h3>
+                        <p class="muted">The clearest active entry points into Architecture and Runtime right now.</p>
+                      </div>
+                    </div>
+                    <div class="lane-head-strip-grid" style="margin-top:14px;">
+                      ${runtimePrimary ? this.renderRuntimeCaseStrip(runtimePrimary) : nothing}
+                      ${architecturePrimary ? this.renderArchitectureCaseStrip(architecturePrimary) : nothing}
+                    </div>
+                  </section>
+                `
+              : nothing}
+          </section>
+          <section class="dashboard-column">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Next decisions</h3>
+                  <p class="muted">Only active operator work. Each row exposes the blocking reason and the next eligible action.</p>
+                </div>
+                ${this.renderQueueTag(`${inbox.summary.totalActionableEntries}`, inbox.summary.totalActionableEntries > 0 ? "warning" : "default")}
+              </div>
+              ${this.renderCompactDecisionList(inbox.entries)}
+              <div class="actions" style="margin-top:12px;">
+                ${this.renderActionLink("/operator-inbox", "Open inbox", "secondary")}
+              </div>
+            </section>
+            <section class="panel message">
+              <div class="panel-heading">
+                <div>
+                  <h3>System posture</h3>
+                  <p class="muted">A compact read on where manual intervention is most likely to matter next.</p>
+                </div>
+              </div>
+              <div class="status-list">
+                <div class="status-row">
+                  <span>Review pressure</span>
+                  <strong>${queueReviewPressureCount}</strong>
+                </div>
+                <div class="status-row">
+                  <span>Conflicted routes</span>
+                  <strong>${queueConflictedCount}</strong>
+                </div>
+                <div class="status-row">
+                  <span>Architecture heads</span>
+                  <strong>${snapshot.architectureSummary.activeCases.length}</strong>
+                </div>
+                <div class="status-row">
+                  <span>Runtime heads</span>
+                  <strong>${snapshot.runtimeSummary.activeCases.length}</strong>
+                </div>
+              </div>
+              <p class="muted" style="margin-top:14px;">Clear routes can auto-open one bounded downstream stub. Conflicted or low-confidence routes stay explicit until reviewed.</p>
+              <div class="actions" style="margin-top:14px;">
+                ${this.renderActionLink("/discovery", "Open Discovery", "secondary")}
+                ${this.renderActionLink("/architecture", "Open Architecture", "secondary")}
+                ${this.renderActionLink("/runtime", "Open Runtime", "secondary")}
+              </div>
+            </section>
+          </section>
+          </section>
         </section>
       `;
     }
@@ -1651,11 +1487,11 @@ class DirectiveFrontendApp extends LitElement {
     }
 
     if (this.page.kind === "operator-inbox") {
-      return this.renderOperatorDecisionInboxPage(this.page.data as FrontendOperatorDecisionInboxReport);
+      return renderOperatorDecisionInboxPageView(this.page.data as FrontendOperatorDecisionInboxReport);
     }
 
     if (this.page.kind === "workflow-map") {
-      return this.renderWorkflowMapPage(
+      return renderWorkflowMapPageView(
         this.page.snapshot as FrontendSnapshot,
         this.page.inbox as FrontendOperatorDecisionInboxReport,
       );
@@ -2664,21 +2500,29 @@ class DirectiveFrontendApp extends LitElement {
 
   render() {
     const current = window.location.pathname;
+    const chrome = this.getPageChrome(current);
     return html`
-      <main>
-        <section class="panel shell-header">
-          <div>
-            <h1>Directive Kernel</h1>
-            <div class="muted">Light operator surface over live Discovery, Architecture, and Runtime state.</div>
-          </div>
-          <div class="shell-nav">
-            ${this.link("/", "Overview", current === "/")}
-            ${this.link("/queue", "Sources", current === "/queue")}
-            ${this.link("/workflow-map", "Workflow", current === "/workflow-map")}
-            ${this.link("/operator-inbox", "Inbox", current === "/operator-inbox")}
-          </div>
+      <main class="app-shell">
+        ${this.renderSidebar(current)}
+        <section class="shell-main">
+          <section class="page-chrome">
+            <div>
+              ${chrome.eyebrow ? html`<div class="eyebrow">${chrome.eyebrow}</div>` : nothing}
+              <h1>${chrome.title}</h1>
+              ${chrome.description ? html`<p class="muted">${chrome.description}</p>` : nothing}
+            </div>
+            ${chrome.actions.length
+              ? html`
+                  <div class="page-actions">
+                    ${chrome.actions.map((action) => this.renderActionLink(action.href, action.label, action.tone))}
+                  </div>
+                `
+              : nothing}
+          </section>
+          <section class="content-stack">
+            ${this.renderContent()}
+          </section>
         </section>
-        ${this.renderContent()}
       </main>
     `;
   }

@@ -9,7 +9,7 @@ export type DirectiveArtifactLinkValidationState = {
 };
 
 const DIRECTIVE_WORKSPACE_ARTIFACT_REFERENCE_PATTERN =
-  /^(architecture|discovery|engine|frontend|hosts|runtime|scripts|shared|sources)\//u;
+  /^(architecture|discovery|engine|frontend|ui|hosts|runtime|scripts|shared|sources)\//u;
 
 function pushUnique(target: string[], value: string) {
   if (value && !target.includes(value)) {

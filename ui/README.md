@@ -1,13 +1,13 @@
-# Directive Kernel Frontend App
+# Directive Kernel UI App
 
-This is the canonical standalone frontend app for Directive Kernel.
+This is the canonical standalone UI app for Directive Kernel.
 
 Stack:
 - Vite
 - Lit
 
 Role:
-- render the standalone operator frontend
+- render the standalone operator UI
 - call the real Directive Kernel host APIs
 - stay thin and product-logic-free
 

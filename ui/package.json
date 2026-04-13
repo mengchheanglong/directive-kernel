@@ -1,5 +1,5 @@
 {
-  "name": "@directive/kernel-frontend",
+  "name": "@directive/kernel-ui",
   "version": "0.0.0-private",
   "private": true,
   "scripts": {

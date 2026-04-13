@@ -59,7 +59,7 @@ Satisfying these prerequisites authorizes contract preparation only. It does not
   - `dw-mission-openmoss-runtime-orchestration-2026-03-26`
 - Current bounded host targets:
   - `Directive Workspace standalone host (hosts/standalone-host/)`
-  - `Directive Workspace web host (frontend/ + hosts/web-host/)`
+  - `Directive Workspace web host (ui/ + hosts/web-host/)`
 - Current legal boundary:
   - load the promotion specification and bounded host-facing review metadata only
   - keep registry acceptance, host integration rollout, runtime execution, and promotion automation unopened until later explicit bounded decisions

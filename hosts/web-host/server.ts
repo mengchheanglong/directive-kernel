@@ -76,7 +76,7 @@ export type DirectiveFrontendServerHandle = {
 };
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
-const FRONTEND_APP_ROOT = path.resolve(MODULE_DIR, "..", "..", "frontend");
+const FRONTEND_APP_ROOT = path.resolve(MODULE_DIR, "..", "..", "ui");
 const FRONTEND_DIST_ROOT = path.join(FRONTEND_APP_ROOT, "dist");
 const FRONTEND_INDEX_PATH = path.join(FRONTEND_DIST_ROOT, "index.html");
 
@@ -195,8 +195,8 @@ function writeStaticFile(res: ServerResponse, filePath: string) {
 
 function renderMissingBuildPage(directiveRoot: string) {
   const escapedRoot = escapeHtml(normalizeAbsolutePath(directiveRoot));
-  return `<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Directive Kernel Frontend Build Missing</title><style>body{font-family:ui-monospace,Consolas,monospace;margin:32px;background:#f6f4ee;color:#1f1c16}main{max-width:960px;margin:0 auto}section{background:#fffdf7;border:1px solid #d9d0bf;border-radius:10px;padding:16px}pre{background:#faf7ef;border:1px solid #e1d8c7;border-radius:8px;padding:12px;white-space:pre-wrap}</style></head><body><main><section><h1>Directive Kernel Frontend Build Missing</h1><p>The standalone frontend host is running, but the Vite frontend has not been built yet.</p><p>Run these commands from the current Directive Kernel product root.</p><pre>cd ${escapedRoot}
-npm --prefix ./frontend run build
+  return `<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Directive Kernel UI Build Missing</title><style>body{font-family:ui-monospace,Consolas,monospace;margin:32px;background:#f6f4ee;color:#1f1c16}main{max-width:960px;margin:0 auto}section{background:#fffdf7;border:1px solid #d9d0bf;border-radius:10px;padding:16px}pre{background:#faf7ef;border:1px solid #e1d8c7;border-radius:8px;padding:12px;white-space:pre-wrap}</style></head><body><main><section><h1>Directive Kernel UI Build Missing</h1><p>The standalone UI host is running, but the Vite UI has not been built yet.</p><p>Run these commands from the current Directive Kernel product root.</p><pre>cd ${escapedRoot}
+npm --prefix ./ui run build
 node --experimental-strip-types ./hosts/web-host/cli.ts serve --directive-root ${escapedRoot}</pre></section></main></body></html>`;
 }
 

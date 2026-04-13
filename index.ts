@@ -5,6 +5,7 @@ export * as engineExecution from "./engine/execution/index.ts";
 export * as integrationKit from "./hosts/integration-kit/index.ts";
 export * as standaloneHost from "./hosts/standalone-host/index.ts";
 export * as frontend from "./hosts/web-host/index.ts";
+export * as ui from "./hosts/web-host/index.ts";
 export * as discovery from "./discovery/lib/index.ts";
 export * as architecture from "./architecture/lib/index.ts";
 export * as runtime from "./runtime/lib/index.ts";

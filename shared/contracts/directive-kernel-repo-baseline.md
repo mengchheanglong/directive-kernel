@@ -46,7 +46,7 @@ The numbered lane folders are not source folders here. They are generated state/
 
 ### Hosts And Frontend
 
-`hosts/` and `frontend/` are bounded host surfaces.
+`hosts/` and `ui/` are bounded host surfaces.
 
 They may present or wrap product behavior, but they must not become the canonical owner of Engine semantics.
 

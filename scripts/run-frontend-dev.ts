@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DIRECTIVE_ROOT = path.resolve(SCRIPT_DIR, "..");
-const FRONTEND_ROOT = path.join(DIRECTIVE_ROOT, "frontend");
-const VITE_BIN = path.join(DIRECTIVE_ROOT, "frontend", "node_modules", "vite", "bin", "vite.js");
+const FRONTEND_ROOT = path.join(DIRECTIVE_ROOT, "ui");
+const VITE_BIN = path.join(DIRECTIVE_ROOT, "ui", "node_modules", "vite", "bin", "vite.js");
 
 const DEV_HOST = process.env.DIRECTIVE_FRONTEND_DEV_HOST || "127.0.0.1";
 const DEV_PORT = Number(process.env.DIRECTIVE_FRONTEND_DEV_PORT || "4173");
@@ -86,7 +86,7 @@ async function main() {
     throw new Error("Invalid DIRECTIVE_FRONTEND_API_PORT");
   }
   if (!fs.existsSync(VITE_BIN)) {
-    throw new Error("Missing frontend dev dependency: vite. Run `npm --prefix ./frontend install`.");
+    throw new Error("Missing UI dev dependency: vite. Run `npm --prefix ./ui install`.");
   }
 
   const resolvedApiPort = await resolveOpenPort(DEV_HOST, API_PORT, "frontend API");

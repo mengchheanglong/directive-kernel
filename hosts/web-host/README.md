@@ -12,7 +12,7 @@ Use it when you want:
 Quickstart:
 
 ```powershell
-npm run frontend:install
+npm run ui:install
 npm run start
 ```
 

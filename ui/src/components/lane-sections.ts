@@ -26,13 +26,13 @@ export function renderQueueTag(
 ) {
   const style = {
     default:
-      "background:color-mix(in oklab, var(--accent) 84%, transparent); border-color:color-mix(in oklab, var(--foreground) 10%, var(--border)); color:var(--foreground);",
+      "background:transparent; border-color:var(--border); color:color-mix(in oklab, var(--foreground) 90%, var(--muted-foreground));",
     runtime:
-      "background:color-mix(in oklab, #60a5fa 16%, var(--accent)); border-color:color-mix(in oklab, #60a5fa 34%, var(--border)); color:var(--foreground);",
+      "background:color-mix(in oklab, #60a5fa 8%, transparent); border-color:color-mix(in oklab, #60a5fa 22%, var(--border)); color:var(--foreground);",
     architecture:
-      "background:color-mix(in oklab, #a78bfa 15%, var(--accent)); border-color:color-mix(in oklab, #a78bfa 32%, var(--border)); color:var(--foreground);",
+      "background:color-mix(in oklab, #a78bfa 8%, transparent); border-color:color-mix(in oklab, #a78bfa 20%, var(--border)); color:var(--foreground);",
     warning:
-      "background:color-mix(in oklab, #f59e0b 16%, var(--accent)); border-color:color-mix(in oklab, #f59e0b 30%, var(--border)); color:var(--foreground);",
+      "background:color-mix(in oklab, #f59e0b 8%, transparent); border-color:color-mix(in oklab, #f59e0b 24%, var(--border)); color:var(--foreground);",
   }[tone];
   return html`<span class="pill" style=${style}>${value}</span>`;
 }

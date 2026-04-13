@@ -35,7 +35,7 @@ The three main lanes are:
 - `architecture/` - system-improvement work
 - `shared/` - shared helpers and contracts
 - `hosts/` - ways to run or embed the system
-- `frontend/` - a simple read-only operator view
+- `ui/` - a simple read-only operator view
 
 ## Goal Ownership
 
@@ -88,7 +88,7 @@ From the repo root:
 
 ```powershell
 npm install
-npm run frontend:install
+npm run ui:install
 ```
 
 If you want live web/provider research, also configure the optional provider keys described in:
