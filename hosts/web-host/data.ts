@@ -434,6 +434,7 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
       } | null;
       sourceMemory: DirectiveDiscoveryRoutingArtifact["sourceMemory"] | null;
       sourceSimilarity: DirectiveDiscoveryRoutingArtifact["sourceSimilarity"] | null;
+      narrativeContext: DirectiveDiscoveryRoutingArtifact["narrativeContext"] | null;
       laneProportions: DirectiveDiscoveryRoutingArtifact["laneProportions"] | null;
       secondaryLanes: DirectiveDiscoveryRoutingArtifact["secondaryLanes"] | null;
       downstreamStubRelativePath: string | null;
@@ -1986,6 +1987,7 @@ export function readDirectiveFrontendDiscoveryRoutingDetail(input: {
       earnedAutonomy: artifact.earnedAutonomy,
       sourceMemory: artifact.sourceMemory,
       sourceSimilarity: artifact.sourceSimilarity,
+      narrativeContext: artifact.narrativeContext,
       laneProportions: artifact.laneProportions,
       secondaryLanes: artifact.secondaryLanes,
       downstreamStubRelativePath: artifact.downstreamStubRelativePath,

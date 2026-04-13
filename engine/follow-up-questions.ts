@@ -5,6 +5,7 @@ import type {
   DirectiveEngineSourceItem,
 } from "./types.ts";
 import type { DirectiveMissionHealthAssessment } from "./mission-health.ts";
+import type { DirectiveSourceNarrativeContext } from "./source-narrative-threading.ts";
 
 export type DirectiveEngineFollowUpQuestion = {
   field: string;
@@ -22,9 +23,15 @@ export type DirectiveEngineFollowUpQuestionSet = {
 function uniqueByField(
   questions: DirectiveEngineFollowUpQuestion[],
   question: DirectiveEngineFollowUpQuestion,
+  strategy: "keep" | "replace" = "keep",
 ) {
-  if (!questions.some((entry) => entry.field === question.field)) {
+  const existingIndex = questions.findIndex((entry) => entry.field === question.field);
+  if (existingIndex === -1) {
     questions.push(question);
+    return;
+  }
+  if (strategy === "replace") {
+    questions[existingIndex] = question;
   }
 }
 
@@ -38,6 +45,7 @@ export function deriveDirectiveFollowUpQuestionSet(input: {
     suggestedUsefulnessSignals: string[];
     suggestedCapabilityLanes: string[];
   };
+  narrativeContext: DirectiveSourceNarrativeContext;
   recommendedLaneId: "discovery" | "architecture" | "runtime";
   laneProportions: Record<"discovery" | "architecture" | "runtime", number>;
   confidence: DirectiveEngineRoutingConfidence;
@@ -130,6 +138,48 @@ export function deriveDirectiveFollowUpQuestionSet(input: {
       exampleAnswer: "This improves directive workspace routing quality by clarifying bounded architecture ownership.",
       predictedEffect: "Usually hardens medium-confidence routes; it will not override strong source metadata on its own.",
     });
+  }
+
+  const primaryThread = input.narrativeContext?.primaryThread ?? null;
+  if (primaryThread) {
+    const runtimeDemand = primaryThread.demandSignals.find((signal) =>
+      signal.kind === "lane_validation" && signal.requestedLaneId === "runtime"
+    );
+    if (runtimeDemand && input.source.containsExecutableCode == null) {
+      uniqueByField(questions, {
+        field: "source.containsExecutableCode",
+        question: `Does this source add runtime validation to the "${primaryThread.name}" thread by contributing callable code or a repeated operational mechanism?`,
+        whyItMatters: runtimeDemand.summary,
+        exampleAnswer: "true - it adds a repeated executable mechanism the thread did not have before",
+        predictedEffect: `A yes answer would add the missing runtime evidence the "${primaryThread.name}" thread currently lacks.`,
+      }, "replace");
+    }
+
+    const architectureDemand = primaryThread.demandSignals.find((signal) =>
+      signal.kind === "lane_validation" && signal.requestedLaneId === "architecture"
+    );
+    if (architectureDemand && input.source.improvesDirectiveWorkspace == null) {
+      uniqueByField(questions, {
+        field: "source.improvesDirectiveWorkspace",
+        question: `Does this source clarify the reusable workflow boundary inside the "${primaryThread.name}" thread, rather than only adding runtime execution value?`,
+        whyItMatters: architectureDemand.summary,
+        exampleAnswer: "true - it clarifies architecture-owned workflow logic and review boundaries",
+        predictedEffect: `A yes answer would add the missing architecture evidence the "${primaryThread.name}" thread currently lacks.`,
+      }, "replace");
+    }
+
+    const gapClosureDemand = primaryThread.demandSignals.find((signal) =>
+      signal.kind === "gap_closure"
+    );
+    if (gapClosureDemand && !input.source.capabilityGapId) {
+      uniqueByField(questions, {
+        field: "source.capabilityGapId",
+        question: `Does this source materially move the "${primaryThread.name}" thread closer to closing ${primaryThread.gapCoverage.dominantGapId ?? "its recurring gap"}?`,
+        whyItMatters: gapClosureDemand.summary,
+        exampleAnswer: primaryThread.gapCoverage.dominantGapId,
+        predictedEffect: "A confirmed gap link turns thread momentum into explicit gap-closing evidence instead of another loose related source.",
+      }, "replace");
+    }
   }
 
   if (questions.length === 0) {

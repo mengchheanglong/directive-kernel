@@ -231,6 +231,87 @@ export type FrontendDiscoveryRoutingDetail = {
       summary: string;
     }>;
   } | null;
+  narrativeContext?: {
+    summary: string;
+    primaryThread: {
+      threadId: string;
+      name: string;
+      state: "nascent" | "developing" | "mature" | "stalled" | "completed";
+      summary: string;
+      sourceCount: number;
+      firstSeenAt: string;
+      lastSeenAt: string;
+      activeSpanDays: number;
+      currentSourceOverlap: number;
+      topTokens: string[];
+      laneTendency: {
+        dominantLaneId: string;
+        dominancePercent: number;
+        laneCounts: Record<string, number>;
+        biasAdjustment: number;
+      };
+      gapCoverage: {
+        dominantGapId: string | null;
+        matchedGapIds: string[];
+        status: "none" | "emerging" | "partially_addressed" | "closed";
+      };
+      followThrough: {
+        completedProofCount: number;
+        stalledProofCount: number;
+        followThroughRate: number;
+      };
+      demandSignals: Array<{
+        kind: string;
+        priority: string;
+        summary: string;
+        requestedLaneId: string | null;
+      }>;
+      relatedRunIds: string[];
+    } | null;
+    relatedThreads: Array<{
+      threadId: string;
+      name: string;
+      state: "nascent" | "developing" | "mature" | "stalled" | "completed";
+      summary: string;
+      sourceCount: number;
+      firstSeenAt: string;
+      lastSeenAt: string;
+      activeSpanDays: number;
+      currentSourceOverlap: number;
+      topTokens: string[];
+      laneTendency: {
+        dominantLaneId: string;
+        dominancePercent: number;
+        laneCounts: Record<string, number>;
+        biasAdjustment: number;
+      };
+      gapCoverage: {
+        dominantGapId: string | null;
+        matchedGapIds: string[];
+        status: "none" | "emerging" | "partially_addressed" | "closed";
+      };
+      followThrough: {
+        completedProofCount: number;
+        stalledProofCount: number;
+        followThroughRate: number;
+      };
+      demandSignals: Array<{
+        kind: string;
+        priority: string;
+        summary: string;
+        requestedLaneId: string | null;
+      }>;
+      relatedRunIds: string[];
+    }>;
+    biasAdjustments: Record<string, number>;
+    demandSignals: Array<{
+      kind: string;
+      priority: string;
+      summary: string;
+      requestedLaneId: string | null;
+    }>;
+    rationale: string[];
+  } | null;
   laneProportions?: Record<string, number> | null;
   secondaryLanes?: Array<{
     laneId: string;
@@ -772,6 +853,87 @@ export type FrontendEngineRunRecord = {
         sharedTokens: string[];
         summary: string;
       }>;
+    } | null;
+    narrativeContext?: {
+      summary: string;
+      primaryThread: {
+        threadId: string;
+        name: string;
+        state: "nascent" | "developing" | "mature" | "stalled" | "completed";
+        summary: string;
+        sourceCount: number;
+        firstSeenAt: string;
+        lastSeenAt: string;
+        activeSpanDays: number;
+        currentSourceOverlap: number;
+        topTokens: string[];
+        laneTendency: {
+          dominantLaneId: string;
+          dominancePercent: number;
+          laneCounts: Record<string, number>;
+          biasAdjustment: number;
+        };
+        gapCoverage: {
+          dominantGapId: string | null;
+          matchedGapIds: string[];
+          status: "none" | "emerging" | "partially_addressed" | "closed";
+        };
+        followThrough: {
+          completedProofCount: number;
+          stalledProofCount: number;
+          followThroughRate: number;
+        };
+        demandSignals: Array<{
+          kind: string;
+          priority: string;
+          summary: string;
+          requestedLaneId: string | null;
+        }>;
+        relatedRunIds: string[];
+      } | null;
+      relatedThreads: Array<{
+        threadId: string;
+        name: string;
+        state: "nascent" | "developing" | "mature" | "stalled" | "completed";
+        summary: string;
+        sourceCount: number;
+        firstSeenAt: string;
+        lastSeenAt: string;
+        activeSpanDays: number;
+        currentSourceOverlap: number;
+        topTokens: string[];
+        laneTendency: {
+          dominantLaneId: string;
+          dominancePercent: number;
+          laneCounts: Record<string, number>;
+          biasAdjustment: number;
+        };
+        gapCoverage: {
+          dominantGapId: string | null;
+          matchedGapIds: string[];
+          status: "none" | "emerging" | "partially_addressed" | "closed";
+        };
+        followThrough: {
+          completedProofCount: number;
+          stalledProofCount: number;
+          followThroughRate: number;
+        };
+        demandSignals: Array<{
+          kind: string;
+          priority: string;
+          summary: string;
+          requestedLaneId: string | null;
+        }>;
+        relatedRunIds: string[];
+      }>;
+      biasAdjustments: Record<string, number>;
+      demandSignals: Array<{
+        kind: string;
+        priority: string;
+        summary: string;
+        requestedLaneId: string | null;
+      }>;
+      rationale: string[];
     } | null;
     laneProportions?: Record<string, number>;
     secondaryLanes?: Array<{

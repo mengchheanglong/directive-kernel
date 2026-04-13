@@ -504,6 +504,124 @@ class DirectiveFrontendApp extends LitElement {
     `;
   }
 
+  private renderNarrativeContext(narrativeContext: {
+    summary: string;
+    primaryThread: {
+      threadId: string;
+      name: string;
+      state: "nascent" | "developing" | "mature" | "stalled" | "completed";
+      summary: string;
+      sourceCount: number;
+      firstSeenAt: string;
+      lastSeenAt: string;
+      activeSpanDays: number;
+      currentSourceOverlap: number;
+      topTokens: string[];
+      laneTendency: {
+        dominantLaneId: string;
+        dominancePercent: number;
+        laneCounts: Record<string, number>;
+        biasAdjustment: number;
+      };
+      gapCoverage: {
+        dominantGapId: string | null;
+        matchedGapIds: string[];
+        status: "none" | "emerging" | "partially_addressed" | "closed";
+      };
+      followThrough: {
+        completedProofCount: number;
+        stalledProofCount: number;
+        followThroughRate: number;
+      };
+      demandSignals: Array<{
+        kind: string;
+        priority: string;
+        summary: string;
+        requestedLaneId: string | null;
+      }>;
+      relatedRunIds: string[];
+    } | null;
+    relatedThreads: Array<{
+      threadId: string;
+      name: string;
+      state: "nascent" | "developing" | "mature" | "stalled" | "completed";
+      summary: string;
+      sourceCount: number;
+      firstSeenAt: string;
+      lastSeenAt: string;
+      activeSpanDays: number;
+      currentSourceOverlap: number;
+      topTokens: string[];
+      laneTendency: {
+        dominantLaneId: string;
+        dominancePercent: number;
+        laneCounts: Record<string, number>;
+        biasAdjustment: number;
+      };
+      gapCoverage: {
+        dominantGapId: string | null;
+        matchedGapIds: string[];
+        status: "none" | "emerging" | "partially_addressed" | "closed";
+      };
+      followThrough: {
+        completedProofCount: number;
+        stalledProofCount: number;
+        followThroughRate: number;
+      };
+      demandSignals: Array<{
+        kind: string;
+        priority: string;
+        summary: string;
+        requestedLaneId: string | null;
+      }>;
+      relatedRunIds: string[];
+    }>;
+    biasAdjustments: Record<string, number>;
+    demandSignals: Array<{
+      kind: string;
+      priority: string;
+      summary: string;
+      requestedLaneId: string | null;
+    }>;
+    rationale: string[];
+  } | null | undefined) {
+    if (!narrativeContext) {
+      return nothing;
+    }
+    return html`
+      <section class="panel">
+        <h3>Narrative Threading</h3>
+        <p>${narrativeContext.summary}</p>
+        <div class="muted">
+          Bias: ${Object.entries(narrativeContext.biasAdjustments).map(([lane, score]) => `${lane} ${score >= 0 ? "+" : ""}${score}`).join(" | ")}
+        </div>
+        ${narrativeContext.primaryThread ? html`
+          <ul>
+            <li>Primary thread: ${narrativeContext.primaryThread.name}</li>
+            <li>State: ${narrativeContext.primaryThread.state}</li>
+            <li>Lane tendency: ${narrativeContext.primaryThread.laneTendency.dominantLaneId} (${narrativeContext.primaryThread.laneTendency.dominancePercent}%)</li>
+            <li>Follow-through: ${narrativeContext.primaryThread.followThrough.followThroughRate}% (${narrativeContext.primaryThread.followThrough.completedProofCount} completed / ${narrativeContext.primaryThread.followThrough.stalledProofCount} stalled)</li>
+            <li>Gap coverage: ${narrativeContext.primaryThread.gapCoverage.dominantGapId ?? "n/a"} | ${narrativeContext.primaryThread.gapCoverage.status}</li>
+          </ul>
+        ` : nothing}
+        ${narrativeContext.demandSignals.length > 0 ? html`
+          <h4>Thread demand</h4>
+          <ul>${narrativeContext.demandSignals.map((entry) => html`<li>${entry.priority}: ${entry.summary}</li>`)}</ul>
+        ` : nothing}
+        ${narrativeContext.relatedThreads.length > 0 ? html`
+          <h4>Related threads</h4>
+          <ul>
+            ${narrativeContext.relatedThreads.map((entry) => html`
+              <li>
+                <strong>${entry.name}</strong> | ${entry.state} | ${entry.currentSourceOverlap} shared tokens | ${entry.laneTendency.dominantLaneId} ${entry.laneTendency.dominancePercent}%
+              </li>
+            `)}
+          </ul>
+        ` : nothing}
+      </section>
+    `;
+  }
+
   private renderLaneProportions(
     laneProportions: Record<string, number> | null | undefined,
     secondaryLanes: Array<{ laneId: string; proportion: number; reason: string; }> | null | undefined,
@@ -1573,6 +1691,7 @@ class DirectiveFrontendApp extends LitElement {
           <tr><th>active follow-up questions</th><td>${record.routingAssessment?.followUpQuestions?.summary ?? "n/a"}</td></tr>
           <tr><th>Source Memory</th><td>${record.routingAssessment?.sourceMemory?.summary ?? "n/a"}</td></tr>
           <tr><th>Source Similarity</th><td>${record.routingAssessment?.sourceSimilarity?.summary ?? "n/a"}</td></tr>
+          <tr><th>Narrative Threading</th><td>${record.routingAssessment?.narrativeContext?.summary ?? "n/a"}</td></tr>
           <tr><th>lane proportions</th><td>${record.routingAssessment?.laneProportions ? Object.entries(record.routingAssessment.laneProportions).map(([lane, value]) => `${lane} ${value}%`).join(" | ") : "n/a"}</td></tr>
           <tr><th>Gap Radar</th><td>${record.routingAssessment?.gapRadar?.summary ?? "n/a"}</td></tr>
           <tr><th>ambiguity summary</th><td>${record.routingAssessment?.ambiguitySummary
@@ -1604,6 +1723,7 @@ class DirectiveFrontendApp extends LitElement {
         ${this.renderMissionHealth(record.routingAssessment?.missionHealth)}
         ${this.renderSourceMemory(record.routingAssessment?.sourceMemory)}
         ${this.renderSourceSimilarity(record.routingAssessment?.sourceSimilarity)}
+        ${this.renderNarrativeContext(record.routingAssessment?.narrativeContext)}
         ${this.renderLaneProportions(record.routingAssessment?.laneProportions, record.routingAssessment?.secondaryLanes)}
         ${this.renderGapRadar(record.routingAssessment?.gapRadar)}
         ${this.renderEarnedAutonomy(record.routingAssessment?.earnedAutonomy)}
@@ -1778,6 +1898,7 @@ class DirectiveFrontendApp extends LitElement {
           <tr><th>active follow-up questions</th><td>${detail.followUpQuestions?.summary ?? "n/a"}</td></tr>
           <tr><th>Source Memory</th><td>${detail.sourceMemory?.summary ?? "n/a"}</td></tr>
           <tr><th>Source Similarity</th><td>${detail.sourceSimilarity?.summary ?? "n/a"}</td></tr>
+          <tr><th>Narrative Threading</th><td>${detail.narrativeContext?.summary ?? "n/a"}</td></tr>
           <tr><th>lane proportions</th><td>${detail.laneProportions ? Object.entries(detail.laneProportions).map(([lane, value]) => `${lane} ${value}%`).join(" | ") : "n/a"}</td></tr>
           <tr><th>Gap Radar</th><td>${detail.gapRadar?.summary ?? "n/a"}</td></tr>
           <tr><th>ambiguity summary</th><td>${detail.ambiguitySummary
@@ -1808,6 +1929,7 @@ class DirectiveFrontendApp extends LitElement {
         ${this.renderMissionHealth(detail.missionHealth)}
         ${this.renderSourceMemory(detail.sourceMemory)}
         ${this.renderSourceSimilarity(detail.sourceSimilarity)}
+        ${this.renderNarrativeContext(detail.narrativeContext)}
         ${this.renderLaneProportions(detail.laneProportions, detail.secondaryLanes)}
         ${this.renderGapRadar(detail.gapRadar)}
         ${this.renderEarnedAutonomy(detail.earnedAutonomy)}

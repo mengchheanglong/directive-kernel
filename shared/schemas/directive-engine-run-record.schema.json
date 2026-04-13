@@ -32,7 +32,7 @@
       "const": "shared/schemas/directive-engine-run-record.schema.json"
     },
     "schemaVersion": {
-      "const": 5
+      "const": 6
     },
     "recordKind": {
       "const": "directive_engine_run_record"
@@ -184,6 +184,7 @@
           "earnedAutonomy",
           "sourceMemory",
           "sourceSimilarity",
+          "narrativeContext",
           "laneProportions",
           "secondaryLanes",
           "ambiguitySummary",
@@ -466,6 +467,179 @@
                 }
               }
             }
+          }
+        },
+        "narrativeContext": {
+          "type": ["object", "null"],
+          "required": ["summary", "primaryThread", "relatedThreads", "biasAdjustments", "demandSignals", "rationale"],
+          "properties": {
+            "summary": { "type": "string", "minLength": 1 },
+            "primaryThread": {
+              "type": ["object", "null"],
+              "required": [
+                "threadId",
+                "name",
+                "state",
+                "summary",
+                "sourceCount",
+                "firstSeenAt",
+                "lastSeenAt",
+                "activeSpanDays",
+                "currentSourceOverlap",
+                "topTokens",
+                "laneTendency",
+                "gapCoverage",
+                "followThrough",
+                "demandSignals",
+                "relatedRunIds"
+              ],
+              "properties": {
+                "threadId": { "type": "string", "minLength": 1 },
+                "name": { "type": "string", "minLength": 1 },
+                "state": { "enum": ["nascent", "developing", "mature", "stalled", "completed"] },
+                "summary": { "type": "string", "minLength": 1 },
+                "sourceCount": { "type": "integer" },
+                "firstSeenAt": { "type": "string", "minLength": 1 },
+                "lastSeenAt": { "type": "string", "minLength": 1 },
+                "activeSpanDays": { "type": "integer" },
+                "currentSourceOverlap": { "type": "integer" },
+                "topTokens": { "type": "array", "items": { "type": "string" } },
+                "laneTendency": {
+                  "type": "object",
+                  "required": ["dominantLaneId", "dominancePercent", "laneCounts", "biasAdjustment"],
+                  "properties": {
+                    "dominantLaneId": { "type": "string", "minLength": 1 },
+                    "dominancePercent": { "type": "number" },
+                    "laneCounts": { "type": "object" },
+                    "biasAdjustment": { "type": "number" }
+                  }
+                },
+                "gapCoverage": {
+                  "type": "object",
+                  "required": ["dominantGapId", "matchedGapIds", "status"],
+                  "properties": {
+                    "dominantGapId": { "type": ["string", "null"] },
+                    "matchedGapIds": { "type": "array", "items": { "type": "string" } },
+                    "status": { "enum": ["none", "emerging", "partially_addressed", "closed"] }
+                  }
+                },
+                "followThrough": {
+                  "type": "object",
+                  "required": ["completedProofCount", "stalledProofCount", "followThroughRate"],
+                  "properties": {
+                    "completedProofCount": { "type": "integer" },
+                    "stalledProofCount": { "type": "integer" },
+                    "followThroughRate": { "type": "number" }
+                  }
+                },
+                "demandSignals": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["kind", "priority", "summary", "requestedLaneId"],
+                    "properties": {
+                      "kind": { "type": "string", "minLength": 1 },
+                      "priority": { "enum": ["low", "medium", "high"] },
+                      "summary": { "type": "string", "minLength": 1 },
+                      "requestedLaneId": { "type": ["string", "null"] }
+                    }
+                  }
+                },
+                "relatedRunIds": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "relatedThreads": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "threadId",
+                  "name",
+                  "state",
+                  "summary",
+                  "sourceCount",
+                  "firstSeenAt",
+                  "lastSeenAt",
+                  "activeSpanDays",
+                  "currentSourceOverlap",
+                  "topTokens",
+                  "laneTendency",
+                  "gapCoverage",
+                  "followThrough",
+                  "demandSignals",
+                  "relatedRunIds"
+                ],
+                "properties": {
+                  "threadId": { "type": "string", "minLength": 1 },
+                  "name": { "type": "string", "minLength": 1 },
+                  "state": { "enum": ["nascent", "developing", "mature", "stalled", "completed"] },
+                  "summary": { "type": "string", "minLength": 1 },
+                  "sourceCount": { "type": "integer" },
+                  "firstSeenAt": { "type": "string", "minLength": 1 },
+                  "lastSeenAt": { "type": "string", "minLength": 1 },
+                  "activeSpanDays": { "type": "integer" },
+                  "currentSourceOverlap": { "type": "integer" },
+                  "topTokens": { "type": "array", "items": { "type": "string" } },
+                  "laneTendency": {
+                    "type": "object",
+                    "required": ["dominantLaneId", "dominancePercent", "laneCounts", "biasAdjustment"],
+                    "properties": {
+                      "dominantLaneId": { "type": "string", "minLength": 1 },
+                      "dominancePercent": { "type": "number" },
+                      "laneCounts": { "type": "object" },
+                      "biasAdjustment": { "type": "number" }
+                    }
+                  },
+                  "gapCoverage": {
+                    "type": "object",
+                    "required": ["dominantGapId", "matchedGapIds", "status"],
+                    "properties": {
+                      "dominantGapId": { "type": ["string", "null"] },
+                      "matchedGapIds": { "type": "array", "items": { "type": "string" } },
+                      "status": { "enum": ["none", "emerging", "partially_addressed", "closed"] }
+                    }
+                  },
+                  "followThrough": {
+                    "type": "object",
+                    "required": ["completedProofCount", "stalledProofCount", "followThroughRate"],
+                    "properties": {
+                      "completedProofCount": { "type": "integer" },
+                      "stalledProofCount": { "type": "integer" },
+                      "followThroughRate": { "type": "number" }
+                    }
+                  },
+                  "demandSignals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["kind", "priority", "summary", "requestedLaneId"],
+                      "properties": {
+                        "kind": { "type": "string", "minLength": 1 },
+                        "priority": { "enum": ["low", "medium", "high"] },
+                        "summary": { "type": "string", "minLength": 1 },
+                        "requestedLaneId": { "type": ["string", "null"] }
+                      }
+                    }
+                  },
+                  "relatedRunIds": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            },
+            "biasAdjustments": { "type": "object" },
+            "demandSignals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["kind", "priority", "summary", "requestedLaneId"],
+                "properties": {
+                  "kind": { "type": "string", "minLength": 1 },
+                  "priority": { "enum": ["low", "medium", "high"] },
+                  "summary": { "type": "string", "minLength": 1 },
+                  "requestedLaneId": { "type": ["string", "null"] }
+                }
+              }
+            },
+            "rationale": { "type": "array", "items": { "type": "string" } }
           }
         },
         "laneProportions": { "type": "object" },

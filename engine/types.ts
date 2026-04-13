@@ -17,7 +17,7 @@ export const DIRECTIVE_ENGINE_INTEGRATION_MODES = [
 ] as const;
 
 export const DIRECTIVE_ENGINE_RUN_RECORD_KIND = "directive_engine_run_record" as const;
-export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 5 as const;
+export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 6 as const;
 export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF =
   "shared/schemas/directive-engine-run-record.schema.json" as const;
 
@@ -246,6 +246,7 @@ export type DirectiveEngineRoutingAssessment = {
       summary: string;
     }>;
   } | null;
+  narrativeContext: import("./source-narrative-threading.ts").DirectiveSourceNarrativeContext;
   laneProportions: Record<DirectiveEngineLaneId, number>;
   secondaryLanes: Array<{
     laneId: DirectiveEngineLaneId;

@@ -1223,6 +1223,7 @@ export class DirectiveEngine {
       corrections,
       policyEvents: [...(input.policyEvents ?? [])],
       existingRuns,
+      receivedAt,
     });
     const lane = resolveDirectiveEngineLane({
       laneSet: this.laneSet,

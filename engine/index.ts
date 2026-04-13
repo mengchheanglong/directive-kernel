@@ -14,6 +14,7 @@ export * from "./gap-radar.ts";
 export * from "./earned-autonomy.ts";
 export * from "./source-memory.ts";
 export * from "./source-similarity.ts";
+export * from "./source-narrative-threading.ts";
 export * from "./mission-health.ts";
 export * from "./follow-up-questions.ts";
 export * from "./plan-consumption.ts";

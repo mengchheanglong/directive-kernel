@@ -19,6 +19,7 @@ import { createDirectiveSourceMemorySnapshot, deriveDirectiveSourceMemoryAssessm
 import { deriveDirectiveSourceSimilarityAssessment } from "./source-similarity.ts";
 import { deriveDirectiveMissionHealth } from "./mission-health.ts";
 import { deriveDirectiveFollowUpQuestionSet } from "./follow-up-questions.ts";
+import { deriveDirectiveSourceNarrativeContext } from "./source-narrative-threading.ts";
 
 /**
  * Weighted keyword lists.  Each entry is [keyword, weight].
@@ -1401,6 +1402,7 @@ export function assessDirectiveEngineRouting(input: {
   corrections?: RoutingCorrectionEntry[];
   policyEvents?: DecisionPolicyEvent[];
   existingRuns?: DirectiveEngineRunRecord[];
+  receivedAt?: string | null;
 }): DirectiveEngineRoutingAssessment {
   const sourceText = flattenSourceText(input.source);
   const {
@@ -1470,6 +1472,22 @@ export function assessDirectiveEngineRouting(input: {
   });
   if (sourceMemoryPreAssessment) {
     for (const [laneId, adjustment] of Object.entries(sourceMemoryPreAssessment.biasAdjustments)) {
+      if (adjustment > 0 && laneId in laneScores) {
+        (laneScores as Record<string, number>)[laneId] += adjustment;
+      }
+    }
+  }
+  const narrativeContextPreAssessment = deriveDirectiveSourceNarrativeContext({
+    source: input.source,
+    sourceText,
+    mission: input.mission,
+    existingRuns: [...(input.existingRuns ?? [])],
+    provisionalLaneId,
+    currentMatchedGapId: matchedGap?.gapId ?? input.source.capabilityGapId ?? null,
+    receivedAt: input.receivedAt,
+  });
+  if (narrativeContextPreAssessment) {
+    for (const [laneId, adjustment] of Object.entries(narrativeContextPreAssessment.biasAdjustments)) {
       if (adjustment > 0 && laneId in laneScores) {
         (laneScores as Record<string, number>)[laneId] += adjustment;
       }
@@ -1597,11 +1615,21 @@ export function assessDirectiveEngineRouting(input: {
     existingRuns: [...(input.existingRuns ?? [])],
     recommendedLaneId,
   });
+  const narrativeContext = deriveDirectiveSourceNarrativeContext({
+    source: input.source,
+    sourceText,
+    mission: input.mission,
+    existingRuns: [...(input.existingRuns ?? [])],
+    provisionalLaneId: recommendedLaneId,
+    currentMatchedGapId: matchedGap?.gapId ?? input.source.capabilityGapId ?? null,
+    receivedAt: input.receivedAt,
+  });
   const followUpQuestions = deriveDirectiveFollowUpQuestionSet({
     source: input.source,
     mission: input.mission,
     missionHealth,
     goalCopilot,
+    narrativeContext,
     recommendedLaneId,
     laneProportions,
     confidence,
@@ -1842,6 +1870,28 @@ export function assessDirectiveEngineRouting(input: {
     rationale.push(similarityLine);
     keywordSignals.push(similarityLine);
   }
+  if (narrativeContext) {
+    const narrativeLine = `Narrative Threading summary: ${narrativeContext.summary}`;
+    rationale.push(narrativeLine);
+    ambiguitySignals.push(narrativeLine);
+    if (narrativeContext.primaryThread) {
+      const primaryThreadLine =
+        `Narrative Threading primary thread "${narrativeContext.primaryThread.name}" is ${narrativeContext.primaryThread.state} with ${narrativeContext.primaryThread.sourceCount} sources and ${narrativeContext.primaryThread.followThrough.followThroughRate}% follow-through.`;
+      rationale.push(primaryThreadLine);
+      ambiguitySignals.push(primaryThreadLine);
+    }
+    if (Object.values(narrativeContext.biasAdjustments).some((value) => value > 0)) {
+      const biasLine =
+        `Narrative Threading bias adjustments: ${Object.entries(narrativeContext.biasAdjustments).map(([laneId, value]) => `${laneId} ${value > 0 ? "+" : ""}${value}`).join(", ")}.`;
+      rationale.push(biasLine);
+      keywordSignals.push(biasLine);
+    }
+    for (const signal of narrativeContext.demandSignals) {
+      const demandLine = `Narrative Threading demand (${signal.priority}): ${signal.summary}`;
+      rationale.push(demandLine);
+      ambiguitySignals.push(demandLine);
+    }
+  }
   rationale.push(
     `Route explanation breakdown for ${recommendedLaneId}: keyword=${keywordLaneScores[recommendedLaneId]}, metadata=${metadataLaneScores[recommendedLaneId]}, gap=${gapLaneScores[recommendedLaneId]}.`,
   );
@@ -1916,6 +1966,7 @@ export function assessDirectiveEngineRouting(input: {
     earnedAutonomy,
     sourceMemory,
     sourceSimilarity,
+    narrativeContext,
     laneProportions,
     secondaryLanes,
     ambiguitySummary: {

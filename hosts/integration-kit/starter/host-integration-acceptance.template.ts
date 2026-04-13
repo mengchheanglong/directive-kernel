@@ -319,9 +319,10 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
       },
     });
     check(
-      "DirectiveEngine processSource preserves source-memory, source-similarity, and prior-plan-context surfaces",
+      "DirectiveEngine processSource preserves source-memory, source-similarity, narrative-threading, and prior-plan-context surfaces",
       related.record.routingAssessment.sourceMemory !== null
         && related.record.routingAssessment.sourceSimilarity !== null
+        && related.record.routingAssessment.narrativeContext !== null
         && related.record.priorPlanContext !== null,
     );
   } catch (error) {
