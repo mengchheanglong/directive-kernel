@@ -535,6 +535,45 @@ class DirectiveUiApp extends LitElement {
     return renderGapPressureSummaryView(gapPressure);
   }
 
+  private renderRoutingDigest(digest: {
+    headline: string;
+    explanation: string;
+    primaryConcern: {
+      kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+      summary: string;
+      suggestedAction: string;
+    } | null;
+    secondaryConcerns: Array<{
+      kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+      summary: string;
+    }>;
+    threadContext: string | null;
+    trustLevel: string;
+  } | null | undefined) {
+    if (!digest) {
+      return nothing;
+    }
+
+    return html`
+      <section class=${digest.primaryConcern ? "panel warning" : "panel good"}>
+        <h3>Routing Digest</h3>
+        <p><strong>${digest.headline}</strong></p>
+        <p>${digest.explanation}</p>
+        ${digest.primaryConcern ? html`
+          <div class="stack-block">
+            <p><strong>Primary concern:</strong> ${digest.primaryConcern.summary}</p>
+            <p class="muted">Suggested action: ${digest.primaryConcern.suggestedAction}</p>
+          </div>
+        ` : nothing}
+        ${digest.secondaryConcerns.length
+          ? html`<ul>${digest.secondaryConcerns.map((concern) => html`<li>${concern.summary}</li>`)}</ul>`
+          : nothing}
+        <p class="muted">${digest.threadContext ?? "No active narrative thread."}</p>
+        <p class="muted">${digest.trustLevel}</p>
+      </section>
+    `;
+  }
+
   private renderGoalCopilot(goalCopilot: {
     overallScore: number;
     objectiveSpecificityScore: number;
@@ -1514,6 +1553,7 @@ class DirectiveUiApp extends LitElement {
           <tr><th>usefulness level</th><td>${record.candidate.usefulnessLevel}</td></tr>
           <tr><th>usefulness rationale</th><td>${record.analysis.usefulnessRationale}</td></tr>
           <tr><th>routing confidence</th><td>${record.routingAssessment?.confidence ?? record.candidate.confidence ?? "n/a"}</td></tr>
+          <tr><th>routing digest</th><td>${record.routingAssessment?.digest?.headline ?? "n/a"}</td></tr>
           <tr><th>matched capability gap</th><td>${record.routingAssessment?.matchedGapId ?? "n/a"}</td></tr>
           <tr><th>gap pressure</th><td>${this.renderGapPressureSummary(detail.gapPressure)}</td></tr>
           <tr><th>gap alignment score</th><td>${detail.gapPressure?.gapAlignmentScore ?? "n/a"}</td></tr>
@@ -1544,6 +1584,7 @@ class DirectiveUiApp extends LitElement {
           <tr><th>record path</th><td>${this.artifactLink(detail.recordPath)}</td></tr>
           <tr><th>report path</th><td>${this.artifactLink(detail.reportPath)}</td></tr>
         </tbody></table></section>
+        ${this.renderRoutingDigest(record.routingAssessment?.digest)}
         ${record.routingAssessment?.reviewGuidance ? html`
           <section class="panel warning">
             <h3>Review handling guidance</h3>
@@ -1726,6 +1767,7 @@ class DirectiveUiApp extends LitElement {
           <tr><th>open gaps considered</th><td>${detail.gapPressure?.openGapCount ?? "n/a"}</td></tr>
           <tr><th>gap mission objective</th><td>${detail.gapPressure?.relatedMissionObjective ?? "n/a"}</td></tr>
           <tr><th>routing confidence</th><td>${detail.routingConfidence ?? "n/a"}</td></tr>
+          <tr><th>routing digest</th><td>${detail.digest?.headline ?? "n/a"}</td></tr>
           <tr><th>route conflict</th><td>${detail.routeConflict === null || detail.routeConflict === undefined ? "n/a" : detail.routeConflict ? "yes" : "no"}</td></tr>
           <tr><th>needs human review</th><td>${detail.needsHumanReview === null || detail.needsHumanReview === undefined ? "n/a" : detail.needsHumanReview ? "yes" : "no"}</td></tr>
           <tr><th>mission specificity warning</th><td>${detail.missionSpecificityWarning ?? "n/a"}</td></tr>
@@ -1750,6 +1792,7 @@ class DirectiveUiApp extends LitElement {
           <tr><th>Engine run record</th><td>${detail.engineRunRecordPath ? this.artifactLink(detail.engineRunRecordPath) : html`<span class="muted">not resolved</span>`}</td></tr>
           <tr><th>Engine run report</th><td>${detail.engineRunReportPath ? this.artifactLink(detail.engineRunReportPath) : html`<span class="muted">not resolved</span>`}</td></tr>
         </tbody></table></section>
+        ${this.renderRoutingDigest(detail.digest)}
         ${detail.reviewGuidance ? html`
           <section class="panel warning">
             <h3>Review handling guidance</h3>

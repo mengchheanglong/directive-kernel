@@ -103,6 +103,21 @@ export type FrontendDiscoveryRoutingDetail = {
   routingConfidence?: string | null;
   routeConflict?: boolean | null;
   needsHumanReview?: boolean | null;
+  digest?: {
+    headline: string;
+    explanation: string;
+    primaryConcern: {
+      kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+      summary: string;
+      suggestedAction: string;
+    } | null;
+    secondaryConcerns: Array<{
+      kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+      summary: string;
+    }>;
+    threadContext: string | null;
+    trustLevel: string;
+  } | null;
   missionSpecificityWarning?: string | null;
   missionHealth?: {
     overallScore: number;
@@ -732,6 +747,21 @@ export type FrontendEngineRunRecord = {
     matchedGapId?: string | null;
     routeConflict?: boolean;
     needsHumanReview?: boolean;
+    digest?: {
+      headline: string;
+      explanation: string;
+      primaryConcern: {
+        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+        summary: string;
+        suggestedAction: string;
+      } | null;
+      secondaryConcerns: Array<{
+        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+        summary: string;
+      }>;
+      threadContext: string | null;
+      trustLevel: string;
+    } | null;
     missionSpecificityWarning?: string | null;
     missionHealth?: {
       overallScore: number;

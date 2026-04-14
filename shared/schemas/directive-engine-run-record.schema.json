@@ -32,7 +32,7 @@
       "const": "shared/schemas/directive-engine-run-record.schema.json"
     },
     "schemaVersion": {
-      "const": 6
+      "const": 7
     },
     "recordKind": {
       "const": "directive_engine_run_record"
@@ -175,6 +175,7 @@
           "matchedGapRank",
           "routeConflict",
           "needsHumanReview",
+          "digest",
           "missionSpecificityWarning",
           "missionHealth",
           "goalCopilot",
@@ -202,6 +203,59 @@
         "matchedGapRank": { "type": ["integer", "null"] },
         "routeConflict": { "type": "boolean" },
         "needsHumanReview": { "type": "boolean" },
+        "digest": {
+          "type": "object",
+          "required": [
+            "headline",
+            "explanation",
+            "primaryConcern",
+            "secondaryConcerns",
+            "threadContext",
+            "trustLevel"
+          ],
+          "properties": {
+            "headline": { "type": "string", "minLength": 1 },
+            "explanation": { "type": "string", "minLength": 1 },
+            "primaryConcern": {
+              "type": ["object", "null"],
+              "required": ["kind", "summary", "suggestedAction"],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "conflict",
+                    "low_confidence",
+                    "mission_weakness",
+                    "stalled_thread",
+                    "gap_pressure"
+                  ]
+                },
+                "summary": { "type": "string", "minLength": 1 },
+                "suggestedAction": { "type": "string", "minLength": 1 }
+              }
+            },
+            "secondaryConcerns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["kind", "summary"],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "conflict",
+                      "low_confidence",
+                      "mission_weakness",
+                      "stalled_thread",
+                      "gap_pressure"
+                    ]
+                  },
+                  "summary": { "type": "string", "minLength": 1 }
+                }
+              }
+            },
+            "threadContext": { "type": ["string", "null"] },
+            "trustLevel": { "type": "string", "minLength": 1 }
+          }
+        },
         "missionSpecificityWarning": { "type": ["string", "null"] },
         "missionHealth": {
           "type": ["object", "null"],

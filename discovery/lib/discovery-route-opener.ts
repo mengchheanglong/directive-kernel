@@ -66,6 +66,21 @@ type DirectiveEngineRunRecordLike = {
     matchedGapRank?: number | null;
     routeConflict?: boolean;
     needsHumanReview?: boolean;
+    digest?: {
+      headline: string;
+      explanation: string;
+      primaryConcern: {
+        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+        summary: string;
+        suggestedAction: string;
+      } | null;
+      secondaryConcerns: Array<{
+        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+        summary: string;
+      }>;
+      threadContext: string | null;
+      trustLevel: string;
+    };
     missionSpecificityWarning?: string | null;
     missionHealth?: {
       overallScore: number;
@@ -330,6 +345,7 @@ export type DirectiveDiscoveryRoutingArtifact = {
   routingConfidence: string | null;
   routeConflict: boolean | null;
   needsHumanReview: boolean | null;
+  digest: DirectiveEngineRunRecordLike["routingAssessment"]["digest"] | null;
   missionSpecificityWarning: string | null;
   missionHealth: DirectiveEngineRunRecordLike["routingAssessment"]["missionHealth"] | null;
   explanationBreakdown: {
@@ -1123,6 +1139,8 @@ function readRoutingArtifact(input: {
       ?? engineRun?.record.routingAssessment?.confidence
       ?? engineRun?.record.candidate.confidence
       ?? null,
+    digest:
+      engineRun?.record.routingAssessment?.digest ?? null,
     missionSpecificityWarning:
       parsed.missionSpecificityWarning
       ?? engineRun?.record.routingAssessment?.missionSpecificityWarning

@@ -360,6 +360,21 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
       routingConfidence: string | null;
       routeConflict: boolean | null;
       needsHumanReview: boolean | null;
+      digest: {
+        headline: string;
+        explanation: string;
+        primaryConcern: {
+          kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+          summary: string;
+          suggestedAction: string;
+        } | null;
+        secondaryConcerns: Array<{
+          kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+          summary: string;
+        }>;
+        threadContext: string | null;
+        trustLevel: string;
+      } | null;
       missionSpecificityWarning: string | null;
       missionHealth: DirectiveDiscoveryRoutingArtifact["missionHealth"] | null;
       explanationBreakdown: {
@@ -1975,6 +1990,7 @@ export function readDirectiveFrontendDiscoveryRoutingDetail(input: {
       routingConfidence: artifact.routingConfidence,
       routeConflict: artifact.routeConflict,
       needsHumanReview: artifact.needsHumanReview,
+      digest: artifact.digest,
       missionSpecificityWarning: artifact.missionSpecificityWarning,
       missionHealth: artifact.missionHealth,
       explanationBreakdown: artifact.explanationBreakdown,

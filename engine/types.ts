@@ -17,7 +17,7 @@ export const DIRECTIVE_ENGINE_INTEGRATION_MODES = [
 ] as const;
 
 export const DIRECTIVE_ENGINE_RUN_RECORD_KIND = "directive_engine_run_record" as const;
-export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 6 as const;
+export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 7 as const;
 export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF =
   "shared/schemas/directive-engine-run-record.schema.json" as const;
 
@@ -30,6 +30,32 @@ export type DirectiveEngineIntegrationMode =
 export type DirectiveEngineUsefulnessLevel = "direct" | "structural" | "meta" | "hybrid";
 
 export type DirectiveEngineRoutingConfidence = "high" | "medium" | "low";
+
+export type DirectiveRoutingDigestConcernKind =
+  | "conflict"
+  | "low_confidence"
+  | "mission_weakness"
+  | "stalled_thread"
+  | "gap_pressure"
+  | "none";
+
+export type DirectiveRoutingDigestConcern = {
+  kind: Exclude<DirectiveRoutingDigestConcernKind, "none">;
+  summary: string;
+  suggestedAction: string;
+};
+
+export type DirectiveRoutingDigest = {
+  headline: string;
+  explanation: string;
+  primaryConcern: DirectiveRoutingDigestConcern | null;
+  secondaryConcerns: Array<{
+    kind: Exclude<DirectiveRoutingDigestConcernKind, "none">;
+    summary: string;
+  }>;
+  threadContext: string | null;
+  trustLevel: string;
+};
 
 export type DirectiveEnginePrimaryAdoptionTarget =
   | "discovery"
@@ -138,6 +164,7 @@ export type DirectiveEngineRoutingAssessment = {
     requiredChecks: string[];
     stopLine: string;
   } | null;
+  digest: DirectiveRoutingDigest;
   missionSpecificityWarning: string | null;
   missionHealth: {
     overallScore: number;
@@ -416,6 +443,17 @@ export type DirectiveEngineProcessSourceInput = {
   /** Past operator routing corrections to bias future lane scoring. */
   corrections?: import("./routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
   /** Past review-resolution policy events used for gap radar and earned autonomy. */
+  policyEvents?: import("./decision-policy-ledger.ts").DecisionPolicyEvent[] | null;
+};
+
+export type DirectiveEngineMinimalSourceInput = {
+  title: string;
+  url?: string | null;
+  summary?: string | null;
+  mission?: DirectiveEngineMissionInput | null;
+  gaps?: DirectiveEngineCapabilityGap[] | null;
+  receivedAt?: string | null;
+  corrections?: import("./routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
   policyEvents?: import("./decision-policy-ledger.ts").DecisionPolicyEvent[] | null;
 };
 

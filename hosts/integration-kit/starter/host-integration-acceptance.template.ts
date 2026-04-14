@@ -129,6 +129,13 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
       "routing assessment exposes Earned Autonomy diagnostics",
       typeof vagueRoute.earnedAutonomy?.overallScore === "number",
     );
+    check(
+      "routing assessment exposes routing digest with headline and trust level",
+      typeof vagueRoute.digest?.headline === "string"
+        && vagueRoute.digest.headline.length > 0
+        && typeof vagueRoute.digest?.trustLevel === "string"
+        && vagueRoute.digest.trustLevel.length > 0,
+    );
 
     const recurringPolicyEvents = [
       {

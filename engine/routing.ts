@@ -20,6 +20,7 @@ import { deriveDirectiveSourceSimilarityAssessment } from "./source-similarity.t
 import { deriveDirectiveMissionHealth } from "./mission-health.ts";
 import { deriveDirectiveFollowUpQuestionSet } from "./follow-up-questions.ts";
 import { deriveDirectiveSourceNarrativeContext } from "./source-narrative-threading.ts";
+import { deriveRoutingDigest } from "./routing-digest.ts";
 
 /**
  * Weighted keyword lists.  Each entry is [keyword, weight].
@@ -1606,6 +1607,7 @@ export function assessDirectiveEngineRouting(input: {
     baseNeedsHumanReview,
     existingRuns: [...(input.existingRuns ?? [])],
     policyEvents: [...(input.policyEvents ?? [])],
+    corrections: [...(input.corrections ?? [])],
   });
   const needsHumanReview =
     baseNeedsHumanReview && !earnedAutonomy.approvalReductionApplied;
@@ -1947,7 +1949,7 @@ export function assessDirectiveEngineRouting(input: {
     }
   }
 
-  return {
+  const assessmentWithoutDigest: Omit<DirectiveEngineRoutingAssessment, "digest"> = {
     recommendedLaneId,
     recommendedRecordShape,
     missionPriorityScore,
@@ -1998,5 +2000,10 @@ export function assessDirectiveEngineRouting(input: {
       ambiguitySignals,
     },
     rationale,
+  };
+
+  return {
+    ...assessmentWithoutDigest,
+    digest: deriveRoutingDigest(assessmentWithoutDigest),
   };
 }

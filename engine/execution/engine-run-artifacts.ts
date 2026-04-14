@@ -44,6 +44,21 @@ export type StoredDirectiveEngineRunRecord = {
     matchedGapRank?: number | null;
     routeConflict?: boolean;
     needsHumanReview?: boolean;
+    digest?: {
+      headline: string;
+      explanation: string;
+      primaryConcern: {
+        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+        summary: string;
+        suggestedAction: string;
+      } | null;
+      secondaryConcerns: Array<{
+        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+        summary: string;
+      }>;
+      threadContext: string | null;
+      trustLevel: string;
+    };
     missionSpecificityWarning?: string | null;
     missionHealth?: {
       overallScore: number;

@@ -9,6 +9,7 @@ import {
   type DirectiveEngineStore,
 } from "./storage.ts";
 import { assessDirectiveEngineRouting } from "./routing.ts";
+import { createDefaultDirectiveMission } from "./default-mission.ts";
 import {
   classifyDirectiveEngineUsefulness,
   explainDirectiveEngineUsefulness,
@@ -22,6 +23,7 @@ import {
   type DirectiveEngineLaneSet,
 } from "./lane.ts";
 import { normalizeDirectiveEngineSourceType } from "./source-type-normalization.ts";
+import { inferDirectiveEngineSourceType } from "./source-type-inference.ts";
 import {
   DIRECTIVE_ENGINE_RUN_RECORD_KIND,
   DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF,
@@ -36,6 +38,7 @@ import {
   type DirectiveEngineIntegrationMode,
   type DirectiveEngineIntegrationProposal,
   type DirectiveEngineImprovementPlan,
+  type DirectiveEngineMinimalSourceInput,
   type DirectiveEngineMissionContext,
   type DirectiveEngineMissionInput,
   type DirectiveEngineProcessSourceInput,
@@ -243,6 +246,17 @@ function deriveCandidateId(source: DirectiveEngineSourceItem) {
     || sanitizeIdSegment(normalizeText(source.sourceRef))
     || `directive-source-${crypto.randomUUID().slice(0, 8)}`
   );
+}
+
+function deriveMinimalSourceRef(input: {
+  title: string;
+  summary: string | null;
+}) {
+  const stableSlug =
+    sanitizeIdSegment(input.title)
+    || sanitizeIdSegment(input.summary ?? "")
+    || crypto.createHash("sha1").update(`${input.title}\n${input.summary ?? ""}`).digest("hex").slice(0, 12);
+  return `inline://minimal/${stableSlug}`;
 }
 
 function validateDirectiveEngineSource(source: DirectiveEngineSourceItem) {
@@ -1160,6 +1174,40 @@ export class DirectiveEngine {
     this.hostAdapters = [...(input.hostAdapters ?? [])];
     this.storeTimeoutMs = input.storeTimeoutMs ?? 5_000;
     this.hostAdapterTimeoutMs = input.hostAdapterTimeoutMs ?? 5_000;
+  }
+
+  async processMinimalSource(
+    input: DirectiveEngineMinimalSourceInput,
+  ): Promise<DirectiveEngineProcessSourceResult> {
+    const title = normalizeText(input.title);
+    if (!title) {
+      throw new Error("invalid_input: minimal source title is required");
+    }
+
+    const summary = normalizeText(input.summary) || null;
+    const sourceRef = normalizeText(input.url) || deriveMinimalSourceRef({
+      title,
+      summary,
+    });
+
+    return this.processSource({
+      receivedAt: input.receivedAt,
+      mission: input.mission ?? createDefaultDirectiveMission(),
+      gaps: input.gaps ?? null,
+      corrections: input.corrections ?? null,
+      policyEvents: input.policyEvents ?? null,
+      source: {
+        sourceId: sanitizeIdSegment(title) || null,
+        sourceType: inferDirectiveEngineSourceType({
+          title,
+          url: input.url,
+          summary,
+        }),
+        sourceRef,
+        title,
+        summary,
+      },
+    });
   }
 
   async processSource(

@@ -10,6 +10,10 @@ import {
   createDirectiveWorkspaceEngineLanes,
   createMemoryDirectiveEngineStore,
   assessDirectiveEngineRouting,
+  createDefaultDirectiveMission,
+  inferDirectiveEngineSourceType,
+  deriveDirectiveRoutingOutcomes,
+  deriveDirectiveRoutingQualityAssessment,
   appendDecisionPolicyEvent,
   compileDecisionPolicySuggestions,
   readRoutingCorrectionLedger,
@@ -234,6 +238,7 @@ async function runDirectiveEngineHardeningChecks() {
   assert.equal(first.record.selectedLane.laneId, "architecture");
   assert.equal(first.record.decision.requiresHumanApproval, false);
   assert.equal(first.record.decision.decisionState, "accept_for_architecture");
+  assert.equal(first.record.routingAssessment.digest.headline, "Architecture, high confidence.");
   assert.equal(first.adapterResults.length, 2);
   assert.equal(first.adapterResults[0]?.accepted, false);
   assert.match(first.adapterResults[0]?.note ?? "", /adapter error: boom/u);
@@ -242,6 +247,29 @@ async function runDirectiveEngineHardeningChecks() {
   const second = await engine.processSource(buildArchitectureSourceInput());
   assert.equal(second.deduplicated, true);
   assert.equal(second.duplicateOfRunId, first.record.runId);
+
+  const minimal = await engine.processMinimalSource({
+    title: "Runtime reliability repo",
+    url: "https://github.com/example/runtime-reliability",
+  });
+  assert.equal(minimal.record.source.sourceType, "github-repo");
+  assert.equal(
+    minimal.record.source.sourceRef,
+    "https://github.com/example/runtime-reliability",
+  );
+  assert.equal(
+    minimal.record.mission.currentObjective,
+    createDefaultDirectiveMission().currentObjective,
+  );
+
+  const minimalWithoutUrl = await engine.processMinimalSource({
+    title: "Architecture routing note",
+    summary: "Workflow routing and review boundaries.",
+  });
+  assert.match(
+    minimalWithoutUrl.record.source.sourceRef,
+    /^inline:\/\/minimal\//u,
+  );
 
   const firstQueueAppend = appendDiscoveryIntakeQueueEntry({
     queue: {
@@ -283,6 +311,21 @@ async function runDirectiveEngineHardeningChecks() {
 
 function runEngineContractSurfaceChecks() {
   const recurringPolicyEvents = buildRecurringArchitecturePolicyEvents();
+  assert.equal(
+    inferDirectiveEngineSourceType({
+      title: "Repository",
+      url: "https://github.com/example/directive-kernel",
+    }),
+    "github-repo",
+  );
+  assert.equal(
+    inferDirectiveEngineSourceType({
+      title: "New routing paper",
+      url: "https://arxiv.org/abs/2604.12345",
+    }),
+    "paper",
+  );
+
   // Verify routing assessment includes missionSpecificityWarning when mission is vague.
   const vagueResult = assessDirectiveEngineRouting({
     source: {
@@ -335,6 +378,10 @@ function runEngineContractSurfaceChecks() {
     typeof vagueResult.earnedAutonomy.overallScore === "number",
     "Routing assessment must expose Earned Autonomy diagnostics",
   );
+  assert.ok(
+    vagueResult.digest.headline.length > 0,
+    "Routing digest must be present on every routing assessment",
+  );
 
   // Verify specific mission does NOT produce a warning.
   const specificResult = assessDirectiveEngineRouting({
@@ -368,6 +415,48 @@ function runEngineContractSurfaceChecks() {
     Object.values(specificResult.laneProportions).reduce((sum, value) => sum + value, 0),
     100,
     "Lane proportions should normalize to 100%",
+  );
+  assert.ok(
+    specificResult.digest.headline.startsWith("Architecture, "),
+    "Routing digest headline should summarize the dominant lane",
+  );
+  assert.ok(
+    specificResult.digest.headline.endsWith(" confidence."),
+    "Routing digest headline should summarize the current confidence level",
+  );
+
+  const missionWeaknessResult = assessDirectiveEngineRouting({
+    source: {
+      sourceType: "workflow-writeup",
+      sourceRef: "https://example.com/mission-weakness",
+      title: "Architecture routing clarity workflow",
+      summary: "Explicit architecture routing workflow boundary with review gates.",
+      primaryAdoptionTarget: "architecture",
+      containsWorkflowPattern: true,
+      improvesDirectiveWorkspace: true,
+      workflowBoundaryShape: "bounded_protocol",
+    },
+    mission: {
+      missionId: "mission-weakness",
+      currentObjective: "Improve the system",
+      usefulnessSignals: [],
+      capabilityLanes: ["architecture"],
+      constraints: ["keep review explicit"],
+      successSignal: "Better than before.",
+      adoptionTarget: null,
+      activeMissionMarkdown: "",
+    },
+    openGaps: [],
+  });
+  assert.equal(
+    missionWeaknessResult.routeConflict,
+    false,
+    "Mission-weakness fixture should isolate mission quality without route conflict noise",
+  );
+  assert.equal(
+    missionWeaknessResult.digest.primaryConcern?.kind,
+    "mission_weakness",
+    "Weak missions should surface as the primary digest concern when no stronger routing conflict exists",
   );
 
   // Verify strong metadata prevents false keyword conflicts.
@@ -408,6 +497,36 @@ function runEngineContractSurfaceChecks() {
     metadataOverrideResult.confidence,
     "high",
     "Strong metadata + no conflict must produce high confidence",
+  );
+
+  const conflictResult = assessDirectiveEngineRouting({
+    source: {
+      sourceType: "workflow-writeup",
+      sourceRef: "https://example.com/conflict",
+      title: "Architecture workflow boundary review",
+      summary: "Architecture workflow review guidance with explicit protocol boundaries.",
+      primaryAdoptionTarget: "runtime",
+      containsExecutableCode: true,
+      containsWorkflowPattern: true,
+      workflowBoundaryShape: "bounded_protocol",
+    },
+    mission: {
+      missionId: "conflict",
+      currentObjective: "Clarify architecture ownership boundaries for workflow sources",
+      usefulnessSignals: ["prefer architecture when workflow boundaries remain explicit and bounded"],
+      capabilityLanes: ["architecture"],
+      constraints: ["keep review explicit", "stay reversible"],
+      successSignal: "The dominant owner is explicit.",
+      adoptionTarget: "architecture",
+      activeMissionMarkdown: "",
+    },
+    openGaps: [buildArchitectureGap()],
+  });
+  assert.equal(conflictResult.routeConflict, true);
+  assert.equal(
+    conflictResult.digest.primaryConcern?.kind,
+    "conflict",
+    "Conflicted routes should surface conflict as the primary digest concern",
   );
 
   const radarResult = assessDirectiveEngineRouting({
@@ -518,6 +637,107 @@ async function runRoutingCorrectionLedgerChecks() {
       line.includes("Routing correction ledger applied adjustments:")
     ),
     "Engine result must record when routing correction adjustments were applied",
+  );
+}
+
+async function runOutcomeTrackingChecks() {
+  const engine = new DirectiveEngine({
+    laneSet: createDirectiveWorkspaceEngineLanes(),
+    store: createMemoryDirectiveEngineStore(),
+  });
+  const baseInput = buildArchitectureSourceInput();
+  const first = await engine.processSource(baseInput);
+  const second = await engine.processSource({
+    ...baseInput,
+    receivedAt: "2026-04-11T00:00:00.000Z",
+    source: {
+      ...baseInput.source,
+      sourceId: "outcome-second",
+      sourceRef: "https://example.com/outcome-second",
+      title: "Architecture outcome second source",
+    },
+  });
+
+  const policyEvents = [
+    ...buildRecurringArchitecturePolicyEvents(),
+    {
+      recordedAt: "2026-04-12T00:00:00.000Z",
+      source: "discovery_routing_review" as const,
+      candidateId: first.record.candidate.candidateId,
+      sourceType: first.record.source.sourceType,
+      decision: "confirm_architecture",
+      originalLaneId: "architecture",
+      resolvedLaneId: "architecture",
+      originalConfidence: first.record.routingAssessment.confidence,
+      resolvedConfidence: "high",
+      originalNeedsHumanReview: first.record.routingAssessment.needsHumanReview,
+      resolvedNeedsHumanReview: false,
+      matchedGapId: first.record.routingAssessment.matchedGapId,
+      missionSpecificityWarning: first.record.routingAssessment.missionSpecificityWarning,
+      goalCopilotWarnings: [...first.record.routingAssessment.goalCopilot.warnings],
+      followUpRequestedFields: [],
+      sourceSignalTokens: ["workflow", "architecture", "routing", "engine"],
+      rationale: "Outcome tracking confirmation event.",
+    },
+  ];
+  const corrections: RoutingCorrectionEntry[] = [
+    {
+      correctedAt: "2026-04-12T12:00:00.000Z",
+      candidateId: second.record.candidate.candidateId,
+      sourceType: second.record.source.sourceType,
+      originalLaneId: "architecture",
+      correctedLaneId: "runtime",
+      reason: "Synthetic correction for outcome tracking coverage.",
+      sourceSignalTokens: ["workflow", "architecture", "routing", "engine"],
+    },
+  ];
+
+  const outcomes = deriveDirectiveRoutingOutcomes({
+    existingRuns: [first.record, second.record],
+    policyEvents,
+    corrections,
+  });
+  assert.equal(outcomes.length, 2);
+  assert.equal(
+    outcomes.find((outcome) => outcome.runId === first.record.runId)?.operatorAgreed,
+    true,
+  );
+  assert.equal(
+    outcomes.find((outcome) => outcome.runId === second.record.runId)?.operatorCorrected,
+    true,
+  );
+
+  const quality = deriveDirectiveRoutingQualityAssessment({
+    routeClass: first.record.routingAssessment.earnedAutonomy.routeClass,
+    existingRuns: [first.record, second.record],
+    policyEvents,
+    corrections,
+  });
+  assert.ok(quality.overallScore >= 0 && quality.overallScore <= 100);
+  assert.equal(quality.resolvedOutcomeCount, 2);
+  assert.ok(
+    quality.summary.includes("recorded outcome"),
+    "Routing quality should summarize the resolved outcome count",
+  );
+
+  const qualityInfluencedAssessment = assessDirectiveEngineRouting({
+    source: {
+      ...baseInput.source,
+      sourceId: "outcome-quality-current",
+      sourceRef: "https://example.com/outcome-quality-current",
+      title: "Architecture quality current source",
+    },
+    mission: buildArchitectureMission(),
+    openGaps: [buildArchitectureGap()],
+    existingRuns: [first.record, second.record],
+    policyEvents,
+    corrections,
+  });
+  assert.ok(
+    qualityInfluencedAssessment.earnedAutonomy.rationale.some((line) =>
+      line.includes("Routing quality is")
+    ),
+    "Earned Autonomy should incorporate routing-quality evidence into its rationale",
   );
 }
 
@@ -1114,6 +1334,7 @@ async function main() {
   await runDirectiveEngineHardeningChecks();
   runEngineContractSurfaceChecks();
   await runRoutingCorrectionLedgerChecks();
+  await runOutcomeTrackingChecks();
   runDecisionPolicyCompilerChecks();
   await runReviewResolutionPolicyCompilerIntegrationCheck();
   await runEarnedAutonomyIntegrationCheck();

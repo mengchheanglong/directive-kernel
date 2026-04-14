@@ -1,5 +1,7 @@
 import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
 import type { DecisionPolicyEvent } from "./decision-policy-ledger.ts";
+import type { RoutingCorrectionEntry } from "./routing-correction-ledger.ts";
+import { deriveDirectiveRoutingQualityAssessment } from "./routing-quality.ts";
 import type {
   DirectiveEngineRoutingConfidence,
   DirectiveEngineRunRecord,
@@ -62,6 +64,7 @@ export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
   baseNeedsHumanReview: boolean;
   existingRuns: DirectiveEngineRunRecord[];
   policyEvents: DecisionPolicyEvent[];
+  corrections: RoutingCorrectionEntry[];
 }) {
   const routeClass = deriveDirectiveEngineRouteClass({
     recommendedLaneId: input.recommendedLaneId,
@@ -114,6 +117,12 @@ export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
     contraryEvents.length
     + matchingEvents.filter((event) => event.originalLaneId !== event.resolvedLaneId).length;
   const evidenceCount = similarRuns.length + matchingEvents.length;
+  const routingQuality = deriveDirectiveRoutingQualityAssessment({
+    routeClass,
+    existingRuns: input.existingRuns,
+    policyEvents: input.policyEvents,
+    corrections: input.corrections,
+  });
 
   const overallScore = clampInt(
     10
@@ -121,6 +130,7 @@ export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
     + operatorAgreementCount * 10
     + reviewClearCount * 8
     + (input.confidence === "high" ? 10 : input.confidence === "medium" ? 5 : 0)
+    + Math.round((routingQuality.overallScore - 50) / 5)
     - noisyRuns.length * 10
     - contraryEvents.length * 14
     - reversalCount * 6
@@ -156,6 +166,7 @@ export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
       ? "No matching review-clear history exists yet for this route class."
       : `Review-clear rate is ${(reviewClearRate * 100).toFixed(0)}%.`,
     `Contrary decisions: ${contraryEvents.length}; reversals counted against this route: ${reversalCount}.`,
+    `Routing quality is ${routingQuality.overallScore}/100 across ${routingQuality.resolvedOutcomeCount} recorded outcomes for this route class.`,
   ];
 
   return {
