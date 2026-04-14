@@ -7,6 +7,8 @@ ui/dist/
 .env.*
 !.env.example
 discovery/research-engine/.env
+discovery/research-engine/.tmp/
+discovery/research-engine/.tmp-repro/
 
 __pycache__/
 .pytest_cache/

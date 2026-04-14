@@ -8,9 +8,14 @@ import sys
 import tempfile
 import unittest
 from html import escape as html_escape
+from pathlib import Path
 from urllib.error import HTTPError
 from unittest import mock
-from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
 from research_engine.acquisition import (
     AcquisitionResult,
@@ -56,9 +61,6 @@ from research_engine.normalize import (
 from research_engine.orchestrator import run_mission
 from research_engine.planning import build_search_plan
 from research_engine.score import score_candidates
-
-
-ROOT = Path(__file__).resolve().parents[1]
 
 
 class _FakeResponse:
@@ -1131,8 +1133,13 @@ class ResearchEngineRunTest(unittest.TestCase):
         )
 
     def test_cli_loads_local_dotenv_without_overriding_existing_env(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            dotenv_path = Path(temp_dir) / ".env"
+        temp_root = ROOT / ".tmp"
+        temp_root.mkdir(exist_ok=True)
+        temp_dir = temp_root / "test-cli-loads-local-dotenv"
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        temp_dir.mkdir()
+        try:
+            dotenv_path = temp_dir / ".env"
             dotenv_path.write_text(
                 "\n".join(
                     [
@@ -1151,6 +1158,8 @@ class ResearchEngineRunTest(unittest.TestCase):
                 _load_local_dotenv(dotenv_path)
                 self.assertEqual(os.environ.get("RESEARCH_ENGINE_TAVILY_API_KEY"), "dotenv-tavily")
                 self.assertEqual(os.environ.get("RESEARCH_ENGINE_EXA_API_KEY"), "existing-exa")
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
     def test_normalization_extracts_source_age_and_candidate_freshness(self) -> None:
         mission = ResearchMission(objective="Find reusable research workflow systems.")
