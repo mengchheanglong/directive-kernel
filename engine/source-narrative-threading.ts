@@ -1,5 +1,12 @@
 import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
+import {
+  flattenSourceText,
+  countTokenOverlap,
+  isSuccessfulRun,
+  isStalledRun,
+} from "./engine-source-utils.ts";
 import type {
+  DirectiveEngineCapabilityGap,
   DirectiveEngineLaneId,
   DirectiveEngineMissionContext,
   DirectiveEngineRunRecord,
@@ -62,6 +69,23 @@ export type DirectiveSourceNarrativeContext = {
   rationale: string[];
 } | null;
 
+export type DirectiveNarrativeActionKind =
+  | "re_engagement_prompt"
+  | "gap_creation_request"
+  | "proof_follow_up_request"
+  | "lane_validation_request";
+
+export type DirectiveNarrativeAction = {
+  actionKind: DirectiveNarrativeActionKind;
+  threadId: string;
+  threadName: string;
+  priority: "low" | "medium" | "high";
+  summary: string;
+  suggestedNextStep: string;
+  targetLaneId: DirectiveEngineLaneId | null;
+  relatedGapId: string | null;
+};
+
 type InternalThread = {
   threadId: string;
   runs: DirectiveEngineRunRecord[];
@@ -107,23 +131,9 @@ function zeroLaneCounts(): DirectiveNarrativeLaneCounts {
   };
 }
 
-function flattenSource(source: DirectiveEngineSourceItem) {
-  return [
-    source.title,
-    source.summary ?? "",
-    source.sourceRef,
-    source.missionAlignmentHint ?? "",
-    source.capabilityGapId ?? "",
-    source.primaryAdoptionTarget ?? "",
-    ...(source.notes ?? []),
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
 function flattenRunNarrativeText(run: DirectiveEngineRunRecord) {
   return [
-    flattenSource(run.source),
+    flattenSourceText(run.source),
     run.analysis.missionFitSummary,
     run.analysis.usefulnessRationale,
     run.integrationProposal.nextAction,
@@ -152,17 +162,6 @@ function hoursBetween(leftAt: string, rightAt: string) {
 
 function uniqueTokens(tokens: string[]) {
   return Array.from(new Set(tokens));
-}
-
-function sharedTokenCount(left: string[], right: Iterable<string>) {
-  const rightSet = new Set(right);
-  let count = 0;
-  for (const token of left) {
-    if (rightSet.has(token)) {
-      count += 1;
-    }
-  }
-  return count;
 }
 
 function normalizeComparableText(value: string | null | undefined) {
@@ -241,19 +240,9 @@ function isSameMission(run: DirectiveEngineRunRecord, mission: DirectiveEngineMi
 
   const missionTokens = missionTopicTokens(mission);
   const runTokens = missionTopicTokens(run.mission);
-  const sharedTopics = sharedTokenCount(missionTokens, runTokens);
+  const sharedTopics = countTokenOverlap(missionTokens, runTokens);
   const smallerSet = Math.min(missionTokens.length, runTokens.length);
   return sharedTopics >= 4 && sharedTopics >= Math.ceil(smallerSet * 0.6);
-}
-
-function isSuccessfulRun(run: DirectiveEngineRunRecord) {
-  return run.decision.requiresHumanApproval === false
-    && run.decision.decisionState !== "hold_in_discovery";
-}
-
-function isStalledRun(run: DirectiveEngineRunRecord) {
-  return run.decision.requiresHumanApproval === true
-    || run.decision.decisionState === "hold_in_discovery";
 }
 
 function topThreadTokens(tokenCounts: Map<string, number>) {
@@ -503,7 +492,7 @@ function buildThreads(input: {
     const candidate = threads
       .map((thread) => ({
         thread,
-        overlap: sharedTokenCount(runTokens, thread.tokenCounts.keys()),
+        overlap: countTokenOverlap(runTokens, thread.tokenCounts.keys()),
         hoursGap: hoursBetween(thread.lastSeenAt, run.receivedAt),
       }))
       .filter((entry) => entry.overlap >= 3)
@@ -589,7 +578,10 @@ export function deriveDirectiveSourceNarrativeContext(input: {
   const sourceTokens = uniqueTokens(extractSourceSignalTokens(input.sourceText));
   const relatedThreads = threads
     .map((thread) => {
-      const currentSourceOverlap = sharedTokenCount(sourceTokens, thread.tokenCounts.keys());
+      const currentSourceOverlap = countTokenOverlap(
+        sourceTokens,
+        thread.tokenCounts.keys(),
+      );
       const hoursGap = hoursBetween(thread.lastSeenAt, generatedAt);
       if (currentSourceOverlap < 3 || hoursGap < 0 || hoursGap > 14 * 24) {
         return null;
@@ -732,4 +724,107 @@ export function deriveDirectiveSourceNarrativeContext(input: {
       ...demandSignals.map((signal) => `Thread demand (${signal.priority}): ${signal.summary}`),
     ],
   } satisfies DirectiveSourceNarrativeContext;
+}
+
+export function deriveDirectiveNarrativeActions(input: {
+  narrativeContext: DirectiveSourceNarrativeContext;
+  openGaps: DirectiveEngineCapabilityGap[];
+  currentRecord?: DirectiveEngineRunRecord | null;
+}) {
+  if (!input.narrativeContext) {
+    return null;
+  }
+
+  const nextPendingProofItem = [
+    input.currentRecord?.structuredProofPlan?.objective,
+    ...(input.currentRecord?.structuredProofPlan?.requiredEvidence ?? []),
+    ...(input.currentRecord?.structuredProofPlan?.requiredGates ?? []),
+    input.currentRecord?.structuredProofPlan?.rollbackPrompt,
+  ]
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .find((item) => item.status !== "completed" && item.status !== "skipped");
+
+  const actions = input.narrativeContext.relatedThreads
+    .flatMap((thread) =>
+      thread.demandSignals.map((signal) => {
+        switch (signal.kind) {
+          case "fresh_evidence":
+            return {
+              actionKind: "re_engagement_prompt",
+              threadId: thread.threadId,
+              threadName: thread.name,
+              priority: signal.priority,
+              summary: signal.summary,
+              suggestedNextStep:
+                `Bring one new ${signal.requestedLaneId ?? thread.laneTendency.dominantLaneId} source into "${thread.name}" so the thread does not stall without fresh evidence.`,
+              targetLaneId: signal.requestedLaneId ?? thread.laneTendency.dominantLaneId,
+              relatedGapId: thread.gapCoverage.dominantGapId,
+            } satisfies DirectiveNarrativeAction;
+          case "gap_closure": {
+            const gapStillOpen = thread.gapCoverage.dominantGapId
+              ? input.openGaps.some((gap) => gap.gapId === thread.gapCoverage.dominantGapId)
+              : false;
+            return {
+              actionKind: gapStillOpen
+                ? "proof_follow_up_request"
+                : "gap_creation_request",
+              threadId: thread.threadId,
+              threadName: thread.name,
+              priority: signal.priority,
+              summary: signal.summary,
+              suggestedNextStep: gapStillOpen
+                ? nextPendingProofItem
+                  ? `Complete proof item "${nextPendingProofItem.value}" to move ${thread.gapCoverage.dominantGapId} out of partially-addressed status.`
+                  : `Collect the missing proof or closure evidence needed to move ${thread.gapCoverage.dominantGapId} out of partially-addressed status.`
+                : `Open a capability gap for "${thread.name}" so repeated thread pressure stops depending on operator memory.`,
+              targetLaneId: signal.requestedLaneId ?? thread.laneTendency.dominantLaneId,
+              relatedGapId: thread.gapCoverage.dominantGapId,
+            } satisfies DirectiveNarrativeAction;
+          }
+          case "proof_follow_through":
+            return {
+              actionKind: "proof_follow_up_request",
+              threadId: thread.threadId,
+              threadName: thread.name,
+              priority: signal.priority,
+              summary: signal.summary,
+              suggestedNextStep:
+                nextPendingProofItem
+                  ? `Advance proof item "${nextPendingProofItem.value}" so "${thread.name}" gains real follow-through instead of collecting more similar sources.`
+                  : `Push one bounded proof step through "${thread.name}" so the thread gains real follow-through instead of collecting more similar sources.`,
+              targetLaneId: signal.requestedLaneId ?? thread.laneTendency.dominantLaneId,
+              relatedGapId: thread.gapCoverage.dominantGapId,
+            } satisfies DirectiveNarrativeAction;
+          case "lane_validation":
+            return {
+              actionKind: "lane_validation_request",
+              threadId: thread.threadId,
+              threadName: thread.name,
+              priority: signal.priority,
+              summary: signal.summary,
+              suggestedNextStep:
+                `Find one bounded ${signal.requestedLaneId ?? "cross-lane"} source that validates the missing ownership evidence for "${thread.name}".`,
+              targetLaneId: signal.requestedLaneId,
+              relatedGapId: thread.gapCoverage.dominantGapId,
+            } satisfies DirectiveNarrativeAction;
+        }
+      })
+    )
+    .sort((left, right) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 } as const;
+      if (priorityOrder[left.priority] !== priorityOrder[right.priority]) {
+        return priorityOrder[left.priority] - priorityOrder[right.priority];
+      }
+      return left.threadName.localeCompare(right.threadName);
+    });
+
+  if (actions.length === 0) {
+    return null;
+  }
+
+  return Array.from(
+    new Map(
+      actions.map((action) => [`${action.threadId}:${action.actionKind}:${action.summary}`, action] as const),
+    ).values(),
+  ).slice(0, 4);
 }

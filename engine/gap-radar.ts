@@ -9,6 +9,7 @@ import type {
   DirectiveEngineCapabilityGapPriority,
   DirectiveEngineLaneId,
 } from "./types.ts";
+import { countTokenOverlap, uniqueStrings } from "./engine-source-utils.ts";
 import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
 
 export type DirectiveGapRadarSuggestion = {
@@ -36,16 +37,6 @@ export type DirectiveGapRadarReport = {
 };
 
 const GAP_RADAR_RELATIVE_PATH = "engine/gap-radar.json";
-
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => String(value ?? "").trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  );
-}
 
 function toConfidence(count: number): "low" | "medium" | "high" {
   if (count >= 4) {
@@ -76,11 +67,6 @@ function tokenizeGap(gap: DirectiveEngineCapabilityGap) {
     gap.desiredState,
     gap.resolutionNotes ?? "",
   ].join(" "));
-}
-
-function countOverlap(left: string[], right: string[]) {
-  const rightSet = new Set(right);
-  return left.reduce((count, token) => count + (rightSet.has(token) ? 1 : 0), 0);
 }
 
 type Cluster = {
@@ -121,13 +107,16 @@ export function compileDirectiveGapRadarSuggestions(input: {
   const clusters: Cluster[] = [];
 
   for (const event of relevantEvents) {
-    const eventTokens = uniqueStrings(event.sourceSignalTokens).slice(0, 8);
+    const eventTokens = uniqueStrings(
+      event.sourceSignalTokens,
+      (value) => value.trim().toLowerCase(),
+    ).slice(0, 8);
     if (eventTokens.length === 0) {
       continue;
     }
     const matchingCluster = clusters.find((cluster) =>
       cluster.laneId === event.resolvedLaneId
-      && countOverlap(
+      && countTokenOverlap(
         eventTokens,
         [...cluster.tokenCounts.entries()]
           .sort((left, right) => right[1] - left[1])
@@ -172,7 +161,7 @@ export function compileDirectiveGapRadarSuggestions(input: {
         [...input.openGaps]
           .map((gap) => ({
             gap,
-            overlap: countOverlap(signalTokens, tokenizeGap(gap)),
+            overlap: countTokenOverlap(signalTokens, tokenizeGap(gap)),
           }))
           .filter((entry) => entry.overlap >= 2)
           .sort((left, right) => right.overlap - left.overlap)[0]?.gap
@@ -199,7 +188,10 @@ export function compileDirectiveGapRadarSuggestions(input: {
         signalTokens,
         relatedOpenGapId: relatedOpenGap?.gapId ?? null,
         suggestedPriority,
-        candidateExamples: uniqueStrings(cluster.events.map((event) => event.candidateId)).slice(0, 5),
+        candidateExamples: uniqueStrings(
+          cluster.events.map((event) => event.candidateId),
+          (value) => value.trim().toLowerCase(),
+        ).slice(0, 5),
       } satisfies DirectiveGapRadarSuggestion;
     })
     .sort((left, right) => {
@@ -220,7 +212,7 @@ export function deriveDirectiveGapRadarAssessment(input: {
   const matches = input.suggestions
     .map((suggestion) => ({
       suggestion,
-      overlap: countOverlap(sourceTokens, suggestion.signalTokens),
+      overlap: countTokenOverlap(sourceTokens, suggestion.signalTokens),
     }))
     .filter((entry) =>
       entry.suggestion.targetLaneId === input.recommendedLaneId

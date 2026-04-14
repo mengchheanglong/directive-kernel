@@ -1,10 +1,18 @@
 import type {
   DirectiveEngineLaneDefinition,
+  DirectiveEngineLaneAdaptationPlanningInput,
+  DirectiveEngineLaneExtractionPlanningInput,
   DirectiveEngineLaneIntegrationPlanningInput,
+  DirectiveEngineLaneImprovementPlanningInput,
   DirectiveEngineLanePlanningInput,
   DirectiveEngineLaneProofPlanningInput,
   DirectiveEngineLaneSet,
 } from "./lane.ts";
+import {
+  buildDefaultAdaptationPlan,
+  buildDefaultExtractionPlan,
+  buildDefaultImprovementPlan,
+} from "./lane-planning-defaults.ts";
 import type { DirectiveEngineIntegrationProposal } from "./types.ts";
 
 type DirectiveWorkspaceLaneId = "discovery" | "architecture" | "runtime";
@@ -21,10 +29,68 @@ type DirectiveWorkspaceLaneOverrides = Partial<
         | "defaultIntegrationMode"
         | "handoffArtifactFamily"
         | "nextAction"
+        | "defaultDecisionState"
+        | "planExtraction"
+        | "planAdaptation"
+        | "planImprovement"
       >
     >
   >
 >;
+
+function buildDiscoveryExtractionPlan(
+  input: DirectiveEngineLaneExtractionPlanningInput,
+) {
+  return buildDefaultExtractionPlan(input);
+}
+
+function buildArchitectureExtractionPlan(
+  input: DirectiveEngineLaneExtractionPlanningInput,
+) {
+  return buildDefaultExtractionPlan(input);
+}
+
+function buildRuntimeExtractionPlan(
+  input: DirectiveEngineLaneExtractionPlanningInput,
+) {
+  return buildDefaultExtractionPlan(input);
+}
+
+function buildDiscoveryAdaptationPlan(
+  input: DirectiveEngineLaneAdaptationPlanningInput,
+) {
+  return buildDefaultAdaptationPlan(input);
+}
+
+function buildArchitectureAdaptationPlan(
+  input: DirectiveEngineLaneAdaptationPlanningInput,
+) {
+  return buildDefaultAdaptationPlan(input);
+}
+
+function buildRuntimeAdaptationPlan(
+  input: DirectiveEngineLaneAdaptationPlanningInput,
+) {
+  return buildDefaultAdaptationPlan(input);
+}
+
+function buildDiscoveryImprovementPlan(
+  input: DirectiveEngineLaneImprovementPlanningInput,
+) {
+  return buildDefaultImprovementPlan(input);
+}
+
+function buildArchitectureImprovementPlan(
+  input: DirectiveEngineLaneImprovementPlanningInput,
+) {
+  return buildDefaultImprovementPlan(input);
+}
+
+function buildRuntimeImprovementPlan(
+  input: DirectiveEngineLaneImprovementPlanningInput,
+) {
+  return buildDefaultImprovementPlan(input);
+}
 
 function buildDiscoveryProofPlan(
   input: DirectiveEngineLaneProofPlanningInput,
@@ -144,6 +210,10 @@ function createBaseLanes(): DirectiveEngineLaneDefinition[] {
       defaultIntegrationMode: "none",
       handoffArtifactFamily: "discovery_backlog",
       nextAction: "Keep the candidate in Discovery until routing clarity improves.",
+      defaultDecisionState: "hold_in_discovery",
+      planExtraction: buildDiscoveryExtractionPlan,
+      planAdaptation: buildDiscoveryAdaptationPlan,
+      planImprovement: buildDiscoveryImprovementPlan,
       planProof: buildDiscoveryProofPlan,
     },
     {
@@ -155,6 +225,10 @@ function createBaseLanes(): DirectiveEngineLaneDefinition[] {
       handoffArtifactFamily: "architecture_adoption",
       nextAction:
         "Materialize the adapted mechanism as engine-owned product logic before any host-specific integration work.",
+      defaultDecisionState: "accept_for_architecture",
+      planExtraction: buildArchitectureExtractionPlan,
+      planAdaptation: buildArchitectureAdaptationPlan,
+      planImprovement: buildArchitectureImprovementPlan,
       planProof: buildArchitectureProofPlan,
       planIntegration: buildArchitectureIntegrationProposal,
     },
@@ -167,6 +241,10 @@ function createBaseLanes(): DirectiveEngineLaneDefinition[] {
       handoffArtifactFamily: "runtime_follow_up",
       nextAction:
         "Open a bounded Runtime follow-up and only involve host code through the engine adapter boundary.",
+      defaultDecisionState: "route_to_runtime_follow_up",
+      planExtraction: buildRuntimeExtractionPlan,
+      planAdaptation: buildRuntimeAdaptationPlan,
+      planImprovement: buildRuntimeImprovementPlan,
       planProof: buildRuntimeProofPlan,
     },
   ];

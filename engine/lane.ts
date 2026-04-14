@@ -1,6 +1,7 @@
 import type {
   DirectiveEngineAdaptationPlan,
   DirectiveEngineCapabilityGap,
+  DirectiveEngineDecisionState,
   DirectiveEngineExtractionPlan,
   DirectiveEngineHostDependence,
   DirectiveEngineImprovementPlan,
@@ -22,6 +23,16 @@ export type DirectiveEngineLaneDefinition = {
   defaultIntegrationMode: DirectiveEngineIntegrationMode;
   handoffArtifactFamily: string;
   nextAction: string;
+  defaultDecisionState?: DirectiveEngineDecisionState;
+  planExtraction?: (
+    input: DirectiveEngineLaneExtractionPlanningInput,
+  ) => DirectiveEngineExtractionPlan;
+  planAdaptation?: (
+    input: DirectiveEngineLaneAdaptationPlanningInput,
+  ) => DirectiveEngineAdaptationPlan;
+  planImprovement?: (
+    input: DirectiveEngineLaneImprovementPlanningInput,
+  ) => DirectiveEngineImprovementPlan;
   planProof?: (
     input: DirectiveEngineLaneProofPlanningInput,
   ) => DirectiveEngineProofPlan;
@@ -45,6 +56,31 @@ export type DirectiveEngineLaneUsefulnessPlanningInput = {
   extractionPlan: DirectiveEngineExtractionPlan;
   adaptationPlan: DirectiveEngineAdaptationPlan;
   improvementPlan: DirectiveEngineImprovementPlan;
+};
+
+export type DirectiveEngineLaneExtractionPlanningInput = {
+  planningInput: DirectiveEngineLanePlanningInput;
+};
+
+export type DirectiveEngineLaneAdaptationPlanningInput = {
+  planningInput: DirectiveEngineLanePlanningInput;
+  extractionPlan: DirectiveEngineExtractionPlan;
+};
+
+export type DirectiveEngineLaneImprovementPlanningInput = {
+  planningInput: DirectiveEngineLanePlanningInput;
+  extractionPlan: DirectiveEngineExtractionPlan;
+  adaptationPlan: DirectiveEngineAdaptationPlan;
+  runtimePromotionFeedbackSignal?: {
+    summary: string;
+    integrationHint: string;
+    improvementHint: string;
+  } | null;
+  runtimeExecutionEvidenceSignal?: {
+    summary: string;
+    integrationHint: string;
+    improvementHint: string;
+  } | null;
 };
 
 export type DirectiveEngineLaneProofPlanningInput = {

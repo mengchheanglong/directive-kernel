@@ -1,4 +1,5 @@
 import type { DecisionPolicyEvent } from "./decision-policy-ledger.ts";
+import { clampInt, parseTimestamp } from "./engine-source-utils.ts";
 import type { RoutingCorrectionEntry } from "./routing-correction-ledger.ts";
 import type { DirectiveEngineRunRecord } from "./types.ts";
 
@@ -11,13 +12,10 @@ export type DirectiveRoutingOutcome = {
   operatorAgreed: boolean;
   operatorCorrected: boolean;
   timeToResolutionHours: number | null;
+  planQuality: import("./plan-quality.ts").DirectiveEnginePlanQualitySignal["overallPlanQuality"] | null;
   outcomeQuality: "strong" | "adequate" | "weak" | "failed";
   notes: string[];
 };
-
-function clampInt(value: number, minimum: number, maximum: number) {
-  return Math.max(minimum, Math.min(maximum, Math.round(value)));
-}
 
 function deriveRouteClass(record: DirectiveEngineRunRecord) {
   return [
@@ -27,11 +25,6 @@ function deriveRouteClass(record: DirectiveEngineRunRecord) {
     record.source.improvesDirectiveWorkspace === true ? "workspace" : "external",
     record.source.containsExecutableCode === true ? "code" : "nocode",
   ].join(":");
-}
-
-function parseTimestamp(value: string | null | undefined) {
-  const timestamp = Date.parse(String(value ?? ""));
-  return Number.isFinite(timestamp) ? timestamp : null;
 }
 
 function hoursBetween(start: string, end: string) {
@@ -106,6 +99,11 @@ export function deriveDirectiveRoutingOutcome(input: {
   if (gapClosed) {
     notes.push(`matched gap ${matchedGapId} is now resolved`);
   }
+  if (input.record.planQualitySignal?.overallPlanQuality) {
+    notes.push(
+      `historical plan quality is ${input.record.planQualitySignal.overallPlanQuality}`,
+    );
+  }
 
   const outcomeQuality =
     operatorCorrected
@@ -129,6 +127,7 @@ export function deriveDirectiveRoutingOutcome(input: {
     operatorAgreed,
     operatorCorrected,
     timeToResolutionHours,
+    planQuality: input.record.planQualitySignal?.overallPlanQuality ?? null,
     outcomeQuality,
     notes,
   };

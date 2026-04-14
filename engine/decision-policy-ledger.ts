@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { uniqueStrings } from "./engine-source-utils.ts";
 import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
 
 export type DecisionPolicyEvent = {
@@ -62,16 +63,6 @@ function toConfidence(count: number): "low" | "medium" | "high" {
     return "medium";
   }
   return "low";
-}
-
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => String(value ?? "").trim())
-        .filter(Boolean),
-    ),
-  );
 }
 
 function topRecurringTokens(events: DecisionPolicyEvent[], limit = 4) {

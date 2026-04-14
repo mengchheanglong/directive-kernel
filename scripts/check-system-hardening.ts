@@ -236,17 +236,124 @@ async function runDirectiveEngineHardeningChecks() {
 
   const first = await engine.processSource(buildArchitectureSourceInput());
   assert.equal(first.record.selectedLane.laneId, "architecture");
+  assert.equal(first.record.schemaVersion, 8);
   assert.equal(first.record.decision.requiresHumanApproval, false);
   assert.equal(first.record.decision.decisionState, "accept_for_architecture");
   assert.equal(first.record.routingAssessment.digest.headline, "Architecture, high confidence.");
+  assert.ok(first.record.structuredExtractionPlan);
+  assert.ok(first.record.structuredAdaptationPlan);
+  assert.ok(first.record.structuredImprovementPlan);
+  assert.ok(first.record.structuredProofPlan);
+  assert.equal(first.record.structuredExtractionPlan?.completionRate, 0);
+  assert.equal(first.record.structuredAdaptationPlan?.completionRate, 0);
+  assert.equal(first.record.structuredImprovementPlan?.completionRate, 0);
+  assert.equal(first.record.structuredProofPlan?.completionRate, 0);
   assert.equal(first.adapterResults.length, 2);
   assert.equal(first.adapterResults[0]?.accepted, false);
   assert.match(first.adapterResults[0]?.note ?? "", /adapter error: boom/u);
   assert.equal(first.adapterResults[1]?.accepted, true);
 
+  const progressed = await engine.updatePlanProgress({
+    runId: first.record.runId,
+    at: "2026-04-10T01:00:00.000Z",
+    updates: [
+      {
+        plan: "proof",
+        itemType: "objective",
+        status: "completed",
+      },
+      {
+        plan: "proof",
+        itemType: "requiredEvidence",
+        index: 0,
+        status: "completed",
+      },
+    ],
+  });
+  assert.equal(progressed.structuredProofPlan?.objective.status, "completed");
+  assert.equal(
+    progressed.structuredProofPlan?.requiredEvidence[0]?.status,
+    "completed",
+  );
+  assert.ok(
+    (progressed.structuredProofPlan?.completionRate ?? 0) > 0,
+    "Plan progress updates should raise the structured proof completion rate",
+  );
+  assert.ok(
+    (progressed.planQualitySignal?.proofGateCompletion ?? 0) > 0,
+    "Plan quality should consume direct structured proof completion",
+  );
+  const persistedProgress = await engine.getRun(first.record.runId);
+  assert.equal(persistedProgress?.structuredProofPlan?.objective.status, "completed");
+
+  const missionPreview = await engine.previewMissionChange({
+    runId: first.record.runId,
+    change: {
+      objective: "Improve the system",
+      usefulnessSignals: [],
+      constraints: [],
+      successSignal: null,
+      adoptionTarget: null,
+    },
+    receivedAt: "2026-04-10T01:05:00.000Z",
+  });
+  assert.ok(
+    missionPreview.diff.length > 0,
+    "Mission preview should produce a digest diff when the mission changes materially",
+  );
+  assert.equal(
+    missionPreview.after.primaryConcern?.kind,
+    "mission_weakness",
+    "Mission preview should surface mission weakness when the proposed rewrite is too vague",
+  );
+  const afterPreview = await engine.getRun(first.record.runId);
+  assert.equal(
+    afterPreview?.routingAssessment.digest.primaryConcern?.kind ?? null,
+    progressed.routingAssessment.digest.primaryConcern?.kind ?? null,
+    "Mission preview must not mutate the stored run record",
+  );
+
   const second = await engine.processSource(buildArchitectureSourceInput());
   assert.equal(second.deduplicated, true);
   assert.equal(second.duplicateOfRunId, first.record.runId);
+
+  const rerouteSeed = await engine.processSource({
+    receivedAt: "2026-04-10T02:00:00.000Z",
+    mission: {
+      missionId: "reroute-hardening",
+      currentObjective: "Clarify architecture ownership boundaries for workflow sources",
+      usefulnessSignals: [
+        "prefer architecture when workflow boundaries remain explicit and bounded",
+      ],
+      capabilityLanes: ["architecture"],
+      constraints: ["keep review explicit", "stay reversible"],
+      successSignal: "The dominant owner is explicit.",
+      adoptionTarget: "architecture",
+    },
+    gaps: [buildArchitectureGap()],
+    source: {
+      sourceId: "reroute-seed",
+      sourceType: "workflow-writeup",
+      sourceRef: "https://example.com/reroute-seed",
+      title: "Architecture workflow boundary review",
+      summary: "Architecture workflow review guidance with explicit protocol boundaries.",
+      primaryAdoptionTarget: "runtime",
+      containsExecutableCode: true,
+      containsWorkflowPattern: true,
+      workflowBoundaryShape: "bounded_protocol",
+    },
+  });
+  assert.equal(rerouteSeed.record.routingAssessment.routeConflict, true);
+  const rerouted = await engine.reRouteWithAnswers({
+    runId: rerouteSeed.record.runId,
+    answers: {
+      "source.primaryAdoptionTarget": "architecture",
+    },
+    receivedAt: "2026-04-10T02:05:00.000Z",
+  });
+  assert.equal(rerouted.record.routingAssessment.routeConflict, false);
+  assert.equal(rerouted.record.selectedLane.laneId, "architecture");
+  assert.notEqual(rerouted.record.runId, rerouteSeed.record.runId);
 
   const minimal = await engine.processMinimalSource({
     title: "Runtime reliability repo",
@@ -1000,6 +1107,14 @@ async function runAdvisoryIntelligenceChecks() {
     second.record.priorPlanContext !== null,
     "Second similar run should expose prior-plan context",
   );
+  assert.ok(
+    second.record.planQualitySignal !== null,
+    "Second similar run should expose a plan-quality signal",
+  );
+  assert.ok(
+    second.record.planQualitySignal?.overallPlanQuality !== "unknown",
+    "Second similar run should derive non-unknown historical plan quality once similar prior runs exist",
+  );
   assert.equal(
     third.record.routingAssessment.narrativeContext?.primaryThread?.state,
     "developing",
@@ -1008,6 +1123,46 @@ async function runAdvisoryIntelligenceChecks() {
   assert.ok(
     (third.record.routingAssessment.narrativeContext?.demandSignals.length ?? 0) > 0,
     "Developing threads should expose demand signals",
+  );
+  assert.ok(
+    (third.record.narrativeActions?.length ?? 0) > 0,
+    "Developing threads should surface narrative actions for the operator",
+  );
+  assert.ok(
+    third.record.routingAssessment.digest.primaryConcern?.kind === "narrative_action"
+      || third.record.routingAssessment.digest.secondaryConcerns.some((entry) =>
+        entry.kind === "narrative_action"
+      ),
+    "High-priority narrative thread actions should surface in the routing digest",
+  );
+  assert.ok(
+    third.record.planQualitySignal?.rationale.length,
+    "Plan-quality signals should include rationale for the historical quality judgment",
+  );
+
+  const progressedThread = await engine.updatePlanProgress({
+    runId: third.record.runId,
+    at: "2026-04-12T03:00:00.000Z",
+    updates: [
+      {
+        plan: "proof",
+        itemType: "objective",
+        status: "completed",
+      },
+    ],
+  });
+  const proofFollowUpAction = progressedThread.narrativeActions?.find((action) =>
+    action.actionKind === "proof_follow_up_request"
+  );
+  assert.ok(
+    proofFollowUpAction?.suggestedNextStep.includes(
+      progressedThread.structuredProofPlan?.requiredEvidence[0]?.value ?? "",
+    ) ?? false,
+    "Narrative actions should point to the next pending proof item after plan progress updates",
+  );
+  assert.ok(
+    (progressedThread.planQualitySignal?.proofGateCompletion ?? 0) > 0,
+    "Thread plan progress should feed direct proof completion back into plan quality",
   );
 
   const historicalReplayAssessment = assessDirectiveEngineRouting({

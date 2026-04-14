@@ -107,12 +107,12 @@ export type FrontendDiscoveryRoutingDetail = {
     headline: string;
     explanation: string;
     primaryConcern: {
-      kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+      kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "narrative_action" | "gap_pressure";
       summary: string;
       suggestedAction: string;
     } | null;
     secondaryConcerns: Array<{
-      kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+      kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "narrative_action" | "gap_pressure";
       summary: string;
     }>;
     threadContext: string | null;
@@ -751,12 +751,12 @@ export type FrontendEngineRunRecord = {
       headline: string;
       explanation: string;
       primaryConcern: {
-        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "narrative_action" | "gap_pressure";
         summary: string;
         suggestedAction: string;
       } | null;
       secondaryConcerns: Array<{
-        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "gap_pressure";
+        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "narrative_action" | "gap_pressure";
         summary: string;
       }>;
       threadContext: string | null;

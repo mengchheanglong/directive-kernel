@@ -9,19 +9,36 @@ import {
   type DirectiveEngineStore,
 } from "./storage.ts";
 import { assessDirectiveEngineRouting } from "./routing.ts";
+import { deriveDirectiveRoutingDiff } from "./routing-diff.ts";
 import { createDefaultDirectiveMission } from "./default-mission.ts";
+import { normalizeText } from "./engine-source-utils.ts";
 import {
   classifyDirectiveEngineUsefulness,
   explainDirectiveEngineUsefulness,
 } from "./usefulness.ts";
 import {
+  type DirectiveEngineLaneDefinition,
+  type DirectiveEngineLaneAdaptationPlanningInput,
+  type DirectiveEngineLaneExtractionPlanningInput,
   type DirectiveEngineLaneIntegrationPlanningInput,
+  type DirectiveEngineLaneImprovementPlanningInput,
   resolveDirectiveEngineLane,
   type DirectiveEngineLanePlanningInput,
   type DirectiveEngineLaneProofPlanningInput,
   type DirectiveEngineLaneUsefulnessPlanningInput,
   type DirectiveEngineLaneSet,
 } from "./lane.ts";
+import {
+  buildDefaultAdaptationPlan,
+  buildDefaultExtractionPlan,
+  buildDefaultImprovementPlan,
+} from "./lane-planning-defaults.ts";
+import {
+  formatIterativeControlSignals,
+  formatStructuralProcessStages,
+  resolveControlSignalProfile,
+  resolveStructuralProcessStages,
+} from "./lane-planning-helpers.ts";
 import { normalizeDirectiveEngineSourceType } from "./source-type-normalization.ts";
 import { inferDirectiveEngineSourceType } from "./source-type-inference.ts";
 import {
@@ -41,25 +58,31 @@ import {
   type DirectiveEngineMinimalSourceInput,
   type DirectiveEngineMissionContext,
   type DirectiveEngineMissionInput,
+  type DirectiveEngineMissionPreviewChange,
   type DirectiveEngineProcessSourceInput,
   type DirectiveEngineProcessSourceResult,
   type DirectiveEngineProofPlan,
   type DirectiveEnginePrimaryAdoptionTarget,
+  type DirectiveEnginePlanItem,
+  type DirectiveEnginePlanProgressUpdate,
   type DirectiveEngineReportPlan,
   type DirectiveEngineRunRecord,
+  type DirectiveEngineRoutingDigestPreview,
   type DirectiveEngineSelectedLane,
   type DirectiveEngineSourceItem,
+  type DirectiveEngineStructuredAdaptationPlan,
+  type DirectiveEngineStructuredExtractionPlan,
+  type DirectiveEngineStructuredImprovementPlan,
+  type DirectiveEngineStructuredProofPlan,
   type DirectiveEngineWorkflowBoundaryShape,
 } from "./types.ts";
 import { deriveDirectivePriorPlanContext } from "./plan-consumption.ts";
+import { deriveDirectivePlanQualitySignal } from "./plan-quality.ts";
+import { deriveDirectiveNarrativeActions } from "./source-narrative-threading.ts";
 import { buildRuntimeCallableExecutionEvidenceReport } from "../runtime/lib/runtime-callable-execution-evidence.ts";
 import { buildDirectiveRuntimePromotionAssistanceReport } from "../runtime/lib/runtime-promotion-assistance.ts";
 
 const DIRECTIVE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
-function normalizeText(value: unknown) {
-  return String(value ?? "").trim();
-}
 
 function normalizeFingerprintText(value: string | null | undefined) {
   return String(value ?? "")
@@ -386,133 +409,366 @@ function buildDefaultProofPlan(
   };
 }
 
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => normalizeText(value))
-        .filter(Boolean),
-    ),
+function toPlanItem(value: string): DirectiveEnginePlanItem {
+  return {
+    value,
+    status: "pending",
+    completedAt: null,
+  };
+}
+
+function completionRate(items: DirectiveEnginePlanItem[]) {
+  if (items.length === 0) {
+    return 0;
+  }
+  const completedCount = items.filter((item) => item.status === "completed").length;
+  return Math.round((completedCount / items.length) * 100);
+}
+
+function buildStructuredExtractionPlan(
+  extractionPlan: DirectiveEngineExtractionPlan,
+): DirectiveEngineStructuredExtractionPlan {
+  const extractedValue = extractionPlan.extractedValue.map(toPlanItem);
+  const excludedBaggage = extractionPlan.excludedBaggage.map(toPlanItem);
+  return {
+    extractedValue,
+    excludedBaggage,
+    completionRate: completionRate([...extractedValue, ...excludedBaggage]),
+  };
+}
+
+function buildStructuredAdaptationPlan(
+  adaptationPlan: DirectiveEngineAdaptationPlan,
+): DirectiveEngineStructuredAdaptationPlan {
+  const directiveOwnedForm = toPlanItem(adaptationPlan.directiveOwnedForm);
+  const adaptedValue = adaptationPlan.adaptedValue.map(toPlanItem);
+  return {
+    directiveOwnedForm,
+    adaptedValue,
+    completionRate: completionRate([directiveOwnedForm, ...adaptedValue]),
+  };
+}
+
+function buildStructuredImprovementPlan(
+  improvementPlan: DirectiveEngineImprovementPlan,
+): DirectiveEngineStructuredImprovementPlan {
+  const intendedDelta = toPlanItem(improvementPlan.intendedDelta);
+  const improvementGoals = improvementPlan.improvementGoals.map(toPlanItem);
+  return {
+    improvementGoals,
+    intendedDelta,
+    completionRate: completionRate([intendedDelta, ...improvementGoals]),
+  };
+}
+
+function buildStructuredProofPlan(
+  proofPlan: DirectiveEngineProofPlan,
+): DirectiveEngineStructuredProofPlan {
+  const objective = toPlanItem(proofPlan.objective);
+  const requiredEvidence = proofPlan.requiredEvidence.map(toPlanItem);
+  const requiredGates = proofPlan.requiredGates.map(toPlanItem);
+  const rollbackPrompt = toPlanItem(proofPlan.rollbackPrompt);
+  return {
+    proofKind: proofPlan.proofKind,
+    objective,
+    requiredEvidence,
+    requiredGates,
+    rollbackPrompt,
+    completionRate: completionRate([
+      objective,
+      rollbackPrompt,
+      ...requiredEvidence,
+      ...requiredGates,
+    ]),
+  };
+}
+
+function normalizeCompletedAtForStatus(input: {
+  status: DirectiveEnginePlanItem["status"];
+  completedAt?: string | null;
+  fallbackAt: string;
+}) {
+  if (input.status === "completed") {
+    return normalizeText(input.completedAt) || input.fallbackAt;
+  }
+  return null;
+}
+
+function applyPlanItemStatusUpdate(input: {
+  item: DirectiveEnginePlanItem;
+  status: DirectiveEnginePlanItem["status"];
+  completedAt?: string | null;
+  fallbackAt: string;
+}) {
+  return {
+    ...input.item,
+    status: input.status,
+    completedAt: normalizeCompletedAtForStatus({
+      status: input.status,
+      completedAt: input.completedAt,
+      fallbackAt: input.fallbackAt,
+    }),
+  } satisfies DirectiveEnginePlanItem;
+}
+
+function updateIndexedPlanItems(input: {
+  items: DirectiveEnginePlanItem[];
+  index: number;
+  status: DirectiveEnginePlanItem["status"];
+  completedAt?: string | null;
+  fallbackAt: string;
+  label: string;
+}) {
+  if (!Number.isInteger(input.index) || input.index < 0 || input.index >= input.items.length) {
+    throw new Error(`invalid_input: ${input.label} index ${input.index} is out of range`);
+  }
+  return input.items.map((item, index) =>
+    index === input.index
+      ? applyPlanItemStatusUpdate({
+        item,
+        status: input.status,
+        completedAt: input.completedAt,
+        fallbackAt: input.fallbackAt,
+      })
+      : item
   );
 }
 
-function flattenSourceSignals(source: DirectiveEngineSourceItem) {
-  return [
-    source.title,
-    source.summary ?? "",
-    source.missionAlignmentHint ?? "",
-    source.primaryAdoptionTarget ? `primary-adoption-target:${source.primaryAdoptionTarget}` : "",
-    source.containsExecutableCode ? "contains executable code" : "",
-    source.containsWorkflowPattern ? "contains workflow pattern" : "",
-    source.improvesDirectiveWorkspace ? "improves directive workspace itself" : "",
-    source.workflowBoundaryShape ? `workflow-boundary-shape:${source.workflowBoundaryShape}` : "",
-    ...(source.notes ?? []),
-  ]
-    .filter(Boolean)
-    .join(" ");
+function normalizeStructuredPlans(record: DirectiveEngineRunRecord) {
+  return {
+    structuredExtractionPlan:
+      record.structuredExtractionPlan ?? buildStructuredExtractionPlan(record.extractionPlan),
+    structuredAdaptationPlan:
+      record.structuredAdaptationPlan ?? buildStructuredAdaptationPlan(record.adaptationPlan),
+    structuredImprovementPlan:
+      record.structuredImprovementPlan ?? buildStructuredImprovementPlan(record.improvementPlan),
+    structuredProofPlan:
+      record.structuredProofPlan ?? buildStructuredProofPlan(record.proofPlan),
+  };
 }
 
-function resolveStructuralProcessStages(source: DirectiveEngineSourceItem) {
-  if (
-    source.sourceType !== "paper"
-    && source.sourceType !== "product-doc"
-    && source.sourceType !== "technical-essay"
-    && source.sourceType !== "workflow-writeup"
-    && source.sourceType !== "theory"
-  ) {
-    return [] as string[];
-  }
+function applyPlanProgressUpdates(input: {
+  record: DirectiveEngineRunRecord;
+  updates: DirectiveEnginePlanProgressUpdate[];
+  at: string;
+}) {
+  let {
+    structuredExtractionPlan,
+    structuredAdaptationPlan,
+    structuredImprovementPlan,
+    structuredProofPlan,
+  } = normalizeStructuredPlans(input.record);
 
-  const lowered = flattenSourceSignals(source).toLowerCase();
-  const stages: string[] = [];
-
-  if (/\bplanning\b/.test(lowered)) {
-    stages.push("planning");
+  for (const update of input.updates) {
+    switch (update.plan) {
+      case "extraction":
+        structuredExtractionPlan = {
+          ...structuredExtractionPlan,
+          [update.itemType]: updateIndexedPlanItems({
+            items: structuredExtractionPlan[update.itemType],
+            index: update.index,
+            status: update.status,
+            completedAt: update.completedAt,
+            fallbackAt: input.at,
+            label: `structuredExtractionPlan.${update.itemType}`,
+          }),
+        };
+        structuredExtractionPlan = {
+          ...structuredExtractionPlan,
+          completionRate: completionRate([
+            ...structuredExtractionPlan.extractedValue,
+            ...structuredExtractionPlan.excludedBaggage,
+          ]),
+        };
+        break;
+      case "adaptation":
+        if (update.itemType === "directiveOwnedForm") {
+          structuredAdaptationPlan = {
+            ...structuredAdaptationPlan,
+            directiveOwnedForm: applyPlanItemStatusUpdate({
+              item: structuredAdaptationPlan.directiveOwnedForm,
+              status: update.status,
+              completedAt: update.completedAt,
+              fallbackAt: input.at,
+            }),
+          };
+        } else {
+          structuredAdaptationPlan = {
+            ...structuredAdaptationPlan,
+            adaptedValue: updateIndexedPlanItems({
+              items: structuredAdaptationPlan.adaptedValue,
+              index: update.index,
+              status: update.status,
+              completedAt: update.completedAt,
+              fallbackAt: input.at,
+              label: "structuredAdaptationPlan.adaptedValue",
+            }),
+          };
+        }
+        structuredAdaptationPlan = {
+          ...structuredAdaptationPlan,
+          completionRate: completionRate([
+            structuredAdaptationPlan.directiveOwnedForm,
+            ...structuredAdaptationPlan.adaptedValue,
+          ]),
+        };
+        break;
+      case "improvement":
+        if (update.itemType === "intendedDelta") {
+          structuredImprovementPlan = {
+            ...structuredImprovementPlan,
+            intendedDelta: applyPlanItemStatusUpdate({
+              item: structuredImprovementPlan.intendedDelta,
+              status: update.status,
+              completedAt: update.completedAt,
+              fallbackAt: input.at,
+            }),
+          };
+        } else {
+          structuredImprovementPlan = {
+            ...structuredImprovementPlan,
+            improvementGoals: updateIndexedPlanItems({
+              items: structuredImprovementPlan.improvementGoals,
+              index: update.index,
+              status: update.status,
+              completedAt: update.completedAt,
+              fallbackAt: input.at,
+              label: "structuredImprovementPlan.improvementGoals",
+            }),
+          };
+        }
+        structuredImprovementPlan = {
+          ...structuredImprovementPlan,
+          completionRate: completionRate([
+            structuredImprovementPlan.intendedDelta,
+            ...structuredImprovementPlan.improvementGoals,
+          ]),
+        };
+        break;
+      case "proof":
+        if (update.itemType === "objective" || update.itemType === "rollbackPrompt") {
+          structuredProofPlan = {
+            ...structuredProofPlan,
+            [update.itemType]: applyPlanItemStatusUpdate({
+              item: structuredProofPlan[update.itemType],
+              status: update.status,
+              completedAt: update.completedAt,
+              fallbackAt: input.at,
+            }),
+          };
+        } else {
+          structuredProofPlan = {
+            ...structuredProofPlan,
+            [update.itemType]: updateIndexedPlanItems({
+              items: structuredProofPlan[update.itemType],
+              index: update.index,
+              status: update.status,
+              completedAt: update.completedAt,
+              fallbackAt: input.at,
+              label: `structuredProofPlan.${update.itemType}`,
+            }),
+          };
+        }
+        structuredProofPlan = {
+          ...structuredProofPlan,
+          completionRate: completionRate([
+            structuredProofPlan.objective,
+            structuredProofPlan.rollbackPrompt,
+            ...structuredProofPlan.requiredEvidence,
+            ...structuredProofPlan.requiredGates,
+          ]),
+        };
+        break;
+    }
   }
-  if (/\banalysis\b/.test(lowered)) {
-    stages.push("analysis");
-  }
-  if (/\bmutation\b/.test(lowered)) {
-    stages.push("mutation");
-  }
-  if (/\bevaluation\b/.test(lowered)) {
-    stages.push("evaluation");
-  }
-  if (/\bselection\b/.test(lowered)) {
-    stages.push("selection");
-  }
-  if (/\bcode generation\b/.test(lowered)) {
-    stages.push("code generation");
-  } else if (/\bgeneration\b/.test(lowered)) {
-    stages.push("generation");
-  }
-
-  return stages;
-}
-
-function resolveControlSignalProfile(source: DirectiveEngineSourceItem) {
-  if (
-    source.sourceType !== "paper"
-    && source.sourceType !== "product-doc"
-    && source.sourceType !== "technical-essay"
-    && source.sourceType !== "workflow-writeup"
-    && source.sourceType !== "theory"
-  ) {
-    return null;
-  }
-
-  const lowered = flattenSourceSignals(source).toLowerCase();
-  const signals: string[] = [];
-
-  if (/\bprecondition\b|\bprerequisite\b|\bchecklist\b|\bfail fast\b/.test(lowered)) {
-    signals.push("preconditions");
-  }
-  if (/\bdry-run\b|\bverify\b|\bverification\b|\bguard\b|\bhealth check\b/.test(lowered)) {
-    signals.push("verification");
-  }
-  if (/\brollback\b|\brevert\b|\bundo\b|\bunpublish\b/.test(lowered)) {
-    signals.push("rollback");
-  }
-  if (/\bkeep\b|\bdiscard\b|\bdecision\b|\bapprove\b|\bgate\b|\bready to ship\b/.test(lowered)) {
-    signals.push("decision");
-  }
-  if (/\bresults log\b|\bsummary\b|\blog\b|\brecord\b|\breport\b|\bmemory\b/.test(lowered)) {
-    signals.push("results logging");
-  }
-
-  const hasControlGate =
-    signals.includes("preconditions") || signals.includes("verification");
-  const hasDecisionOrRollback =
-    signals.includes("decision") || signals.includes("rollback");
-  const hasEvidenceBoundary = signals.includes("results logging");
-
-  if (
-    signals.length < 3
-    || !hasControlGate
-    || (!hasDecisionOrRollback && !hasEvidenceBoundary)
-  ) {
-    return null;
-  }
-
-  const mentionsLoop = /\b(loop|iteration|iterative)\b/.test(lowered);
-  const prefersBoundedProtocolFraming =
-    /\b(workflow|protocol)\b/.test(lowered)
-    && /\b(checklist|dry-run|inventory|ship|verify|log)\b/.test(lowered);
 
   return {
-    signals,
-    framing: mentionsLoop && !prefersBoundedProtocolFraming
-      ? "iterative_loop"
-      : "bounded_protocol",
-  } as const;
+    structuredExtractionPlan,
+    structuredAdaptationPlan,
+    structuredImprovementPlan,
+    structuredProofPlan,
+  };
 }
 
-function formatStructuralProcessStages(stages: string[]) {
-  return stages.join(" -> ");
+function buildProcessSourceInputFromRecord(record: DirectiveEngineRunRecord) {
+  return {
+    source: { ...record.source },
+    mission: {
+      missionId: record.mission.missionId,
+      currentObjective: record.mission.currentObjective,
+      usefulnessSignals: [...record.mission.usefulnessSignals],
+      capabilityLanes: [...record.mission.capabilityLanes],
+      constraints: [...record.mission.constraints],
+      successSignal: record.mission.successSignal,
+      adoptionTarget: record.mission.adoptionTarget,
+      activeMissionMarkdown: record.mission.activeMissionMarkdown,
+    },
+    gaps: [...record.openGaps],
+    receivedAt: record.receivedAt,
+  };
 }
 
-function formatIterativeControlSignals(signals: string[]) {
-  return signals.join(", ");
+function applyStructuredAnswersToRecordInput(input: {
+  recordInput: ReturnType<typeof buildProcessSourceInputFromRecord>;
+  answers: Record<string, unknown>;
+}) {
+  const next = {
+    ...input.recordInput,
+    source: { ...input.recordInput.source },
+    mission: { ...input.recordInput.mission },
+  };
+
+  for (const [field, value] of Object.entries(input.answers)) {
+    switch (field) {
+      case "source.primaryAdoptionTarget":
+        next.source.primaryAdoptionTarget = normalizePrimaryAdoptionTarget(value);
+        break;
+      case "source.containsExecutableCode":
+        next.source.containsExecutableCode = normalizeOptionalBoolean(value);
+        break;
+      case "source.containsWorkflowPattern":
+        next.source.containsWorkflowPattern = normalizeOptionalBoolean(value);
+        break;
+      case "source.improvesDirectiveWorkspace":
+        next.source.improvesDirectiveWorkspace = normalizeOptionalBoolean(value);
+        break;
+      case "source.workflowBoundaryShape":
+        next.source.workflowBoundaryShape = normalizeWorkflowBoundaryShape(value);
+        break;
+      case "source.capabilityGapId":
+        next.source.capabilityGapId = normalizeText(value) || null;
+        break;
+      case "source.missionAlignmentHint":
+        next.source.missionAlignmentHint = normalizeText(value) || null;
+        break;
+      case "mission.currentObjective":
+        next.mission.currentObjective = normalizeText(value) || null;
+        break;
+      case "mission.usefulnessSignals":
+        next.mission.usefulnessSignals = Array.isArray(value)
+          ? value.map((item) => normalizeText(item)).filter(Boolean)
+          : next.mission.usefulnessSignals;
+        break;
+      case "mission.capabilityLanes":
+        next.mission.capabilityLanes = Array.isArray(value)
+          ? value.map((item) => normalizeText(item)).filter(Boolean)
+          : next.mission.capabilityLanes;
+        break;
+      case "mission.constraints":
+        next.mission.constraints = Array.isArray(value)
+          ? value.map((item) => normalizeText(item)).filter(Boolean)
+          : next.mission.constraints;
+        break;
+      case "mission.successSignal":
+        next.mission.successSignal = normalizeText(value) || null;
+        break;
+      case "mission.adoptionTarget":
+        next.mission.adoptionTarget = normalizeText(value) || null;
+        break;
+    }
+  }
+
+  return next;
 }
 
 function buildSourceAnalysis(
@@ -574,177 +830,21 @@ function buildSourceAnalysis(
 function buildExtractionPlan(
   input: DirectiveEngineLanePlanningInput,
 ): DirectiveEngineExtractionPlan {
-  const structuralProcessStages = resolveStructuralProcessStages(input.source);
-  const controlSignalProfile = resolveControlSignalProfile(input.source);
-  const extractedValue = uniqueStrings([
-    structuralProcessStages.length >= 2
-      ? `Stage-aware structural pattern: ${formatStructuralProcessStages(structuralProcessStages)} with explicit handoff boundaries.`
-      : null,
-    controlSignalProfile?.framing === "iterative_loop"
-      ? `Bounded loop-control pattern: explicit ${formatIterativeControlSignals(controlSignalProfile.signals)} boundaries for repeated iteration.`
-      : controlSignalProfile
-        ? `Bounded control/evidence pattern: explicit ${formatIterativeControlSignals(controlSignalProfile.signals)} boundaries for approval, validation, rollback, and reporting.`
-      : null,
-    input.source.summary,
-    ...(input.source.notes ?? []).slice(0, 3),
-  ]);
-  const excludedBaggage = uniqueStrings([
-    structuralProcessStages.length >= 2
-      ? "paper-specific benchmark and repository-generation detail that does not need to become Engine workflow logic"
-      : null,
-    controlSignalProfile?.framing === "iterative_loop"
-      ? "repo-local command sequences and autonomous execution policy that should not become Directive Workspace automation"
-      : controlSignalProfile
-        ? "domain-specific shipping or delivery actions that should not become Directive Workspace automation"
-      : null,
-    input.source.sourceType === "github-repo" || input.source.sourceType === "external-system"
-      ? "source-specific implementation baggage"
-      : "non-mission-relevant source detail",
-    input.lane.hostDependence === "host_adapter_required"
-      ? "host-local assumptions from the original source"
-      : "unadapted source terminology",
-  ]);
-
-  return {
-    extractedValue:
-      extractedValue.length > 0
-        ? extractedValue
-        : [`Potential ${input.lane.label} value from ${input.source.title || input.candidateId}.`],
-    excludedBaggage,
-  };
+  return input.lane.planExtraction?.({ planningInput: input })
+    ?? buildDefaultExtractionPlan({ planningInput: input });
 }
 
-type DirectiveEngineAdaptationStageInput = {
-  planningInput: DirectiveEngineLanePlanningInput;
-  extractionPlan: DirectiveEngineExtractionPlan;
-};
+type DirectiveEngineRuntimePromotionFeedbackSignal =
+  NonNullable<DirectiveEngineLaneImprovementPlanningInput["runtimePromotionFeedbackSignal"]>;
 
-type DirectiveEngineImprovementStageInput = {
-  planningInput: DirectiveEngineLanePlanningInput;
-  extractionPlan: DirectiveEngineExtractionPlan;
-  adaptationPlan: DirectiveEngineAdaptationPlan;
-  runtimePromotionFeedbackSignal?: DirectiveEngineRuntimePromotionFeedbackSignal | null;
-  runtimeExecutionEvidenceSignal?: DirectiveEngineRuntimeExecutionEvidenceSignal | null;
-};
-
-type DirectiveEngineRuntimePromotionFeedbackSignal = {
-  summary: string;
-  integrationHint: string;
-  improvementHint: string;
-};
-
-type DirectiveEngineRuntimeExecutionEvidenceSignal = {
-  summary: string;
-  integrationHint: string;
-  improvementHint: string;
-};
-
-function readExtractionPlanSummary(
-  extractionPlan: DirectiveEngineExtractionPlan,
-  prefix: string,
-) {
-  return extractionPlan.extractedValue
-    .find((value) => value.startsWith(prefix))
-    ?.replace(prefix, "")
-    .trim()
-    ?? null;
-}
-
-function adaptationPlanIncludes(
-  adaptationPlan: DirectiveEngineAdaptationPlan,
-  pattern: string,
-) {
-  const loweredPattern = pattern.toLowerCase();
-  return adaptationPlan.directiveOwnedForm.toLowerCase().includes(loweredPattern)
-    || adaptationPlan.adaptedValue.some((value) =>
-      value.toLowerCase().includes(loweredPattern)
-    );
-}
+type DirectiveEngineRuntimeExecutionEvidenceSignal =
+  NonNullable<DirectiveEngineLaneImprovementPlanningInput["runtimeExecutionEvidenceSignal"]>;
 
 function buildAdaptationPlan(
-  input: DirectiveEngineAdaptationStageInput,
+  input: DirectiveEngineLaneAdaptationPlanningInput,
 ): DirectiveEngineAdaptationPlan {
-  const { planningInput, extractionPlan } = input;
-  const extractedStagePattern = readExtractionPlanSummary(
-    extractionPlan,
-    "Stage-aware structural pattern:",
-  )?.replace(/\.$/u, "");
-  const extractedLoopControlPattern = readExtractionPlanSummary(
-    extractionPlan,
-    "Bounded loop-control pattern:",
-  )?.replace(/\.$/u, "");
-  const extractedControlEvidencePattern = readExtractionPlanSummary(
-    extractionPlan,
-    "Bounded control/evidence pattern:",
-  )?.replace(/\.$/u, "");
-  const primaryExcludedBaggage = extractionPlan.excludedBaggage[0]
-    ?? "source baggage that does not belong in the Engine";
-  const hasStageAwareStructuralPattern = planningInput.lane.laneId === "architecture"
-    && Boolean(extractedStagePattern);
-  const hasLoopControlPattern = planningInput.lane.laneId === "architecture"
-    && Boolean(extractedLoopControlPattern);
-  const hasControlEvidencePattern = planningInput.lane.laneId === "architecture"
-    && Boolean(extractedControlEvidencePattern);
-
-  switch (planningInput.lane.laneId) {
-    case "discovery":
-      return {
-        directiveOwnedForm:
-          "Mission-aware Discovery intake case with explicit routing, boundary, and usefulness notes.",
-        adaptedValue: [
-          "Normalize the source into a Discovery-owned intake and routing case.",
-          "Preserve ambiguity without forcing downstream adoption too early.",
-        ],
-      };
-    case "architecture":
-      if (hasStageAwareStructuralPattern) {
-        return {
-          directiveOwnedForm:
-            "Directive-owned Engine logic that preserves explicit stage boundaries for structural source adaptation instead of collapsing them into one generic Architecture mechanism.",
-          adaptedValue: [
-            `Keep ${extractedStagePattern} as separate Engine-owned reasoning stages.`,
-            `Carry forward the extraction boundary by excluding ${primaryExcludedBaggage} before any broader Architecture or Runtime claim is made.`,
-          ],
-        };
-      }
-      if (hasLoopControlPattern) {
-        return {
-          directiveOwnedForm:
-            "Directive-owned Engine logic that preserves explicit bounded loop-control boundaries for iterative structural sources instead of collapsing them into one generic Architecture heuristic.",
-          adaptedValue: [
-            `Keep ${extractedLoopControlPattern} as separate Engine-owned control boundaries for repeated improvement loops.`,
-            `Carry forward the extraction boundary by excluding ${primaryExcludedBaggage} before any repeated-loop implementation claim is made.`,
-          ],
-        };
-      }
-      if (hasControlEvidencePattern) {
-        return {
-          directiveOwnedForm:
-            "Directive-owned Engine logic that preserves explicit bounded control and evidence boundaries for structural protocols instead of collapsing them into one generic Architecture heuristic.",
-          adaptedValue: [
-            `Keep ${extractedControlEvidencePattern} as separate Engine-owned control and evidence boundaries.`,
-            `Carry forward the extraction boundary by excluding ${primaryExcludedBaggage} before any protocol-level shipping or execution claim is made.`,
-          ],
-        };
-      }
-      return {
-        directiveOwnedForm:
-          "Directive-owned Engine logic or operating-code asset such as a contract, schema, template, policy, or shared lib.",
-        adaptedValue: [
-          "Convert extracted mechanisms into Engine-owned logic or operating assets.",
-          "Strip source baggage before adoption into the Engine.",
-        ],
-      };
-    default:
-      return {
-        directiveOwnedForm:
-          "Directive-owned runtime capability or transformation artifact behind a host adapter boundary.",
-        adaptedValue: [
-          "Convert the extracted mechanism into a bounded reusable runtime surface.",
-          "Keep host-specific behavior behind the adapter boundary.",
-        ],
-      };
-  }
+  return input.planningInput.lane.planAdaptation?.(input)
+    ?? buildDefaultAdaptationPlan(input);
 }
 
 function readRuntimePromotionFeedbackSignal():
@@ -839,137 +939,10 @@ function readRuntimeExecutionEvidenceSignal():
 }
 
 function buildImprovementPlan(
-  input: DirectiveEngineImprovementStageInput,
+  input: DirectiveEngineLaneImprovementPlanningInput,
 ): DirectiveEngineImprovementPlan {
-  const { planningInput, extractionPlan, adaptationPlan } = input;
-  const structuralProcessStages = resolveStructuralProcessStages(planningInput.source);
-  const controlSignalProfile = resolveControlSignalProfile(planningInput.source);
-  const extractedStagePattern = readExtractionPlanSummary(
-    extractionPlan,
-    "Stage-aware structural pattern:",
-  )?.replace(/\.$/u, "");
-  const extractedLoopControlPattern = readExtractionPlanSummary(
-    extractionPlan,
-    "Bounded loop-control pattern:",
-  )?.replace(/\.$/u, "");
-  const extractedControlEvidencePattern = readExtractionPlanSummary(
-    extractionPlan,
-    "Bounded control/evidence pattern:",
-  )?.replace(/\.$/u, "");
-  const stageAwareAdaptationReady = Boolean(extractedStagePattern)
-    && (
-      adaptationPlanIncludes(adaptationPlan, "stage boundaries")
-      || adaptationPlanIncludes(adaptationPlan, "engine-owned reasoning stages")
-    );
-  const loopControlAdaptationReady = Boolean(extractedLoopControlPattern)
-    && (
-      adaptationPlanIncludes(adaptationPlan, "loop-control")
-      || adaptationPlanIncludes(adaptationPlan, "control boundaries")
-    );
-  const controlEvidenceAdaptationReady = Boolean(extractedControlEvidencePattern)
-    && (
-      adaptationPlanIncludes(adaptationPlan, "control and evidence boundaries")
-      || adaptationPlanIncludes(adaptationPlan, "control and evidence")
-      || adaptationPlanIncludes(adaptationPlan, "control boundaries")
-    );
-  const primaryAdaptedValue =
-    adaptationPlan.adaptedValue[0] ?? adaptationPlan.directiveOwnedForm;
-
-  switch (planningInput.lane.laneId) {
-    case "discovery":
-      return {
-        improvementGoals: [
-          "improve intake efficiency",
-          "improve routing clarity",
-        ],
-        intendedDelta:
-          "Make source selection and routing clearer and more reusable than the original source context.",
-      };
-    case "architecture":
-      if (stageAwareAdaptationReady) {
-        return {
-          improvementGoals: [
-            "improve stage-aware engine analysis for structural sources",
-            "improve future source adaptation quality for ambiguous multi-stage candidates",
-          ],
-          intendedDelta:
-            `Turn the preserved ${extractedStagePattern} stage pattern into explicit Engine-owned improvement plans so later planning stages can build on the adaptation boundary (${primaryAdaptedValue}) instead of recomputing everything from the same flat input.`,
-        };
-      }
-      if (loopControlAdaptationReady) {
-        return {
-          improvementGoals: [
-            "improve bounded iteration-control analysis for structural workflow sources",
-            "improve future Architecture adaptation quality for loop protocols with explicit safety boundaries",
-          ],
-          intendedDelta:
-            `Turn the preserved ${extractedLoopControlPattern} loop-control boundary into explicit Engine-owned improvement plans so later planning stages can compound the adaptation boundary (${primaryAdaptedValue}) instead of recomputing loop discipline from raw source text.`,
-        };
-      }
-      if (controlEvidenceAdaptationReady) {
-        return {
-          improvementGoals: [
-            "improve bounded control and evidence analysis for structural protocols",
-            "improve future Architecture adaptation quality for approval, verification, rollback, and reporting structures",
-          ],
-          intendedDelta:
-            `Turn the preserved ${extractedControlEvidencePattern} control/evidence boundary into Engine-owned improvement plans so later planning stages can build on the adaptation boundary (${primaryAdaptedValue}) without inventing runtime shipping behavior.`,
-        };
-      }
-      if (structuralProcessStages.length >= 2) {
-        return {
-          improvementGoals: [
-            "improve stage-aware engine analysis for structural sources",
-            "improve future source adaptation quality for ambiguous multi-stage candidates",
-          ],
-          intendedDelta:
-            `Turn multi-stage structural sources into explicit Engine-owned stage plans (${formatStructuralProcessStages(structuralProcessStages)}) so Architecture can preserve stage boundaries instead of flattening them into one generic adaptation step.`,
-        };
-      }
-      if (controlSignalProfile?.framing === "iterative_loop") {
-        return {
-          improvementGoals: [
-            "improve bounded iteration-control analysis for structural workflow sources",
-            "improve future Architecture adaptation quality for loop protocols with explicit safety boundaries",
-          ],
-          intendedDelta:
-            `Turn iterative structural sources into explicit Engine-owned loop-control plans (${formatIterativeControlSignals(controlSignalProfile.signals)}) so Architecture can preserve precondition, proof, rollback, decision, and results-memory boundaries instead of flattening them into one generic workflow note.`,
-        };
-      }
-      if (controlSignalProfile?.framing === "bounded_protocol") {
-        return {
-          improvementGoals: [
-            "improve bounded control and evidence analysis for structural protocols",
-            "improve future Architecture adaptation quality for approval, verification, rollback, and reporting structures",
-          ],
-          intendedDelta:
-            `Turn structural protocols with explicit ${formatIterativeControlSignals(controlSignalProfile.signals)} boundaries into Engine-owned control/evidence plans so Architecture can preserve those gates without inventing loop semantics or runtime shipping behavior.`,
-        };
-      }
-      return {
-        improvementGoals: [
-          "improve engine self-improvement quality",
-          "improve future source adaptation quality",
-        ],
-        intendedDelta:
-          "Turn extracted mechanisms into Directive-owned improvements that compound future source consumption.",
-      };
-    default:
-      return {
-        improvementGoals: [
-          "improve runtime reuse",
-          "improve speed, cost, reliability, or structure while preserving behavior",
-          ...(input.runtimePromotionFeedbackSignal
-            ? [input.runtimePromotionFeedbackSignal.improvementHint]
-            : []),
-          ...(input.runtimeExecutionEvidenceSignal
-            ? [input.runtimeExecutionEvidenceSignal.improvementHint]
-            : []),
-        ],
-        intendedDelta:
-          `Operationalize the value in a reusable runtime shape with stronger boundaries than the source.${input.runtimePromotionFeedbackSignal ? ` ${input.runtimePromotionFeedbackSignal.summary}` : ""}${input.runtimeExecutionEvidenceSignal ? ` ${input.runtimeExecutionEvidenceSignal.summary}` : ""}`,
-      };
-  }
+  return input.planningInput.lane.planImprovement?.(input)
+    ?? buildDefaultImprovementPlan(input);
 }
 
 function buildIntegrationProposal(
@@ -1011,19 +984,22 @@ function buildIntegrationProposal(
 }
 
 function buildDecision(input: {
+  laneDefinition: DirectiveEngineLaneDefinition;
   lane: DirectiveEngineSelectedLane;
   candidate: DirectiveEngineCandidate;
   integrationProposal: DirectiveEngineIntegrationProposal;
 }): DirectiveEngineDecision {
   let decisionState: DirectiveEngineDecision["decisionState"];
-  if (input.lane.laneId === "discovery") {
-    decisionState = "hold_in_discovery";
-  } else if (input.candidate.requiresHumanReview) {
+  if (input.candidate.requiresHumanReview) {
     decisionState = "needs_human_review";
-  } else if (input.lane.laneId === "architecture") {
-    decisionState = "accept_for_architecture";
   } else {
-    decisionState = "route_to_runtime_follow_up";
+    decisionState =
+      input.laneDefinition.defaultDecisionState
+      ?? (input.lane.laneId === "discovery"
+        ? "hold_in_discovery"
+        : input.lane.laneId === "architecture"
+          ? "accept_for_architecture"
+          : "route_to_runtime_follow_up");
   }
 
   const requiresHumanApproval =
@@ -1357,6 +1333,10 @@ export class DirectiveEngine {
         adaptationPlan,
         improvementPlan,
       });
+    const structuredExtractionPlan = buildStructuredExtractionPlan(extractionPlan);
+    const structuredAdaptationPlan = buildStructuredAdaptationPlan(adaptationPlan);
+    const structuredImprovementPlan = buildStructuredImprovementPlan(improvementPlan);
+    const structuredProofPlan = buildStructuredProofPlan(proofPlan);
     const priorPlanContext = deriveDirectivePriorPlanContext({
       source,
       recommendedLaneId: selectedLane.laneId,
@@ -1370,6 +1350,7 @@ export class DirectiveEngine {
       proofPlan,
     }, runtimePromotionFeedbackSignal, runtimeExecutionEvidenceSignal);
     const decision = buildDecision({
+      laneDefinition: lane,
       lane: selectedLane,
       candidate,
       integrationProposal,
@@ -1380,7 +1361,7 @@ export class DirectiveEngine {
       integrationProposal,
       usefulnessRationale,
     });
-    const runRecord: DirectiveEngineRunRecord = {
+    const preliminaryRunRecord: DirectiveEngineRunRecord = {
       $schema: DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF,
       schemaVersion: DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION,
       recordKind: DIRECTIVE_ENGINE_RUN_RECORD_KIND,
@@ -1394,9 +1375,15 @@ export class DirectiveEngine {
       analysis,
       routingAssessment,
       extractionPlan,
+      structuredExtractionPlan,
       adaptationPlan,
+      structuredAdaptationPlan,
       improvementPlan,
+      structuredImprovementPlan,
       proofPlan,
+      structuredProofPlan,
+      planQualitySignal: null,
+      narrativeActions: null,
       priorPlanContext,
       decision,
       integrationProposal,
@@ -1412,6 +1399,20 @@ export class DirectiveEngine {
         decision,
         integrationProposal,
         reportPlan,
+      }),
+    };
+    const runRecord: DirectiveEngineRunRecord = {
+      ...preliminaryRunRecord,
+      planQualitySignal: deriveDirectivePlanQualitySignal({
+        record: preliminaryRunRecord,
+        existingRuns,
+        policyEvents: [...(input.policyEvents ?? [])],
+        corrections,
+      }),
+      narrativeActions: deriveDirectiveNarrativeActions({
+        narrativeContext: preliminaryRunRecord.routingAssessment.narrativeContext,
+        openGaps,
+        currentRecord: preliminaryRunRecord,
       }),
     };
 
@@ -1445,6 +1446,131 @@ export class DirectiveEngine {
       ok: true,
       record: runRecord,
       adapterResults,
+    };
+  }
+
+  async updatePlanProgress(input: {
+    runId: string;
+    updates: DirectiveEnginePlanProgressUpdate[];
+    at?: string | null;
+  }) {
+    const record = await this.getRun(input.runId);
+    if (!record) {
+      throw new Error(`not_found: run ${input.runId} does not exist`);
+    }
+    if ((input.updates ?? []).length === 0) {
+      throw new Error("invalid_input: at least one plan progress update is required");
+    }
+
+    const at = normalizeText(input.at) || new Date().toISOString();
+    const structuredPlans = applyPlanProgressUpdates({
+      record,
+      updates: input.updates,
+      at,
+    });
+    const existingRuns = (await this.listRuns()).filter((entry) => entry.runId !== record.runId);
+    const updatedRecord: DirectiveEngineRunRecord = {
+      ...record,
+      ...structuredPlans,
+    };
+    updatedRecord.planQualitySignal = deriveDirectivePlanQualitySignal({
+      record: updatedRecord,
+      existingRuns,
+    });
+    updatedRecord.narrativeActions = deriveDirectiveNarrativeActions({
+      narrativeContext: updatedRecord.routingAssessment.narrativeContext,
+      openGaps: updatedRecord.openGaps,
+      currentRecord: updatedRecord,
+    });
+
+    await withTimeout(this.store.updateRun(updatedRecord), this.storeTimeoutMs, "store.updateRun");
+    return updatedRecord;
+  }
+
+  async reRouteWithAnswers(input: {
+    runId: string;
+    answers: Record<string, unknown>;
+    corrections?: DirectiveEngineProcessSourceInput["corrections"];
+    policyEvents?: DirectiveEngineProcessSourceInput["policyEvents"];
+    receivedAt?: string | null;
+  }) {
+    const record = await this.getRun(input.runId);
+    if (!record) {
+      throw new Error(`not_found: run ${input.runId} does not exist`);
+    }
+
+    const rerouteInput = applyStructuredAnswersToRecordInput({
+      recordInput: buildProcessSourceInputFromRecord(record),
+      answers: input.answers,
+    });
+
+    return this.processSource({
+      ...rerouteInput,
+      corrections: input.corrections ?? null,
+      policyEvents: input.policyEvents ?? null,
+      receivedAt: normalizeText(input.receivedAt) || new Date().toISOString(),
+    });
+  }
+
+  async previewMissionChange(input: {
+    runId: string;
+    change: DirectiveEngineMissionPreviewChange;
+    corrections?: DirectiveEngineProcessSourceInput["corrections"];
+    policyEvents?: DirectiveEngineProcessSourceInput["policyEvents"];
+    receivedAt?: string | null;
+  }): Promise<DirectiveEngineRoutingDigestPreview> {
+    const record = await this.getRun(input.runId);
+    if (!record) {
+      throw new Error(`not_found: run ${input.runId} does not exist`);
+    }
+
+    const recordInput = buildProcessSourceInputFromRecord(record);
+    const mission = {
+      ...recordInput.mission,
+      currentObjective:
+        input.change.objective !== undefined
+          ? normalizeText(input.change.objective) || null
+          : recordInput.mission.currentObjective,
+      usefulnessSignals:
+        input.change.usefulnessSignals !== undefined
+          ? (input.change.usefulnessSignals ?? []).map((value) => normalizeText(value)).filter(Boolean)
+          : recordInput.mission.usefulnessSignals,
+      capabilityLanes:
+        input.change.capabilityLanes !== undefined
+          ? (input.change.capabilityLanes ?? []).map((value) => normalizeText(value)).filter(Boolean)
+          : recordInput.mission.capabilityLanes,
+      constraints:
+        input.change.constraints !== undefined
+          ? (input.change.constraints ?? []).map((value) => normalizeText(value)).filter(Boolean)
+          : recordInput.mission.constraints,
+      successSignal:
+        input.change.successSignal !== undefined
+          ? normalizeText(input.change.successSignal) || null
+          : recordInput.mission.successSignal,
+      adoptionTarget:
+        input.change.adoptionTarget !== undefined
+          ? normalizeText(input.change.adoptionTarget) || null
+          : recordInput.mission.adoptionTarget,
+    };
+    const existingRuns = (await this.listRuns()).filter((entry) => entry.runId !== record.runId);
+    const assessment = assessDirectiveEngineRouting({
+      source: record.source,
+      mission: resolveMissionContext(mission),
+      openGaps: [...record.openGaps],
+      corrections: [...(input.corrections ?? [])],
+      policyEvents: [...(input.policyEvents ?? [])],
+      existingRuns,
+      receivedAt: normalizeText(input.receivedAt) || new Date().toISOString(),
+    });
+
+    return {
+      before: record.routingAssessment.digest,
+      after: assessment.digest,
+      diff: deriveDirectiveRoutingDiff({
+        before: record.routingAssessment,
+        after: assessment,
+      }),
+      assessment,
     };
   }
 

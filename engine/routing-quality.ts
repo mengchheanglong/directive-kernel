@@ -1,4 +1,5 @@
 import type { DecisionPolicyEvent } from "./decision-policy-ledger.ts";
+import { clampInt } from "./engine-source-utils.ts";
 import { deriveDirectiveRoutingOutcomes } from "./outcome-tracker.ts";
 import type { RoutingCorrectionEntry } from "./routing-correction-ledger.ts";
 import type { DirectiveEngineRunRecord } from "./types.ts";
@@ -17,10 +18,6 @@ export type DirectiveRoutingQualityAssessment = {
   summary: string;
   rationale: string[];
 };
-
-function clampInt(value: number, minimum: number, maximum: number) {
-  return Math.max(minimum, Math.min(maximum, Math.round(value)));
-}
 
 function average(values: number[]) {
   if (values.length === 0) {
@@ -45,6 +42,8 @@ export function deriveDirectiveRoutingQualityAssessment(input: {
   const adequateCount = outcomes.filter((outcome) => outcome.outcomeQuality === "adequate").length;
   const weakCount = outcomes.filter((outcome) => outcome.outcomeQuality === "weak").length;
   const failedCount = outcomes.filter((outcome) => outcome.outcomeQuality === "failed").length;
+  const strongPlanCount = outcomes.filter((outcome) => outcome.planQuality === "strong").length;
+  const weakPlanCount = outcomes.filter((outcome) => outcome.planQuality === "weak").length;
   const operatorAgreementCount = outcomes.filter((outcome) => outcome.operatorAgreed).length;
   const correctionCount = outcomes.filter((outcome) => outcome.operatorCorrected).length;
   const resolutionHours = outcomes
@@ -63,6 +62,8 @@ export function deriveDirectiveRoutingQualityAssessment(input: {
       + adequateCount * 6
       - weakCount * 8
       - failedCount * 18
+      + strongPlanCount * 4
+      - weakPlanCount * 4
       + Math.round((operatorAgreementRate ?? 0) * 20)
       - Math.round((correctionRate ?? 0) * 25),
     0,
@@ -71,6 +72,7 @@ export function deriveDirectiveRoutingQualityAssessment(input: {
 
   const rationale = [
     `Resolved outcomes: ${outcomes.length}. Strong=${strongCount}, adequate=${adequateCount}, weak=${weakCount}, failed=${failedCount}.`,
+    `Historical plan quality: strong=${strongPlanCount}, weak=${weakPlanCount}.`,
     operatorAgreementRate == null
       ? "No operator outcome history is recorded for this route class yet."
       : `Operator agreement rate is ${(operatorAgreementRate * 100).toFixed(0)}%.`,

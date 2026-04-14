@@ -2,6 +2,7 @@ import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
 import type { DecisionPolicyEvent } from "./decision-policy-ledger.ts";
 import type { RoutingCorrectionEntry } from "./routing-correction-ledger.ts";
 import { deriveDirectiveRoutingQualityAssessment } from "./routing-quality.ts";
+import { clampInt, countTokenOverlap, flattenSourceText } from "./engine-source-utils.ts";
 import type {
   DirectiveEngineRoutingConfidence,
   DirectiveEngineRunRecord,
@@ -21,15 +22,6 @@ export type DirectiveEngineEarnedAutonomyAssessment = {
   rationale: string[];
 };
 
-function clampInt(value: number, minimum: number, maximum: number) {
-  return Math.max(minimum, Math.min(maximum, Math.round(value)));
-}
-
-function countOverlap(left: string[], right: string[]) {
-  const rightSet = new Set(right);
-  return left.reduce((count, token) => count + (rightSet.has(token) ? 1 : 0), 0);
-}
-
 export function deriveDirectiveEngineRouteClass(input: {
   recommendedLaneId: string;
   source: DirectiveEngineSourceItem;
@@ -41,18 +33,6 @@ export function deriveDirectiveEngineRouteClass(input: {
     input.source.improvesDirectiveWorkspace === true ? "workspace" : "external",
     input.source.containsExecutableCode === true ? "code" : "nocode",
   ].join(":");
-}
-
-function flattenSourceText(source: DirectiveEngineSourceItem) {
-  return [
-    source.title,
-    source.summary ?? "",
-    source.sourceRef,
-    source.missionAlignmentHint ?? "",
-    ...(source.notes ?? []),
-  ]
-    .filter(Boolean)
-    .join(" ");
 }
 
 export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
@@ -92,12 +72,12 @@ export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
   const matchingEvents = input.policyEvents.filter((event) =>
     event.resolvedLaneId === input.recommendedLaneId
     && event.sourceType === input.source.sourceType
-    && countOverlap(sourceTokens, event.sourceSignalTokens) >= 2
+    && countTokenOverlap(sourceTokens, event.sourceSignalTokens) >= 2
   );
   const contraryEvents = input.policyEvents.filter((event) =>
     event.sourceType === input.source.sourceType
     && event.resolvedLaneId !== input.recommendedLaneId
-    && countOverlap(sourceTokens, event.sourceSignalTokens) >= 2
+    && countTokenOverlap(sourceTokens, event.sourceSignalTokens) >= 2
   );
   const operatorAgreementCount = matchingEvents.filter((event) =>
     event.originalLaneId === event.resolvedLaneId

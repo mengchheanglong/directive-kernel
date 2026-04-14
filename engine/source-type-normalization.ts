@@ -2,6 +2,7 @@ import {
   DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES,
   type DirectiveEngineSourceType,
 } from "./types.ts";
+import { normalizeText } from "./engine-source-utils.ts";
 
 export type DirectiveEngineSourceTypeNormalization = {
   submittedSourceType: string;
@@ -16,10 +17,6 @@ const DIRECTIVE_ENGINE_SOURCE_TYPE_ALIASES = new Map<string, DirectiveEngineSour
   ["githubrepo", "github-repo"],
   ["research-paper", "paper"],
 ]);
-
-function normalizeText(value: unknown) {
-  return String(value ?? "").trim();
-}
 
 function normalizeSourceTypeKey(value: string) {
   return value

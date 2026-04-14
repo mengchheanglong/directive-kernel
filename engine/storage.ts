@@ -7,6 +7,7 @@ import type { DirectiveEngineRunRecord } from "./types.ts";
 
 export type DirectiveEngineStore = {
   writeRun(record: DirectiveEngineRunRecord): void | Promise<void>;
+  updateRun(record: DirectiveEngineRunRecord): void | Promise<void>;
   readRun(runId: string): DirectiveEngineRunRecord | null | Promise<DirectiveEngineRunRecord | null>;
   listRuns(): DirectiveEngineRunRecord[] | Promise<DirectiveEngineRunRecord[]>;
 };
@@ -48,6 +49,16 @@ function readFilesystemRunRecord(filePath: string) {
   }
 }
 
+function findFilesystemRunPathByRunId(engineRunsRoot: string, runId: string) {
+  for (const recordPath of listFilesystemRunPaths(engineRunsRoot)) {
+    const record = readFilesystemRunRecord(recordPath);
+    if (record?.runId === runId) {
+      return recordPath;
+    }
+  }
+  return null;
+}
+
 export function resolveDirectiveEngineStoreRecordPath(input: {
   engineRunsRoot: string;
   record: DirectiveEngineRunRecord;
@@ -80,6 +91,15 @@ export function createFilesystemDirectiveEngineStore(input: {
       fs.mkdirSync(path.dirname(recordPath), { recursive: true });
       fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
     },
+    updateRun(record) {
+      const existingPath = findFilesystemRunPathByRunId(engineRunsRoot, record.runId);
+      const recordPath = existingPath ?? resolveDirectiveEngineStoreRecordPath({
+        engineRunsRoot,
+        record,
+      });
+      fs.mkdirSync(path.dirname(recordPath), { recursive: true });
+      fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+    },
     readRun(runId) {
       for (const recordPath of listFilesystemRunPaths(engineRunsRoot)) {
         const record = readFilesystemRunRecord(recordPath);
@@ -105,6 +125,14 @@ export function createMemoryDirectiveEngineStore(
 
   return {
     writeRun(record) {
+      records.push(record);
+    },
+    updateRun(record) {
+      const index = records.findIndex((entry) => entry.runId === record.runId);
+      if (index >= 0) {
+        records[index] = record;
+        return;
+      }
       records.push(record);
     },
     readRun(runId) {

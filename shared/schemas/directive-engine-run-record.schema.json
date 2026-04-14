@@ -32,7 +32,7 @@
       "const": "shared/schemas/directive-engine-run-record.schema.json"
     },
     "schemaVersion": {
-      "const": 7
+      "enum": [7, 8]
     },
     "recordKind": {
       "const": "directive_engine_run_record"
@@ -226,6 +226,7 @@
                     "low_confidence",
                     "mission_weakness",
                     "stalled_thread",
+                    "narrative_action",
                     "gap_pressure"
                   ]
                 },
@@ -240,14 +241,15 @@
                 "required": ["kind", "summary"],
                 "properties": {
                   "kind": {
-                    "enum": [
-                      "conflict",
-                      "low_confidence",
-                      "mission_weakness",
-                      "stalled_thread",
-                      "gap_pressure"
-                    ]
-                  },
+                  "enum": [
+                    "conflict",
+                    "low_confidence",
+                    "mission_weakness",
+                    "stalled_thread",
+                    "narrative_action",
+                    "gap_pressure"
+                  ]
+                },
                   "summary": { "type": "string", "minLength": 1 }
                 }
               }
@@ -766,6 +768,37 @@
         "excludedBaggage": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "structuredExtractionPlan": {
+      "type": "object",
+      "required": ["extractedValue", "excludedBaggage", "completionRate"],
+      "properties": {
+        "extractedValue": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "status", "completedAt"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+              "completedAt": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "excludedBaggage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "status", "completedAt"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+              "completedAt": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "completionRate": { "type": "number" }
+      }
+    },
     "adaptationPlan": {
       "type": "object",
       "required": ["directiveOwnedForm", "adaptedValue"],
@@ -774,12 +807,68 @@
         "adaptedValue": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "structuredAdaptationPlan": {
+      "type": "object",
+      "required": ["directiveOwnedForm", "adaptedValue", "completionRate"],
+      "properties": {
+        "directiveOwnedForm": {
+          "type": "object",
+          "required": ["value", "status", "completedAt"],
+          "properties": {
+            "value": { "type": "string", "minLength": 1 },
+            "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+            "completedAt": { "type": ["string", "null"] }
+          }
+        },
+        "adaptedValue": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "status", "completedAt"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+              "completedAt": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "completionRate": { "type": "number" }
+      }
+    },
     "improvementPlan": {
       "type": "object",
       "required": ["improvementGoals", "intendedDelta"],
       "properties": {
         "improvementGoals": { "type": "array", "items": { "type": "string" } },
         "intendedDelta": { "type": "string", "minLength": 1 }
+      }
+    },
+    "structuredImprovementPlan": {
+      "type": "object",
+      "required": ["improvementGoals", "intendedDelta", "completionRate"],
+      "properties": {
+        "improvementGoals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "status", "completedAt"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+              "completedAt": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "intendedDelta": {
+          "type": "object",
+          "required": ["value", "status", "completedAt"],
+          "properties": {
+            "value": { "type": "string", "minLength": 1 },
+            "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+            "completedAt": { "type": ["string", "null"] }
+          }
+        },
+        "completionRate": { "type": "number" }
       }
     },
     "proofPlan": {
@@ -791,6 +880,115 @@
         "requiredEvidence": { "type": "array", "items": { "type": "string" } },
         "requiredGates": { "type": "array", "items": { "type": "string" } },
         "rollbackPrompt": { "type": "string", "minLength": 1 }
+      }
+    },
+    "structuredProofPlan": {
+      "type": "object",
+      "required": [
+        "proofKind",
+        "objective",
+        "requiredEvidence",
+        "requiredGates",
+        "rollbackPrompt",
+        "completionRate"
+      ],
+      "properties": {
+        "proofKind": { "type": "string", "minLength": 1 },
+        "objective": {
+          "type": "object",
+          "required": ["value", "status", "completedAt"],
+          "properties": {
+            "value": { "type": "string", "minLength": 1 },
+            "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+            "completedAt": { "type": ["string", "null"] }
+          }
+        },
+        "requiredEvidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "status", "completedAt"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+              "completedAt": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "requiredGates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "status", "completedAt"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+              "completedAt": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "rollbackPrompt": {
+          "type": "object",
+          "required": ["value", "status", "completedAt"],
+          "properties": {
+            "value": { "type": "string", "minLength": 1 },
+            "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+            "completedAt": { "type": ["string", "null"] }
+          }
+        },
+        "completionRate": { "type": "number" }
+      }
+    },
+    "planQualitySignal": {
+      "type": ["object", "null"],
+      "required": [
+        "extractionRelevance",
+        "adaptationFollowThrough",
+        "improvementGoalProgress",
+        "proofGateCompletion",
+        "overallPlanQuality",
+        "rationale"
+      ],
+      "properties": {
+        "extractionRelevance": { "enum": ["high", "medium", "low", "unknown"] },
+        "adaptationFollowThrough": { "enum": ["completed", "partial", "none", "unknown"] },
+        "improvementGoalProgress": { "type": "number" },
+        "proofGateCompletion": { "type": "number" },
+        "overallPlanQuality": { "enum": ["strong", "adequate", "weak", "unknown"] },
+        "rationale": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "narrativeActions": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": [
+          "actionKind",
+          "threadId",
+          "threadName",
+          "priority",
+          "summary",
+          "suggestedNextStep",
+          "targetLaneId",
+          "relatedGapId"
+        ],
+        "properties": {
+          "actionKind": {
+            "enum": [
+              "re_engagement_prompt",
+              "gap_creation_request",
+              "proof_follow_up_request",
+              "lane_validation_request"
+            ]
+          },
+          "threadId": { "type": "string", "minLength": 1 },
+          "threadName": { "type": "string", "minLength": 1 },
+          "priority": { "enum": ["low", "medium", "high"] },
+          "summary": { "type": "string", "minLength": 1 },
+          "suggestedNextStep": { "type": "string", "minLength": 1 },
+          "targetLaneId": { "type": ["string", "null"] },
+          "relatedGapId": { "type": ["string", "null"] }
+        }
       }
     },
     "decision": {

@@ -17,9 +17,12 @@ export const DIRECTIVE_ENGINE_INTEGRATION_MODES = [
 ] as const;
 
 export const DIRECTIVE_ENGINE_RUN_RECORD_KIND = "directive_engine_run_record" as const;
-export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 7 as const;
+export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 8 as const;
 export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF =
   "shared/schemas/directive-engine-run-record.schema.json" as const;
+export type DirectiveEngineRunRecordSchemaVersion =
+  | 7
+  | typeof DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION;
 
 export type DirectiveEngineSourceType =
   (typeof DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES)[number];
@@ -36,6 +39,7 @@ export type DirectiveRoutingDigestConcernKind =
   | "low_confidence"
   | "mission_weakness"
   | "stalled_thread"
+  | "narrative_action"
   | "gap_pressure"
   | "none";
 
@@ -338,14 +342,92 @@ export type DirectiveEngineExtractionPlan = {
   excludedBaggage: string[];
 };
 
+export type DirectiveEnginePlanItemStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "skipped";
+
+export type DirectiveEnginePlanItem = {
+  value: string;
+  status: DirectiveEnginePlanItemStatus;
+  completedAt: string | null;
+};
+
+export type DirectiveEnginePlanProgressUpdate =
+  | {
+      plan: "extraction";
+      itemType: "extractedValue" | "excludedBaggage";
+      index: number;
+      status: DirectiveEnginePlanItemStatus;
+      completedAt?: string | null;
+    }
+  | {
+      plan: "adaptation";
+      itemType: "directiveOwnedForm";
+      status: DirectiveEnginePlanItemStatus;
+      completedAt?: string | null;
+    }
+  | {
+      plan: "adaptation";
+      itemType: "adaptedValue";
+      index: number;
+      status: DirectiveEnginePlanItemStatus;
+      completedAt?: string | null;
+    }
+  | {
+      plan: "improvement";
+      itemType: "intendedDelta";
+      status: DirectiveEnginePlanItemStatus;
+      completedAt?: string | null;
+    }
+  | {
+      plan: "improvement";
+      itemType: "improvementGoals";
+      index: number;
+      status: DirectiveEnginePlanItemStatus;
+      completedAt?: string | null;
+    }
+  | {
+      plan: "proof";
+      itemType: "objective" | "rollbackPrompt";
+      status: DirectiveEnginePlanItemStatus;
+      completedAt?: string | null;
+    }
+  | {
+      plan: "proof";
+      itemType: "requiredEvidence" | "requiredGates";
+      index: number;
+      status: DirectiveEnginePlanItemStatus;
+      completedAt?: string | null;
+    };
+
+export type DirectiveEngineStructuredExtractionPlan = {
+  extractedValue: DirectiveEnginePlanItem[];
+  excludedBaggage: DirectiveEnginePlanItem[];
+  completionRate: number;
+};
+
 export type DirectiveEngineAdaptationPlan = {
   directiveOwnedForm: string;
   adaptedValue: string[];
 };
 
+export type DirectiveEngineStructuredAdaptationPlan = {
+  directiveOwnedForm: DirectiveEnginePlanItem;
+  adaptedValue: DirectiveEnginePlanItem[];
+  completionRate: number;
+};
+
 export type DirectiveEngineImprovementPlan = {
   improvementGoals: string[];
   intendedDelta: string;
+};
+
+export type DirectiveEngineStructuredImprovementPlan = {
+  improvementGoals: DirectiveEnginePlanItem[];
+  intendedDelta: DirectiveEnginePlanItem;
+  completionRate: number;
 };
 
 export type DirectiveEngineProofPlan = {
@@ -354,6 +436,15 @@ export type DirectiveEngineProofPlan = {
   requiredEvidence: string[];
   requiredGates: string[];
   rollbackPrompt: string;
+};
+
+export type DirectiveEngineStructuredProofPlan = {
+  proofKind: string;
+  objective: DirectiveEnginePlanItem;
+  requiredEvidence: DirectiveEnginePlanItem[];
+  requiredGates: DirectiveEnginePlanItem[];
+  rollbackPrompt: DirectiveEnginePlanItem;
+  completionRate: number;
 };
 
 export type DirectiveEngineDecisionState =
@@ -398,7 +489,7 @@ export type DirectiveEngineEvent = {
 
 export type DirectiveEngineRunRecord = {
   $schema: typeof DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF;
-  schemaVersion: typeof DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION;
+  schemaVersion: DirectiveEngineRunRecordSchemaVersion;
   recordKind: typeof DIRECTIVE_ENGINE_RUN_RECORD_KIND;
   runId: string;
   receivedAt: string;
@@ -410,9 +501,15 @@ export type DirectiveEngineRunRecord = {
   analysis: DirectiveEngineAnalysis;
   routingAssessment: DirectiveEngineRoutingAssessment;
   extractionPlan: DirectiveEngineExtractionPlan;
+  structuredExtractionPlan?: DirectiveEngineStructuredExtractionPlan;
   adaptationPlan: DirectiveEngineAdaptationPlan;
+  structuredAdaptationPlan?: DirectiveEngineStructuredAdaptationPlan;
   improvementPlan: DirectiveEngineImprovementPlan;
+  structuredImprovementPlan?: DirectiveEngineStructuredImprovementPlan;
   proofPlan: DirectiveEngineProofPlan;
+  structuredProofPlan?: DirectiveEngineStructuredProofPlan;
+  planQualitySignal?: import("./plan-quality.ts").DirectiveEnginePlanQualitySignal | null;
+  narrativeActions?: import("./source-narrative-threading.ts").DirectiveNarrativeAction[] | null;
   priorPlanContext: import("./plan-consumption.ts").DirectivePriorPlanContext;
   decision: DirectiveEngineDecision;
   integrationProposal: DirectiveEngineIntegrationProposal;
@@ -468,4 +565,20 @@ export type DirectiveEngineProcessSourceResult = {
   deduplicated?: boolean;
   duplicateOfRunId?: string | null;
   duplicateReason?: string | null;
+};
+
+export type DirectiveEngineMissionPreviewChange = {
+  objective?: string | null;
+  usefulnessSignals?: string[] | null;
+  capabilityLanes?: string[] | null;
+  constraints?: string[] | null;
+  successSignal?: string | null;
+  adoptionTarget?: string | null;
+};
+
+export type DirectiveEngineRoutingDigestPreview = {
+  before: DirectiveRoutingDigest;
+  after: DirectiveRoutingDigest;
+  diff: string[];
+  assessment: DirectiveEngineRoutingAssessment;
 };

@@ -1,5 +1,11 @@
 import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
 import { deriveDirectiveEngineRouteClass } from "./earned-autonomy.ts";
+import {
+  flattenSourceText,
+  countTokenOverlap,
+  isSuccessfulRun,
+  isStalledRun,
+} from "./engine-source-utils.ts";
 import type {
   DirectiveEngineLaneId,
   DirectiveEngineRunRecord,
@@ -27,23 +33,6 @@ export type DirectivePriorPlanContext = {
   relatedRunIds: string[];
 } | null;
 
-function flattenSource(source: DirectiveEngineSourceItem) {
-  return [
-    source.title,
-    source.summary ?? "",
-    source.sourceRef,
-    source.missionAlignmentHint ?? "",
-    ...(source.notes ?? []),
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function overlapCount(left: string[], right: string[]) {
-  const rightSet = new Set(right);
-  return left.reduce((count, token) => count + (rightSet.has(token) ? 1 : 0), 0);
-}
-
 function countBy<T extends string>(values: T[]) {
   const counts = new Map<T, number>();
   for (const value of values) {
@@ -52,22 +41,12 @@ function countBy<T extends string>(values: T[]) {
   return counts;
 }
 
-function isSuccessful(run: DirectiveEngineRunRecord) {
-  return run.decision.requiresHumanApproval === false
-    && run.decision.decisionState !== "hold_in_discovery";
-}
-
-function isStalled(run: DirectiveEngineRunRecord) {
-  return run.decision.requiresHumanApproval === true
-    || run.decision.decisionState === "hold_in_discovery";
-}
-
 export function deriveDirectivePriorPlanContext(input: {
   source: DirectiveEngineSourceItem;
   recommendedLaneId: DirectiveEngineLaneId;
   existingRuns: DirectiveEngineRunRecord[];
 }) {
-  const sourceTokens = extractSourceSignalTokens(flattenSource(input.source));
+  const sourceTokens = extractSourceSignalTokens(flattenSourceText(input.source));
   const routeClass = deriveDirectiveEngineRouteClass({
     recommendedLaneId: input.recommendedLaneId,
     source: input.source,
@@ -81,9 +60,9 @@ export function deriveDirectivePriorPlanContext(input: {
       }) === routeClass
     )
     .filter((run) =>
-      overlapCount(
+      countTokenOverlap(
         sourceTokens,
-        extractSourceSignalTokens(flattenSource(run.source)),
+        extractSourceSignalTokens(flattenSourceText(run.source)),
       ) >= 2
     )
     .slice(-8);
@@ -92,8 +71,8 @@ export function deriveDirectivePriorPlanContext(input: {
     return null;
   }
 
-  const successfulFollowThroughCount = matchingRuns.filter(isSuccessful).length;
-  const stalledRunCount = matchingRuns.filter(isStalled).length;
+  const successfulFollowThroughCount = matchingRuns.filter(isSuccessfulRun).length;
+  const stalledRunCount = matchingRuns.filter(isStalledRun).length;
   const recurringImprovementGoals = [...countBy(
     matchingRuns.flatMap((run) => run.improvementPlan.improvementGoals),
   ).entries()]
@@ -106,8 +85,8 @@ export function deriveDirectivePriorPlanContext(input: {
   ).entries()]
     .map(([proofKind, count]) => {
       const proofRuns = matchingRuns.filter((run) => run.proofPlan.proofKind === proofKind);
-      const successfulCount = proofRuns.filter(isSuccessful).length;
-      const stalledCount = proofRuns.filter(isStalled).length;
+      const successfulCount = proofRuns.filter(isSuccessfulRun).length;
+      const stalledCount = proofRuns.filter(isStalledRun).length;
       return {
         proofKind,
         count,
@@ -132,8 +111,8 @@ export function deriveDirectivePriorPlanContext(input: {
       return {
         directiveOwnedForm,
         count,
-        successfulCount: adaptationRuns.filter(isSuccessful).length,
-        stalledCount: adaptationRuns.filter(isStalled).length,
+        successfulCount: adaptationRuns.filter(isSuccessfulRun).length,
+        stalledCount: adaptationRuns.filter(isStalledRun).length,
       };
     })
     .sort((left, right) => right.count - left.count)

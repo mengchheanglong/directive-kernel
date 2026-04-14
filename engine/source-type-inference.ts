@@ -1,8 +1,5 @@
 import type { DirectiveEngineSourceType } from "./types.ts";
-
-function normalizeText(value: unknown) {
-  return String(value ?? "").trim();
-}
+import { normalizeText } from "./engine-source-utils.ts";
 
 function normalizeUrl(value: string) {
   try {

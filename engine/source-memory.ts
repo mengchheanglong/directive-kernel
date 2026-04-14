@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
 import { deriveDirectiveEngineRouteClass } from "./earned-autonomy.ts";
+import { flattenSourceText } from "./engine-source-utils.ts";
 import type {
   DirectiveEngineLaneId,
   DirectiveEngineRunRecord,
@@ -65,19 +66,6 @@ function zeroLaneCounts(): DirectiveSourceMemoryLaneCounts {
 
 function normalizeAbsolute(filePath: string) {
   return path.resolve(filePath).replace(/\\/g, "/");
-}
-
-function flattenSource(source: DirectiveEngineSourceItem) {
-  return [
-    source.title,
-    source.summary ?? "",
-    source.sourceRef,
-    source.missionAlignmentHint ?? "",
-    source.primaryAdoptionTarget ?? "",
-    ...(source.notes ?? []),
-  ]
-    .filter(Boolean)
-    .join(" ");
 }
 
 function daysAgo(now: Date, days: number) {
@@ -146,7 +134,7 @@ export function createDirectiveSourceMemorySnapshot(input: {
     }
     routeClassMap.set(routeClass, routeTrend);
 
-    const tokens = extractSourceSignalTokens(flattenSource(run.source)).slice(0, 12);
+    const tokens = extractSourceSignalTokens(flattenSourceText(run.source)).slice(0, 12);
     for (const token of tokens) {
       const entry = topicMap.get(token) ?? {
         token,

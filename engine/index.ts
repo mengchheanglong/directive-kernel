@@ -1,4 +1,5 @@
 export * from "./types.ts";
+export * from "./engine-source-utils.ts";
 export * from "./lane.ts";
 export * from "./directive-workspace-lanes.ts";
 export * from "./storage.ts";
@@ -22,5 +23,7 @@ export * from "./source-narrative-threading.ts";
 export * from "./mission-health.ts";
 export * from "./follow-up-questions.ts";
 export * from "./routing-digest.ts";
+export * from "./routing-diff.ts";
 export * from "./plan-consumption.ts";
+export * from "./plan-quality.ts";
 export { assessDirectiveEngineRouting } from "./routing.ts";

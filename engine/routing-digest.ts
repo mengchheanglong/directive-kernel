@@ -101,6 +101,9 @@ function buildConcernSummary(
         ? `Thread "${primaryThread.name}" is ${primaryThread.state} and still missing follow-through.`
         : "A related source thread has stalled and needs a missing piece.";
     }
+    case "narrative_action":
+      return assessment.narrativeContext?.demandSignals[0]?.summary
+        ?? "A related thread is asking for a specific next move.";
     case "gap_pressure":
       return assessment.gapRadar?.suggestions[0]?.summary
         ?? "Repeated signals are pointing at a missing or stale capability gap.";
@@ -125,6 +128,9 @@ function buildConcernAction(
     case "stalled_thread":
       return assessment.narrativeContext?.primaryThread?.demandSignals[0]?.summary
         ?? deriveFollowUpSuggestedAction(assessment);
+    case "narrative_action":
+      return assessment.narrativeContext?.demandSignals[0]?.summary
+        ?? "Follow the highest-priority thread demand signal before routing more similar sources.";
     case "gap_pressure":
       return assessment.gapRadar?.suggestions[0]?.recommendedChange
         ?? "Record a new capability gap if this pressure is recurring.";
@@ -161,6 +167,10 @@ function collectConcernKinds(
   }
   if (assessment.narrativeContext?.primaryThread?.state === "stalled") {
     concernKinds.push("stalled_thread");
+  } else if (
+    assessment.narrativeContext?.demandSignals.some((signal) => signal.priority === "high")
+  ) {
+    concernKinds.push("narrative_action");
   }
   if (
     assessment.matchedGapId === null
@@ -179,7 +189,8 @@ function rankConcernKinds(
     low_confidence: 1,
     mission_weakness: 2,
     stalled_thread: 3,
-    gap_pressure: 4,
+    narrative_action: 4,
+    gap_pressure: 5,
   };
   return [...concernKinds].sort((left, right) => order[left] - order[right]);
 }

@@ -1,4 +1,5 @@
 import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
+import { flattenSourceText, findSharedTokens } from "./engine-source-utils.ts";
 import type {
   DirectiveEngineLaneId,
   DirectiveEngineRunRecord,
@@ -22,23 +23,6 @@ export type DirectiveSourceSimilarityAssessment = {
   relatedSources: DirectiveSourceSimilarityMatch[];
 } | null;
 
-function flattenSource(source: DirectiveEngineSourceItem) {
-  return [
-    source.title,
-    source.summary ?? "",
-    source.sourceRef,
-    source.missionAlignmentHint ?? "",
-    ...(source.notes ?? []),
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function findSharedTokens(left: string[], right: string[]) {
-  const rightSet = new Set(right);
-  return left.filter((token) => rightSet.has(token));
-}
-
 export function deriveDirectiveSourceSimilarityAssessment(input: {
   source: DirectiveEngineSourceItem;
   sourceText: string;
@@ -48,7 +32,7 @@ export function deriveDirectiveSourceSimilarityAssessment(input: {
   const sourceTokens = extractSourceSignalTokens(input.sourceText);
   const relatedSources = input.existingRuns
     .map((run) => {
-      const runTokens = extractSourceSignalTokens(flattenSource(run.source));
+      const runTokens = extractSourceSignalTokens(flattenSourceText(run.source));
       const sharedTokens = findSharedTokens(sourceTokens, runTokens);
       const unionSize = new Set([...sourceTokens, ...runTokens]).size || 1;
       const similarityScore = Math.round((sharedTokens.length / unionSize) * 100);

@@ -2,6 +2,7 @@ import type {
   DirectiveEngineMissionContext,
   DirectiveEngineRunRecord,
 } from "./types.ts";
+import { clampInt, uniqueStrings } from "./engine-source-utils.ts";
 import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
 
 export type DirectiveMissionHealthAssessment = {
@@ -42,10 +43,6 @@ const GENERIC_TOKENS = new Set([
   "workspace",
 ]);
 
-function clampInt(value: number, minimum: number, maximum: number) {
-  return Math.max(minimum, Math.min(maximum, Math.round(value)));
-}
-
 function specificTokenCount(value: string) {
   return extractSourceSignalTokens(value)
     .filter((token) => !GENERIC_TOKENS.has(token))
@@ -58,16 +55,6 @@ function grade(score: number) {
   if (score >= 55) return "C";
   if (score >= 40) return "D";
   return "F";
-}
-
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => String(value ?? "").trim())
-        .filter(Boolean),
-    ),
-  );
 }
 
 function buildSuggestedObjectiveRewrite(mission: DirectiveEngineMissionContext) {
