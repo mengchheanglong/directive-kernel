@@ -45,6 +45,8 @@ export function deriveDirectivePriorPlanContext(input: {
   source: DirectiveEngineSourceItem;
   recommendedLaneId: DirectiveEngineLaneId;
   existingRuns: DirectiveEngineRunRecord[];
+  /** Pre-computed source signal tokens keyed by runId, avoids redundant tokenization. */
+  precomputedSourceTokens?: Map<string, string[]> | null;
 }) {
   const sourceTokens = extractSourceSignalTokens(flattenSourceText(input.source));
   const routeClass = deriveDirectiveEngineRouteClass({
@@ -62,7 +64,8 @@ export function deriveDirectivePriorPlanContext(input: {
     .filter((run) =>
       countTokenOverlap(
         sourceTokens,
-        extractSourceSignalTokens(flattenSourceText(run.source)),
+        input.precomputedSourceTokens?.get(run.runId)
+          ?? extractSourceSignalTokens(flattenSourceText(run.source)),
       ) >= 2
     )
     .slice(-8);

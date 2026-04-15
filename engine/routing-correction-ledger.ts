@@ -20,9 +20,32 @@ export type RoutingCorrectionLedger = {
 };
 
 const LEDGER_RELATIVE_PATH = "engine/routing-corrections.json";
+const SOURCE_SIGNAL_TOKEN_CACHE_LIMIT = 512;
+
+const sourceSignalTokenCache = new Map<string, string[]>();
+const sourceSignalTokenCacheStats = {
+  hits: 0,
+  misses: 0,
+  evictions: 0,
+};
 
 function defaultLedger(): RoutingCorrectionLedger {
   return { schemaVersion: 1, corrections: [] };
+}
+
+function rememberSourceSignalTokens(sourceText: string, tokens: string[]) {
+  if (sourceSignalTokenCache.has(sourceText)) {
+    sourceSignalTokenCache.delete(sourceText);
+  }
+  sourceSignalTokenCache.set(sourceText, tokens);
+  if (sourceSignalTokenCache.size <= SOURCE_SIGNAL_TOKEN_CACHE_LIMIT) {
+    return;
+  }
+  const oldestKey = sourceSignalTokenCache.keys().next().value;
+  if (oldestKey) {
+    sourceSignalTokenCache.delete(oldestKey);
+    sourceSignalTokenCacheStats.evictions += 1;
+  }
 }
 
 export function resolveRoutingCorrectionLedgerPath(directiveRoot: string) {
@@ -61,6 +84,27 @@ export function appendRoutingCorrection(input: {
   const ledgerPath = resolveRoutingCorrectionLedgerPath(input.directiveRoot);
   fs.mkdirSync(path.dirname(ledgerPath), { recursive: true });
   fs.writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`, "utf8");
+}
+
+export function readSourceSignalTokenCacheStats() {
+  return {
+    hits: sourceSignalTokenCacheStats.hits,
+    misses: sourceSignalTokenCacheStats.misses,
+    evictions: sourceSignalTokenCacheStats.evictions,
+    size: sourceSignalTokenCache.size,
+    limit: SOURCE_SIGNAL_TOKEN_CACHE_LIMIT,
+  };
+}
+
+export function resetSourceSignalTokenCache(input?: {
+  clearCache?: boolean;
+}) {
+  sourceSignalTokenCacheStats.hits = 0;
+  sourceSignalTokenCacheStats.misses = 0;
+  sourceSignalTokenCacheStats.evictions = 0;
+  if (input?.clearCache) {
+    sourceSignalTokenCache.clear();
+  }
 }
 
 /**
@@ -111,7 +155,16 @@ export function deriveRoutingCorrectionAdjustments(input: {
  * text to find similar sources.
  */
 export function extractSourceSignalTokens(sourceText: string): string[] {
-  return Array.from(
+  const cached = sourceSignalTokenCache.get(sourceText);
+  if (cached) {
+    sourceSignalTokenCacheStats.hits += 1;
+    sourceSignalTokenCache.delete(sourceText);
+    sourceSignalTokenCache.set(sourceText, cached);
+    return cached.slice();
+  }
+
+  sourceSignalTokenCacheStats.misses += 1;
+  const tokens = Array.from(
     new Set(
       sourceText
         .toLowerCase()
@@ -121,4 +174,6 @@ export function extractSourceSignalTokens(sourceText: string): string[] {
         .filter((token) => token.length >= 4),
     ),
   ).slice(0, 40);
+  rememberSourceSignalTokens(sourceText, tokens);
+  return tokens.slice();
 }

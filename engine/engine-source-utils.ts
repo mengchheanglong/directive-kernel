@@ -2,6 +2,7 @@ import type {
   DirectiveEngineRunRecord,
   DirectiveEngineSourceItem,
 } from "./types.ts";
+import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
 
 export function normalizeText(value: unknown) {
   return String(value ?? "").trim();
@@ -33,11 +34,25 @@ export function flattenSourceText(source: DirectiveEngineSourceItem) {
     .join(" ");
 }
 
+export function buildDirectiveRunSourceTokenMap(runs: DirectiveEngineRunRecord[]) {
+  const tokensByRunId = new Map<string, string[]>();
+  for (const run of runs) {
+    tokensByRunId.set(
+      run.runId,
+      extractSourceSignalTokens(flattenSourceText(run.source)),
+    );
+  }
+  return tokensByRunId;
+}
+
 export function countTokenOverlap(left: string[], right: Iterable<string>) {
-  const rightSet = new Set(right);
+  const rightLookup =
+    right instanceof Set || right instanceof Map
+      ? right
+      : new Set(right);
   let count = 0;
   for (const token of left) {
-    if (rightSet.has(token)) {
+    if (rightLookup.has(token)) {
       count += 1;
     }
   }

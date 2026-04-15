@@ -19,8 +19,12 @@ import { createDirectiveSourceMemorySnapshot, deriveDirectiveSourceMemoryAssessm
 import { deriveDirectiveSourceSimilarityAssessment } from "./source-similarity.ts";
 import { deriveDirectiveMissionHealth } from "./mission-health.ts";
 import { deriveDirectiveFollowUpQuestionSet } from "./follow-up-questions.ts";
-import { deriveDirectiveSourceNarrativeContext } from "./source-narrative-threading.ts";
+import {
+  buildDirectiveSourceNarrativeThreads,
+  deriveDirectiveSourceNarrativeContext,
+} from "./source-narrative-threading.ts";
 import { deriveRoutingDigest } from "./routing-digest.ts";
+import { buildDirectiveRunSourceTokenMap } from "./engine-source-utils.ts";
 
 /**
  * Weighted keyword lists.  Each entry is [keyword, weight].
@@ -1405,6 +1409,9 @@ export function assessDirectiveEngineRouting(input: {
   existingRuns?: DirectiveEngineRunRecord[];
   receivedAt?: string | null;
 }): DirectiveEngineRoutingAssessment {
+  const existingRuns = [...(input.existingRuns ?? [])];
+  const policyEvents = [...(input.policyEvents ?? [])];
+  const corrections = [...(input.corrections ?? [])];
   const sourceText = flattenSourceText(input.source);
   const {
     gap: matchedGap,
@@ -1427,7 +1434,7 @@ export function assessDirectiveEngineRouting(input: {
   const goalCopilot = deriveGoalCopilotAssessment(input.mission);
   const missionHealth = deriveDirectiveMissionHealth({
     mission: input.mission,
-    existingRuns: [...(input.existingRuns ?? [])],
+    existingRuns,
   });
   const gapAlignment = matchedGap ? priorityWeight(matchedGap.priority) + 1 : 0;
   const {
@@ -1447,10 +1454,10 @@ export function assessDirectiveEngineRouting(input: {
     sourceText,
     matchedGap,
   });
-  const correctionAdjustments = input.corrections?.length
+  const correctionAdjustments = corrections.length
     ? deriveRoutingCorrectionAdjustments({
       sourceText,
-      corrections: input.corrections,
+      corrections,
     })
     : {};
   for (const [laneId, adjustment] of Object.entries(correctionAdjustments)) {
@@ -1461,8 +1468,14 @@ export function assessDirectiveEngineRouting(input: {
       );
     }
   }
+  const precomputedSourceTokens = buildDirectiveRunSourceTokenMap(existingRuns);
   const sourceMemorySnapshot = createDirectiveSourceMemorySnapshot({
-    runs: [...(input.existingRuns ?? [])],
+    runs: existingRuns,
+    precomputedSourceTokens,
+  });
+  const narrativeThreadBuild = buildDirectiveSourceNarrativeThreads({
+    runs: existingRuns,
+    mission: input.mission,
   });
   const provisionalLaneId = deriveRecommendedLane(laneScores);
   const sourceMemoryPreAssessment = deriveDirectiveSourceMemoryAssessment({
@@ -1482,7 +1495,8 @@ export function assessDirectiveEngineRouting(input: {
     source: input.source,
     sourceText,
     mission: input.mission,
-    existingRuns: [...(input.existingRuns ?? [])],
+    existingRuns,
+    prebuiltThreads: narrativeThreadBuild,
     provisionalLaneId,
     currentMatchedGapId: matchedGap?.gapId ?? input.source.capabilityGapId ?? null,
     receivedAt: input.receivedAt,
@@ -1545,12 +1559,14 @@ export function assessDirectiveEngineRouting(input: {
   })
     ? "discovery"
     : scoreWinnerLaneId;
-  const sourceMemory = deriveDirectiveSourceMemoryAssessment({
-    snapshot: sourceMemorySnapshot,
-    sourceText,
-    recommendedLaneId,
-    source: input.source,
-  });
+  const sourceMemory = recommendedLaneId === provisionalLaneId
+    ? sourceMemoryPreAssessment
+    : deriveDirectiveSourceMemoryAssessment({
+      snapshot: sourceMemorySnapshot,
+      sourceText,
+      recommendedLaneId,
+      source: input.source,
+    });
   const secondaryLanes = rankedLaneScores
     .filter(([laneId]) => laneId !== recommendedLaneId)
     .map(([laneId]) => ({
@@ -1589,7 +1605,7 @@ export function assessDirectiveEngineRouting(input: {
     (matchedGap === null && !noGapHighConfidenceBoundedRoute && recommendedRecordShape === "fast_path") ||
     (recommendedRecordShape === "queue_only" && recommendedLaneId !== "discovery");
   const gapRadarSuggestions = compileDirectiveGapRadarSuggestions({
-    events: [...(input.policyEvents ?? [])],
+    events: policyEvents,
     openGaps: input.openGaps,
   });
   const gapRadar = deriveDirectiveGapRadarAssessment({
@@ -1605,23 +1621,25 @@ export function assessDirectiveEngineRouting(input: {
     confidence,
     routeConflict,
     baseNeedsHumanReview,
-    existingRuns: [...(input.existingRuns ?? [])],
-    policyEvents: [...(input.policyEvents ?? [])],
-    corrections: [...(input.corrections ?? [])],
+    existingRuns,
+    policyEvents,
+    corrections,
   });
   const needsHumanReview =
     baseNeedsHumanReview && !earnedAutonomy.approvalReductionApplied;
   const sourceSimilarity = deriveDirectiveSourceSimilarityAssessment({
     source: input.source,
     sourceText,
-    existingRuns: [...(input.existingRuns ?? [])],
+    existingRuns,
     recommendedLaneId,
+    precomputedSourceTokens,
   });
   const narrativeContext = deriveDirectiveSourceNarrativeContext({
     source: input.source,
     sourceText,
     mission: input.mission,
-    existingRuns: [...(input.existingRuns ?? [])],
+    existingRuns,
+    prebuiltThreads: narrativeThreadBuild,
     provisionalLaneId: recommendedLaneId,
     currentMatchedGapId: matchedGap?.gapId ?? input.source.capabilityGapId ?? null,
     receivedAt: input.receivedAt,

@@ -7,25 +7,44 @@ import path from "node:path";
 
 import {
   DirectiveEngine,
+  createFilesystemDirectiveEngineStore,
   createDirectiveWorkspaceEngineLanes,
   createMemoryDirectiveEngineStore,
   assessDirectiveEngineRouting,
   createDefaultDirectiveMission,
   inferDirectiveEngineSourceType,
+  buildDirectiveRunSourceTokenMap,
+  buildDirectiveSourceNarrativeThreads,
+  createDirectiveSourceMemorySnapshot,
+  deriveDirectiveSourceNarrativeContext,
+  deriveDirectiveSourceSimilarityAssessment,
   deriveDirectiveRoutingOutcomes,
   deriveDirectiveRoutingQualityAssessment,
+  deriveDirectivePriorPlanContext,
   appendDecisionPolicyEvent,
   compileDecisionPolicySuggestions,
   readRoutingCorrectionLedger,
   readDecisionPolicyLedger,
   appendRoutingCorrection,
   extractSourceSignalTokens,
+  flattenSourceText,
   deriveRoutingCorrectionAdjustments,
+  countTokenOverlap,
+  resolveDirectiveEngineStoreRecordPath,
   type DirectiveEngineCapabilityGap,
   type DirectiveEngineMissionInput,
   type DirectiveEngineProcessSourceInput,
+  type DirectiveEngineRunRecord,
   type RoutingCorrectionEntry,
 } from "../engine/index.ts";
+import {
+  readDirectiveEngineProcessFingerprintCacheStats,
+  resetDirectiveEngineProcessFingerprintCache,
+} from "../engine/directive-engine.ts";
+import {
+  readSourceSignalTokenCacheStats,
+  resetSourceSignalTokenCache,
+} from "../engine/routing-correction-ledger.ts";
 import { appendDiscoveryIntakeQueueEntry } from "../discovery/lib/discovery-intake-queue-writer.ts";
 import { writeDiscoveryRoutingReviewResolution } from "../discovery/lib/discovery-routing-review-resolution.ts";
 import { startDirectiveFrontendServer } from "../hosts/web-host/server.ts";
@@ -316,6 +335,50 @@ async function runDirectiveEngineHardeningChecks() {
   const second = await engine.processSource(buildArchitectureSourceInput());
   assert.equal(second.deduplicated, true);
   assert.equal(second.duplicateOfRunId, first.record.runId);
+  resetDirectiveEngineProcessFingerprintCache({ clearCache: true });
+  const duplicateMiss = await engine.processSource({
+    ...buildArchitectureSourceInput(),
+    source: {
+      ...buildArchitectureSourceInput().source,
+      sourceRef: "https://example.com/duplicate-fingerprint-cache",
+      title: "Duplicate fingerprint cache source",
+    },
+  });
+  assert.notEqual(
+    duplicateMiss.deduplicated,
+    true,
+    "The first unique source should persist normally before later duplicate checks can hit the fingerprint cache",
+  );
+  const duplicateMissStats = readDirectiveEngineProcessFingerprintCacheStats();
+  assert.ok(
+    duplicateMissStats.misses > 0,
+    "The first fingerprint comparison over existing records should populate the fingerprint cache",
+  );
+  const duplicateHit = await engine.processSource({
+    ...buildArchitectureSourceInput(),
+    source: {
+      ...buildArchitectureSourceInput().source,
+      sourceRef: "https://example.com/duplicate-fingerprint-cache",
+      title: "Duplicate fingerprint cache source",
+    },
+  });
+  assert.equal(duplicateHit.deduplicated, true);
+  assert.equal(duplicateHit.duplicateOfRunId, duplicateMiss.record.runId);
+  const duplicateWarm = await engine.processSource({
+    ...buildArchitectureSourceInput(),
+    source: {
+      ...buildArchitectureSourceInput().source,
+      sourceRef: "https://example.com/duplicate-fingerprint-cache",
+      title: "Duplicate fingerprint cache source",
+    },
+  });
+  assert.equal(duplicateWarm.deduplicated, true);
+  assert.equal(duplicateWarm.duplicateOfRunId, duplicateMiss.record.runId);
+  const duplicateHitStats = readDirectiveEngineProcessFingerprintCacheStats();
+  assert.ok(
+    duplicateHitStats.hits > 0,
+    "Repeated duplicate detection should reuse cached historical record fingerprints once the matching record has been fingerprinted",
+  );
 
   const rerouteSeed = await engine.processSource({
     receivedAt: "2026-04-10T02:00:00.000Z",
@@ -416,8 +479,114 @@ async function runDirectiveEngineHardeningChecks() {
   );
 }
 
+async function runFilesystemStoreCachingChecks() {
+  const engineRunsRoot = path.resolve(
+    os.tmpdir(),
+    `directive-kernel-storage-cache-${Date.now()}`,
+    "engine-runs",
+  );
+  const writerStore = createFilesystemDirectiveEngineStore({ engineRunsRoot });
+  const writerEngine = new DirectiveEngine({
+    laneSet: createDirectiveWorkspaceEngineLanes(),
+    store: writerStore,
+  });
+
+  const first = await writerEngine.processSource(buildArchitectureSourceInput());
+  const second = await writerEngine.processSource({
+    ...buildArchitectureSourceInput(),
+    receivedAt: "2026-04-10T00:01:00.000Z",
+    source: {
+      ...buildArchitectureSourceInput().source,
+      sourceId: "architecture-storage-cache-second",
+      sourceRef: "https://example.com/architecture-storage-cache-second",
+      title: "Architecture storage cache second source",
+    },
+  });
+  void second;
+
+  const readerStore = createFilesystemDirectiveEngineStore({ engineRunsRoot });
+  const originalReadFileSync = fs.readFileSync;
+  let readCount = 0;
+  fs.readFileSync = ((...args: Parameters<typeof fs.readFileSync>) => {
+    readCount += 1;
+    return originalReadFileSync(...args);
+  }) as typeof fs.readFileSync;
+
+  let initialRecords: DirectiveEngineRunRecord[] = [];
+  let cachedRecords: DirectiveEngineRunRecord[] = [];
+  try {
+    initialRecords = await readerStore.listRuns();
+    const initialReadCount = readCount;
+    readCount = 0;
+    cachedRecords = await readerStore.listRuns();
+    const cachedReadCount = readCount;
+
+    assert.deepEqual(
+      cachedRecords,
+      initialRecords,
+      "Cached listRuns results must stay byte-for-byte equivalent to the initial hydrated records",
+    );
+    assert.ok(
+      initialReadCount >= initialRecords.length,
+      "Initial filesystem hydration should read persisted run files",
+    );
+    assert.equal(
+      cachedReadCount,
+      0,
+      "A second listRuns call on unchanged files must reuse the in-memory cache instead of rereading files",
+    );
+  } finally {
+    fs.readFileSync = originalReadFileSync;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const storedFirstRecord = initialRecords.find((record) => record.runId === first.record.runId);
+  assert.ok(storedFirstRecord, "The first persisted run must be present before external modification");
+  const externallyModifiedRecord = {
+    ...storedFirstRecord,
+    candidate: {
+      ...storedFirstRecord.candidate,
+      candidateName: "Externally Updated Candidate",
+    },
+    source: {
+      ...storedFirstRecord.source,
+      title: "Externally Updated Candidate",
+    },
+  } satisfies DirectiveEngineRunRecord;
+  const recordPath = resolveDirectiveEngineStoreRecordPath({
+    engineRunsRoot,
+    record: first.record,
+  });
+  fs.writeFileSync(recordPath, `${JSON.stringify(externallyModifiedRecord, null, 2)}\n`, "utf8");
+
+  const refreshedRecords = await readerStore.listRuns();
+  const refreshedRecord = refreshedRecords.find((record) => record.runId === first.record.runId);
+  assert.equal(
+    refreshedRecord?.candidate.candidateName,
+    "Externally Updated Candidate",
+    "Filesystem store cache must invalidate when a persisted run file changes on disk",
+  );
+}
+
 function runEngineContractSurfaceChecks() {
   const recurringPolicyEvents = buildRecurringArchitecturePolicyEvents();
+  const overlapFromArray = countTokenOverlap(
+    ["alpha", "beta", "gamma"],
+    ["beta", "gamma", "delta"],
+  );
+  const overlapFromMap = countTokenOverlap(
+    ["alpha", "beta", "gamma"],
+    new Map([
+      ["beta", 1],
+      ["gamma", 1],
+      ["delta", 1],
+    ]),
+  );
+  assert.equal(
+    overlapFromMap,
+    overlapFromArray,
+    "Token-overlap lookup reuse must preserve the exact overlap count when the right-hand side is already a lookup structure",
+  );
   assert.equal(
     inferDirectiveEngineSourceType({
       title: "Repository",
@@ -713,6 +882,20 @@ async function runRoutingCorrectionLedgerChecks() {
   assert.ok(tokens.length > 0);
   assert.ok(tokens.every((t) => t === t.toLowerCase()), "Tokens must be lowercased");
   assert.ok(tokens.every((t) => t.length >= 4), "Tokens must be at least 4 chars");
+  resetSourceSignalTokenCache({ clearCache: true });
+  const firstTokenization = extractSourceSignalTokens("Architecture Workflow Improvement Engine");
+  const afterFirstStats = readSourceSignalTokenCacheStats();
+  assert.equal(afterFirstStats.misses, 1);
+  assert.equal(afterFirstStats.hits, 0);
+  firstTokenization.push("mutated");
+  const secondTokenization = extractSourceSignalTokens("Architecture Workflow Improvement Engine");
+  const afterSecondStats = readSourceSignalTokenCacheStats();
+  assert.equal(afterSecondStats.misses, 1);
+  assert.equal(afterSecondStats.hits, 1);
+  assert.ok(
+    !secondTokenization.includes("mutated"),
+    "Cached source-signal tokens must not leak caller mutation across repeated reads",
+  );
 
   // Verify corrections flow through processSource.
   const engine = new DirectiveEngine({
@@ -1089,6 +1272,101 @@ async function runAdvisoryIntelligenceChecks() {
     second.record.routingAssessment.narrativeContext !== null,
     "Second similar run should expose Narrative Threading context",
   );
+  const precomputedSourceTokens = buildDirectiveRunSourceTokenMap([first.record]);
+  assert.deepEqual(
+    createDirectiveSourceMemorySnapshot({
+      runs: [first.record],
+      precomputedSourceTokens,
+    }),
+    createDirectiveSourceMemorySnapshot({
+      runs: [first.record],
+    }),
+    "Precomputed run-source tokens must preserve the exact source-memory snapshot",
+  );
+  assert.deepEqual(
+    deriveDirectiveSourceSimilarityAssessment({
+      source: second.record.source,
+      sourceText: flattenSourceText(second.record.source),
+      existingRuns: [first.record],
+      recommendedLaneId: second.record.selectedLane.laneId,
+      precomputedSourceTokens,
+    }),
+    deriveDirectiveSourceSimilarityAssessment({
+      source: second.record.source,
+      sourceText: flattenSourceText(second.record.source),
+      existingRuns: [first.record],
+      recommendedLaneId: second.record.selectedLane.laneId,
+    }),
+    "Precomputed run-source tokens must preserve the exact source-similarity assessment",
+  );
+  assert.deepEqual(
+    deriveDirectivePriorPlanContext({
+      source: second.record.source,
+      recommendedLaneId: second.record.selectedLane.laneId,
+      existingRuns: [first.record],
+      precomputedSourceTokens,
+    }),
+    deriveDirectivePriorPlanContext({
+      source: second.record.source,
+      recommendedLaneId: second.record.selectedLane.laneId,
+      existingRuns: [first.record],
+    }),
+    "Precomputed run-source tokens must preserve the exact prior-plan context",
+  );
+  const prebuiltNarrativeThreads = buildDirectiveSourceNarrativeThreads({
+    runs: [first.record],
+    mission: second.record.mission,
+  });
+  const prebuiltNarrativeContext = deriveDirectiveSourceNarrativeContext({
+    source: second.record.source,
+    sourceText: [
+      second.record.source.title,
+      second.record.source.summary ?? "",
+      second.record.source.sourceRef,
+      second.record.source.missionAlignmentHint ?? "",
+      second.record.source.capabilityGapId ?? "",
+      second.record.source.primaryAdoptionTarget ?? "",
+      ...(second.record.source.notes ?? []),
+    ]
+      .filter(Boolean)
+      .join(" "),
+    mission: second.record.mission,
+    existingRuns: [first.record],
+    prebuiltThreads: prebuiltNarrativeThreads,
+    provisionalLaneId: second.record.selectedLane.laneId,
+    currentMatchedGapId:
+      second.record.routingAssessment.matchedGapId
+      ?? second.record.source.capabilityGapId
+      ?? null,
+    receivedAt: second.record.receivedAt,
+  });
+  const directNarrativeContext = deriveDirectiveSourceNarrativeContext({
+    source: second.record.source,
+    sourceText: [
+      second.record.source.title,
+      second.record.source.summary ?? "",
+      second.record.source.sourceRef,
+      second.record.source.missionAlignmentHint ?? "",
+      second.record.source.capabilityGapId ?? "",
+      second.record.source.primaryAdoptionTarget ?? "",
+      ...(second.record.source.notes ?? []),
+    ]
+      .filter(Boolean)
+      .join(" "),
+    mission: second.record.mission,
+    existingRuns: [first.record],
+    provisionalLaneId: second.record.selectedLane.laneId,
+    currentMatchedGapId:
+      second.record.routingAssessment.matchedGapId
+      ?? second.record.source.capabilityGapId
+      ?? null,
+    receivedAt: second.record.receivedAt,
+  });
+  assert.deepEqual(
+    prebuiltNarrativeContext,
+    directNarrativeContext,
+    "Reusing a prebuilt narrative-thread graph must preserve the exact narrative assessment",
+  );
   assert.equal(
     second.record.routingAssessment.narrativeContext?.primaryThread?.sourceCount,
     2,
@@ -1138,6 +1416,68 @@ async function runAdvisoryIntelligenceChecks() {
   assert.ok(
     third.record.planQualitySignal?.rationale.length,
     "Plan-quality signals should include rationale for the historical quality judgment",
+  );
+
+  const tieBreakEngine = new DirectiveEngine({
+    laneSet: createDirectiveWorkspaceEngineLanes(),
+    store: createMemoryDirectiveEngineStore(),
+  });
+  const tieBreakMission = buildArchitectureMission();
+  await tieBreakEngine.processSource({
+    receivedAt: "2026-04-10T00:00:00.000Z",
+    mission: tieBreakMission,
+    gaps: [buildArchitectureGap()],
+    source: {
+      sourceId: "thread-tie-a",
+      sourceType: "workflow-writeup",
+      sourceRef: "https://example.com/thread-tie-a",
+      title: "Alpha Beta Gamma Architecture",
+      summary: "Alpha beta gamma architecture workflow boundary.",
+      primaryAdoptionTarget: "architecture",
+      containsWorkflowPattern: true,
+      improvesDirectiveWorkspace: true,
+      workflowBoundaryShape: "bounded_protocol",
+    },
+  });
+  await tieBreakEngine.processSource({
+    receivedAt: "2026-04-10T00:00:00.000Z",
+    mission: tieBreakMission,
+    gaps: [buildArchitectureGap()],
+    source: {
+      sourceId: "thread-tie-b",
+      sourceType: "workflow-writeup",
+      sourceRef: "https://example.com/thread-tie-b",
+      title: "Delta Epsilon Zeta Architecture",
+      summary: "Delta epsilon zeta architecture workflow boundary.",
+      primaryAdoptionTarget: "architecture",
+      containsWorkflowPattern: true,
+      improvesDirectiveWorkspace: true,
+      workflowBoundaryShape: "bounded_protocol",
+    },
+  });
+  const tieBreakAssessment = assessDirectiveEngineRouting({
+    source: {
+      sourceType: "workflow-writeup",
+      sourceRef: "https://example.com/thread-tie-current",
+      title: "Alpha Beta Gamma Delta Epsilon Zeta Bridge",
+      summary: "Alpha beta gamma delta epsilon zeta architecture workflow boundary.",
+      primaryAdoptionTarget: "architecture",
+      containsWorkflowPattern: true,
+      improvesDirectiveWorkspace: true,
+      workflowBoundaryShape: "bounded_protocol",
+    },
+    mission: {
+      ...tieBreakMission,
+      activeMissionMarkdown: "",
+    },
+    openGaps: [buildArchitectureGap()],
+    existingRuns: await tieBreakEngine.listRuns(),
+    receivedAt: "2026-04-11T00:00:00.000Z",
+  });
+  assert.equal(
+    tieBreakAssessment.narrativeContext?.primaryThread?.threadId,
+    "thread-1",
+    "Narrative-thread tie breaks must remain stable and prefer the earliest matching thread",
   );
 
   const progressedThread = await engine.updatePlanProgress({
@@ -1487,6 +1827,7 @@ async function runWebHostSmoke() {
 
 async function main() {
   await runDirectiveEngineHardeningChecks();
+  await runFilesystemStoreCachingChecks();
   runEngineContractSurfaceChecks();
   await runRoutingCorrectionLedgerChecks();
   await runOutcomeTrackingChecks();

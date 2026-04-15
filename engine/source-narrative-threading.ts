@@ -88,11 +88,18 @@ export type DirectiveNarrativeAction = {
 
 type InternalThread = {
   threadId: string;
+  threadOrder: number;
   runs: DirectiveEngineRunRecord[];
   tokenCounts: Map<string, number>;
   laneCounts: DirectiveNarrativeLaneCounts;
   firstSeenAt: string;
   lastSeenAt: string;
+};
+
+type ThreadTokenIndex = Map<string, Set<InternalThread>>;
+
+export type DirectiveSourceNarrativeThreadBuild = {
+  threads: InternalThread[];
 };
 
 const THREAD_GENERIC_TOKENS = new Set([
@@ -477,11 +484,41 @@ function projectGapCoverage(input: {
   } as const;
 }
 
-function buildThreads(input: {
+function addThreadTokensToIndex(input: {
+  thread: InternalThread;
+  tokens: string[];
+  tokenIndex: ThreadTokenIndex;
+}) {
+  for (const token of input.tokens) {
+    const bucket = input.tokenIndex.get(token) ?? new Set<InternalThread>();
+    bucket.add(input.thread);
+    input.tokenIndex.set(token, bucket);
+  }
+}
+
+function collectThreadCandidates(input: {
+  tokenIndex: ThreadTokenIndex;
+  runTokens: string[];
+}) {
+  const candidates = new Set<InternalThread>();
+  for (const token of input.runTokens) {
+    const bucket = input.tokenIndex.get(token);
+    if (!bucket) {
+      continue;
+    }
+    for (const thread of bucket) {
+      candidates.add(thread);
+    }
+  }
+  return [...candidates];
+}
+
+export function buildDirectiveSourceNarrativeThreads(input: {
   runs: DirectiveEngineRunRecord[];
   mission: DirectiveEngineMissionContext;
 }) {
   const threads: InternalThread[] = [];
+  const tokenIndex: ThreadTokenIndex = new Map();
   const relevantRuns = [...input.runs]
     .filter((run) => isSameMission(run, input.mission))
     .sort((left, right) => parseTimestamp(left.receivedAt) - parseTimestamp(right.receivedAt));
@@ -489,10 +526,14 @@ function buildThreads(input: {
   for (const run of relevantRuns) {
     const laneId = run.selectedLane.laneId;
     const runTokens = uniqueTokens(extractSourceSignalTokens(flattenRunNarrativeText(run)));
-    const candidate = threads
+    const candidateThreads = collectThreadCandidates({
+      tokenIndex,
+      runTokens,
+    });
+    const candidate = candidateThreads
       .map((thread) => ({
         thread,
-        overlap: countTokenOverlap(runTokens, thread.tokenCounts.keys()),
+        overlap: countTokenOverlap(runTokens, thread.tokenCounts),
         hoursGap: hoursBetween(thread.lastSeenAt, run.receivedAt),
       }))
       .filter((entry) => entry.overlap >= 3)
@@ -502,7 +543,10 @@ function buildThreads(input: {
         if (right.overlap !== left.overlap) {
           return right.overlap - left.overlap;
         }
-        return left.hoursGap - right.hoursGap;
+        if (left.hoursGap !== right.hoursGap) {
+          return left.hoursGap - right.hoursGap;
+        }
+        return left.thread.threadOrder - right.thread.threadOrder;
       })[0];
 
     if (!candidate) {
@@ -512,6 +556,7 @@ function buildThreads(input: {
       }
       const thread: InternalThread = {
         threadId: `thread-${threads.length + 1}`,
+        threadOrder: threads.length,
         runs: [run],
         tokenCounts: new Map(runTokens.map((token) => [token, 1])),
         laneCounts,
@@ -519,6 +564,11 @@ function buildThreads(input: {
         lastSeenAt: run.receivedAt,
       };
       threads.push(thread);
+      addThreadTokensToIndex({
+        thread,
+        tokens: runTokens,
+        tokenIndex,
+      });
       continue;
     }
 
@@ -527,12 +577,22 @@ function buildThreads(input: {
       candidate.thread.laneCounts[laneId] += 1;
     }
     for (const token of runTokens) {
-      candidate.thread.tokenCounts.set(token, (candidate.thread.tokenCounts.get(token) ?? 0) + 1);
+      const nextCount = (candidate.thread.tokenCounts.get(token) ?? 0) + 1;
+      candidate.thread.tokenCounts.set(token, nextCount);
+      if (nextCount === 1) {
+        addThreadTokensToIndex({
+          thread: candidate.thread,
+          tokens: [token],
+          tokenIndex,
+        });
+      }
     }
     candidate.thread.lastSeenAt = run.receivedAt;
   }
 
-  return threads;
+  return {
+    threads,
+  } satisfies DirectiveSourceNarrativeThreadBuild;
 }
 
 function summarizeThread(input: {
@@ -561,26 +621,27 @@ export function deriveDirectiveSourceNarrativeContext(input: {
   provisionalLaneId: DirectiveEngineLaneId;
   currentMatchedGapId?: string | null;
   receivedAt?: string | null;
+  prebuiltThreads?: DirectiveSourceNarrativeThreadBuild | null;
 }) {
   if ((input.existingRuns ?? []).length === 0) {
     return null;
   }
 
   const generatedAt = String(input.receivedAt ?? new Date().toISOString());
-  const threads = buildThreads({
+  const threads = input.prebuiltThreads ?? buildDirectiveSourceNarrativeThreads({
     runs: input.existingRuns,
     mission: input.mission,
   });
-  if (threads.length === 0) {
+  if (threads.threads.length === 0) {
     return null;
   }
 
   const sourceTokens = uniqueTokens(extractSourceSignalTokens(input.sourceText));
-  const relatedThreads = threads
+  const relatedThreads = threads.threads
     .map((thread) => {
       const currentSourceOverlap = countTokenOverlap(
         sourceTokens,
-        thread.tokenCounts.keys(),
+        thread.tokenCounts,
       );
       const hoursGap = hoursBetween(thread.lastSeenAt, generatedAt);
       if (currentSourceOverlap < 3 || hoursGap < 0 || hoursGap > 14 * 24) {

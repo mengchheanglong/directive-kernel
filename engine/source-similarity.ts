@@ -28,11 +28,14 @@ export function deriveDirectiveSourceSimilarityAssessment(input: {
   sourceText: string;
   existingRuns: DirectiveEngineRunRecord[];
   recommendedLaneId?: DirectiveEngineLaneId | null;
+  /** Pre-computed source signal tokens keyed by runId, avoids redundant tokenization. */
+  precomputedSourceTokens?: Map<string, string[]> | null;
 }) {
   const sourceTokens = extractSourceSignalTokens(input.sourceText);
   const relatedSources = input.existingRuns
     .map((run) => {
-      const runTokens = extractSourceSignalTokens(flattenSourceText(run.source));
+      const runTokens = input.precomputedSourceTokens?.get(run.runId)
+        ?? extractSourceSignalTokens(flattenSourceText(run.source));
       const sharedTokens = findSharedTokens(sourceTokens, runTokens);
       const unionSize = new Set([...sourceTokens, ...runTokens]).size || 1;
       const similarityScore = Math.round((sharedTokens.length / unionSize) * 100);

@@ -11,7 +11,10 @@ import {
 import { assessDirectiveEngineRouting } from "./routing.ts";
 import { deriveDirectiveRoutingDiff } from "./routing-diff.ts";
 import { createDefaultDirectiveMission } from "./default-mission.ts";
-import { normalizeText } from "./engine-source-utils.ts";
+import {
+  buildDirectiveRunSourceTokenMap,
+  normalizeText,
+} from "./engine-source-utils.ts";
 import {
   classifyDirectiveEngineUsefulness,
   explainDirectiveEngineUsefulness,
@@ -282,6 +285,29 @@ function deriveMinimalSourceRef(input: {
   return `inline://minimal/${stableSlug}`;
 }
 
+let processFingerprintCache = new WeakMap<DirectiveEngineRunRecord, string>();
+const processFingerprintCacheStats = {
+  hits: 0,
+  misses: 0,
+};
+
+export function readDirectiveEngineProcessFingerprintCacheStats() {
+  return {
+    hits: processFingerprintCacheStats.hits,
+    misses: processFingerprintCacheStats.misses,
+  };
+}
+
+export function resetDirectiveEngineProcessFingerprintCache(input?: {
+  clearCache?: boolean;
+}) {
+  processFingerprintCacheStats.hits = 0;
+  processFingerprintCacheStats.misses = 0;
+  if (input?.clearCache) {
+    processFingerprintCache = new WeakMap<DirectiveEngineRunRecord, string>();
+  }
+}
+
 function validateDirectiveEngineSource(source: DirectiveEngineSourceItem) {
   const sourceId = normalizeText(source.sourceId);
   const sourceRef = normalizeText(source.sourceRef);
@@ -328,10 +354,18 @@ function recordMatchesProcessFingerprint(input: {
   record: DirectiveEngineRunRecord;
   fingerprint: string;
 }) {
-  return deriveProcessFingerprint({
+  const cachedFingerprint = processFingerprintCache.get(input.record);
+  if (cachedFingerprint) {
+    processFingerprintCacheStats.hits += 1;
+    return cachedFingerprint === input.fingerprint;
+  }
+  processFingerprintCacheStats.misses += 1;
+  const derivedFingerprint = deriveProcessFingerprint({
     source: input.record.source,
     mission: input.record.mission,
-  }) === input.fingerprint;
+  });
+  processFingerprintCache.set(input.record, derivedFingerprint);
+  return derivedFingerprint === input.fingerprint;
 }
 
 function withTimeout<T>(
@@ -1337,10 +1371,12 @@ export class DirectiveEngine {
     const structuredAdaptationPlan = buildStructuredAdaptationPlan(adaptationPlan);
     const structuredImprovementPlan = buildStructuredImprovementPlan(improvementPlan);
     const structuredProofPlan = buildStructuredProofPlan(proofPlan);
+    const precomputedSourceTokens = buildDirectiveRunSourceTokenMap(existingRuns);
     const priorPlanContext = deriveDirectivePriorPlanContext({
       source,
       recommendedLaneId: selectedLane.laneId,
       existingRuns,
+      precomputedSourceTokens,
     });
     const integrationProposal = buildIntegrationProposal({
       planningInput,

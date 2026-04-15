@@ -1,0 +1,1373 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "callFrame": {
+        "functionName": "(root)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      "hitCount": 0,
+      "children": [
+        2,
+        6,
+        10,
+        39,
+        64
+      ]
+    },
+    {
+      "id": 2,
+      "callFrame": {
+        "functionName": "main",
+        "scriptId": "198",
+        "url": "file:///C:/Users/User/archive/directive-kernel/scripts/profile-processSource.ts",
+        "lineNumber": 0,
+        "columnNumber": 2429
+      },
+      "hitCount": 3,
+      "children": [
+        3,
+        33
+      ],
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 3
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "callFrame": {
+        "functionName": "fn",
+        "scriptId": "13",
+        "url": "node:internal/util",
+        "lineNumber": 497,
+        "columnNumber": 13
+      },
+      "hitCount": 0,
+      "children": [
+        4
+      ]
+    },
+    {
+      "id": 4,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "13",
+        "url": "node:internal/util",
+        "lineNumber": 498,
+        "columnNumber": 23
+      },
+      "hitCount": 0,
+      "children": [
+        5
+      ]
+    },
+    {
+      "id": 5,
+      "callFrame": {
+        "functionName": "post",
+        "scriptId": "209",
+        "url": "node:inspector",
+        "lineNumber": 114,
+        "columnNumber": 6
+      },
+      "hitCount": 0,
+      "children": [
+        77
+      ]
+    },
+    {
+      "id": 77,
+      "callFrame": {
+        "functionName": "dispatch",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 139,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "callFrame": {
+        "functionName": "processSource",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 27801
+      },
+      "hitCount": 0,
+      "children": [
+        34,
+        72
+      ]
+    },
+    {
+      "id": 34,
+      "callFrame": {
+        "functionName": "deriveProcessFingerprint",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 1333
+      },
+      "hitCount": 0,
+      "children": [
+        35,
+        37
+      ]
+    },
+    {
+      "id": 35,
+      "callFrame": {
+        "functionName": "normalizeFingerprintText",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 0,
+        "columnNumber": 1795
+      },
+      "hitCount": 2,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 2
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "callFrame": {
+        "functionName": "createHash",
+        "scriptId": "134",
+        "url": "node:crypto",
+        "lineNumber": 143,
+        "columnNumber": 19
+      },
+      "hitCount": 1,
+      "children": [
+        38
+      ],
+      "positionTicks": [
+        {
+          "line": 145,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "callFrame": {
+        "functionName": "Hash",
+        "scriptId": "148",
+        "url": "node:internal/crypto/hash",
+        "lineNumber": 89,
+        "columnNumber": 13
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 103,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "callFrame": {
+        "functionName": "resolveMissionContext",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 0,
+        "columnNumber": 5702
+      },
+      "hitCount": 0,
+      "children": [
+        73
+      ]
+    },
+    {
+      "id": 73,
+      "callFrame": {
+        "functionName": "parseMissionMarkdown",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 0,
+        "columnNumber": 3179
+      },
+      "hitCount": 0,
+      "children": [
+        74
+      ]
+    },
+    {
+      "id": 74,
+      "callFrame": {
+        "functionName": "getSectionBody",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 0,
+        "columnNumber": 2940
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "callFrame": {
+        "functionName": "processSource",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 27801
+      },
+      "hitCount": 2,
+      "children": [
+        7,
+        16,
+        17,
+        26,
+        31,
+        42,
+        56,
+        60,
+        70
+      ],
+      "positionTicks": [
+        {
+          "line": 2,
+          "ticks": 2
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "callFrame": {
+        "functionName": "assessDirectiveEngineRouting",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 36046
+      },
+      "hitCount": 1,
+      "children": [
+        8,
+        11,
+        20,
+        23,
+        29,
+        36,
+        51,
+        54,
+        65
+      ],
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "callFrame": {
+        "functionName": "deriveDirectiveEngineEarnedAutonomyAssessment",
+        "scriptId": "217",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/earned-autonomy.ts",
+        "lineNumber": 0,
+        "columnNumber": 781
+      },
+      "hitCount": 0,
+      "children": [
+        9,
+        44
+      ]
+    },
+    {
+      "id": 9,
+      "callFrame": {
+        "functionName": "deriveDirectiveRoutingQualityAssessment",
+        "scriptId": "218",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing-quality.ts",
+        "lineNumber": 0,
+        "columnNumber": 420
+      },
+      "hitCount": 1,
+      "children": [
+        46
+      ],
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "callFrame": {
+        "functionName": "deriveDirectiveRoutingOutcomes",
+        "scriptId": "219",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/outcome-tracker.ts",
+        "lineNumber": 0,
+        "columnNumber": 3452
+      },
+      "hitCount": 0,
+      "children": [
+        47
+      ]
+    },
+    {
+      "id": 47,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "219",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/outcome-tracker.ts",
+        "lineNumber": 0,
+        "columnNumber": 3490
+      },
+      "hitCount": 1,
+      "children": [
+        48
+      ],
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "callFrame": {
+        "functionName": "deriveDirectiveRoutingOutcome",
+        "scriptId": "219",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/outcome-tracker.ts",
+        "lineNumber": 0,
+        "columnNumber": 1147
+      },
+      "hitCount": 0,
+      "children": [
+        49
+      ]
+    },
+    {
+      "id": 49,
+      "callFrame": {
+        "functionName": "hoursBetween",
+        "scriptId": "219",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/outcome-tracker.ts",
+        "lineNumber": 0,
+        "columnNumber": 546
+      },
+      "hitCount": 0,
+      "children": [
+        50
+      ]
+    },
+    {
+      "id": 50,
+      "callFrame": {
+        "functionName": "parseTimestamp",
+        "scriptId": "216",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/engine-source-utils.ts",
+        "lineNumber": 0,
+        "columnNumber": 480
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "callFrame": {
+        "functionName": "extractSourceSignalTokens",
+        "scriptId": "214",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing-correction-ledger.ts",
+        "lineNumber": 1,
+        "columnNumber": 1367
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 2,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "callFrame": {
+        "functionName": "deriveDirectiveSourceNarrativeContext",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 12754
+      },
+      "hitCount": 0,
+      "children": [
+        12
+      ]
+    },
+    {
+      "id": 12,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 13167
+      },
+      "hitCount": 0,
+      "children": [
+        13,
+        22
+      ]
+    },
+    {
+      "id": 13,
+      "callFrame": {
+        "functionName": "inferThreadName",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 4474
+      },
+      "hitCount": 0,
+      "children": [
+        14,
+        45
+      ]
+    },
+    {
+      "id": 14,
+      "callFrame": {
+        "functionName": "topThreadTokens",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 4002
+      },
+      "hitCount": 0,
+      "children": [
+        15
+      ]
+    },
+    {
+      "id": 15,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 4107
+      },
+      "hitCount": 2,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 2
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "callFrame": {
+        "functionName": "titleCase",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 4303
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "callFrame": {
+        "functionName": "topThreadTokens",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 4002
+      },
+      "hitCount": 2,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 2
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "callFrame": {
+        "functionName": "deriveLaneScores",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 24863
+      },
+      "hitCount": 0,
+      "children": [
+        21
+      ]
+    },
+    {
+      "id": 21,
+      "callFrame": {
+        "functionName": "countWeightedKeywordHits",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 5157
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "callFrame": {
+        "functionName": "buildDirectiveSourceNarrativeThreads",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 10117
+      },
+      "hitCount": 5,
+      "children": [
+        24,
+        57,
+        59
+      ],
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 5
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 10595
+      },
+      "hitCount": 0,
+      "children": [
+        25
+      ]
+    },
+    {
+      "id": 25,
+      "callFrame": {
+        "functionName": "countTokenOverlap",
+        "scriptId": "216",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/engine-source-utils.ts",
+        "lineNumber": 0,
+        "columnNumber": 1204
+      },
+      "hitCount": 2,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 2
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "callFrame": {
+        "functionName": "flattenRunNarrativeText",
+        "scriptId": "224",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-narrative-threading.ts",
+        "lineNumber": 0,
+        "columnNumber": 765
+      },
+      "hitCount": 0,
+      "children": [
+        58
+      ]
+    },
+    {
+      "id": 58,
+      "callFrame": {
+        "functionName": "flattenSourceText",
+        "scriptId": "216",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/engine-source-utils.ts",
+        "lineNumber": 0,
+        "columnNumber": 649
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "callFrame": {
+        "functionName": "extractSourceSignalTokens",
+        "scriptId": "214",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing-correction-ledger.ts",
+        "lineNumber": 1,
+        "columnNumber": 1367
+      },
+      "hitCount": 4,
+      "positionTicks": [
+        {
+          "line": 2,
+          "ticks": 4
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "callFrame": {
+        "functionName": "deriveDirectiveSourceSimilarityAssessment",
+        "scriptId": "221",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-similarity.ts",
+        "lineNumber": 0,
+        "columnNumber": 307
+      },
+      "hitCount": 2,
+      "children": [
+        30
+      ],
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 2
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "221",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-similarity.ts",
+        "lineNumber": 0,
+        "columnNumber": 422
+      },
+      "hitCount": 3,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 3
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "callFrame": {
+        "functionName": "createDirectiveSourceMemorySnapshot",
+        "scriptId": "220",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-memory.ts",
+        "lineNumber": 0,
+        "columnNumber": 1232
+      },
+      "hitCount": 3,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 3
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "callFrame": {
+        "functionName": "deriveMissionFit",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 23769
+      },
+      "hitCount": 0,
+      "children": [
+        52
+      ]
+    },
+    {
+      "id": 52,
+      "callFrame": {
+        "functionName": "countTokenOverlap",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 5577
+      },
+      "hitCount": 0,
+      "children": [
+        53
+      ]
+    },
+    {
+      "id": 53,
+      "callFrame": {
+        "functionName": "semanticTokenize",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 4771
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "callFrame": {
+        "functionName": "deriveDirectiveSourceMemoryAssessment",
+        "scriptId": "220",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-memory.ts",
+        "lineNumber": 1,
+        "columnNumber": 166
+      },
+      "hitCount": 0,
+      "children": [
+        55
+      ]
+    },
+    {
+      "id": 55,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "220",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/source-memory.ts",
+        "lineNumber": 1,
+        "columnNumber": 931
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 2,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "callFrame": {
+        "functionName": "deriveGoalCopilotAssessment",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 10630
+      },
+      "hitCount": 0,
+      "children": [
+        66
+      ]
+    },
+    {
+      "id": 66,
+      "callFrame": {
+        "functionName": "deriveMissionObjectiveSpecificity",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 5877
+      },
+      "hitCount": 0,
+      "children": [
+        67
+      ]
+    },
+    {
+      "id": 67,
+      "callFrame": {
+        "functionName": "semanticTokenize",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 4771
+      },
+      "hitCount": 0,
+      "children": [
+        68
+      ]
+    },
+    {
+      "id": 68,
+      "callFrame": {
+        "functionName": "tokenize",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 4561
+      },
+      "hitCount": 0,
+      "children": [
+        69
+      ]
+    },
+    {
+      "id": 69,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "213",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/routing.ts",
+        "lineNumber": 0,
+        "columnNumber": 4670
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "callFrame": {
+        "functionName": "buildDecision",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 23049
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 2,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "callFrame": {
+        "functionName": "deriveDirectivePlanQualitySignal",
+        "scriptId": "236",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/plan-quality.ts",
+        "lineNumber": 0,
+        "columnNumber": 7052
+      },
+      "hitCount": 0,
+      "children": [
+        18
+      ]
+    },
+    {
+      "id": 18,
+      "callFrame": {
+        "functionName": "deriveImprovementGoalProgress",
+        "scriptId": "236",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/plan-quality.ts",
+        "lineNumber": 0,
+        "columnNumber": 4047
+      },
+      "hitCount": 0,
+      "children": [
+        19
+      ]
+    },
+    {
+      "id": 19,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "236",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/plan-quality.ts",
+        "lineNumber": 0,
+        "columnNumber": 4722
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "callFrame": {
+        "functionName": "deriveDirectivePriorPlanContext",
+        "scriptId": "235",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/plan-consumption.ts",
+        "lineNumber": 0,
+        "columnNumber": 549
+      },
+      "hitCount": 1,
+      "children": [
+        27
+      ],
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "235",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/plan-consumption.ts",
+        "lineNumber": 0,
+        "columnNumber": 966
+      },
+      "hitCount": 0,
+      "children": [
+        28
+      ]
+    },
+    {
+      "id": 28,
+      "callFrame": {
+        "functionName": "countTokenOverlap",
+        "scriptId": "216",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/engine-source-utils.ts",
+        "lineNumber": 0,
+        "columnNumber": 1204
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "callFrame": {
+        "functionName": "readRuntimeExecutionEvidenceSignal",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 20096
+      },
+      "hitCount": 0,
+      "children": [
+        32
+      ]
+    },
+    {
+      "id": 32,
+      "callFrame": {
+        "functionName": "buildRuntimeCallableExecutionEvidenceReport",
+        "scriptId": "237",
+        "url": "file:///C:/Users/User/archive/directive-kernel/runtime/lib/runtime-callable-execution-evidence.ts",
+        "lineNumber": 0,
+        "columnNumber": 1914
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 29232
+      },
+      "hitCount": 0,
+      "children": [
+        43
+      ]
+    },
+    {
+      "id": 43,
+      "callFrame": {
+        "functionName": "recordMatchesProcessFingerprint",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 2686
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 2,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "callFrame": {
+        "functionName": "randomUUID",
+        "scriptId": "135",
+        "url": "node:internal/crypto/random",
+        "lineNumber": 404,
+        "columnNumber": 19
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 414,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "callFrame": {
+        "functionName": "withTimeout",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 3213
+      },
+      "hitCount": 0,
+      "children": [
+        61
+      ]
+    },
+    {
+      "id": 61,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 3340
+      },
+      "hitCount": 0,
+      "children": [
+        62
+      ]
+    },
+    {
+      "id": 62,
+      "callFrame": {
+        "functionName": "setTimeout",
+        "scriptId": "34",
+        "url": "node:timers",
+        "lineNumber": 114,
+        "columnNumber": 19
+      },
+      "hitCount": 0,
+      "children": [
+        63
+      ]
+    },
+    {
+      "id": 63,
+      "callFrame": {
+        "functionName": "Timeout",
+        "scriptId": "10",
+        "url": "node:internal/timers",
+        "lineNumber": 178,
+        "columnNumber": 13
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 220,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "callFrame": {
+        "functionName": "readRuntimePromotionFeedbackSignal",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 17205
+      },
+      "hitCount": 0,
+      "children": [
+        71
+      ]
+    },
+    {
+      "id": 71,
+      "callFrame": {
+        "functionName": "buildDirectiveRuntimePromotionAssistanceReport",
+        "scriptId": "240",
+        "url": "file:///C:/Users/User/archive/directive-kernel/runtime/lib/runtime-promotion-assistance.ts",
+        "lineNumber": 0,
+        "columnNumber": 7373
+      },
+      "hitCount": 1,
+      "children": [
+        75
+      ],
+      "positionTicks": [
+        {
+          "line": 1,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "callFrame": {
+        "functionName": "existsSync",
+        "scriptId": "46",
+        "url": "node:fs",
+        "lineNumber": 276,
+        "columnNumber": 19
+      },
+      "hitCount": 0,
+      "children": [
+        76
+      ]
+    },
+    {
+      "id": 76,
+      "callFrame": {
+        "functionName": "existsSync",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 290,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "callFrame": {
+        "functionName": "(garbage collector)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      "hitCount": 4
+    },
+    {
+      "id": 39,
+      "callFrame": {
+        "functionName": "",
+        "scriptId": "211",
+        "url": "file:///C:/Users/User/archive/directive-kernel/engine/directive-engine.ts",
+        "lineNumber": 1,
+        "columnNumber": 3486
+      },
+      "hitCount": 0,
+      "children": [
+        40
+      ]
+    },
+    {
+      "id": 40,
+      "callFrame": {
+        "functionName": "clearTimeout",
+        "scriptId": "34",
+        "url": "node:timers",
+        "lineNumber": 135,
+        "columnNumber": 21
+      },
+      "hitCount": 0,
+      "children": [
+        41
+      ]
+    },
+    {
+      "id": 41,
+      "callFrame": {
+        "functionName": "unenroll",
+        "scriptId": "34",
+        "url": "node:timers",
+        "lineNumber": 70,
+        "columnNumber": 17
+      },
+      "hitCount": 1,
+      "positionTicks": [
+        {
+          "line": 99,
+          "ticks": 1
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "callFrame": {
+        "functionName": "(program)",
+        "scriptId": "0",
+        "url": "",
+        "lineNumber": -1,
+        "columnNumber": -1
+      },
+      "hitCount": 1
+    }
+  ],
+  "startTime": 695074322210,
+  "endTime": 695074439448,
+  "samples": [
+    5,
+    9,
+    10,
+    15,
+    6,
+    16,
+    19,
+    21,
+    22,
+    25,
+    28,
+    30,
+    32,
+    26,
+    35,
+    36,
+    2,
+    10,
+    38,
+    41,
+    43,
+    37,
+    44,
+    23,
+    6,
+    45,
+    50,
+    47,
+    23,
+    2,
+    29,
+    53,
+    55,
+    30,
+    56,
+    7,
+    58,
+    25,
+    10,
+    59,
+    59,
+    63,
+    30,
+    23,
+    59,
+    69,
+    36,
+    23,
+    35,
+    71,
+    59,
+    2,
+    10,
+    36,
+    74,
+    29,
+    23,
+    76,
+    22,
+    15,
+    77
+  ],
+  "timeDeltas": [
+    19485,
+    1464,
+    1599,
+    1693,
+    1619,
+    1655,
+    1672,
+    1488,
+    1663,
+    1722,
+    1589,
+    1603,
+    1636,
+    1766,
+    1558,
+    1682,
+    1612,
+    1677,
+    1623,
+    1784,
+    1729,
+    1826,
+    1306,
+    1762,
+    1692,
+    1431,
+    1738,
+    1897,
+    1301,
+    1313,
+    1565,
+    1567,
+    1604,
+    1549,
+    1713,
+    1610,
+    1599,
+    1639,
+    1310,
+    1647,
+    1607,
+    1634,
+    3217,
+    1469,
+    1579,
+    1610,
+    1709,
+    1606,
+    1665,
+    1425,
+    1707,
+    1618,
+    1758,
+    1280,
+    1547,
+    1583,
+    1565,
+    1119,
+    1665,
+    1670,
+    1607
+  ]
+}

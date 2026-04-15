@@ -12,6 +12,12 @@ export type DirectiveEngineStore = {
   listRuns(): DirectiveEngineRunRecord[] | Promise<DirectiveEngineRunRecord[]>;
 };
 
+type FilesystemRunRecordCacheEntry = {
+  record: DirectiveEngineRunRecord | null;
+  mtimeMs: number;
+  size: number;
+};
+
 function sanitizeIdSegment(value: string) {
   return value
     .toLowerCase()
@@ -49,16 +55,6 @@ function readFilesystemRunRecord(filePath: string) {
   }
 }
 
-function findFilesystemRunPathByRunId(engineRunsRoot: string, runId: string) {
-  for (const recordPath of listFilesystemRunPaths(engineRunsRoot)) {
-    const record = readFilesystemRunRecord(recordPath);
-    if (record?.runId === runId) {
-      return recordPath;
-    }
-  }
-  return null;
-}
-
 export function resolveDirectiveEngineStoreRecordPath(input: {
   engineRunsRoot: string;
   record: DirectiveEngineRunRecord;
@@ -81,6 +77,75 @@ export function createFilesystemDirectiveEngineStore(input: {
   const engineRunsRoot = normalizeEngineStoreAbsolutePath(
     input.engineRunsRoot || resolveDefaultDirectiveEngineRunsRoot(),
   );
+  const recordCache = new Map<string, FilesystemRunRecordCacheEntry>();
+  let runPathIndex = new Map<string, string>();
+
+  function readCachedFilesystemRunRecord(filePath: string) {
+    try {
+      const stat = fs.statSync(filePath);
+      const cached = recordCache.get(filePath);
+      if (
+        cached
+        && cached.mtimeMs === stat.mtimeMs
+        && cached.size === stat.size
+      ) {
+        return cached.record;
+      }
+
+      const record = readFilesystemRunRecord(filePath);
+      recordCache.set(filePath, {
+        record,
+        mtimeMs: stat.mtimeMs,
+        size: stat.size,
+      });
+      return record;
+    } catch {
+      recordCache.delete(filePath);
+      return null;
+    }
+  }
+
+  function syncCacheForWrittenRecord(filePath: string, record: DirectiveEngineRunRecord) {
+    const stat = fs.statSync(filePath);
+    recordCache.set(filePath, {
+      record,
+      mtimeMs: stat.mtimeMs,
+      size: stat.size,
+    });
+    runPathIndex.set(record.runId, filePath);
+  }
+
+  function removeMissingPathsFromCache(recordPaths: string[]) {
+    const activePaths = new Set(recordPaths);
+    for (const cachedPath of recordCache.keys()) {
+      if (!activePaths.has(cachedPath)) {
+        recordCache.delete(cachedPath);
+      }
+    }
+    for (const [runId, recordPath] of runPathIndex.entries()) {
+      if (!activePaths.has(recordPath)) {
+        runPathIndex.delete(runId);
+      }
+    }
+  }
+
+  function listRunsFromFilesystemCache() {
+    const recordPaths = listFilesystemRunPaths(engineRunsRoot);
+    removeMissingPathsFromCache(recordPaths);
+
+    const nextRunPathIndex = new Map<string, string>();
+    const records: DirectiveEngineRunRecord[] = [];
+    for (const recordPath of recordPaths) {
+      const record = readCachedFilesystemRunRecord(recordPath);
+      if (!record) {
+        continue;
+      }
+      records.push(record);
+      nextRunPathIndex.set(record.runId, recordPath);
+    }
+    runPathIndex = nextRunPathIndex;
+    return records;
+  }
 
   return {
     writeRun(record) {
@@ -90,30 +155,48 @@ export function createFilesystemDirectiveEngineStore(input: {
       });
       fs.mkdirSync(path.dirname(recordPath), { recursive: true });
       fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+      syncCacheForWrittenRecord(recordPath, record);
     },
     updateRun(record) {
-      const existingPath = findFilesystemRunPathByRunId(engineRunsRoot, record.runId);
+      let existingPath = runPathIndex.get(record.runId) ?? null;
+      if (!existingPath) {
+        for (const recordPath of listFilesystemRunPaths(engineRunsRoot)) {
+          const existingRecord = readCachedFilesystemRunRecord(recordPath);
+          if (existingRecord?.runId === record.runId) {
+            existingPath = recordPath;
+            break;
+          }
+        }
+      }
       const recordPath = existingPath ?? resolveDirectiveEngineStoreRecordPath({
         engineRunsRoot,
         record,
       });
       fs.mkdirSync(path.dirname(recordPath), { recursive: true });
       fs.writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+      syncCacheForWrittenRecord(recordPath, record);
     },
     readRun(runId) {
-      for (const recordPath of listFilesystemRunPaths(engineRunsRoot)) {
-        const record = readFilesystemRunRecord(recordPath);
-        if (!record || record.runId !== runId) {
-          continue;
+      const indexedPath = runPathIndex.get(runId);
+      if (indexedPath && fs.existsSync(indexedPath)) {
+        const indexedRecord = readCachedFilesystemRunRecord(indexedPath);
+        if (indexedRecord?.runId === runId) {
+          return indexedRecord;
         }
-        return record;
+        runPathIndex.delete(runId);
+      }
+
+      for (const recordPath of listFilesystemRunPaths(engineRunsRoot)) {
+        const record = readCachedFilesystemRunRecord(recordPath);
+        if (record?.runId === runId) {
+          runPathIndex.set(runId, recordPath);
+          return record;
+        }
       }
       return null;
     },
     listRuns() {
-      return listFilesystemRunPaths(engineRunsRoot)
-        .map((recordPath) => readFilesystemRunRecord(recordPath))
-        .filter((record): record is DirectiveEngineRunRecord => Boolean(record));
+      return listRunsFromFilesystemCache();
     },
   };
 }

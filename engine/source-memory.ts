@@ -93,6 +93,8 @@ export function createDirectiveSourceMemorySnapshot(input: {
   runs: DirectiveEngineRunRecord[];
   generatedAt?: string;
   recentWindowDays?: number;
+  /** Pre-computed source signal tokens keyed by runId, avoids redundant tokenization. */
+  precomputedSourceTokens?: Map<string, string[]> | null;
 }) {
   const recentWindowDays = Math.max(7, input.recentWindowDays ?? 30);
   const now = input.generatedAt ? new Date(input.generatedAt) : new Date();
@@ -134,7 +136,8 @@ export function createDirectiveSourceMemorySnapshot(input: {
     }
     routeClassMap.set(routeClass, routeTrend);
 
-    const tokens = extractSourceSignalTokens(flattenSourceText(run.source)).slice(0, 12);
+    const tokens = (input.precomputedSourceTokens?.get(run.runId)
+      ?? extractSourceSignalTokens(flattenSourceText(run.source))).slice(0, 12);
     for (const token of tokens) {
       const entry = topicMap.get(token) ?? {
         token,
