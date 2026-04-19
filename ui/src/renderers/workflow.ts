@@ -9,13 +9,13 @@ import type {
   FrontendQueueEntry,
   FrontendRuntimeSummaryCase,
   FrontendSnapshot,
-} from "../app-types";
+} from "../types";
 import { artifactPathToViewPath, navTo } from "../app-utils";
 import { renderQueueTag } from "../components/lane-sections";
 import { renderLearningSummary } from "./learning-summary";
 import { artifactLink } from "./shared";
 
-export function workflowDecisionForCandidate(
+function workflowDecisionForCandidate(
   inbox: FrontendOperatorDecisionInboxReport,
   candidateId: string | null | undefined,
 ) {
@@ -26,7 +26,28 @@ export function workflowDecisionForCandidate(
   return inbox.entries.find((entry) => entry.candidateId === candidateId) ?? null;
 }
 
-export function renderWorkflowMapRow(input: {
+function summarizeRunPlanState(run: FrontendEngineRunRecord) {
+  const state = run.executablePlanState;
+  if (!state?.actions?.length) {
+    return null;
+  }
+
+  const nextActions = state.nextActionIds
+    .map((actionId) => state.actions.find((action) => action.actionId === actionId)?.title ?? null)
+    .filter((title): title is string => Boolean(title));
+
+  return {
+    proofState: state.proofState.finalState,
+    completionRate: state.completionRate,
+    pendingActionCount: state.actions.filter((action) =>
+      action.status !== "completed" && action.status !== "skipped"
+    ).length,
+    blockedActionCount: state.blockedActionIds.length,
+    nextActions,
+  };
+}
+
+function renderWorkflowMapRow(input: {
   lane: "research" | "discovery" | "architecture" | "runtime" | "host";
   title: string;
   stage: string | null | undefined;
@@ -44,6 +65,13 @@ export function renderWorkflowMapRow(input: {
       ? "architecture"
       : "default";
   const status = decision ? "decision needed" : input.stage ?? "live";
+  const decisionPlanState = decision?.planStateSummary ?? null;
+  const planMeta = decisionPlanState
+    ? `proof ${decisionPlanState.proofState} | ${decisionPlanState.pendingActionCount} pending | ${decisionPlanState.blockedActionCount} blocked`
+    : null;
+  const decisionGate = decision
+    ? `${decision.decisionSurface}: ${decision.blockReason}${planMeta ? ` (${planMeta})` : ""}`
+    : "none currently surfaced";
 
   return html`
     <details class=${`workflow-row ${input.lane}`}>
@@ -62,9 +90,12 @@ export function renderWorkflowMapRow(input: {
           <div><h4>Status</h4><p>${status}</p></div>
           <div><h4>Next legal step</h4><p>${input.nextStep ?? "n/a"}</p></div>
           <div><h4>Current artifact</h4><p>${input.artifactPath ? artifactLink(input.artifactPath) : html`<span class="muted">n/a</span>`}</p></div>
-          <div><h4>Decision gate</h4><p>${decision ? `${decision.decisionSurface}: ${decision.blockReason}` : "none currently surfaced"}</p></div>
+          <div><h4>Decision gate</h4><p>${decisionGate}</p></div>
         </div>
         ${input.meta ? html`<p class="muted">${input.meta}</p>` : null}
+        ${decisionPlanState?.nextActions.length
+          ? html`<p class="muted">Next executable actions: ${decisionPlanState.nextActions.join(" | ")}</p>`
+          : null}
         <div class="actions">
           ${input.actionHref
             ? html`
@@ -98,7 +129,7 @@ export function renderWorkflowMapRow(input: {
   `;
 }
 
-export function renderWorkflowMapGroup(input: {
+function renderWorkflowMapGroup(input: {
   title: string;
   description: string;
   rows: unknown[];
@@ -157,17 +188,35 @@ export function renderWorkflowMapPage(
         title: "Research Engine / Engine Runs",
         description: "Recent live analysis and routing records before lane handoff.",
         rows: recentRuns,
-        renderRow: (run: { record: FrontendEngineRunRecord }) => renderWorkflowMapRow({
-          lane: "research",
-          title: run.record.candidate.candidateName,
-          stage: `engine.route.${run.record.selectedLane.laneId}`,
-          nextStep: run.record.integrationProposal?.nextAction,
-          artifactPath: null,
-          actionHref: `/engine-runs/${encodeURIComponent(run.record.runId)}`,
-          actionLabel: "Open run",
-          decision: workflowDecisionForCandidate(inbox, run.record.candidate.candidateId),
-          meta: `Usefulness: ${run.record.candidate.usefulnessLevel}; proof: ${run.record.proofPlan?.proofKind ?? "n/a"}`,
-        }),
+        renderRow: (run: { record: FrontendEngineRunRecord }) => {
+          const planState = summarizeRunPlanState(run.record);
+          const nextStep = planState?.nextActions[0]
+            ?? run.record.integrationProposal?.nextAction
+            ?? null;
+          const metaParts = [
+            `Usefulness: ${run.record.candidate.usefulnessLevel}`,
+            `proof kind: ${run.record.proofPlan?.proofKind ?? "n/a"}`,
+          ];
+          if (planState) {
+            metaParts.push(
+              `proof state: ${planState.proofState}`,
+              `completion: ${planState.completionRate}%`,
+              `pending actions: ${planState.pendingActionCount}`,
+            );
+          }
+
+          return renderWorkflowMapRow({
+            lane: "research",
+            title: run.record.candidate.candidateName,
+            stage: `engine.route.${run.record.selectedLane.laneId}`,
+            nextStep,
+            artifactPath: null,
+            actionHref: `/engine-runs/${encodeURIComponent(run.record.runId)}`,
+            actionLabel: "Open run",
+            decision: workflowDecisionForCandidate(inbox, run.record.candidate.candidateId),
+            meta: metaParts.join("; "),
+          });
+        },
       })}
       ${renderWorkflowMapGroup({
         title: "Discovery",

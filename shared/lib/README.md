@@ -12,7 +12,6 @@ It should stay smaller than `engine/` and contain only code that is still:
 
 1. Engine support services
 - operator/report helpers
-- artifact/storage compatibility helpers
 
 2. Small reusable support utilities that do not define lane ownership
 
@@ -45,7 +44,8 @@ Open `shared/lib/` only when you need residual support code rather than a lane h
 Recent lane-owned moves out of this folder:
 - `architecture/lib/lifecycle-review-feedback.ts`
 - `architecture/lib/operational-architecture-improvement-candidates.ts`
-- `architecture/lib/operator-simplicity-loop-control.ts`
+- `architecture/lib/control/operator-simplicity-loop-control.ts`
+- `engine/state/artifact-storage.ts`
 
 Current residual files that still belong here:
 - `directive-goal.ts`
@@ -56,8 +56,6 @@ Current residual files that still belong here:
   Canonical validated relative-path handling for directive-workspace artifact references shared by Engine state, Architecture helpers, and cross-lane readers.
 - `workspace-root.ts`
   Shared directive-workspace root resolution so cross-lane readers do not reach into Architecture for generic path setup.
-- `directive-workspace-artifact-storage.ts`
-  Canonical logical-to-physical artifact path/storage compatibility for multiple lanes and host read surfaces.
 - `structured-output-fallback.ts`
   Small host-agnostic structured-output parsing fallback used by other shared artifact helpers.
 - `lifecycle-artifacts.ts`
@@ -66,6 +64,9 @@ Current residual files that still belong here:
   Generic integration/proof artifact generation helper rather than a lane lifecycle owner.
 - `literature-monitoring-artifacts.ts`
   Shared literature-monitoring artifact normalizers and builders, mirrored into host inventory as a reusable support surface.
+
+Compatibility note:
+- `directive-workspace-artifact-storage.ts` remains only as a compatibility bridge. New internal code should use `engine/state/artifact-storage.ts`.
 
 Stop-line:
 - if a file here gains a clearer lane, Engine, or host ownership surface, move it there

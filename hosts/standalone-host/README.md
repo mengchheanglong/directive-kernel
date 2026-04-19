@@ -10,11 +10,12 @@ Use it when you want:
 
 Main entrypoints:
 - `cli.ts`
-- `runtime.ts`
+- `filesystem-host.ts`
 - `server.ts`
 - `bootstrap.ts`
 - `config.ts`
 - `persistence.ts`
+- `runtime/operations.ts`
 
 Quickstart:
 

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { normalizePath } from "./architecture-deep-tail-artifact-helpers.ts";
+import { normalizePath } from "./control/architecture-deep-tail-artifact-helpers.ts";
 import { resolveDirectiveWorkspaceState } from "../../engine/state/index.ts";
 import { buildRuntimeCallableExecutionEvidenceReport } from "../../runtime/lib/runtime-callable-execution-evidence.ts";
 

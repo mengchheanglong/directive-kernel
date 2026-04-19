@@ -32,7 +32,7 @@ import {
   readDirectiveRuntimeRoutingBackfillCompat,
   readRuntimeOpenerJson as readJson,
   readRuntimeOpenerUtf8 as readUtf8,
-} from "./runtime-opener-shared.ts";
+} from "./openers/runtime-opener-shared.ts";
 
 function buildRuntimeCapabilityBoundaryRelativePath(input: {
   proofDate: string;

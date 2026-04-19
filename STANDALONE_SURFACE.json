@@ -24,7 +24,6 @@
       "./standalone-host/bootstrap",
       "./standalone-host/cli",
       "./standalone-host/config",
-      "./standalone-host/runtime",
       "./standalone-host/persistence",
       "./standalone-host/server",
       "./ui",

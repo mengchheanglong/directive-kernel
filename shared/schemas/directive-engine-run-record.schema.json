@@ -939,6 +939,80 @@
         "completionRate": { "type": "number" }
       }
     },
+    "executablePlanState": {
+      "type": "object",
+      "required": [
+        "version",
+        "actions",
+        "nextActionIds",
+        "blockedActionIds",
+        "completionRate",
+        "proofState",
+        "rationale"
+      ],
+      "properties": {
+        "version": { "const": 1 },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "actionId",
+              "plan",
+              "itemType",
+              "itemIndex",
+              "title",
+              "detail",
+              "owner",
+              "status",
+              "completedAt",
+              "blockedByActionIds",
+              "completionCriteria",
+              "evidenceStatus",
+              "gateStatus"
+            ],
+            "properties": {
+              "actionId": { "type": "string", "minLength": 1 },
+              "plan": { "enum": ["extraction", "adaptation", "improvement", "proof"] },
+              "itemType": { "type": "string", "minLength": 1 },
+              "itemIndex": { "type": ["integer", "null"] },
+              "title": { "type": "string", "minLength": 1 },
+              "detail": { "type": "string", "minLength": 1 },
+              "owner": { "enum": ["engine", "operator", "host"] },
+              "status": { "enum": ["pending", "in_progress", "completed", "skipped"] },
+              "completedAt": { "type": ["string", "null"] },
+              "blockedByActionIds": { "type": "array", "items": { "type": "string" } },
+              "completionCriteria": { "type": "array", "items": { "type": "string" } },
+              "evidenceStatus": { "enum": ["not_needed", "pending", "gathering", "gathered"] },
+              "gateStatus": { "enum": ["not_needed", "pending", "reviewing", "passed"] }
+            }
+          }
+        },
+        "nextActionIds": { "type": "array", "items": { "type": "string" } },
+        "blockedActionIds": { "type": "array", "items": { "type": "string" } },
+        "completionRate": { "type": "number" },
+        "proofState": {
+          "type": "object",
+          "required": [
+            "objectiveState",
+            "evidenceState",
+            "gateState",
+            "finalState",
+            "outstandingEvidenceActionIds",
+            "outstandingGateActionIds"
+          ],
+          "properties": {
+            "objectiveState": { "enum": ["pending", "defined"] },
+            "evidenceState": { "enum": ["not_needed", "evidence_pending", "evidence_gathering", "evidence_gathered"] },
+            "gateState": { "enum": ["not_needed", "gate_pending", "gate_review", "gate_passed"] },
+            "finalState": { "enum": ["proof_pending", "proof_ready", "proved"] },
+            "outstandingEvidenceActionIds": { "type": "array", "items": { "type": "string" } },
+            "outstandingGateActionIds": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "rationale": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "planQualitySignal": {
       "type": ["object", "null"],
       "required": [

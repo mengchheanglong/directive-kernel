@@ -23,3 +23,5 @@ Instead:
   Barrel export for the Discovery lane operating surface.
 
 Use the barrel for navigation first, then open the specific `discovery-*` module you need.
+
+Keep Discovery-specific executable code here. Artifact storage remains under the numbered `discovery/` folders and should not be treated like normal module layout.

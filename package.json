@@ -30,7 +30,6 @@
     "./standalone-host/bootstrap": "./hosts/standalone-host/bootstrap.ts",
     "./standalone-host/cli": "./hosts/standalone-host/cli.ts",
     "./standalone-host/config": "./hosts/standalone-host/config.ts",
-    "./standalone-host/runtime": "./hosts/standalone-host/runtime.ts",
     "./standalone-host/persistence": "./hosts/standalone-host/persistence.ts",
     "./standalone-host/server": "./hosts/standalone-host/server.ts",
     "./ui": "./hosts/web-host/index.ts",

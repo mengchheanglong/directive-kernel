@@ -1,6 +1,6 @@
 import type { DecisionPolicyEvent } from "./decision-policy-ledger.ts";
 import { clampInt, parseTimestamp } from "./engine-source-utils.ts";
-import type { RoutingCorrectionEntry } from "./routing-correction-ledger.ts";
+import type { RoutingCorrectionEntry } from "./routing/routing-correction-ledger.ts";
 import type { DirectiveEngineRunRecord } from "./types.ts";
 
 export type DirectiveRoutingOutcome = {
@@ -12,7 +12,7 @@ export type DirectiveRoutingOutcome = {
   operatorAgreed: boolean;
   operatorCorrected: boolean;
   timeToResolutionHours: number | null;
-  planQuality: import("./plan-quality.ts").DirectiveEnginePlanQualitySignal["overallPlanQuality"] | null;
+  planQuality: import("./planning/plan-quality.ts").DirectiveEnginePlanQualitySignal["overallPlanQuality"] | null;
   outcomeQuality: "strong" | "adequate" | "weak" | "failed";
   notes: string[];
 };
@@ -37,6 +37,9 @@ function hoursBetween(start: string, end: string) {
 }
 
 function inferProofCompletion(record: DirectiveEngineRunRecord) {
+  if (record.executablePlanState?.proofState.finalState === "proved") {
+    return true;
+  }
   return (
     record.selectedLane.laneId !== "discovery"
     && record.routingAssessment.confidence === "high"

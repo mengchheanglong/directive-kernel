@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import { getDefaultDirectiveWorkspaceRoot } from "../../shared/lib/workspace-root.ts";
+import type { DirectiveEngineExecutablePlanState } from "../types.ts";
 
 export type StoredDirectiveEngineRunRecord = {
   $schema?: string;
@@ -315,6 +316,7 @@ export type StoredDirectiveEngineRunRecord = {
     proofKind: string;
     objective: string;
   };
+  executablePlanState?: DirectiveEngineExecutablePlanState | null;
   reportPlan: {
     reportKind: string;
     summary: string;

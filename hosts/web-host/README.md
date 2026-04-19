@@ -23,3 +23,9 @@ pnpm run dev
 ```
 
 The UI stays thin. Engine, Discovery, Runtime, and Architecture behavior still live in the kernel codebase.
+
+Main internal read-model entrypoints:
+- `data/index.ts`
+  grouped barrel for the web-host data surface
+- `data/snapshot.ts`
+  stable top-level snapshot/detail facade used by the UI and API routes

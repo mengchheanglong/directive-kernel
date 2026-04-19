@@ -1,6 +1,6 @@
 import { html } from "lit";
 
-import type { FrontendSnapshot } from "../app-types";
+import type { FrontendSnapshot } from "../types";
 import { navTo } from "../app-utils";
 import { renderQueueTag } from "../components/lane-sections";
 

@@ -5,14 +5,14 @@ import { fileURLToPath } from "node:url";
 
 import {
   createMemoryDiscoveryHostStorageBridge,
-} from "../starter/discovery-host-storage-bridge.memory.template.ts";
+} from "../lib/discovery-host-storage-bridge.memory.ts";
 import {
   submitDiscoveryEntryWithHostBridge,
   type DiscoveryHostStorageBridge,
-} from "../starter/discovery-submission-adapter.template.ts";
+} from "../lib/discovery-submission-adapter.ts";
 import {
   runHostIntegrationAcceptanceQuickstart,
-} from "../starter/run-host-integration-acceptance-quickstart.template.ts";
+} from "../lib/run-host-integration-acceptance-quickstart.ts";
 import type { DiscoverySubmissionRequest } from "../../../discovery/lib/discovery-submission-router.ts";
 
 type CommandName =

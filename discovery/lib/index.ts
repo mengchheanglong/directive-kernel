@@ -1,6 +1,7 @@
 export * from "./discovery-gap-priority.ts";
 export * from "./discovery-gap-worklist-generator.ts";
 export * from "./discovery-gap-worklist-selector.ts";
+export * from "./discovery-gap-worklist-refresh.ts";
 export * from "./discovery-intake-queue-writer.ts";
 export * from "./discovery-intake-queue-transition.ts";
 export * from "./discovery-intake-lifecycle-sync.ts";

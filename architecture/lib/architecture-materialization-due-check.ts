@@ -19,13 +19,13 @@ import {
 import {
   readDirectiveArchitectureAdoptionDetail,
 } from "./architecture-result-adoption.ts";
-import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./architecture-deep-tail-stage-map.ts";
+import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./control/architecture-deep-tail-stage-map.ts";
 import {
   getDefaultDirectiveWorkspaceRoot,
   normalizeRelativePath,
   normalizePath,
-} from "./architecture-deep-tail-artifact-helpers.ts";
-import { listDirectiveWorkspaceArtifactRelativePaths } from "../../shared/lib/directive-workspace-artifact-storage.ts";
+} from "./control/architecture-deep-tail-artifact-helpers.ts";
+import { listDirectiveWorkspaceArtifactRelativePaths } from "../../engine/state/artifact-storage.ts";
 
 export type DirectiveArchitectureMaterializationDueKind =
   | "create_implementation_target"

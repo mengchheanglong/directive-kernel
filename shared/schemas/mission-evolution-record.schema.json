@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://directive-workspace.dev/schemas/mission-evolution-record.schema.json",
+  "title": "Mission Evolution Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "recordKind",
+    "evolutionId",
+    "version",
+    "status",
+    "createdAt",
+    "operatorRationale",
+    "previousEvolutionId",
+    "missionSnapshot",
+    "appliedDelta",
+    "trigger",
+    "previewSnapshot",
+    "cascade"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "shared/schemas/mission-evolution-record.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "recordKind": {
+      "const": "mission_evolution"
+    },
+    "evolutionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "enum": ["active", "superseded", "reverted"]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "operatorRationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "previousEvolutionId": {
+      "type": ["string", "null"]
+    },
+    "revertedFromEvolutionId": {
+      "type": ["string", "null"]
+    },
+    "missionSnapshot": {
+      "type": "object",
+      "required": [
+        "missionId",
+        "currentObjective",
+        "usefulnessSignals",
+        "capabilityLanes",
+        "constraints",
+        "successSignal",
+        "adoptionTarget",
+        "activeMissionMarkdown"
+      ],
+      "properties": {
+        "missionId": { "type": ["string", "null"] },
+        "currentObjective": { "type": "string", "minLength": 1 },
+        "usefulnessSignals": { "type": "array", "items": { "type": "string" } },
+        "capabilityLanes": { "type": "array", "items": { "type": "string" } },
+        "constraints": { "type": "array", "items": { "type": "string" } },
+        "successSignal": { "type": ["string", "null"] },
+        "adoptionTarget": { "type": ["string", "null"] },
+        "activeMissionMarkdown": { "type": "string" }
+      }
+    },
+    "appliedDelta": {
+      "type": "object"
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["health_degradation", "gap_pressure", "operator_initiated", "revert"]
+        },
+        "healthGradeAtTrigger": {
+          "type": ["string", "null"]
+        },
+        "radarSuggestionIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sourceRunIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "previewSnapshot": {
+      "type": ["object", "null"],
+      "required": ["affectedRunCount", "rerouteCandidateCount", "confidenceDeltaSummary"],
+      "properties": {
+        "affectedRunCount": { "type": "integer", "minimum": 0 },
+        "rerouteCandidateCount": { "type": "integer", "minimum": 0 },
+        "confidenceDeltaSummary": { "type": "string", "minLength": 1 }
+      }
+    },
+    "cascade": {
+      "type": "object",
+      "required": ["approved", "scope", "affectedRunIds"],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "scope": {
+          "enum": ["none", "low_confidence", "conflicted", "discovery_held"]
+        },
+        "affectedRunIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@ import type {
   DirectiveEngineRunRecord,
   DirectiveEngineSourceItem,
 } from "./types.ts";
-import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
+import { extractSourceSignalTokens } from "./routing/routing-correction-ledger.ts";
 
 export function normalizeText(value: unknown) {
   return String(value ?? "").trim();

@@ -24,7 +24,7 @@ import {
   type ResolvedStandaloneHostPersistence,
 } from "./config.ts";
 import { createStandaloneHostPersistenceLedger } from "./persistence.ts";
-import { createStandaloneFilesystemHost } from "./runtime.ts";
+import { createStandaloneFilesystemHost } from "./filesystem-host.ts";
 
 type JsonValue = Record<string, unknown>;
 

@@ -9,12 +9,12 @@ import {
   resolveArchitectureDeepTailRelativePath,
   resolveDirectiveRelativePath,
   writeDirectiveArchitectureDeepTailArtifact,
-} from "./architecture-deep-tail-artifact-helpers.ts";
+} from "./control/architecture-deep-tail-artifact-helpers.ts";
 import {
   readDirectiveArchitectureImplementationTargetDetail,
 } from "./architecture-implementation-target.ts";
-import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./architecture-deep-tail-stage-map.ts";
-import { resolveDirectiveWorkspaceArtifactAbsolutePath } from "../../shared/lib/directive-workspace-artifact-storage.ts";
+import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./control/architecture-deep-tail-stage-map.ts";
+import { resolveDirectiveWorkspaceArtifactAbsolutePath } from "../../engine/state/artifact-storage.ts";
 
 export type CreateDirectiveArchitectureImplementationResultInput = {
   targetPath: string;

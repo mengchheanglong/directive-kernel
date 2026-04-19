@@ -3,7 +3,7 @@ import { isDirectiveAbsolutePathWithinRoot } from "../../shared/lib/directive-re
 import {
   optionalString,
   requiredString,
-} from "./architecture-deep-tail-artifact-helpers.ts";
+} from "./control/architecture-deep-tail-artifact-helpers.ts";
 import {
   buildDirectiveArchitectureAdoptionDecisionArtifact,
   type DirectiveArchitectureAdoptionDecisionArtifact,

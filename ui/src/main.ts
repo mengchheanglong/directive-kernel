@@ -1,5 +1,5 @@
 import "./styles.css";
-import "./app";
+import "./pages/app-shell";
 
 const mount = document.querySelector("#app");
 if (mount) {

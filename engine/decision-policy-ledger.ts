@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { uniqueStrings } from "./engine-source-utils.ts";
-import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
+import { extractSourceSignalTokens } from "./routing/routing-correction-ledger.ts";
 
 export type DecisionPolicyEvent = {
   recordedAt: string;

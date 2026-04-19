@@ -2,7 +2,7 @@ import path from "node:path";
 import {
   optionalRuntimeWriterString,
   requireRuntimeWriterString,
-} from "./runtime-writer-support.ts";
+} from "./writers/runtime-writer-support.ts";
 
 export type RuntimeTransformationRecordRequest = {
   candidate_id: string;

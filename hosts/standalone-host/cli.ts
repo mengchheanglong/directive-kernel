@@ -1,5 +1,18 @@
-import fs from "node:fs";
 import { readJson } from "../../shared/lib/file-io.ts";
+import {
+  approveGapFormalization,
+  approveMissionFeedbackEntry,
+  listGapFormalizationRecords,
+  listMissionFeedbackEntries,
+  listMissionEvolutionHistory,
+  listPendingGapFormalizationCandidates,
+  previewMissionFeedbackEntry,
+  readActiveMissionEvolution,
+  rejectGapFormalization,
+  rejectMissionFeedbackEntry,
+  revertMissionEvolution,
+} from "../../engine/index.ts";
+import { refreshDiscoveryGapWorklist } from "../../discovery/lib/discovery-gap-worklist-refresh.ts";
 
 import type { DiscoverySubmissionRequest } from "../../discovery/lib/discovery-submission-router.ts";
 import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/runtime-follow-up-record-writer.ts";
@@ -20,7 +33,7 @@ import {
   createStandaloneFilesystemHostFromConfig,
   DEFAULT_STANDALONE_HOST_NAME,
   runStandaloneHostAcceptanceQuickstart,
-} from "./runtime.ts";
+} from "./filesystem-host.ts";
 import {
   startStandaloneHostServer,
   startStandaloneHostServerFromConfig,
@@ -31,6 +44,15 @@ type CommandName =
   | "acceptance-quickstart"
   | "discovery-submit"
   | "discovery-overview"
+  | "mission-feedback"
+  | "mission-preview"
+  | "mission-approve"
+  | "mission-reject"
+  | "mission-revert"
+  | "mission-history"
+  | "gap-formalize"
+  | "gap-approve"
+  | "gap-reject"
   | "runtime-followup-write"
   | "runtime-record-write"
   | "runtime-proof-write"
@@ -59,6 +81,15 @@ Commands:
   acceptance-quickstart --output-root <path> [--host-name <name>] [--relative-output-path <path>] [--generated-at <iso>]
   discovery-submit (--directive-root <path> | --config <path>) --input-json-path <path> [--received-at <yyyy-mm-dd>] [--unresolved-gap-id <id> ...] [--persistence-sqlite-path <path>] [--dry-run] [--process-with-engine]
   discovery-overview (--directive-root <path> | --config <path>) [--max-entries <n>] [--received-at <yyyy-mm-dd>] [--persistence-sqlite-path <path>]
+  mission-feedback (--directive-root <path> | --config <path>)
+  mission-preview (--directive-root <path> | --config <path>) --feedback-id <id>
+  mission-approve (--directive-root <path> | --config <path>) --feedback-id <id> --rationale <text> [--cascade-scope <none|low_confidence|conflicted|discovery_held>] [--run-id <id> ...]
+  mission-reject (--directive-root <path> | --config <path>) --feedback-id <id> --rationale <text>
+  mission-revert (--directive-root <path> | --config <path>) --rationale <text>
+  mission-history (--directive-root <path> | --config <path>)
+  gap-formalize (--directive-root <path> | --config <path>)
+  gap-approve (--directive-root <path> | --config <path>) --formalization-id <id> --priority <high|medium|low> --rationale <text>
+  gap-reject (--directive-root <path> | --config <path>) --formalization-id <id> --rationale <text>
   runtime-followup-write (--directive-root <path> | --config <path>) --input-json-path <path> [--persistence-sqlite-path <path>]
   runtime-record-write (--directive-root <path> | --config <path>) --input-json-path <path> [--persistence-sqlite-path <path>]
   runtime-proof-write (--directive-root <path> | --config <path>) --input-json-path <path> [--persistence-sqlite-path <path>]
@@ -190,6 +221,13 @@ function createRuntimeHostFromFlags(
   });
 }
 
+function resolveDirectiveRootFromFlags(
+  flags: FlagMap,
+  config: ResolvedStandaloneHostConfig | null,
+) {
+  return config?.directiveRoot ?? readRequiredFlag(flags, "directive-root");
+}
+
 async function main() {
   const { command, flags } = parseArgs(process.argv.slice(2));
   if (!command) {
@@ -276,6 +314,127 @@ async function main() {
     } finally {
       host.close();
     }
+    return;
+  }
+
+  if (command === "mission-feedback") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    process.stdout.write(`${JSON.stringify({
+      ok: true,
+      activeEvolution: readActiveMissionEvolution({ directiveRoot }),
+      entries: listMissionFeedbackEntries({ directiveRoot }),
+    }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "mission-preview") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    const result = previewMissionFeedbackEntry({
+      directiveRoot,
+      feedbackId: readRequiredFlag(flags, "feedback-id"),
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "mission-approve") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    const cascadeScope = readOptionalFlag(flags, "cascade-scope") ?? "none";
+    if (
+      cascadeScope !== "none"
+      && cascadeScope !== "low_confidence"
+      && cascadeScope !== "conflicted"
+      && cascadeScope !== "discovery_held"
+    ) {
+      throw new Error("Invalid value for --cascade-scope");
+    }
+    const result = approveMissionFeedbackEntry({
+      directiveRoot,
+      feedbackId: readRequiredFlag(flags, "feedback-id"),
+      operatorRationale: readRequiredFlag(flags, "rationale"),
+      approvedRunIds: readRepeatedFlag(flags, "run-id"),
+      cascadeScope,
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "mission-reject") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    const result = rejectMissionFeedbackEntry({
+      directiveRoot,
+      feedbackId: readRequiredFlag(flags, "feedback-id"),
+      operatorRationale: readRequiredFlag(flags, "rationale"),
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "mission-revert") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    const result = revertMissionEvolution({
+      directiveRoot,
+      operatorRationale: readRequiredFlag(flags, "rationale"),
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "mission-history") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    process.stdout.write(`${JSON.stringify({
+      ok: true,
+      history: listMissionEvolutionHistory({ directiveRoot }),
+    }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "gap-formalize") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    process.stdout.write(`${JSON.stringify({
+      ok: true,
+      pending: listPendingGapFormalizationCandidates({ directiveRoot }),
+      history: listGapFormalizationRecords({ directiveRoot }),
+    }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "gap-approve") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    const priority = readRequiredFlag(flags, "priority");
+    if (priority !== "high" && priority !== "medium" && priority !== "low") {
+      throw new Error("Invalid value for --priority");
+    }
+    const result = approveGapFormalization({
+      directiveRoot,
+      formalizationId: readRequiredFlag(flags, "formalization-id"),
+      operatorRationale: readRequiredFlag(flags, "rationale"),
+      operatorApprovedPriority: priority,
+    });
+    const refreshedWorklist = refreshDiscoveryGapWorklist({
+      directiveRoot,
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, ...result, refreshedWorklist }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "gap-reject") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    const result = rejectGapFormalization({
+      directiveRoot,
+      formalizationId: readRequiredFlag(flags, "formalization-id"),
+      operatorRationale: readRequiredFlag(flags, "rationale"),
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
     return;
   }
 

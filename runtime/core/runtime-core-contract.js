@@ -1,1 +1,1 @@
-export * from "./runtime-core-contract.ts";
+export * from "./generated/runtime-core-contract.js";
