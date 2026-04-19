@@ -16,7 +16,7 @@ import {
   type DirectiveRuntimeTwoStepSequenceInterruptionPoint,
   type DirectiveRuntimeTwoStepSequenceInterruptedResult,
   type DirectiveRuntimeTwoStepSequenceSuccessResult,
-} from "./runtime-sequence-shared.ts";
+} from "./sequences/runtime-sequence-shared.ts";
 
 export type DirectiveRuntimeFollowUpProofSequenceAction =
   | "runtime_follow_up_open"

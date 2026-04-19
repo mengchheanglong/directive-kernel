@@ -4,11 +4,11 @@ import {
   readDirectiveArchitectureDeepTailDetailArtifact,
   resolveArchitectureDeepTailRelativePath,
   writeDirectiveArchitectureDeepTailArtifact,
-} from "./architecture-deep-tail-artifact-helpers.ts";
+} from "./control/architecture-deep-tail-artifact-helpers.ts";
 import {
   readDirectiveArchitectureConsumptionRecordDetail,
 } from "./architecture-consumption-record.ts";
-import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./architecture-deep-tail-stage-map.ts";
+import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./control/architecture-deep-tail-stage-map.ts";
 
 export type EvaluateDirectiveArchitectureConsumptionInput = {
   consumptionPath: string;

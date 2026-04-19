@@ -15,6 +15,12 @@ Primary exports:
 - `@directive/kernel/integration-kit/starter`
 - `@directive/kernel/integration-kit/cli`
 
+Internal structure:
+- `starter/` is the copy-facing template and smoke surface
+- `lib/` is the reusable executable support surface used by hosts and the integration CLI
+
+Use `lib/` for real executable dependencies. Use `starter/` only when you need copyable template shapes.
+
 Main references:
 - `shared/contracts/host-integration-boundary.md`
 - `shared/contracts/host-integration-acceptance.md`

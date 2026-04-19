@@ -13,8 +13,8 @@ import {
   classifyRuntimeAutomationEligibility,
   RUNTIME_AUTOMATION_ELIGIBILITY_POLICY_VERSION,
   type RuntimeAutomationEligibilityClass,
-} from "../../runtime/lib/runtime-automation-eligibility-policy.ts";
-import type { RuntimeHostCallableAdapterDescriptor } from "../../runtime/lib/runtime-host-callable-adapter-contract.ts";
+} from "../../runtime/lib/control/runtime-automation-eligibility-policy.ts";
+import type { RuntimeHostCallableAdapterDescriptor } from "../../runtime/lib/host/runtime-host-callable-adapter-contract.ts";
 import {
   renderRuntimeRegistryEntry,
   type RuntimeRegistryEntryRequest,

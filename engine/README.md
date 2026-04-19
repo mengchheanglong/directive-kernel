@@ -15,12 +15,16 @@ It is the smallest but highest-leverage executable layer in the repo.
 - approval-boundary guard rails
 - product-truth constants
 
-## Main files
+## Main surfaces
 
 - `directive-engine.ts`
   Main source-processing orchestrator.
-- `routing.ts`
-  Shared routing logic.
+- `mission/`
+  Mission defaults, mission health, mission evolution, and mission feedback loop code.
+- `routing/`
+  Shared routing logic, routing feedback, and routing advisory surfaces.
+- `planning/`
+  Plan-quality and prior-plan support surfaces.
 - `usefulness.ts`
   Shared usefulness classification.
 - `types.ts`
@@ -40,6 +44,14 @@ It is the smallest but highest-leverage executable layer in the repo.
 - `source-type-normalization.ts`
   Input normalization.
 
+Authoritative grouped homes:
+- `mission/index.ts`
+- `routing/index.ts`
+- `planning/index.ts`
+- `state/index.ts`
+
+Use those grouped surfaces or the top-level Engine barrel first. The older flat helper wrappers are no longer the authoritative navigation path.
+
 ## Does not own
 
 - lane artifact and proof corpora
@@ -52,9 +64,9 @@ It is the smallest but highest-leverage executable layer in the repo.
 `engine/execution/` holds runner state, Engine run artifact readers, and run evidence aggregation.
 
 Lane operating code lives in each lane's own folder:
-- `architecture/lib/` — Architecture lane lifecycle code
-- `runtime/lib/` — Runtime lane lifecycle code
-- `discovery/lib/` — Discovery lane lifecycle code
+- `architecture/lib/` - Architecture lane lifecycle code
+- `runtime/lib/` - Runtime lane lifecycle code
+- `discovery/lib/` - Discovery lane lifecycle code
 
 `shared/lib/` holds only residual small reusable helpers and compatibility utilities that do not define a clearer Engine or host home.
 

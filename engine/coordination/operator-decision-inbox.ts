@@ -21,22 +21,31 @@ import {
 } from "../../runtime/lib/runtime-promotion-assistance.ts";
 import {
   resolveRuntimeHostSelectionResolutionPath,
-} from "../../runtime/lib/runtime-host-selection-resolution.ts";
+} from "../../runtime/lib/host/runtime-host-selection-resolution.ts";
 import {
   buildDirectiveRuntimePromotionAutomationDryRunReport,
   type DirectiveAutonomousRuntimePromotionAutomationPolicy,
 } from "./runtime-promotion-automation.ts";
+import {
+  listMissionFeedbackEntries,
+} from "../mission/mission-feedback-inbox.ts";
+import {
+  listPendingGapFormalizationCandidates,
+} from "../mission/gap-formalization.ts";
+import type { DirectiveEngineExecutablePlanState } from "../types.ts";
 
-export const OPERATOR_DECISION_INBOX_VERSION = "operator_decision_inbox.v2" as const;
+export const OPERATOR_DECISION_INBOX_VERSION = "operator_decision_inbox.v4" as const;
 
-export type OperatorDecisionInboxLane = "discovery" | "architecture" | "runtime";
+export type OperatorDecisionInboxLane = "discovery" | "architecture" | "runtime" | "engine";
 
 export type OperatorDecisionInboxEntry = {
   entryId: string;
   lane: OperatorDecisionInboxLane;
   decisionSurface:
+    | "mission_health_feedback"
     | "discovery_routing_review"
     | "architecture_materialization_due"
+    | "gap_formalization_review"
     | "runtime_host_selection"
     | "runtime_promotion_seam_decision"
     | "runtime_registry_acceptance";
@@ -53,6 +62,14 @@ export type OperatorDecisionInboxEntry = {
   mutatesWorkflowState: false;
   bypassesReview: false;
   stopLine: string;
+  planStateSummary?: {
+    runId: string;
+    proofState: DirectiveEngineExecutablePlanState["proofState"]["finalState"];
+    completionRate: number;
+    pendingActionCount: number;
+    blockedActionCount: number;
+    nextActions: string[];
+  } | null;
 };
 
 export type OperatorDecisionInboxReport = {
@@ -69,8 +86,10 @@ export type OperatorDecisionInboxReport = {
   };
   summary: {
     totalActionableEntries: number;
+    missionHealthFeedbackCount: number;
     discoveryRoutingReviewCount: number;
     architectureMaterializationDueCount: number;
+    gapFormalizationReviewCount: number;
     runtimeHostSelectionCount: number;
     runtimePromotionSeamDecisionCount: number;
     runtimeRegistryAcceptanceCount: number;
@@ -83,6 +102,121 @@ const DISABLED_RUNTIME_AUTOMATION_POLICY: DirectiveAutonomousRuntimePromotionAut
   autoHostCallableExecution: false,
   autoWriteRegistryEntry: false,
 };
+
+type CandidatePlanStateSummary = NonNullable<OperatorDecisionInboxEntry["planStateSummary"]>;
+
+function readJson(filePath: string) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8")) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function buildPlanStateSummary(input: {
+  runId: string;
+  state: DirectiveEngineExecutablePlanState | null | undefined;
+}): CandidatePlanStateSummary | null {
+  const state = input.state;
+  if (!state?.actions?.length) {
+    return null;
+  }
+
+  const nextActions = state.nextActionIds
+    .map((actionId) => state.actions.find((action) => action.actionId === actionId)?.title ?? null)
+    .filter((title): title is string => Boolean(title))
+    .slice(0, 3);
+  const pendingActionCount = state.actions.filter((action) =>
+    action.status !== "completed" && action.status !== "skipped"
+  ).length;
+
+  return {
+    runId: input.runId,
+    proofState: state.proofState.finalState,
+    completionRate: state.completionRate,
+    pendingActionCount,
+    blockedActionCount: state.blockedActionIds.length,
+    nextActions,
+  };
+}
+
+function buildLatestPlanStateSummaryByCandidateId(directiveRoot: string) {
+  const engineRunsRoot = path.join(
+    directiveRoot,
+    "runtime",
+    "standalone-host",
+    "engine-runs",
+  );
+  const summaries = new Map<string, {
+    summary: CandidatePlanStateSummary;
+    recordPath: string;
+  }>();
+
+  if (!fs.existsSync(engineRunsRoot)) {
+    return summaries;
+  }
+
+  const recordPaths = fs
+    .readdirSync(engineRunsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
+    .map((entry) => path.join(engineRunsRoot, entry.name))
+    .sort((left, right) => path.basename(right).localeCompare(path.basename(left)));
+
+  for (const absoluteRecordPath of recordPaths) {
+    const parsed = readJson(absoluteRecordPath) as {
+      runId?: unknown;
+      candidate?: {
+        candidateId?: unknown;
+      };
+      executablePlanState?: DirectiveEngineExecutablePlanState | null;
+    } | null;
+    const candidateId = typeof parsed?.candidate?.candidateId === "string"
+      ? parsed.candidate.candidateId
+      : null;
+    const runId = typeof parsed?.runId === "string" ? parsed.runId : null;
+    if (!candidateId || !runId || summaries.has(candidateId)) {
+      continue;
+    }
+
+    const summary = buildPlanStateSummary({
+      runId,
+      state: parsed.executablePlanState,
+    });
+    if (!summary) {
+      continue;
+    }
+
+    summaries.set(candidateId, {
+      summary,
+      recordPath: normalizeDirectiveRelativePath(path.relative(directiveRoot, absoluteRecordPath)),
+    });
+  }
+
+  return summaries;
+}
+
+function attachPlanStateSummary(
+  entry: OperatorDecisionInboxEntry,
+  summaryByCandidateId: Map<string, { summary: CandidatePlanStateSummary; recordPath: string }>,
+) {
+  if (!entry.candidateId) {
+    return entry;
+  }
+
+  const planState = summaryByCandidateId.get(entry.candidateId) ?? null;
+  if (!planState) {
+    return entry;
+  }
+
+  return {
+    ...entry,
+    planStateSummary: planState.summary,
+    relatedArtifacts: Array.from(new Set([
+      ...entry.relatedArtifacts,
+      planState.recordPath,
+    ])),
+  };
+}
 
 function listFiles(input: {
   directiveRoot: string;
@@ -98,7 +232,10 @@ function listFiles(input: {
     .sort();
 }
 
-function buildDiscoveryRoutingReviewEntries(directiveRoot: string): OperatorDecisionInboxEntry[] {
+function buildDiscoveryRoutingReviewEntries(
+  directiveRoot: string,
+  summaryByCandidateId: Map<string, { summary: CandidatePlanStateSummary; recordPath: string }>,
+): OperatorDecisionInboxEntry[] {
   return listFiles({
     directiveRoot,
     relativeDir: "discovery/03-routing-log",
@@ -135,7 +272,7 @@ function buildDiscoveryRoutingReviewEntries(directiveRoot: string): OperatorDeci
         ? "confirm_runtime"
         : "defer";
 
-      return [{
+      return [attachPlanStateSummary({
         entryId: `discovery:${routing.candidateId}:routing_review`,
         lane: "discovery" as const,
         decisionSurface: "discovery_routing_review" as const,
@@ -167,21 +304,24 @@ function buildDiscoveryRoutingReviewEntries(directiveRoot: string): OperatorDeci
         stopLine:
           routing.reviewGuidance?.stopLine
           ?? "Do not continue downstream until an explicit Discovery routing review resolution exists.",
-      }];
+      }, summaryByCandidateId)];
     } catch {
       return [];
     }
   });
 }
 
-function buildArchitectureMaterializationEntries(directiveRoot: string): OperatorDecisionInboxEntry[] {
+function buildArchitectureMaterializationEntries(
+  directiveRoot: string,
+  summaryByCandidateId: Map<string, { summary: CandidatePlanStateSummary; recordPath: string }>,
+): OperatorDecisionInboxEntry[] {
   const report = readDirectiveArchitectureMaterializationDueCheck({
     directiveRoot,
   });
 
   return report.dueItems.map((item) => {
     const isTargetCreation = item.dueKind === "create_implementation_target";
-    return {
+    return attachPlanStateSummary({
       entryId: `architecture:${item.candidateId}:${item.dueKind}`,
       lane: "architecture" as const,
       decisionSurface: "architecture_materialization_due" as const,
@@ -210,11 +350,74 @@ function buildArchitectureMaterializationEntries(directiveRoot: string): Operato
       bypassesReview: false,
       stopLine:
         "The inbox does not create Architecture implementation targets or results; materialization remains an explicit Architecture lane action.",
-    };
+    }, summaryByCandidateId);
   });
 }
 
-function buildRuntimeHostSelectionEntries(directiveRoot: string): OperatorDecisionInboxEntry[] {
+function buildMissionFeedbackInboxEntries(directiveRoot: string): OperatorDecisionInboxEntry[] {
+  return listMissionFeedbackEntries({ directiveRoot }).map((entry) => ({
+    entryId: `engine:${entry.feedbackId}:mission_health_feedback`,
+    lane: "engine" as const,
+    decisionSurface: "mission_health_feedback" as const,
+    candidateId: null,
+    candidateName: entry.proposedAction,
+    currentStage: "engine.mission.feedback",
+    artifactPath: "knowledge/active-mission.md",
+    blockReason: entry.rationale,
+    eligibleNextAction: "approve or reject the proposed mission evolution after previewing its routing impact",
+    requiredProof: [
+      `health grade at generation: ${entry.healthGradeAtGeneration}`,
+      ...entry.sourceSignals.map((signal) => `trigger: ${signal}`),
+    ],
+    resolverCommandOrArtifact:
+      `node --experimental-strip-types ./hosts/standalone-host/cli.ts mission-preview --directive-root "${directiveRoot}" --feedback-id "${entry.feedbackId}"`,
+    relatedArtifacts: [
+      "knowledge/active-mission.md",
+      "DIRECTIVE_GOAL.md",
+      "shared/contracts/mission-evolution.md",
+    ],
+    readOnly: true,
+    mutatesWorkflowState: false,
+    bypassesReview: false,
+    stopLine:
+      "Do not change the active mission without previewing the routing impact and recording operator rationale.",
+  }));
+}
+
+function buildGapFormalizationInboxEntries(directiveRoot: string): OperatorDecisionInboxEntry[] {
+  return listPendingGapFormalizationCandidates({ directiveRoot }).map((record) => ({
+    entryId: `engine:${record.formalizationId}:gap_formalization_review`,
+    lane: "engine" as const,
+    decisionSurface: "gap_formalization_review" as const,
+    candidateId: null,
+    candidateName: record.radarSummary,
+    currentStage: "engine.gap.formalization",
+    artifactPath: "engine/gap-radar.json",
+    blockReason: `${record.radarSummary} Evidence count: ${record.radarEvidenceCount}.`,
+    eligibleNextAction: "approve or reject the proposed gap formalization explicitly",
+    requiredProof: [
+      `radar confidence: ${record.radarConfidence}`,
+      `recommended change: ${record.radarRecommendedChange}`,
+    ],
+    resolverCommandOrArtifact:
+      `node --experimental-strip-types ./hosts/standalone-host/cli.ts gap-approve --directive-root "${directiveRoot}" --formalization-id "${record.formalizationId}" --priority ${record.radarConfidence === "high" ? "high" : "medium"} --rationale "<operator rationale>"`,
+    relatedArtifacts: [
+      "engine/gap-radar.json",
+      "discovery/capability-gaps.json",
+      "shared/contracts/gap-formalization.md",
+    ],
+    readOnly: true,
+    mutatesWorkflowState: false,
+    bypassesReview: false,
+    stopLine:
+      "Do not hand-edit capability gaps or the Discovery worklist; formalize through the explicit approval path.",
+  }));
+}
+
+function buildRuntimeHostSelectionEntries(
+  directiveRoot: string,
+  summaryByCandidateId: Map<string, { summary: CandidatePlanStateSummary; recordPath: string }>,
+): OperatorDecisionInboxEntry[] {
   const report = buildDirectiveRuntimePromotionAssistanceReport({
     directiveRoot,
   });
@@ -226,7 +429,7 @@ function buildRuntimeHostSelectionEntries(directiveRoot: string): OperatorDecisi
       });
       const isHostSelectionDecision =
         recommendation.recommendedActionKind === "clarify_repo_native_host_target";
-      return {
+      return attachPlanStateSummary({
         entryId: `runtime:${recommendation.candidateId}:${isHostSelectionDecision ? "host_selection" : "promotion_seam_decision"}`,
         lane: "runtime" as const,
         decisionSurface: isHostSelectionDecision
@@ -259,11 +462,14 @@ function buildRuntimeHostSelectionEntries(directiveRoot: string): OperatorDecisi
         bypassesReview: false,
         stopLine:
           "Do not create promotion records, host adapters, callable execution evidence, or registry entries from the inbox report alone.",
-      };
+      }, summaryByCandidateId);
     });
 }
 
-function buildRuntimeRegistryAcceptanceEntries(directiveRoot: string): OperatorDecisionInboxEntry[] {
+function buildRuntimeRegistryAcceptanceEntries(
+  directiveRoot: string,
+  summaryByCandidateId: Map<string, { summary: CandidatePlanStateSummary; recordPath: string }>,
+): OperatorDecisionInboxEntry[] {
   return listFiles({
     directiveRoot,
     relativeDir: "runtime/07-promotion-records",
@@ -286,7 +492,7 @@ function buildRuntimeRegistryAcceptanceEntries(directiveRoot: string): OperatorD
         return [];
       }
 
-      return [{
+      return [attachPlanStateSummary({
         entryId: `runtime:${dryRun.candidateId ?? promotionRecordPath}:registry_acceptance`,
         lane: "runtime" as const,
         decisionSurface: "runtime_registry_acceptance" as const,
@@ -316,7 +522,7 @@ function buildRuntimeRegistryAcceptanceEntries(directiveRoot: string): OperatorD
         bypassesReview: false,
         stopLine:
           "The inbox does not write registry entries; registry acceptance remains proof-backed and explicitly gated.",
-      }];
+      }, summaryByCandidateId)];
     } catch {
       return [];
     }
@@ -325,9 +531,11 @@ function buildRuntimeRegistryAcceptanceEntries(directiveRoot: string): OperatorD
 
 function sortInboxEntries(left: OperatorDecisionInboxEntry, right: OperatorDecisionInboxEntry) {
   const surfacePriority = new Map<OperatorDecisionInboxEntry["decisionSurface"], number>([
+    ["mission_health_feedback", 5],
     ["runtime_host_selection", 10],
     ["runtime_promotion_seam_decision", 15],
     ["architecture_materialization_due", 20],
+    ["gap_formalization_review", 25],
     ["runtime_registry_acceptance", 30],
     ["discovery_routing_review", 40],
   ]);
@@ -362,6 +570,17 @@ function renderMarkdownGroup(input: {
     lines.push(`- Why blocked: ${markdownText(entry.blockReason)}`);
     lines.push(`- Eligible next action: ${markdownText(entry.eligibleNextAction)}`);
     lines.push(`- Stop-line: ${markdownText(entry.stopLine)}`);
+    if (entry.planStateSummary) {
+      lines.push(
+        `- Executable plan: proof=${markdownText(entry.planStateSummary.proofState)}, completion=${entry.planStateSummary.completionRate}%, pending=${entry.planStateSummary.pendingActionCount}, blocked=${entry.planStateSummary.blockedActionCount}, run=${markdownText(entry.planStateSummary.runId)}`,
+      );
+      if (entry.planStateSummary.nextActions.length) {
+        lines.push("- Next executable actions:");
+        for (const nextAction of entry.planStateSummary.nextActions) {
+          lines.push(`  - ${markdownText(nextAction)}`);
+        }
+      }
+    }
     lines.push("- Required proof:");
     for (const proof of entry.requiredProof.length ? entry.requiredProof : ["n/a"]) {
       lines.push(`  - ${markdownText(proof)}`);
@@ -383,6 +602,9 @@ function renderMarkdownGroup(input: {
 }
 
 export function renderOperatorDecisionInboxMarkdown(report: OperatorDecisionInboxReport) {
+  const missionFeedbackEntries = report.entries.filter((entry) =>
+    entry.decisionSurface === "mission_health_feedback"
+  );
   const runtimeHostSelectionEntries = report.entries.filter((entry) =>
     entry.decisionSurface === "runtime_host_selection"
   );
@@ -394,6 +616,9 @@ export function renderOperatorDecisionInboxMarkdown(report: OperatorDecisionInbo
   );
   const architectureMaterializationEntries = report.entries.filter((entry) =>
     entry.decisionSurface === "architecture_materialization_due"
+  );
+  const gapFormalizationEntries = report.entries.filter((entry) =>
+    entry.decisionSurface === "gap_formalization_review"
   );
   const discoveryRoutingReviewEntries = report.entries.filter((entry) =>
     entry.decisionSurface === "discovery_routing_review"
@@ -417,12 +642,18 @@ export function renderOperatorDecisionInboxMarkdown(report: OperatorDecisionInbo
     "## Summary",
     "",
     `- Total actionable entries: ${report.summary.totalActionableEntries}`,
+    `- Mission health feedback decisions: ${report.summary.missionHealthFeedbackCount}`,
     `- Runtime host-selection decisions: ${report.summary.runtimeHostSelectionCount}`,
     `- Runtime promotion-seam decisions: ${report.summary.runtimePromotionSeamDecisionCount}`,
     `- Architecture materialization decisions: ${report.summary.architectureMaterializationDueCount}`,
+    `- Gap formalization decisions: ${report.summary.gapFormalizationReviewCount}`,
     `- Runtime registry-acceptance decisions: ${report.summary.runtimeRegistryAcceptanceCount}`,
     `- Discovery routing-review decisions: ${report.summary.discoveryRoutingReviewCount}`,
     "",
+    renderMarkdownGroup({
+      title: "Mission Health Feedback",
+      entries: missionFeedbackEntries,
+    }),
     renderMarkdownGroup({
       title: "Runtime Host Selection",
       entries: runtimeHostSelectionEntries,
@@ -434,6 +665,10 @@ export function renderOperatorDecisionInboxMarkdown(report: OperatorDecisionInbo
     renderMarkdownGroup({
       title: "Architecture Materialization",
       entries: architectureMaterializationEntries,
+    }),
+    renderMarkdownGroup({
+      title: "Gap Formalization",
+      entries: gapFormalizationEntries,
     }),
     renderMarkdownGroup({
       title: "Runtime Registry Acceptance",
@@ -455,11 +690,14 @@ export function buildOperatorDecisionInboxReport(input?: {
   snapshotAt?: string;
 }): OperatorDecisionInboxReport {
   const directiveRoot = normalizeAbsolutePath(input?.directiveRoot || getDefaultDirectiveWorkspaceRoot());
+  const planStateSummaryByCandidateId = buildLatestPlanStateSummaryByCandidateId(directiveRoot);
   const entries = [
-    ...buildDiscoveryRoutingReviewEntries(directiveRoot),
-    ...buildArchitectureMaterializationEntries(directiveRoot),
-    ...buildRuntimeHostSelectionEntries(directiveRoot),
-    ...buildRuntimeRegistryAcceptanceEntries(directiveRoot),
+    ...buildMissionFeedbackInboxEntries(directiveRoot),
+    ...buildDiscoveryRoutingReviewEntries(directiveRoot, planStateSummaryByCandidateId),
+    ...buildArchitectureMaterializationEntries(directiveRoot, planStateSummaryByCandidateId),
+    ...buildGapFormalizationInboxEntries(directiveRoot),
+    ...buildRuntimeHostSelectionEntries(directiveRoot, planStateSummaryByCandidateId),
+    ...buildRuntimeRegistryAcceptanceEntries(directiveRoot, planStateSummaryByCandidateId),
   ].sort(sortInboxEntries);
 
   return {
@@ -476,11 +714,17 @@ export function buildOperatorDecisionInboxReport(input?: {
     },
     summary: {
       totalActionableEntries: entries.length,
+      missionHealthFeedbackCount: entries.filter((entry) =>
+        entry.decisionSurface === "mission_health_feedback"
+      ).length,
       discoveryRoutingReviewCount: entries.filter((entry) =>
         entry.decisionSurface === "discovery_routing_review"
       ).length,
       architectureMaterializationDueCount: entries.filter((entry) =>
         entry.decisionSurface === "architecture_materialization_due"
+      ).length,
+      gapFormalizationReviewCount: entries.filter((entry) =>
+        entry.decisionSurface === "gap_formalization_review"
       ).length,
       runtimeHostSelectionCount: entries.filter((entry) =>
         entry.decisionSurface === "runtime_host_selection"

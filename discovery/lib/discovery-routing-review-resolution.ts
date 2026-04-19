@@ -10,9 +10,9 @@ import {
 import {
   appendRoutingCorrection,
   extractSourceSignalTokens,
-} from "../../engine/routing-correction-ledger.ts";
+} from "../../engine/routing/routing-correction-ledger.ts";
 import { appendDecisionPolicyEvent } from "../../engine/decision-policy-ledger.ts";
-import { writeDirectiveGapRadarReport } from "../../engine/gap-radar.ts";
+import { writeDirectiveGapRadarReport } from "../../engine/routing/gap-radar.ts";
 import {
   readDirectiveDiscoveryRoutingArtifact,
   type DirectiveDiscoveryRoutingArtifact,

@@ -1,6 +1,6 @@
 import { html } from "lit";
 
-import type { FrontendOperatorDecisionInboxEntry, FrontendQueueEntry } from "../app-types";
+import type { FrontendOperatorDecisionInboxEntry, FrontendQueueEntry } from "../types";
 import { navTo } from "../app-utils";
 
 export function artifactLink(pathValue: string | null | undefined) {
@@ -38,18 +38,6 @@ export function currentHeadLink(entry: FrontendQueueEntry) {
     >
       ${head.artifact_path}
     </a>
-  `;
-}
-
-export function currentHeadSummary(entry: FrontendQueueEntry) {
-  const head = entry.current_head;
-  if (!head) {
-    return html`<span class="muted">not resolved yet</span>`;
-  }
-
-  return html`
-    <div>${currentHeadLink(entry)}</div>
-    <div class="muted">${head.artifact_stage} | ${head.artifact_lane}</div>
   `;
 }
 

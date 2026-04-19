@@ -5,7 +5,7 @@ import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import {
   assertRuntimeHostCallableAdapterDescriptor,
   type RuntimeHostCallableAdapterDescriptor,
-} from "./runtime-host-callable-adapter-contract.ts";
+} from "./host/runtime-host-callable-adapter-contract.ts";
 import type { RuntimeRegistryEntryRequest } from "./runtime-registry-entry-writer.ts";
 
 export const RUNTIME_REGISTRY_ACCEPTANCE_GATE_VERSION =

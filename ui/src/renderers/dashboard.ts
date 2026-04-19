@@ -6,7 +6,7 @@ import type {
   FrontendQueueEntry,
   FrontendRuntimeSummaryCase,
   FrontendSnapshot,
-} from "../app-types";
+} from "../types";
 import { navTo } from "../app-utils";
 import {
   renderArchitectureCaseStrip,
@@ -21,7 +21,8 @@ type HomeRendererContext = {
   renderRuntimeCaseStrip: (entry: FrontendRuntimeSummaryCase | FrontendQueueEntry) => unknown;
 };
 
-export function renderOperatorDecisionEntry(entry: FrontendOperatorDecisionInboxEntry) {
+function renderOperatorDecisionEntry(entry: FrontendOperatorDecisionInboxEntry) {
+  const planStateSummary = entry.planStateSummary ?? null;
   return html`
     <article class=${`decision-entry ${entry.decisionSurface}`}>
       <div class="queue-card-header">
@@ -40,6 +41,22 @@ export function renderOperatorDecisionEntry(entry: FrontendOperatorDecisionInbox
         <div class="queue-kv"><h4>Next action</h4><p>${entry.eligibleNextAction}</p></div>
         <div class="queue-kv"><h4>Source artifact</h4><p>${artifactLink(entry.artifactPath)}</p></div>
       </div>
+      ${planStateSummary
+        ? html`
+          <section class="queue-highlight">
+            <h4>Executable plan summary</h4>
+            <p>
+              Run ${planStateSummary.runId} | proof ${planStateSummary.proofState}
+              | completion ${planStateSummary.completionRate}%
+              | pending ${planStateSummary.pendingActionCount}
+              | blocked ${planStateSummary.blockedActionCount}
+            </p>
+            ${planStateSummary.nextActions.length
+              ? html`<ul>${planStateSummary.nextActions.map((action) => html`<li>${action}</li>`)}</ul>`
+              : nothing}
+          </section>
+        `
+        : nothing}
       <section class="queue-highlight">
         <h4>Required proof</h4>
         <ul>${entry.requiredProof.map((proof) => html`<li>${proof}</li>`)}</ul>
@@ -56,7 +73,7 @@ export function renderOperatorDecisionEntry(entry: FrontendOperatorDecisionInbox
   `;
 }
 
-export function renderCompactSourceList(entries: FrontendQueueEntry[]) {
+function renderCompactSourceList(entries: FrontendQueueEntry[]) {
   const rows = entries.slice(0, 8);
   if (!rows.length) {
     return html`<div class="queue-empty muted">No sources have entered Discovery yet.</div>`;
@@ -103,7 +120,7 @@ export function renderCompactSourceList(entries: FrontendQueueEntry[]) {
   `;
 }
 
-export function renderCompactDecisionList(entries: FrontendOperatorDecisionInboxEntry[]) {
+function renderCompactDecisionList(entries: FrontendOperatorDecisionInboxEntry[]) {
   const rows = entries.slice(0, 5);
   if (!rows.length) {
     return html`<div class="queue-empty muted">No active operator decisions.</div>`;
@@ -125,6 +142,9 @@ export function renderCompactDecisionList(entries: FrontendOperatorDecisionInbox
             <strong class="simple-row-title">${entry.candidateName ?? entry.candidateId ?? entry.entryId}</strong>
             <span class="simple-row-support">${entry.blockReason}</span>
             <span class="muted">${entry.eligibleNextAction}</span>
+            ${entry.planStateSummary
+              ? html`<span class="muted">Proof ${entry.planStateSummary.proofState} | pending ${entry.planStateSummary.pendingActionCount} | next ${entry.planStateSummary.nextActions[0] ?? "n/a"}</span>`
+              : nothing}
           </span>
           <span class="simple-row-side">
             <span class="simple-row-meta">
@@ -139,7 +159,7 @@ export function renderCompactDecisionList(entries: FrontendOperatorDecisionInbox
   `;
 }
 
-export function renderDashboardFocusCard(input: {
+function renderDashboardFocusCard(input: {
   kicker: string;
   title: string;
   meta: string;
@@ -170,10 +190,12 @@ export function renderDashboardFocusCard(input: {
 }
 
 export function renderOperatorDecisionInboxPage(inbox: FrontendOperatorDecisionInboxReport) {
+  const missionHealthFeedback = inbox.entries.filter((entry) => entry.decisionSurface === "mission_health_feedback");
   const runtimeHostSelection = inbox.entries.filter((entry) => entry.decisionSurface === "runtime_host_selection");
   const runtimePromotionSeamDecision = inbox.entries.filter((entry) => entry.decisionSurface === "runtime_promotion_seam_decision");
   const runtimeRegistryAcceptance = inbox.entries.filter((entry) => entry.decisionSurface === "runtime_registry_acceptance");
   const architectureMaterialization = inbox.entries.filter((entry) => entry.decisionSurface === "architecture_materialization_due");
+  const gapFormalizationReview = inbox.entries.filter((entry) => entry.decisionSurface === "gap_formalization_review");
   const discoveryRoutingReview = inbox.entries.filter((entry) => entry.decisionSurface === "discovery_routing_review");
 
   const renderGroup = (title: string, description: string, entries: FrontendOperatorDecisionInboxEntry[]) => html`
@@ -189,12 +211,14 @@ export function renderOperatorDecisionInboxPage(inbox: FrontendOperatorDecisionI
   return html`
     <section class="panel">
       <h2>Operator Decision Inbox</h2>
-      <p class="muted">Live read-only triage over current Discovery, Architecture, and Runtime decision gates. This page is API-backed by Engine coordination state; it does not resolve routes, write host-selection artifacts, run host adapters, create Architecture materialization artifacts, or write registry entries.</p>
+      <p class="muted">Live read-only triage over current Engine, Discovery, Architecture, and Runtime decision gates. This page is API-backed by Engine coordination state; it does not resolve routes, write host-selection artifacts, run host adapters, create Architecture materialization artifacts, or write registry entries.</p>
       <div class="queue-summary-grid">
         ${renderQueueStat("Actionable entries", inbox.summary.totalActionableEntries, "Current Discovery, Architecture, and Runtime decisions requiring explicit operator attention.")}
+        ${renderQueueStat("Mission feedback", inbox.summary.missionHealthFeedbackCount, "Mission evolution proposals generated from mission-health pressure and routed into an explicit operator review loop.")}
         ${renderQueueStat("Runtime host selections", inbox.summary.runtimeHostSelectionCount, "Runtime promotion paths blocked on explicit host selection.")}
         ${renderQueueStat("Runtime seam decisions", inbox.summary.runtimePromotionSeamDecisionCount, "Runtime promotion paths ready for explicit manual promotion-seam review.")}
         ${renderQueueStat("Architecture materialization", inbox.summary.architectureMaterializationDueCount, "Architecture adoptions or implementation targets awaiting explicit lane-native materialization.")}
+        ${renderQueueStat("Gap formalization", inbox.summary.gapFormalizationReviewCount, "Gap radar suggestions waiting for explicit formalization into the Discovery capability-gap registry.")}
         ${renderQueueStat("Registry acceptance", inbox.summary.runtimeRegistryAcceptanceCount, "Proof-backed Runtime registry decisions requiring explicit acceptance.")}
         ${renderQueueStat("Discovery routing reviews", inbox.summary.discoveryRoutingReviewCount, "Conflicted or non-high-confidence Discovery routes requiring review.")}
       </div>
@@ -204,9 +228,11 @@ export function renderOperatorDecisionInboxPage(inbox: FrontendOperatorDecisionI
       <h3>Guardrails</h3>
       <p>Read-only: ${String(inbox.guardrails.readOnly)} | mutates workflow state: ${String(inbox.guardrails.mutatesWorkflowState)} | bypasses review: ${String(inbox.guardrails.bypassesReview)} | writes registry entries: ${String(inbox.guardrails.writesRegistryEntries)} | runs host adapters: ${String(inbox.guardrails.runsHostAdapters)}</p>
     </section>
+    ${renderGroup("Mission Health Feedback", "Highest-priority mission updates. These entries preview mission evolution before any active-mission change is accepted.", missionHealthFeedback)}
     ${renderGroup("Runtime Host Selection", "Highest-priority review work because it unblocks Runtime promotion paths without claiming execution or registry acceptance.", runtimeHostSelection)}
     ${renderGroup("Runtime Promotion Seam Decision", "Runtime cases with host selection resolved that still require an explicit manual promotion-seam decision.", runtimePromotionSeamDecision)}
     ${renderGroup("Architecture Materialization", "Explicit Architecture due items only: implementation-target creation or implementation-result recording. This group can be empty when Architecture is clean.", architectureMaterialization)}
+    ${renderGroup("Gap Formalization", "Gap-radar suggestions that should become explicit Discovery capability gaps through a single approval step.", gapFormalizationReview)}
     ${renderGroup("Runtime Registry Acceptance", "Proof-backed registry acceptance remains explicitly gated and disabled by default.", runtimeRegistryAcceptance)}
     ${renderGroup("Discovery Routing Review", "Discovery remains the front door; conflicted or medium-confidence routes need explicit review before downstream continuation.", discoveryRoutingReview)}
   `;

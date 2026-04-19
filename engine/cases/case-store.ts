@@ -7,7 +7,7 @@ import {
   readDirectiveCaseMirrorEvents,
   type DirectiveCaseMirrorEvent,
 } from "./case-event-log.ts";
-import type { DirectiveMirroredNoteArchitectureCloseoutProjectionInput } from "../../architecture/lib/architecture-note-closeout-projections.ts";
+import type { DirectiveMirroredNoteArchitectureCloseoutProjectionInput } from "../../architecture/lib/control/architecture-note-closeout-projections.ts";
 import type { DirectiveMirroredDiscoveryFrontDoorProjectionInput } from "../../discovery/lib/discovery-front-door-projections.ts";
 import type { DirectiveMirroredRuntimeFollowUpOpenProjectionInput } from "../../runtime/lib/runtime-follow-up-projections.ts";
 import type { DirectiveMirroredRuntimeProofOpenProjectionInput } from "../../runtime/lib/runtime-proof-open-projections.ts";

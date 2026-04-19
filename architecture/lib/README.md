@@ -17,9 +17,22 @@ Instead:
 - Architecture-specific review and decision helpers
 - Architecture-owned operational feedback and loop-control helpers
 
+## Internal grouped surfaces
+
+- `control/`
+  Deep-tail stage maps, linkage helpers, note projections, and operator loop control.
+- `adoption/`
+  Adoption decisions, adoption artifacts, and adoption/result review helpers.
+- `materialization/`
+  Implementation target/result and downstream materialization chain helpers.
+- `experiments/`
+  Architecture closeout, handoff, reopen, and experiment feedback helpers.
+
+The grouped subfolder indexes are the authoritative Architecture operating surface now. Prefer them over the older flat helper filenames when you navigate or add new Architecture code.
+
 ## Start here
 
 - `index.ts`
   Barrel export for the Architecture lane operating surface.
 
-Use the barrel for navigation first, then open the specific `architecture-*` module you need.
+Use the barrel for navigation first, then open the specific architecture module you need.

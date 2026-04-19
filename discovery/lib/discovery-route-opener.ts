@@ -30,7 +30,7 @@ import {
   extractRuntimeOpenerMarkdownTitle as extractMarkdownTitle,
   extractRuntimeOpenerOptionalBulletValue as extractOptionalBulletValue,
   extractRuntimeOpenerRequiredBulletValue as extractBulletValue,
-} from "../../runtime/lib/runtime-opener-shared.ts";
+} from "../../runtime/lib/openers/runtime-opener-shared.ts";
 import {
   describeDirectiveEngineGapPressure,
   type DirectiveEngineGapPressureDetail,

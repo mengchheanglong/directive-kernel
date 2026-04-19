@@ -1,5 +1,5 @@
 import path from "node:path";
-import { requireRuntimeWriterString } from "./runtime-writer-support.ts";
+import { requireRuntimeWriterString } from "./writers/runtime-writer-support.ts";
 
 function normalizeChecks(
   values?: Array<{

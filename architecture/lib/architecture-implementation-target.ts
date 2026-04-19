@@ -9,7 +9,7 @@ import {
   resolveDirectiveRelativePath,
   resolveDirectiveWorkspaceRoot,
   writeDirectiveArchitectureDeepTailArtifact,
-} from "./architecture-deep-tail-artifact-helpers.ts";
+} from "./control/architecture-deep-tail-artifact-helpers.ts";
 import {
   loadDirectiveArchitectureAdoptionDecisionArtifact,
 } from "./architecture-adoption-decision-store.ts";
@@ -23,8 +23,8 @@ import {
 import {
   readDirectiveArchitectureAdoptionDetail,
 } from "./architecture-result-adoption.ts";
-import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./architecture-deep-tail-stage-map.ts";
-import { resolveDirectiveWorkspaceArtifactAbsolutePath } from "../../shared/lib/directive-workspace-artifact-storage.ts";
+import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./control/architecture-deep-tail-stage-map.ts";
+import { resolveDirectiveWorkspaceArtifactAbsolutePath } from "../../engine/state/artifact-storage.ts";
 
 type ImplementationTargetSourceContext = {
   objective: string;

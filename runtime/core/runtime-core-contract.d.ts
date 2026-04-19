@@ -1,1 +1,1 @@
-export * from "./runtime-core-contract.js";
+export * from "./generated/runtime-core-contract.js";

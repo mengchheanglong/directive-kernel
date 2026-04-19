@@ -6,7 +6,7 @@ import {
   renderDirectiveProjectionListOrPlaceholder,
   sortDirectiveProjectionEvents,
   writeDirectiveProjectionUtf8,
-} from "./runtime-projection-shared.ts";
+} from "./projections/runtime-projection-shared.ts";
 
 function toSentenceCase(value: string) {
   return value.replace(/[_-]+/g, " ").trim();

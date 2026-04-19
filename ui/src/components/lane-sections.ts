@@ -8,7 +8,7 @@ import type {
   FrontendQueueEntry,
   FrontendRuntimeSummaryCase,
   FrontendSnapshot,
-} from "../app-types";
+} from "../types";
 import { navTo } from "../app-utils";
 
 type RenderQueueTag = (
@@ -325,7 +325,7 @@ export function renderRuntimeLaneSummary(
   `;
 }
 
-export function renderLaneAnchorList(
+function renderLaneAnchorList(
   title: string,
   description: string,
   anchors: FrontendLaneAnchor[],
@@ -459,7 +459,7 @@ export function renderDiscoveryLanePage(snapshot: FrontendSnapshot) {
   `;
 }
 
-export function renderLaneOverviewCard(input: {
+function renderLaneOverviewCard(input: {
   title: string;
   tone: "discovery" | "architecture" | "runtime";
   description: string;

@@ -133,7 +133,7 @@ function createRuntimeFollowUpExample(receivedAt: string): JsonValue {
     source_pack_allowlist_profile: "n/a",
     allowed_export_surfaces: [
       "@directive/kernel/standalone-host",
-      "@directive/kernel/standalone-host/runtime",
+      "@directive/kernel/standalone-host/server",
     ],
     excluded_baggage: [
       "broad runtime promotion claims",

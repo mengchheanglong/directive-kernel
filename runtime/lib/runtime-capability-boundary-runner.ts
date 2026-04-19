@@ -15,7 +15,7 @@ import {
   type DirectiveRuntimeCheckpointRunnerInterruptedResult,
   type DirectiveRuntimeCheckpointRunnerInterruptionPoint,
   type DirectiveRuntimeCheckpointRunnerSuccessResult,
-} from "./runtime-runner-shared.ts";
+} from "./runners/runtime-runner-shared.ts";
 
 export type DirectiveRuntimeCapabilityBoundaryRunnerInterruptionPoint =
   DirectiveRuntimeCheckpointRunnerInterruptionPoint;

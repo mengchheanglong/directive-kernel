@@ -7,19 +7,33 @@ It is Engine cross-cutting code, not lane-local code.
 ## Owns
 
 - current-head resolution across Discovery, Runtime, and Architecture artifacts
+- lane-specific state resolution for Discovery and Architecture artifact chains
+- final resolved-focus assembly for Engine, Architecture, and Runtime views
 - runtime artifact type definitions used by the resolver and checks
 - shared state helpers used by hosts, reports, and validation
 
 ## Files
 
-- `shared.ts`
+- `resolve-directive-workspace-state.ts`
+  Canonical workspace-state resolver and dispatch surface.
+- `focus-builders.ts`
+  Final resolved-focus builders for Engine, Architecture, and Runtime artifact views.
+- `architecture-state.ts`
+  Architecture artifact-chain resolution and stage derivation.
+- `discovery-state.ts`
+  Discovery routing and monitor focus resolution.
+- `shared-state-helpers.ts`
   Cross-lane shared state helpers.
-- `runtime.ts`
+- `runtime-focus.ts`
   Runtime-focused state resolution.
+- `artifact-storage.ts`
+  Engine-owned artifact path/storage compatibility helpers.
 - `runtime-artifact-types.ts`
   Canonical runtime artifact type definitions.
 - `index.ts`
-  Barrel export for this grouped state surface.
+  Real barrel export for this grouped state surface.
+
+The grouped files here are the canonical state read-model surface. Historical alias names are not the authoritative entrypoints anymore.
 
 ## Rule
 

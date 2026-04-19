@@ -1,6 +1,6 @@
 import { html, nothing } from "lit";
 
-import type { FrontendOperatorDecisionInboxReport, FrontendSnapshot } from "../app-types";
+import type { FrontendOperatorDecisionInboxReport, FrontendSnapshot } from "../types";
 import { navTo } from "../app-utils";
 
 type ActionTone = "primary" | "secondary";
@@ -16,7 +16,7 @@ export type PageChrome = {
   }>;
 };
 
-export function renderShellIcon(name: string) {
+function renderShellIcon(name: string) {
   switch (name) {
     case "overview":
       return html`

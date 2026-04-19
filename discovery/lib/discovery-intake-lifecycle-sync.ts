@@ -10,7 +10,7 @@ import {
   type DiscoveryRoutingTarget,
 } from "./discovery-intake-queue-writer.ts";
 import { transitionDiscoveryIntakeQueueEntry } from "./discovery-intake-queue-transition.ts";
-import { extractRuntimeOpenerRequiredBulletValue as extractBulletValue } from "../../runtime/lib/runtime-opener-shared.ts";
+import { extractRuntimeOpenerRequiredBulletValue as extractBulletValue } from "../../runtime/lib/openers/runtime-opener-shared.ts";
 import { readDiscoveryRoutingReviewResolution } from "./discovery-routing-review-resolution.ts";
 import { deriveEffectiveDiscoveryRouteBoundary } from "./discovery-routing-effective-boundary.ts";
 

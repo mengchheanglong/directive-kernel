@@ -13,7 +13,7 @@ import {
   requiredString,
   resolveDirectiveRelativePath,
   writeJsonPretty,
-} from "./architecture-deep-tail-artifact-helpers.ts";
+} from "./control/architecture-deep-tail-artifact-helpers.ts";
 import {
   readDirectiveArchitectureHandoffArtifact,
   type DirectiveArchitectureHandoffArtifact,
@@ -46,8 +46,8 @@ import type {
 import {
   writeDirectiveNoteArchitectureCloseoutProjectionSet,
   type DirectiveMirroredNoteArchitectureCloseoutProjectionInput,
-} from "./architecture-note-closeout-projections.ts";
-import { readRuntimeOpenerJson as readJson } from "../../runtime/lib/runtime-opener-shared.ts";
+} from "./control/architecture-note-closeout-projections.ts";
+import { readRuntimeOpenerJson as readJson } from "../../runtime/lib/openers/runtime-opener-shared.ts";
 
 export type DirectiveArchitectureBoundedStartArtifact = {
   title: string;

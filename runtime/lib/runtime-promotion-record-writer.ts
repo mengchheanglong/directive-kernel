@@ -8,12 +8,12 @@ import {
 } from "./runtime-promotion-specification.ts";
 import {
   readRuntimeHostSelectionResolution,
-} from "./runtime-host-selection-resolution.ts";
+} from "./host/runtime-host-selection-resolution.ts";
 import {
   normalizeRuntimeWriterList,
   renderRuntimeWriterList,
   requireRuntimeWriterString,
-} from "./runtime-writer-support.ts";
+} from "./writers/runtime-writer-support.ts";
 
 export type RuntimePromotionRecordRequest = {
   candidate_id: string;

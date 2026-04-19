@@ -37,12 +37,14 @@ The three main lanes are:
 - `hosts/` - ways to run or embed the system
 - `ui/` - a simple read-only operator view
 
+Executable code lives in the `lib/`, `engine/`, `hosts/`, and `ui/src/` surfaces. The numbered lane folders under `discovery/`, `runtime/`, and `architecture/` are artifact/state surfaces, not normal module trees.
+
 ## Goal Ownership
 
 The host project must provide goal context explicitly.
 
 The easiest way is a root-level goal file:
-- [DIRECTIVE_GOAL.md](/C:/Users/User/projects/directive-kernel/DIRECTIVE_GOAL.md)
+- [DIRECTIVE_GOAL.md](./DIRECTIVE_GOAL.md)
 
 Keep that file at the consuming project's root or at the directive root you pass into Kernel.
 
@@ -59,7 +61,7 @@ Common ways to provide goals:
    - if your project has no goal model yet, keep Discovery review-first until an operator sets direction
 
 Goal contract:
-- [shared/contracts/directive-kernel-goal-input.md](/C:/Users/User/projects/directive-kernel/shared/contracts/directive-kernel-goal-input.md)
+- [shared/contracts/directive-kernel-goal-input.md](./shared/contracts/directive-kernel-goal-input.md)
 
 Shared helper:
 - `@directive/kernel/shared/directive-goal`
@@ -91,7 +93,7 @@ pnpm install
 ```
 
 If you want live web/provider research, also configure the optional provider keys described in:
-- [discovery/research-engine/README.md](/C:/Users/User/projects/directive-kernel/discovery/research-engine/README.md)
+- [discovery/research-engine/README.md](./discovery/research-engine/README.md)
 
 ## Fastest Bootstrap
 
@@ -140,7 +142,7 @@ Recommended setup:
 6. keep project-specific records, logs, and sources in the consuming project
 
 Start here for embedding:
-- [hosts/integration-kit/README.md](/C:/Users/User/projects/directive-kernel/hosts/integration-kit/README.md)
+- [hosts/integration-kit/README.md](./hosts/integration-kit/README.md)
 
 ## Ownership
 

@@ -277,7 +277,7 @@ export type DirectiveEngineRoutingAssessment = {
       summary: string;
     }>;
   } | null;
-  narrativeContext: import("./source-narrative-threading.ts").DirectiveSourceNarrativeContext;
+  narrativeContext: import("./routing/source-narrative-threading.ts").DirectiveSourceNarrativeContext;
   laneProportions: Record<DirectiveEngineLaneId, number>;
   secondaryLanes: Array<{
     laneId: DirectiveEngineLaneId;
@@ -447,6 +447,46 @@ export type DirectiveEngineStructuredProofPlan = {
   completionRate: number;
 };
 
+export type DirectiveEngineExecutablePlanActionOwner =
+  | "engine"
+  | "operator"
+  | "host";
+
+export type DirectiveEngineExecutablePlanAction = {
+  actionId: string;
+  plan: "extraction" | "adaptation" | "improvement" | "proof";
+  itemType: string;
+  itemIndex: number | null;
+  title: string;
+  detail: string;
+  owner: DirectiveEngineExecutablePlanActionOwner;
+  status: DirectiveEnginePlanItemStatus;
+  completedAt: string | null;
+  blockedByActionIds: string[];
+  completionCriteria: string[];
+  evidenceStatus: "not_needed" | "pending" | "gathering" | "gathered";
+  gateStatus: "not_needed" | "pending" | "reviewing" | "passed";
+};
+
+export type DirectiveEngineExecutableProofState = {
+  objectiveState: "pending" | "defined";
+  evidenceState: "not_needed" | "evidence_pending" | "evidence_gathering" | "evidence_gathered";
+  gateState: "not_needed" | "gate_pending" | "gate_review" | "gate_passed";
+  finalState: "proof_pending" | "proof_ready" | "proved";
+  outstandingEvidenceActionIds: string[];
+  outstandingGateActionIds: string[];
+};
+
+export type DirectiveEngineExecutablePlanState = {
+  version: 1;
+  actions: DirectiveEngineExecutablePlanAction[];
+  nextActionIds: string[];
+  blockedActionIds: string[];
+  completionRate: number;
+  proofState: DirectiveEngineExecutableProofState;
+  rationale: string[];
+};
+
 export type DirectiveEngineDecisionState =
   | "hold_in_discovery"
   | "accept_for_architecture"
@@ -508,9 +548,10 @@ export type DirectiveEngineRunRecord = {
   structuredImprovementPlan?: DirectiveEngineStructuredImprovementPlan;
   proofPlan: DirectiveEngineProofPlan;
   structuredProofPlan?: DirectiveEngineStructuredProofPlan;
-  planQualitySignal?: import("./plan-quality.ts").DirectiveEnginePlanQualitySignal | null;
-  narrativeActions?: import("./source-narrative-threading.ts").DirectiveNarrativeAction[] | null;
-  priorPlanContext: import("./plan-consumption.ts").DirectivePriorPlanContext;
+  executablePlanState?: DirectiveEngineExecutablePlanState;
+  planQualitySignal?: import("./planning/plan-quality.ts").DirectiveEnginePlanQualitySignal | null;
+  narrativeActions?: import("./routing/source-narrative-threading.ts").DirectiveNarrativeAction[] | null;
+  priorPlanContext: import("./planning/plan-consumption.ts").DirectivePriorPlanContext;
   decision: DirectiveEngineDecision;
   integrationProposal: DirectiveEngineIntegrationProposal;
   reportPlan: DirectiveEngineReportPlan;
@@ -538,7 +579,7 @@ export type DirectiveEngineProcessSourceInput = {
   gaps?: DirectiveEngineCapabilityGap[] | null;
   receivedAt?: string | null;
   /** Past operator routing corrections to bias future lane scoring. */
-  corrections?: import("./routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
+  corrections?: import("./routing/routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
   /** Past review-resolution policy events used for gap radar and earned autonomy. */
   policyEvents?: import("./decision-policy-ledger.ts").DecisionPolicyEvent[] | null;
 };
@@ -550,7 +591,7 @@ export type DirectiveEngineMinimalSourceInput = {
   mission?: DirectiveEngineMissionInput | null;
   gaps?: DirectiveEngineCapabilityGap[] | null;
   receivedAt?: string | null;
-  corrections?: import("./routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
+  corrections?: import("./routing/routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
   policyEvents?: import("./decision-policy-ledger.ts").DecisionPolicyEvent[] | null;
 };
 

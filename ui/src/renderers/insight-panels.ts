@@ -1,6 +1,6 @@
 import { html, nothing } from "lit";
 
-import type { FrontendDiscoveryRoutingDetail, FrontendGapPressureDetail } from "../app-types";
+import type { FrontendDiscoveryRoutingDetail, FrontendGapPressureDetail } from "../types";
 import { navTo } from "../app-utils";
 
 export function renderGapPressureSummary(gapPressure: FrontendGapPressureDetail | null | undefined) {

@@ -2,6 +2,11 @@
 
 These templates are for host projects that want real adapter code shapes instead of only example payloads.
 
+Reusable implementation code now lives under `../lib/`.
+This folder keeps the stable template-shaped entrypoints and the smoke helpers.
+
+Treat this folder as templates and smoke fixtures, not as the main executable integration surface.
+
 Use them when:
 - your host runs Node/TypeScript
 - you want to keep Discovery first

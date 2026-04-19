@@ -1,7 +1,7 @@
 /// <reference types="node" />
 
 import fs from "node:fs";
-import { resolveDirectiveWorkspaceArtifactAbsolutePath } from "../shared/lib/directive-workspace-artifact-storage.ts";
+import { resolveDirectiveWorkspaceArtifactAbsolutePath } from "./state/artifact-storage.ts";
 
 export type DirectiveArtifactLinkValidationState = {
   missingExpectedArtifacts: string[];

@@ -4,7 +4,7 @@ import {
   readDirectiveArchitectureDeepTailDetailArtifact,
   resolveArchitectureDeepTailRelativePath,
   writeDirectiveArchitectureDeepTailArtifact,
-} from "./architecture-deep-tail-artifact-helpers.ts";
+} from "./control/architecture-deep-tail-artifact-helpers.ts";
 import {
   readDirectiveArchitectureImplementationResultDetail,
 } from "./architecture-implementation-result.ts";
@@ -12,7 +12,7 @@ import {
   resolveArchitectureReview,
   type ArchitectureReviewResolution,
 } from "./architecture-review-resolution.ts";
-import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./architecture-deep-tail-stage-map.ts";
+import { ARCHITECTURE_DEEP_TAIL_STAGE } from "./control/architecture-deep-tail-stage-map.ts";
 
 export type ConfirmDirectiveArchitectureRetentionInput = {
   resultPath: string;

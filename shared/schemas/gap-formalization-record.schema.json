@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://directive-workspace.dev/schemas/gap-formalization-record.schema.json",
+  "title": "Gap Formalization Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "recordKind",
+    "formalizationId",
+    "status",
+    "createdAt",
+    "resolvedAt",
+    "radarSuggestionId",
+    "radarConfidence",
+    "radarSummary",
+    "radarRecommendedChange",
+    "radarSignalTokens",
+    "radarEvidenceCount",
+    "operatorRationale",
+    "operatorApprovedPriority",
+    "writtenGapId"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "shared/schemas/gap-formalization-record.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "recordKind": {
+      "const": "gap_formalization"
+    },
+    "formalizationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": ["pending_approval", "approved", "written", "rejected"]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolvedAt": {
+      "type": ["string", "null"]
+    },
+    "radarSuggestionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "radarConfidence": {
+      "enum": ["low", "medium", "high"]
+    },
+    "radarSummary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "radarRecommendedChange": {
+      "type": "string",
+      "minLength": 1
+    },
+    "radarSignalTokens": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "radarEvidenceCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "operatorRationale": {
+      "type": ["string", "null"]
+    },
+    "operatorApprovedPriority": {
+      "enum": ["high", "medium", "low", null]
+    },
+    "writtenGapId": {
+      "type": ["string", "null"]
+    }
+  }
+}

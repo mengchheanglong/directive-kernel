@@ -15,9 +15,28 @@ The Runtime lane has three different physical surfaces:
 - projections, sequence helpers, and manual control
 - runtime promotion assistance and callable execution evidence
 
+## Internal grouped surfaces
+
+- `openers/`
+  Opener helpers and opener support.
+- `projections/`
+  Projection helpers and projection support.
+- `runners/`
+  Runner helpers and runner support.
+- `sequences/`
+  Sequence helpers and sequence support.
+- `writers/`
+  Writer helpers and write support.
+- `host/`
+  Runtime-to-host integration surfaces.
+- `control/`
+  Manual control, automation eligibility, and related bounded-control helpers.
+
+The grouped subfolder indexes are the authoritative Runtime operating surface now. Use them instead of the older flat helper filenames when you are navigating or adding new Runtime code.
+
 ## Start here
 
 - `index.ts`
   Barrel export for the Runtime lane operating surface.
 
-Use the barrel for navigation first, then open the specific `runtime-*` module you need.
+Use the barrel for navigation first, then open the specific runtime module you need.

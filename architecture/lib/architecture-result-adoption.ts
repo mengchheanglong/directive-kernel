@@ -33,7 +33,7 @@ import {
   optionalString,
   requiredString,
   resolveDirectiveRelativePath,
-} from "./architecture-deep-tail-artifact-helpers.ts";
+} from "./control/architecture-deep-tail-artifact-helpers.ts";
 
 export type DirectiveArchitectureAdoptionDetail = {
   directiveRoot: string;

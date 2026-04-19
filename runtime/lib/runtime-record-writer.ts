@@ -3,7 +3,7 @@ import {
   normalizeRuntimeWriterList,
   renderRuntimeWriterList,
   requireRuntimeWriterString,
-} from "./runtime-writer-support.ts";
+} from "./writers/runtime-writer-support.ts";
 
 export type RuntimeRecordRequest = {
   candidate_id: string;

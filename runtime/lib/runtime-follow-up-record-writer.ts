@@ -4,7 +4,7 @@ import {
   optionalRuntimeWriterString,
   renderRuntimeWriterList,
   requireRuntimeWriterString,
-} from "./runtime-writer-support.ts";
+} from "./writers/runtime-writer-support.ts";
 
 export type RuntimeHostSelectionMode = "inferred" | "manual_required" | "manual";
 export type RuntimeHostConfidence = "high" | "medium" | "low";

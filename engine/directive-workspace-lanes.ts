@@ -12,7 +12,7 @@ import {
   buildDefaultAdaptationPlan,
   buildDefaultExtractionPlan,
   buildDefaultImprovementPlan,
-} from "./lane-planning-defaults.ts";
+} from "./planning/lane-planning-defaults.ts";
 import type { DirectiveEngineIntegrationProposal } from "./types.ts";
 
 type DirectiveWorkspaceLaneId = "discovery" | "architecture" | "runtime";
