@@ -11,6 +11,14 @@ export type DirectiveArtifactLinkValidationState = {
 const DIRECTIVE_WORKSPACE_ARTIFACT_REFERENCE_PATTERN =
   /^(architecture|discovery|engine|frontend|ui|hosts|runtime|scripts|shared|sources)\//u;
 
+function normalizeRelativeArtifactPath(relativePath: string | null | undefined) {
+  if (typeof relativePath !== "string") {
+    return null;
+  }
+  const normalized = relativePath.trim().replace(/\\/g, "/");
+  return normalized || null;
+}
+
 function pushUnique(target: string[], value: string) {
   if (value && !target.includes(value)) {
     target.push(value);
@@ -32,10 +40,7 @@ export function fileExistsInDirectiveWorkspace(
 }
 
 export function isDirectiveWorkspaceArtifactReference(relativePath: string | null | undefined) {
-  if (typeof relativePath !== "string") {
-    return false;
-  }
-  const normalized = relativePath.trim().replace(/\\/g, "/");
+  const normalized = normalizeRelativeArtifactPath(relativePath);
   if (!normalized) {
     return false;
   }

@@ -8,8 +8,8 @@ Purpose:
 - keep routing guidance product-owned and host-agnostic
 
 Canonical surfaces:
-- `discovery/lib/discovery-mission-routing.ts`
-- `discovery/lib/discovery-gap-worklist-generator.ts`
+- `discovery/lib/front-door/discovery-mission-routing.ts`
+- `discovery/lib/gaps/discovery-gap-worklist-generator.ts`
 - `knowledge/active-mission.md`
 - `discovery/capability-gaps.json`
 

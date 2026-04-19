@@ -3,9 +3,11 @@ import { LitElement, html, nothing } from "lit";
 import { appStyles } from "../app-styles";
 import type {
   FrontendDiscoveryRoutingDetail,
+  FrontendExecutablePlanAction,
   FrontendGapPressureDetail,
   FrontendEngineRunRecord,
   FrontendEngineRunsOverview,
+  FrontendMissionFeedbackPreview,
   FrontendOperatorDecisionInboxReport,
   FrontendQueueEntry,
   FrontendQueueOverview,
@@ -16,10 +18,16 @@ import { artifactPathToViewPath, navTo } from "../app-utils";
 import {
   adoptArchitectureResultAction,
   approveDiscoveryRouteAction,
+  resolveDiscoveryRoutingReviewAction,
+  resolveRuntimeHostSelectionAction,
+  resolveRuntimePromotionSeamDecisionAction,
+  acceptRuntimeRegistryAcceptanceAction,
   approveRuntimeFollowUpAction,
   approveRuntimePromotionReadinessAction,
   approveRuntimeProofRuntimeCapabilityBoundaryAction,
   approveRuntimeRecordProofAction,
+  approveGapFormalizationAction,
+  approveMissionFeedbackAction,
   closeArchitectureStartAction,
   completeArchitectureImplementationAction,
   confirmArchitectureRetentionAction,
@@ -27,10 +35,15 @@ import {
   createArchitectureImplementationTargetAction,
   createArchitectureIntegrationRecordAction,
   evaluateArchitectureConsumptionAction,
+  previewMissionFeedbackAction,
   recordArchitectureConsumptionAction,
+  rejectGapFormalizationAction,
+  rejectMissionFeedbackAction,
   reopenArchitectureFromEvaluationAction,
+  rerouteEngineRunAction,
   startArchitectureAction,
   submitDiscoveryFrontDoorAction,
+  updateEnginePlanProgressAction,
 } from "../page-actions.ts";
 import { getDirectiveUiPageChrome } from "../page-chrome.ts";
 import { loadDirectiveUiPage } from "../route-loader";
@@ -92,6 +105,7 @@ class DirectiveUiApp extends LitElement {
     loading: { state: true },
     error: { state: true },
     submitting: { state: true },
+    missionFeedbackPreviews: { state: true },
   };
 
   static styles = appStyles;
@@ -101,6 +115,7 @@ class DirectiveUiApp extends LitElement {
   declare loading: boolean;
   declare error: string;
   declare submitting: boolean;
+  declare missionFeedbackPreviews: Record<string, FrontendMissionFeedbackPreview | undefined>;
 
   constructor() {
     super();
@@ -109,6 +124,7 @@ class DirectiveUiApp extends LitElement {
     this.loading = true;
     this.error = "";
     this.submitting = false;
+    this.missionFeedbackPreviews = {};
   }
 
   connectedCallback() {
@@ -773,6 +789,129 @@ class DirectiveUiApp extends LitElement {
     }
   }
 
+  private async updateEnginePlanProgress(
+    runId: string,
+    action: FrontendExecutablePlanAction,
+    status: FrontendExecutablePlanAction["status"],
+  ) {
+    try {
+      await updateEnginePlanProgressAction({
+        runId,
+        action,
+        status,
+      });
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async rerouteEngineRun(form: HTMLFormElement, runId: string) {
+    try {
+      navTo(await rerouteEngineRunAction(form, runId));
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async previewMissionFeedback(feedbackId: string) {
+    try {
+      const preview = await previewMissionFeedbackAction(feedbackId);
+      this.missionFeedbackPreviews = {
+        ...this.missionFeedbackPreviews,
+        [feedbackId]: preview,
+      };
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async approveMissionFeedback(form: HTMLFormElement, feedbackId: string) {
+    try {
+      await approveMissionFeedbackAction(form, feedbackId);
+      this.missionFeedbackPreviews = {};
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async rejectMissionFeedback(form: HTMLFormElement, feedbackId: string) {
+    try {
+      await rejectMissionFeedbackAction(form, feedbackId);
+      this.missionFeedbackPreviews = {};
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async approveGapFormalization(form: HTMLFormElement, formalizationId: string) {
+    try {
+      await approveGapFormalizationAction(form, formalizationId);
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async rejectGapFormalization(form: HTMLFormElement, formalizationId: string) {
+    try {
+      await rejectGapFormalizationAction(form, formalizationId);
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async resolveDiscoveryRoutingReview(
+    form: HTMLFormElement,
+    routingRecordPath: string,
+  ) {
+    try {
+      await resolveDiscoveryRoutingReviewAction(form, routingRecordPath);
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async resolveRuntimeHostSelection(
+    form: HTMLFormElement,
+    promotionReadinessPath: string,
+  ) {
+    try {
+      await resolveRuntimeHostSelectionAction(form, promotionReadinessPath);
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async resolveRuntimePromotionSeamDecision(
+    form: HTMLFormElement,
+    promotionReadinessPath: string,
+  ) {
+    try {
+      await resolveRuntimePromotionSeamDecisionAction(form, promotionReadinessPath);
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
+  private async acceptRuntimeRegistryAcceptance(
+    form: HTMLFormElement,
+    promotionRecordPath: string,
+  ) {
+    try {
+      await acceptRuntimeRegistryAcceptanceAction(form, promotionRecordPath);
+      await this.handleRoute();
+    } catch (error) {
+      this.error = String((error as Error).message || error);
+    }
+  }
+
   private renderContent() {
     if (this.loading) {
       return html`<section class="panel message"><h2>Loading</h2><p>Reading live Directive Kernel state.</p></section>`;
@@ -817,6 +956,20 @@ class DirectiveUiApp extends LitElement {
     if (this.page.kind === "operator-inbox") {
       return renderOperatorDecisionInboxPageView(
         this.page.data as FrontendOperatorDecisionInboxReport,
+        {
+          resolveDiscoveryRoutingReview: this.resolveDiscoveryRoutingReview.bind(this),
+          resolveRuntimeHostSelection: this.resolveRuntimeHostSelection.bind(this),
+          resolveRuntimePromotionSeamDecision:
+            this.resolveRuntimePromotionSeamDecision.bind(this),
+          acceptRuntimeRegistryAcceptance:
+            this.acceptRuntimeRegistryAcceptance.bind(this),
+          missionFeedbackPreviews: this.missionFeedbackPreviews,
+          approveGapFormalization: this.approveGapFormalization.bind(this),
+          previewMissionFeedback: this.previewMissionFeedback.bind(this),
+          rejectGapFormalization: this.rejectGapFormalization.bind(this),
+          approveMissionFeedback: this.approveMissionFeedback.bind(this),
+          rejectMissionFeedback: this.rejectMissionFeedback.bind(this),
+        },
       );
     }
 
@@ -847,6 +1000,8 @@ class DirectiveUiApp extends LitElement {
           renderRoutingDigest: this.renderRoutingDigest.bind(this),
           renderSourceMemory: this.renderSourceMemory.bind(this),
           renderSourceSimilarity: this.renderSourceSimilarity.bind(this),
+          rerouteEngineRun: this.rerouteEngineRun.bind(this),
+          updateEnginePlanProgress: this.updateEnginePlanProgress.bind(this),
         },
       );
     }

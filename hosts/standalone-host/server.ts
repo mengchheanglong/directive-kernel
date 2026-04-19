@@ -8,14 +8,15 @@ import path from "node:path";
 import { writeJsonAtomic, appendJsonLine } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 
-import type { DiscoverySubmissionRequest } from "../../discovery/lib/discovery-submission-router.ts";
-import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/runtime-follow-up-record-writer.ts";
-import type { RuntimeProofBundleRequest } from "../../runtime/lib/runtime-proof-bundle-writer.ts";
-import type { RuntimePromotionRecordRequest } from "../../runtime/lib/runtime-promotion-record-writer.ts";
-import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/runtime-registry-entry-writer.ts";
-import type { RuntimeRecordRequest } from "../../runtime/lib/runtime-record-writer.ts";
-import type { RuntimeTransformationProofRequest } from "../../runtime/lib/runtime-transformation-proof-writer.ts";
-import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/runtime-transformation-record-writer.ts";
+import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
+import type { DirectiveEnginePlanProgressUpdate } from "../../engine/types.ts";
+import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/runtime-follow-up-record-writer.ts";
+import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/runtime-proof-bundle-writer.ts";
+import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/runtime-promotion-record-writer.ts";
+import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
+import type { RuntimeRecordRequest } from "../../runtime/lib/writers/runtime-record-writer.ts";
+import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/runtime-transformation-proof-writer.ts";
+import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/runtime-transformation-record-writer.ts";
 import {
   DEFAULT_STANDALONE_RUNTIME_ARTIFACTS_RELATIVE_ROOT,
   STANDALONE_HOST_CONFIG_MODE,
@@ -429,7 +430,41 @@ export function startStandaloneHostServer(
         return;
       }
 
-      if (method === "POST" && pathname === "/api/runtime/follow-ups") {
+        if (method === "POST" && pathname === "/api/engine/plan-progress") {
+          routeId = "engine_plan_progress";
+          const rawBody = await readBody(req);
+          const request = JSON.parse(rawBody) as {
+            runId: string;
+          updates: DirectiveEnginePlanProgressUpdate[];
+          at?: string | null;
+        };
+        const result = await standaloneHost.updateEnginePlanProgress({
+          runId: request.runId,
+          updates: request.updates,
+          at: request.at,
+        });
+          writeJson(res, 200, { ok: true, record: result });
+          return;
+        }
+
+        if (method === "POST" && pathname === "/api/engine/reroute") {
+          routeId = "engine_reroute";
+          const rawBody = await readBody(req);
+          const request = JSON.parse(rawBody) as {
+            runId: string;
+            answers: Record<string, unknown>;
+            receivedAt?: string | null;
+          };
+          const result = await standaloneHost.reRouteEngineRunWithAnswers({
+            runId: request.runId,
+            answers: request.answers,
+            receivedAt: request.receivedAt,
+          });
+          writeJson(res, 200, { ok: true, result });
+          return;
+        }
+
+        if (method === "POST" && pathname === "/api/runtime/follow-ups") {
         routeId = "runtime_followup_write";
         const rawBody = await readBody(req);
         const request = JSON.parse(rawBody) as RuntimeFollowUpRecordRequest;
@@ -483,11 +518,73 @@ export function startStandaloneHostServer(
         return;
       }
 
+      if (method === "POST" && pathname === "/api/runtime/host-selection-resolutions") {
+        routeId = "runtime_host_selection_resolution_write";
+        const rawBody = await readBody(req);
+        const request = JSON.parse(rawBody) as {
+          promotionReadinessPath: string;
+          decision:
+            | "select_standalone"
+            | "select_web"
+            | "confirm_inferred"
+            | "override"
+            | "defer";
+          selectedHost?: string;
+          rationale: string;
+          reviewedBy: string;
+          resolvedConfidence?: "high" | "medium" | "low";
+        };
+        const result = await standaloneHost.writeRuntimeHostSelectionResolution({
+          promotionReadinessPath: request.promotionReadinessPath,
+          decision: request.decision,
+          selectedHost: request.selectedHost ?? "",
+          rationale: request.rationale,
+          reviewedBy: request.reviewedBy,
+          resolvedConfidence: request.resolvedConfidence,
+        });
+        writeJson(res, 200, result);
+        return;
+      }
+
+      if (method === "POST" && pathname === "/api/runtime/promotion-seam-decisions") {
+        routeId = "runtime_promotion_seam_decision_write";
+        const rawBody = await readBody(req);
+        const request = JSON.parse(rawBody) as {
+          promotionReadinessPath: string;
+          rationale: string;
+          approvedBy?: string;
+        };
+        const result = await standaloneHost.writeRuntimePromotionSeamDecision({
+          promotionReadinessPath: request.promotionReadinessPath,
+          rationale: request.rationale,
+          approvedBy: request.approvedBy ?? "standalone-host-server",
+        });
+        writeJson(res, 200, result);
+        return;
+      }
+
       if (method === "POST" && pathname === "/api/runtime/registry-entries") {
         routeId = "runtime_registry_entry_write";
         const rawBody = await readBody(req);
         const request = JSON.parse(rawBody) as RuntimeRegistryEntryRequest;
         const result = await standaloneHost.writeRuntimeRegistryEntry(request);
+        writeJson(res, 200, result);
+        return;
+      }
+
+      if (method === "POST" && pathname === "/api/runtime/registry-acceptance-decisions") {
+        routeId = "runtime_registry_acceptance_decision_write";
+        const rawBody = await readBody(req);
+        const request = JSON.parse(rawBody) as {
+          promotionRecordPath: string;
+          rationale: string;
+          acceptedBy?: string;
+        };
+        const result = await standaloneHost.writeRuntimeRegistryAcceptanceDecision({
+          promotionRecordPath: request.promotionRecordPath,
+          rationale: request.rationale,
+          acceptedBy: request.acceptedBy ?? "standalone-host-server",
+        });
         writeJson(res, 200, result);
         return;
       }

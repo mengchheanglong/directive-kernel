@@ -2,7 +2,7 @@ import {
   submitDiscoveryEntryWithHostBridge,
   type DiscoveryHostStorageBridge,
 } from "./discovery-submission-adapter.ts";
-import type { DiscoverySubmissionRequest } from "../../../discovery/lib/discovery-submission-router.ts";
+import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
 
 export type RuntimeVerificationSignal = {
   candidate_id: string;

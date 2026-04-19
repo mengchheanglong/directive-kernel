@@ -1,23 +1,32 @@
 import path from "node:path";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 
-import type { DiscoverySubmissionRequest } from "../../discovery/lib/discovery-submission-router.ts";
-import { submitDirectiveDiscoveryFrontDoor } from "../../discovery/lib/discovery-front-door.ts";
-import { openDirectiveDiscoveryRoute } from "../../discovery/lib/discovery-route-opener.ts";
-import { openDirectiveRuntimeFollowUp } from "../../runtime/lib/runtime-follow-up-opener.ts";
-import { openDirectiveRuntimeRecordProof } from "../../runtime/lib/runtime-record-proof-opener.ts";
-import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../runtime/lib/runtime-proof-runtime-capability-boundary-opener.ts";
-import { openDirectiveRuntimePromotionReadiness } from "../../runtime/lib/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
+import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
+import { submitDirectiveDiscoveryFrontDoor } from "../../discovery/lib/front-door/discovery-front-door.ts";
+import { openDirectiveDiscoveryRoute } from "../../discovery/lib/routing/discovery-route-opener.ts";
+import { openDirectiveRuntimeFollowUp } from "../../runtime/lib/openers/runtime-follow-up-opener.ts";
+import { openDirectiveRuntimeRecordProof } from "../../runtime/lib/openers/runtime-record-proof-opener.ts";
+import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../runtime/lib/openers/runtime-proof-runtime-capability-boundary-opener.ts";
+import { openDirectiveRuntimePromotionReadiness } from "../../runtime/lib/openers/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
+import {
+  type RuntimeHostSelectionResolutionInput,
+  writeRuntimeHostSelectionResolution as writeRuntimeHostSelectionResolutionArtifact,
+} from "../../runtime/lib/host/runtime-host-selection-resolution.ts";
 import {
   createFilesystemDirectiveEngineStore,
   DirectiveEngine,
   createDirectiveWorkspaceEngineLanes,
-  normalizeDirectiveEngineSourceTypeInput,
-  resolveDirectiveEngineStoreRecordPath,
   type DirectiveEngineMissionInput,
+  type DirectiveEnginePlanProgressUpdate,
   type DirectiveEngineRunRecord,
   type DirectiveEngineSourceItem,
 } from "../../engine/index.ts";
+import { normalizeDirectiveEngineSourceTypeInput } from "../../engine/source-type-normalization.ts";
+import { resolveDirectiveEngineStoreRecordPath } from "../../engine/storage.ts";
+import {
+  buildManualRuntimePromotionRecordRequest,
+  buildManualRuntimeRegistryAcceptanceRequest,
+} from "../../engine/coordination/runtime-manual-actions.ts";
 import type {
   ResolvedStandaloneHostConfig,
   ResolvedStandaloneHostPersistence,
@@ -33,13 +42,13 @@ import {
   submitDiscoveryEntryWithHostBridge,
 } from "../integration-kit/lib/discovery-submission-adapter.ts";
 import { createStandaloneHostPersistenceLedger } from "./persistence.ts";
-import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/runtime-follow-up-record-writer.ts";
-import type { RuntimeProofBundleRequest } from "../../runtime/lib/runtime-proof-bundle-writer.ts";
-import type { RuntimePromotionRecordRequest } from "../../runtime/lib/runtime-promotion-record-writer.ts";
-import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/runtime-registry-entry-writer.ts";
-import type { RuntimeRecordRequest } from "../../runtime/lib/runtime-record-writer.ts";
-import type { RuntimeTransformationProofRequest } from "../../runtime/lib/runtime-transformation-proof-writer.ts";
-import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/runtime-transformation-record-writer.ts";
+import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/runtime-follow-up-record-writer.ts";
+import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/runtime-proof-bundle-writer.ts";
+import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/runtime-promotion-record-writer.ts";
+import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
+import type { RuntimeRecordRequest } from "../../runtime/lib/writers/runtime-record-writer.ts";
+import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/runtime-transformation-proof-writer.ts";
+import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/runtime-transformation-record-writer.ts";
 import { describeDirectiveEngineGapPressure } from "../../engine/execution/engine-run-artifacts.ts";
 
 type JsonValue = Record<string, unknown>;
@@ -284,6 +293,12 @@ export function createStandaloneFilesystemHost(
       persistenceLedger.recordTextArtifact(filePath, content, "text_artifact");
     },
   };
+  const createDirectiveEngine = () => new DirectiveEngine({
+    laneSet: createDirectiveWorkspaceEngineLanes(),
+    store: createFilesystemDirectiveEngineStore({
+      engineRunsRoot: path.resolve(runtimeArtifactsRoot, "engine-runs"),
+    }),
+  });
 
   return {
     directiveRoot: harness.directiveRoot,
@@ -372,6 +387,50 @@ export function createStandaloneFilesystemHost(
         approvedBy: input.approvedBy,
       });
     },
+    async writeRuntimeHostSelectionResolution(
+      input: Omit<RuntimeHostSelectionResolutionInput, "directiveRoot">,
+    ) {
+      return writeRuntimeHostSelectionResolutionArtifact({
+        ...input,
+        directiveRoot: harness.directiveRoot,
+      });
+    },
+    async writeRuntimePromotionSeamDecision(input: {
+      promotionReadinessPath: string;
+      rationale: string;
+      approvedBy: string;
+    }) {
+      const { request } = buildManualRuntimePromotionRecordRequest({
+        directiveRoot: harness.directiveRoot,
+        promotionReadinessPath: input.promotionReadinessPath,
+        rationale: input.rationale,
+        approvedBy: input.approvedBy,
+      });
+      const { writeStandaloneRuntimePromotionRecord } =
+        await loadStandaloneRuntimeOperationsModule();
+      return writeStandaloneRuntimePromotionRecord({
+        storage,
+        request,
+      });
+    },
+    async writeRuntimeRegistryAcceptanceDecision(input: {
+      promotionRecordPath: string;
+      rationale: string;
+      acceptedBy: string;
+    }) {
+      const { request } = buildManualRuntimeRegistryAcceptanceRequest({
+        directiveRoot: harness.directiveRoot,
+        promotionRecordPath: input.promotionRecordPath,
+        rationale: input.rationale,
+        acceptedBy: input.acceptedBy,
+      });
+      const { writeStandaloneRuntimeRegistryEntry } =
+        await loadStandaloneRuntimeOperationsModule();
+      return writeStandaloneRuntimeRegistryEntry({
+        storage,
+        request,
+      });
+    },
     async submitDiscoveryEntryWithEngine(
       request: DiscoverySubmissionRequest,
       dryRun = false,
@@ -394,12 +453,7 @@ export function createStandaloneFilesystemHost(
       }
 
       try {
-        const engine = new DirectiveEngine({
-          laneSet: createDirectiveWorkspaceEngineLanes(),
-          store: createFilesystemDirectiveEngineStore({
-            engineRunsRoot: path.resolve(runtimeArtifactsRoot, "engine-runs"),
-          }),
-        });
+        const engine = createDirectiveEngine();
         const engineResult = await engine.processSource({
           source: buildDirectiveEngineSourceFromDiscoverySubmission(request),
           mission: buildDirectiveEngineMissionFromDiscoverySubmission(request),
@@ -444,6 +498,22 @@ export function createStandaloneFilesystemHost(
           },
         };
       }
+    },
+    async updateEnginePlanProgress(input: {
+      runId: string;
+      updates: DirectiveEnginePlanProgressUpdate[];
+      at?: string | null;
+    }) {
+      const engine = createDirectiveEngine();
+      return engine.updatePlanProgress(input);
+    },
+    async reRouteEngineRunWithAnswers(input: {
+      runId: string;
+      answers: Record<string, unknown>;
+      receivedAt?: string | null;
+    }) {
+      const engine = createDirectiveEngine();
+      return engine.reRouteWithAnswers(input);
     },
     readDiscoveryOverview(maxEntries?: number): DiscoveryOverviewSummary {
       return readDiscoveryOverviewWithHostBridge({

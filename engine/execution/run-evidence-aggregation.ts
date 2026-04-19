@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type { DiscoveryIntakeQueueEntry } from "../../discovery/lib/discovery-intake-queue-writer.ts";
+import type { DiscoveryIntakeQueueEntry } from "../../discovery/lib/intake/discovery-intake-queue-writer.ts";
 import {
   type DirectiveEngineRunArtifact,
   type StoredDirectiveEngineRunRecord,

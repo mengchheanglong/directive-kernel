@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/discovery-route-opener.ts";
+import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/routing/discovery-route-opener.ts";
 import {
   type StoredDirectiveEngineRunRecord,
 } from "../execution/engine-run-artifacts.ts";
@@ -16,7 +16,7 @@ import {
   buildRuntimeArtifactStage,
   buildRuntimePromotionReadinessBlockers,
   resolveRuntimeFocusFromAnyPath,
-} from "./runtime-focus.ts";
+} from "./runtime-focus/runtime-focus.ts";
 import {
   finalizeResolvedFocus,
   findLatestEngineRunByCandidateId,

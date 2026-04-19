@@ -34,6 +34,10 @@ The Runtime lane has three different physical surfaces:
 
 The grouped subfolder indexes are the authoritative Runtime operating surface now. Use them instead of the older flat helper filenames when you are navigating or adding new Runtime code.
 
+In particular:
+- callable execution evidence and follow-up navigation belong to `control/`
+- host-selection and promotion-specification seams belong to `host/`
+
 ## Start here
 
 - `index.ts`

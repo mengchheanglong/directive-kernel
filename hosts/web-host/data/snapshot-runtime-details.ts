@@ -1,13 +1,13 @@
 import { normalizeRelativePath } from "../../../shared/lib/path-normalization.ts";
 import {
   readDirectiveRuntimeRecordArtifact,
-} from "../../../runtime/lib/runtime-record-proof-opener.ts";
+} from "../../../runtime/lib/openers/runtime-record-proof-opener.ts";
 import {
   readDirectiveRuntimeProofArtifact,
-} from "../../../runtime/lib/runtime-proof-runtime-capability-boundary-opener.ts";
+} from "../../../runtime/lib/openers/runtime-proof-runtime-capability-boundary-opener.ts";
 import {
   readDirectiveRuntimeRuntimeCapabilityBoundaryArtifact,
-} from "../../../runtime/lib/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
+} from "../../../runtime/lib/openers/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import { readRuntimeApprovalAllowedFromCurrentHead } from "./shared.ts";
 import type {

@@ -11,7 +11,7 @@ export async function collectHostAdapterResults(input: {
   timeoutMs: number;
   withTimeout: <T>(operation: Promise<T> | T, timeoutMs: number, label: string) => Promise<T>;
 }): Promise<DirectiveEngineProcessSourceResult["adapterResults"]> {
-  const adapterResults = [];
+  const adapterResults: DirectiveEngineProcessSourceResult["adapterResults"] = [];
   for (const adapter of input.adapters) {
     try {
       const adapterResult = adapter.onRunRecorded

@@ -23,8 +23,8 @@ import type {
   DirectiveEngineLaneIntegrationPlanningInput,
   DirectiveEngineLaneProofPlanningInput,
 } from "../lane.ts";
-import { buildDirectiveRuntimePromotionAssistanceReport } from "../../runtime/lib/runtime-promotion-assistance.ts";
-import { buildRuntimeCallableExecutionEvidenceReport } from "../../runtime/lib/runtime-callable-execution-evidence.ts";
+import { buildDirectiveRuntimePromotionAssistanceReport } from "../../runtime/lib/control/runtime-promotion-assistance.ts";
+import { buildRuntimeCallableExecutionEvidenceReport } from "../../runtime/lib/control/runtime-callable-execution-evidence.ts";
 
 const DIRECTIVE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 

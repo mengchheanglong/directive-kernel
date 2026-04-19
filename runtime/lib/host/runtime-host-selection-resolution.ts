@@ -207,11 +207,14 @@ export function writeRuntimeHostSelectionResolution(
   );
   const reviewedBy = normalizeDirectiveApprovalActor(input.reviewedBy);
   const rationale = requireDirectiveString(input.rationale, "rationale");
+  const selectedHost = input.decision === "override"
+    ? requireDirectiveString(input.selectedHost, "selectedHost")
+    : String(input.selectedHost ?? "").trim();
 
   const original = extractOriginalHostFields(directiveRoot, promotionReadinessPath);
   const resolvedHost = resolveHostFromDecision(
     input.decision,
-    input.selectedHost,
+    selectedHost,
     original.proposedHost,
   );
   const isCleared = input.decision !== "defer";

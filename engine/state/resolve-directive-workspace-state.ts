@@ -1,4 +1,4 @@
-import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/discovery-route-opener.ts";
+import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/routing/discovery-route-opener.ts";
 import {
   resolveDiscoveryFocus,
   resolveDiscoveryMonitorFocus,

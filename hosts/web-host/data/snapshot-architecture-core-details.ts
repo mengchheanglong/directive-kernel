@@ -8,13 +8,13 @@ import {
   readDirectiveArchitectureResultEvidenceForStart,
   readDirectiveArchitectureBoundedResultArtifact,
   readDirectiveArchitectureBoundedStartArtifact,
-} from "../../../architecture/lib/architecture-bounded-closeout.ts";
+} from "../../../architecture/lib/experiments/architecture-bounded-closeout.ts";
 import {
   readDirectiveArchitectureAdoptionDetail,
-} from "../../../architecture/lib/architecture-result-adoption.ts";
+} from "../../../architecture/lib/adoption/architecture-result-adoption.ts";
 import {
   readDirectiveArchitectureImplementationTargetPathForAdoption,
-} from "../../../architecture/lib/architecture-implementation-target.ts";
+} from "../../../architecture/lib/materialization/architecture-implementation-target.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import { buildDirectiveFrontendCurrentHead } from "./shared.ts";
 import type {

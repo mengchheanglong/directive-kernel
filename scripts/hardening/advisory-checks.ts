@@ -2,17 +2,18 @@ import assert from "node:assert/strict";
 
 import {
   DirectiveEngine,
-  assessDirectiveEngineRouting,
-  buildDirectiveRunSourceTokenMap,
-  buildDirectiveSourceNarrativeThreads,
-  createDirectiveSourceMemorySnapshot,
   createDirectiveWorkspaceEngineLanes,
   createMemoryDirectiveEngineStore,
-  deriveDirectivePriorPlanContext,
+} from "../../engine/index.ts";
+import { buildDirectiveRunSourceTokenMap, flattenSourceText } from "../../engine/engine-source-utils.ts";
+import { deriveDirectivePriorPlanContext } from "../../engine/planning/index.ts";
+import {
+  assessDirectiveEngineRouting,
+  buildDirectiveSourceNarrativeThreads,
+  createDirectiveSourceMemorySnapshot,
   deriveDirectiveSourceNarrativeContext,
   deriveDirectiveSourceSimilarityAssessment,
-  flattenSourceText,
-} from "../../engine/index.ts";
+} from "../../engine/routing/index.ts";
 import {
   buildArchitectureGap,
   buildArchitectureMission,

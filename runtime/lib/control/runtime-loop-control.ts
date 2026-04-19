@@ -9,8 +9,8 @@ import {
 import {
   buildDirectiveRuntimePromotionAssistanceReport,
   type DirectiveRuntimePromotionAssistanceRecommendation,
-} from "../runtime-promotion-assistance.ts";
-import { buildDirectiveReadOnlyLifecycleCoordinationReport } from "../../../engine/coordination/read-only-lifecycle-coordination.ts";
+} from "./runtime-promotion-assistance.ts";
+import { buildDirectiveReadOnlyLifecycleCoordinationReport } from "../../../engine/coordination/read-only-lifecycle-coordination/read-only-lifecycle-coordination.ts";
 import { buildDirectiveBoundedPersistentCoordinationReport } from "../../../engine/coordination/bounded-persistent-coordination.ts";
 
 export type DirectiveRuntimeLoopSelectionDomain =

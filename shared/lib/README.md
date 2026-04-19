@@ -66,7 +66,7 @@ Current residual files that still belong here:
   Shared literature-monitoring artifact normalizers and builders, mirrored into host inventory as a reusable support surface.
 
 Compatibility note:
-- `directive-workspace-artifact-storage.ts` remains only as a compatibility bridge. New internal code should use `engine/state/artifact-storage.ts`.
+- Use `engine/state/artifact-storage.ts` directly for canonical directive-workspace artifact path/storage resolution.
 
 Stop-line:
 - if a file here gains a clearer lane, Engine, or host ownership surface, move it there

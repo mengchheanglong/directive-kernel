@@ -1,5 +1,5 @@
-import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/discovery-route-opener.ts";
-import { readDiscoveryRoutingReviewResolution } from "../../discovery/lib/discovery-routing-review-resolution.ts";
+import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/routing/discovery-route-opener.ts";
+import { readDiscoveryRoutingReviewResolution } from "../../discovery/lib/routing/discovery-routing-review-resolution.ts";
 import {
   fileExistsInDirectiveWorkspace,
   isDirectiveWorkspaceArtifactReference,

@@ -40,7 +40,7 @@ Rules:
 - architecture review guardrails are required for Architecture slices and advisory for host UI work unless explicitly elevated
 - when reviewing source-driven Architecture work that depends on staged artifacts or packetized outputs, the review must say whether an existing mechanism or synthesis packet was consumed
 - when packetized stage logic is present, the review must verify that stage-boundary artifacts remain coupled to evidence, citation, or proof support artifacts instead of being reviewed as isolated files
-- when a structured review must resolve into an actual next-state recommendation, use `architecture/lib/architecture-review-resolution.ts` instead of ad hoc score or outcome logic
+- when a structured review must resolve into an actual next-state recommendation, use `architecture/lib/adoption/architecture-review-resolution.ts` instead of ad hoc score or outcome logic
 
 Validation hooks:
 - `pnpm run check:directive-impeccable-contracts`

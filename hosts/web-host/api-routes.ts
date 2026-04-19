@@ -3,36 +3,39 @@ import {
   closeDirectiveArchitectureBoundedStart,
   closeDirectiveArchitectureNoteHandoff,
   continueDirectiveArchitectureFromBoundedResult,
-} from "../../architecture/lib/architecture-bounded-closeout.ts";
+} from "../../architecture/lib/experiments/architecture-bounded-closeout.ts";
 import {
   createDirectiveArchitectureImplementationTarget,
-} from "../../architecture/lib/architecture-implementation-target.ts";
+} from "../../architecture/lib/materialization/architecture-implementation-target.ts";
 import {
   createDirectiveArchitectureImplementationResult,
-} from "../../architecture/lib/architecture-implementation-result.ts";
+} from "../../architecture/lib/materialization/architecture-implementation-result.ts";
 import {
   confirmDirectiveArchitectureRetention,
-} from "../../architecture/lib/architecture-retention.ts";
+} from "../../architecture/lib/materialization/architecture-retention.ts";
 import {
   createDirectiveArchitectureIntegrationRecord,
-} from "../../architecture/lib/architecture-integration-record.ts";
+} from "../../architecture/lib/materialization/architecture-integration-record.ts";
 import {
   recordDirectiveArchitectureConsumption,
-} from "../../architecture/lib/architecture-consumption-record.ts";
+} from "../../architecture/lib/materialization/architecture-consumption-record.ts";
 import {
   evaluateDirectiveArchitectureConsumption,
-} from "../../architecture/lib/architecture-post-consumption-evaluation.ts";
+} from "../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
 import { ARCHITECTURE_DEEP_TAIL_STAGES } from "../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
 import {
   reopenDirectiveArchitectureFromEvaluation,
-} from "../../architecture/lib/architecture-reopen-from-evaluation.ts";
-import { adoptDirectiveArchitectureResult } from "../../architecture/lib/architecture-result-adoption.ts";
-import { startDirectiveArchitectureFromHandoff } from "../../architecture/lib/architecture-handoff-start.ts";
-import type { DiscoverySubmissionRequest } from "../../discovery/lib/discovery-submission-router.ts";
-import { refreshDiscoveryGapWorklist } from "../../discovery/lib/discovery-gap-worklist-refresh.ts";
+} from "../../architecture/lib/experiments/architecture-reopen-from-evaluation.ts";
+import { adoptDirectiveArchitectureResult } from "../../architecture/lib/adoption/architecture-result-adoption.ts";
+import { startDirectiveArchitectureFromHandoff } from "../../architecture/lib/experiments/architecture-handoff-start.ts";
+import {
+  writeDiscoveryRoutingReviewResolution,
+} from "../../discovery/lib/routing/discovery-routing-review-resolution.ts";
+import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
+import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/discovery-gap-worklist-refresh.ts";
 import {
   buildOperatorDecisionInboxReport,
-} from "../../engine/coordination/operator-decision-inbox.ts";
+} from "../../engine/coordination/operator-decision-inbox/operator-decision-inbox.ts";
 import {
   approveGapFormalization,
   approveMissionFeedbackEntry,
@@ -43,7 +46,7 @@ import {
   rejectGapFormalization,
   rejectMissionFeedbackEntry,
   revertMissionEvolution,
-} from "../../engine/index.ts";
+} from "../../engine/mission/index.ts";
 import { createStandaloneFilesystemHost } from "../standalone-host/filesystem-host.ts";
 import {
   readDirectiveFrontendDiscoveryRoutingDetail,
@@ -120,6 +123,46 @@ export async function handleDirectiveUiApiRequest(input: {
       directiveRoot,
       runId: decodeURIComponent(pathname.replace(/^\/api\/engine-runs\//, "")),
     }));
+    return true;
+  }
+  if (method === "POST" && pathname.startsWith("/api/engine-runs/") && pathname.endsWith("/plan-progress")) {
+    const runId = decodeURIComponent(
+      pathname
+        .replace(/^\/api\/engine-runs\//, "")
+        .replace(/\/plan-progress$/u, ""),
+    );
+    const payload = parseJsonBody<{
+      updates: import("../../engine/index.ts").DirectiveEnginePlanProgressUpdate[];
+      at?: string | null;
+    }>(await readBody(req));
+    writeJson(res, 200, {
+      ok: true,
+      record: await runtimeHost.updateEnginePlanProgress({
+        runId,
+        updates: payload.updates,
+        at: payload.at,
+      }),
+    });
+    return true;
+  }
+  if (method === "POST" && pathname.startsWith("/api/engine-runs/") && pathname.endsWith("/reroute")) {
+    const runId = decodeURIComponent(
+      pathname
+        .replace(/^\/api\/engine-runs\//, "")
+        .replace(/\/reroute$/u, ""),
+    );
+    const payload = parseJsonBody<{
+      answers: Record<string, unknown>;
+      receivedAt?: string | null;
+    }>(await readBody(req));
+    writeJson(res, 200, {
+      ok: true,
+      result: await runtimeHost.reRouteEngineRunWithAnswers({
+        runId,
+        answers: payload.answers,
+        receivedAt: payload.receivedAt,
+      }),
+    });
     return true;
   }
   if (method === "GET" && pathname === "/api/queue") {
@@ -325,6 +368,30 @@ export async function handleDirectiveUiApiRequest(input: {
     }));
     return true;
   }
+  if (method === "POST" && pathname === "/api/discovery/resolve-routing-review") {
+    const payload = parseJsonBody<{
+      routingRecordPath: string;
+      decision:
+        | "confirm_architecture"
+        | "confirm_runtime"
+        | "redirect_to_architecture"
+        | "redirect_to_runtime"
+        | "reject"
+        | "defer";
+      rationale: string;
+      reviewedBy?: string;
+      resolvedConfidence?: "high" | "medium" | "low";
+    }>(await readBody(req));
+    writeJson(res, 200, writeDiscoveryRoutingReviewResolution({
+      directiveRoot,
+      routingRecordPath: payload.routingRecordPath,
+      decision: payload.decision,
+      rationale: payload.rationale,
+      reviewedBy: payload.reviewedBy ?? uiOperatorActor,
+      resolvedConfidence: payload.resolvedConfidence,
+    }));
+    return true;
+  }
   if (method === "POST" && pathname === "/api/runtime/open-follow-up") {
     const payload = parseJsonBody<{
       followUpPath: string;
@@ -370,6 +437,56 @@ export async function handleDirectiveUiApiRequest(input: {
       capabilityBoundaryPath: payload.capabilityBoundaryPath,
       approved: payload.approved,
       approvedBy: uiOperatorActor,
+    }));
+    return true;
+  }
+  if (method === "POST" && pathname === "/api/runtime/host-selection-resolutions") {
+    const payload = parseJsonBody<{
+      promotionReadinessPath: string;
+      decision:
+        | "select_standalone"
+        | "select_web"
+        | "confirm_inferred"
+        | "override"
+        | "defer";
+      selectedHost?: string;
+      rationale: string;
+      reviewedBy?: string;
+      resolvedConfidence?: "high" | "medium" | "low";
+    }>(await readBody(req));
+    writeJson(res, 200, await runtimeHost.writeRuntimeHostSelectionResolution({
+      promotionReadinessPath: payload.promotionReadinessPath,
+      decision: payload.decision,
+      selectedHost: payload.selectedHost ?? "",
+      rationale: payload.rationale,
+      reviewedBy: payload.reviewedBy ?? uiOperatorActor,
+      resolvedConfidence: payload.resolvedConfidence,
+    }));
+    return true;
+  }
+  if (method === "POST" && pathname === "/api/runtime/promotion-seam-decisions") {
+    const payload = parseJsonBody<{
+      promotionReadinessPath: string;
+      rationale: string;
+      approvedBy?: string;
+    }>(await readBody(req));
+    writeJson(res, 200, await runtimeHost.writeRuntimePromotionSeamDecision({
+      promotionReadinessPath: payload.promotionReadinessPath,
+      rationale: payload.rationale,
+      approvedBy: payload.approvedBy ?? uiOperatorActor,
+    }));
+    return true;
+  }
+  if (method === "POST" && pathname === "/api/runtime/registry-acceptance-decisions") {
+    const payload = parseJsonBody<{
+      promotionRecordPath: string;
+      rationale: string;
+      acceptedBy?: string;
+    }>(await readBody(req));
+    writeJson(res, 200, await runtimeHost.writeRuntimeRegistryAcceptanceDecision({
+      promotionRecordPath: payload.promotionRecordPath,
+      rationale: payload.rationale,
+      acceptedBy: payload.acceptedBy ?? uiOperatorActor,
     }));
     return true;
   }

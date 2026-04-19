@@ -8,7 +8,7 @@ import { resolveDirectiveWorkspaceState } from "../state/index.ts";
 import {
   RUNTIME_REGISTRY_ACCEPTANCE_GATE_VERSION,
   assertRuntimeRegistryAcceptanceGate,
-} from "../../runtime/lib/runtime-registry-acceptance-gate.ts";
+} from "../../runtime/lib/control/runtime-registry-acceptance-gate.ts";
 import {
   classifyRuntimeAutomationEligibility,
   RUNTIME_AUTOMATION_ELIGIBILITY_POLICY_VERSION,
@@ -18,7 +18,7 @@ import type { RuntimeHostCallableAdapterDescriptor } from "../../runtime/lib/hos
 import {
   renderRuntimeRegistryEntry,
   type RuntimeRegistryEntryRequest,
-} from "../../runtime/lib/runtime-registry-entry-writer.ts";
+} from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
 
 export type DirectiveAutonomousRuntimePromotionAutomationPolicy = {
   autoHostAdapterDescriptor: boolean;

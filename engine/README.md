@@ -39,6 +39,8 @@ It is the smallest but highest-leverage executable layer in the repo.
   Product-level truth summary.
 - `artifact-link-validation.ts`
   Artifact-link integrity validation.
+- `decision-policy-ledger.ts`
+  Policy-event storage shell and recurring operator-feedback suggestion surface.
 - `storage.ts`
   Store boundary.
 - `source-type-normalization.ts`
@@ -50,7 +52,14 @@ Authoritative grouped homes:
 - `planning/index.ts`
 - `state/index.ts`
 
-Use those grouped surfaces or the top-level Engine barrel first. The older flat helper wrappers are no longer the authoritative navigation path.
+Use the top-level Engine barrel for the core engine surface only:
+- `types.ts`
+- `lane.ts`
+- `directive-workspace-lanes.ts`
+- `storage.ts`
+- `directive-engine.ts`
+
+Use the grouped surfaces directly for mission, routing, planning, and state work. The older flat helper wrappers are no longer the authoritative navigation path.
 
 ## Does not own
 
@@ -62,6 +71,9 @@ Use those grouped surfaces or the top-level Engine barrel first. The older flat 
 `engine/cases/` holds mirrored case records, case events, snapshots, and planner logic.
 `engine/coordination/` holds completion selection and read-only lifecycle coordination.
 `engine/execution/` holds runner state, Engine run artifact readers, and run evidence aggregation.
+
+Recent grouped shells:
+- `decision-policy-ledger.ts` stays public, while its types and suggestion compiler now live in adjacent `decision-policy-ledger-*.ts` helpers.
 
 Lane operating code lives in each lane's own folder:
 - `architecture/lib/` - Architecture lane lifecycle code

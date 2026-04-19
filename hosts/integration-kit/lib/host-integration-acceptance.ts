@@ -3,15 +3,17 @@ import path from "node:path";
 
 import {
   DirectiveEngine,
-  appendRoutingCorrection,
-  assessDirectiveEngineRouting,
   createDirectiveWorkspaceEngineLanes,
   createMemoryDirectiveEngineStore,
+  type DirectiveEngineProcessSourceInput,
+} from "../../../engine/index.ts";
+import {
+  appendRoutingCorrection,
+  assessDirectiveEngineRouting,
   deriveRoutingCorrectionAdjustments,
   extractSourceSignalTokens,
   readRoutingCorrectionLedger,
-  type DirectiveEngineProcessSourceInput,
-} from "../../../engine/index.ts";
+} from "../../../engine/routing/index.ts";
 import { runDiscoveryFrontDoorStarterSmoke } from "../starter/discovery-front-door-adapter.smoke.template.ts";
 import { runDiscoveryOverviewStarterSmoke } from "../starter/discovery-overview-reader.smoke.template.ts";
 import { runDiscoverySignalStarterSmoke } from "../starter/discovery-signal-adapter.smoke.template.ts";

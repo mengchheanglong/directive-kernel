@@ -1,6 +1,7 @@
 import { html, nothing } from "lit";
 
 import type {
+  FrontendMissionFeedbackPreview,
   FrontendOperatorDecisionInboxEntry,
   FrontendOperatorDecisionInboxReport,
   FrontendQueueEntry,
@@ -21,7 +22,373 @@ type HomeRendererContext = {
   renderRuntimeCaseStrip: (entry: FrontendRuntimeSummaryCase | FrontendQueueEntry) => unknown;
 };
 
-function renderOperatorDecisionEntry(entry: FrontendOperatorDecisionInboxEntry) {
+type OperatorInboxRendererContext = {
+  resolveDiscoveryRoutingReview: (
+    form: HTMLFormElement,
+    routingRecordPath: string,
+  ) => Promise<void>;
+  resolveRuntimeHostSelection: (
+    form: HTMLFormElement,
+    promotionReadinessPath: string,
+  ) => Promise<void>;
+  resolveRuntimePromotionSeamDecision: (
+    form: HTMLFormElement,
+    promotionReadinessPath: string,
+  ) => Promise<void>;
+  acceptRuntimeRegistryAcceptance: (
+    form: HTMLFormElement,
+    promotionRecordPath: string,
+  ) => Promise<void>;
+  missionFeedbackPreviews: Record<string, FrontendMissionFeedbackPreview | undefined>;
+  approveGapFormalization: (form: HTMLFormElement, formalizationId: string) => Promise<void>;
+  previewMissionFeedback: (feedbackId: string) => Promise<void>;
+  rejectGapFormalization: (form: HTMLFormElement, formalizationId: string) => Promise<void>;
+  approveMissionFeedback: (form: HTMLFormElement, feedbackId: string) => Promise<void>;
+  rejectMissionFeedback: (form: HTMLFormElement, feedbackId: string) => Promise<void>;
+};
+
+function renderMissionFeedbackPreview(preview: FrontendMissionFeedbackPreview) {
+  const eligibleRuns = preview.preview.affectedRuns.filter((run) => run.eligible);
+  const cascadeKinds = [...new Set(
+    eligibleRuns
+      .map((run) => run.eligibilityKind)
+      .filter((kind): kind is NonNullable<typeof kind> => Boolean(kind)),
+  )];
+  return html`
+    <section class="queue-highlight warning">
+      <h4>Mission evolution preview</h4>
+      <p>
+        Analyzed ${preview.preview.summary.totalRunsAnalyzed} runs |
+        affected ${preview.preview.summary.totalAffected} |
+        eligible for cascade ${preview.preview.summary.eligibleForCascade}
+      </p>
+      <p class="muted">
+        Improved ${preview.preview.summary.improvedCount} |
+        unchanged ${preview.preview.summary.unchangedCount} |
+        degraded ${preview.preview.summary.degradedCount}
+      </p>
+      <div class="queue-kv-grid">
+        <div class="queue-kv">
+          <h4>Current objective</h4>
+          <p>${preview.preview.currentMission.currentObjective}</p>
+        </div>
+        <div class="queue-kv">
+          <h4>Proposed objective</h4>
+          <p>${preview.preview.proposedMission.currentObjective}</p>
+        </div>
+      </div>
+      ${preview.feedback.suggestedMissionDelta.constraints?.length
+        ? html`<p class="muted">Proposed constraints: ${preview.feedback.suggestedMissionDelta.constraints.join(" | ")}</p>`
+        : nothing}
+      ${preview.feedback.suggestedMissionDelta.usefulnessSignals?.length
+        ? html`<p class="muted">Proposed usefulness signals: ${preview.feedback.suggestedMissionDelta.usefulnessSignals.join(" | ")}</p>`
+        : nothing}
+      ${preview.feedback.suggestedMissionDelta.capabilityLanes?.length
+        ? html`<p class="muted">Proposed lane priorities: ${preview.feedback.suggestedMissionDelta.capabilityLanes.join(" | ")}</p>`
+        : nothing}
+      ${preview.feedback.suggestedMissionDelta.successSignal
+        ? html`<p class="muted">Proposed success signal: ${preview.feedback.suggestedMissionDelta.successSignal}</p>`
+        : nothing}
+      ${preview.feedback.suggestedMissionDelta.adoptionTarget
+        ? html`<p class="muted">Proposed adoption target: ${preview.feedback.suggestedMissionDelta.adoptionTarget}</p>`
+        : nothing}
+      ${eligibleRuns.length
+        ? html`
+          <div class="row">
+            <label>Eligible cascade candidates</label>
+            <div class="muted">Select only the reroute candidates you explicitly want included. The UI respects the bounded 10-run limit.</div>
+            ${eligibleRuns.map((run) => html`
+              <label class="checkbox-row">
+                <input
+                  type="checkbox"
+                  name=${`approved_run_id:${run.eligibilityKind}`}
+                  value=${run.runId}
+                />
+                <span>
+                  ${run.runId} | ${run.currentLane}/${run.currentConfidence} -> ${run.projectedLane}/${run.projectedConfidence}
+                  <span class="muted">(${run.eligibilityKind}; ${run.reason})</span>
+                </span>
+              </label>
+            `)}
+          </div>
+          <div class="row">
+            <label>cascade scope</label>
+            <select name="cascade_scope">
+              <option value="none">none</option>
+              ${cascadeKinds.map((kind) => html`<option value=${kind}>${kind}</option>`)}
+            </select>
+          </div>
+        `
+        : html`
+          <input type="hidden" name="cascade_scope" value="none" />
+          <p class="muted">No current runs are eligible for bounded cascade under this mission delta.</p>
+        `}
+    </section>
+  `;
+}
+
+function renderMissionFeedbackActions(
+  entry: FrontendOperatorDecisionInboxEntry,
+  context: OperatorInboxRendererContext,
+) {
+  const feedbackId = entry.missionFeedbackId;
+  if (!feedbackId) {
+    return nothing;
+  }
+  const preview = context.missionFeedbackPreviews[feedbackId];
+  return html`
+    <section class="queue-highlight">
+      <h4>Mission feedback actions</h4>
+      <p class="muted">Preview first, then approve or reject with explicit rationale. Mission updates remain bounded and auditable.</p>
+      ${preview
+        ? html`
+          <form @submit=${async (event: SubmitEvent) => {
+            event.preventDefault();
+            await context.approveMissionFeedback(event.currentTarget as HTMLFormElement, feedbackId);
+          }}>
+            ${renderMissionFeedbackPreview(preview)}
+            <div class="row">
+              <label>approval rationale</label>
+              <textarea name="rationale">Approve this mission evolution because it sharpens bounded intent without widening the active scope.</textarea>
+            </div>
+            <div class="actions" style="margin-top:12px;">
+              <button type="submit">Approve Mission Evolution</button>
+            </div>
+          </form>
+          <form @submit=${async (event: SubmitEvent) => {
+            event.preventDefault();
+            await context.rejectMissionFeedback(event.currentTarget as HTMLFormElement, feedbackId);
+          }}>
+            <div class="row">
+              <label>rejection rationale</label>
+              <textarea name="rationale">Reject this mission evolution because the current mission should remain unchanged until better evidence arrives.</textarea>
+            </div>
+            <div class="actions" style="margin-top:12px;">
+              <button type="submit">Reject Mission Evolution</button>
+            </div>
+          </form>
+        `
+        : html`
+          <div class="actions" style="margin-top:12px;">
+            <button @click=${async () => { await context.previewMissionFeedback(feedbackId); }}>Preview Mission Impact</button>
+          </div>
+        `}
+    </section>
+  `;
+}
+
+function renderGapFormalizationActions(
+  entry: FrontendOperatorDecisionInboxEntry,
+  context: OperatorInboxRendererContext,
+) {
+  const formalizationId = entry.gapFormalizationId;
+  if (!formalizationId) {
+    return nothing;
+  }
+
+  return html`
+    <section class="queue-highlight">
+      <h4>Gap formalization actions</h4>
+      <p class="muted">Approve to write a formal capability gap and refresh the Discovery worklist, or reject with explicit rationale.</p>
+      <form @submit=${async (event: SubmitEvent) => {
+        event.preventDefault();
+        await context.approveGapFormalization(event.currentTarget as HTMLFormElement, formalizationId);
+      }}>
+        <div class="row">
+          <label>priority</label>
+          <select name="priority">
+            <option value="high" ?selected=${entry.gapFormalizationPriorityHint === "high"}>high</option>
+            <option value="medium" ?selected=${entry.gapFormalizationPriorityHint !== "high" && entry.gapFormalizationPriorityHint !== "low"}>medium</option>
+            <option value="low" ?selected=${entry.gapFormalizationPriorityHint === "low"}>low</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>approval rationale</label>
+          <textarea name="rationale">Approve this gap formalization because the repeated radar signal deserves an explicit tracked Discovery objective.</textarea>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button type="submit">Approve Gap Formalization</button>
+        </div>
+      </form>
+      <form @submit=${async (event: SubmitEvent) => {
+        event.preventDefault();
+        await context.rejectGapFormalization(event.currentTarget as HTMLFormElement, formalizationId);
+      }}>
+        <div class="row">
+          <label>rejection rationale</label>
+          <textarea name="rationale">Reject this gap formalization because the current radar evidence is not yet strong enough to create a tracked gap.</textarea>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button type="submit">Reject Gap Formalization</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function renderDiscoveryRoutingReviewActions(
+  entry: FrontendOperatorDecisionInboxEntry,
+  context: OperatorInboxRendererContext,
+) {
+  const defaultDecision = entry.defaultDecision ?? "defer";
+
+  return html`
+    <section class="queue-highlight">
+      <h4>Discovery routing review actions</h4>
+      <p class="muted">Record an explicit review resolution first. Downstream lane opening remains a separate explicit step after the Discovery review artifact exists.</p>
+      <form @submit=${async (event: SubmitEvent) => {
+        event.preventDefault();
+        await context.resolveDiscoveryRoutingReview(
+          event.currentTarget as HTMLFormElement,
+          entry.artifactPath,
+        );
+      }}>
+        <div class="row">
+          <label>decision</label>
+          <select name="decision">
+            <option value="confirm_architecture" ?selected=${defaultDecision === "confirm_architecture"}>confirm_architecture</option>
+            <option value="confirm_runtime" ?selected=${defaultDecision === "confirm_runtime"}>confirm_runtime</option>
+            <option value="redirect_to_architecture">redirect_to_architecture</option>
+            <option value="redirect_to_runtime">redirect_to_runtime</option>
+            <option value="reject">reject</option>
+            <option value="defer" ?selected=${defaultDecision === "defer"}>defer</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>resolved confidence</label>
+          <select name="resolved_confidence">
+            <option value="high">high</option>
+            <option value="medium">medium</option>
+            <option value="low">low</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>review rationale</label>
+          <textarea name="rationale">Record the explicit Discovery routing resolution and preserve the original routing record unchanged.</textarea>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button type="submit">Record Discovery Review Resolution</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function renderRuntimeHostSelectionActions(
+  entry: FrontendOperatorDecisionInboxEntry,
+  context: OperatorInboxRendererContext,
+) {
+  const defaultDecision = entry.defaultDecision ?? "select_standalone";
+  return html`
+    <section class="queue-highlight">
+      <h4>Runtime host-selection actions</h4>
+      <p class="muted">Record one explicit host-selection resolution first. Promotion, execution, and registry acceptance remain separate explicit Runtime steps after host selection is resolved.</p>
+      <form @submit=${async (event: SubmitEvent) => {
+        event.preventDefault();
+        await context.resolveRuntimeHostSelection(
+          event.currentTarget as HTMLFormElement,
+          entry.artifactPath,
+        );
+      }}>
+        <div class="row">
+          <label>decision</label>
+          <select name="decision">
+            <option value="select_standalone" ?selected=${defaultDecision === "select_standalone"}>select_standalone</option>
+            <option value="select_web" ?selected=${defaultDecision === "select_web"}>select_web</option>
+            <option value="confirm_inferred" ?selected=${defaultDecision === "confirm_inferred"}>confirm_inferred</option>
+            <option value="override" ?selected=${defaultDecision === "override"}>override</option>
+            <option value="defer" ?selected=${defaultDecision === "defer"}>defer</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>custom host (only for override)</label>
+          <input
+            type="text"
+            name="selected_host"
+            placeholder="Directive Kernel standalone host (hosts/standalone-host/)"
+          />
+        </div>
+        <div class="row">
+          <label>resolved confidence</label>
+          <select name="resolved_confidence">
+            <option value="high">high</option>
+            <option value="medium">medium</option>
+            <option value="low">low</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>review rationale</label>
+          <textarea name="rationale">Record the explicit repo-native host target and preserve the original promotion-readiness artifact unchanged.</textarea>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button type="submit">Record Runtime Host Selection</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function renderRationaleOnlyActionSection(input: {
+  title: string;
+  body: string;
+  buttonLabel: string;
+  defaultRationale: string;
+  onSubmit: (form: HTMLFormElement) => Promise<void>;
+}) {
+  return html`
+    <section class="queue-highlight">
+      <h4>${input.title}</h4>
+      <p class="muted">${input.body}</p>
+      <form @submit=${async (event: SubmitEvent) => {
+        event.preventDefault();
+        await input.onSubmit(event.currentTarget as HTMLFormElement);
+      }}>
+        <div class="row">
+          <label>rationale</label>
+          <textarea name="rationale">${input.defaultRationale}</textarea>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button type="submit">${input.buttonLabel}</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function renderRuntimePromotionSeamActions(
+  entry: FrontendOperatorDecisionInboxEntry,
+  context: OperatorInboxRendererContext,
+) {
+  return renderRationaleOnlyActionSection({
+    title: "Runtime promotion-seam actions",
+    body:
+      "Open exactly one bounded manual promotion record from the existing repo-native prerequisites. Registry acceptance, host execution, and broader automation remain separate explicit Runtime steps.",
+    buttonLabel: "Open Runtime Promotion Record",
+    defaultRationale:
+      "Open one bounded manual Runtime promotion record because host selection and pre-host evidence are already explicit.",
+    onSubmit: (form) => context.resolveRuntimePromotionSeamDecision(form, entry.artifactPath),
+  });
+}
+
+function renderRuntimeRegistryAcceptanceActions(
+  entry: FrontendOperatorDecisionInboxEntry,
+  context: OperatorInboxRendererContext,
+) {
+  return renderRationaleOnlyActionSection({
+    title: "Runtime registry-acceptance actions",
+    body:
+      "Write the gated registry entry only if the promotion record, host adapter proof, and callable execution evidence already satisfy the acceptance gate.",
+    buttonLabel: "Write Runtime Registry Entry",
+    defaultRationale:
+      "Accept this Runtime candidate into the registry because the bounded host adapter proof and callable execution evidence already pass the explicit acceptance gate.",
+    onSubmit: (form) => context.acceptRuntimeRegistryAcceptance(form, entry.artifactPath),
+  });
+}
+
+function renderOperatorDecisionEntry(
+  entry: FrontendOperatorDecisionInboxEntry,
+  context: OperatorInboxRendererContext,
+) {
   const planStateSummary = entry.planStateSummary ?? null;
   return html`
     <article class=${`decision-entry ${entry.decisionSurface}`}>
@@ -40,6 +407,10 @@ function renderOperatorDecisionEntry(entry: FrontendOperatorDecisionInboxEntry) 
         <div class="queue-kv"><h4>Blocked because</h4><p>${entry.blockReason}</p></div>
         <div class="queue-kv"><h4>Next action</h4><p>${entry.eligibleNextAction}</p></div>
         <div class="queue-kv"><h4>Source artifact</h4><p>${artifactLink(entry.artifactPath)}</p></div>
+        <div class="queue-kv"><h4>Action id</h4><p>${entry.actionId}</p></div>
+        <div class="queue-kv"><h4>Action posture</h4><p>${entry.actionExecutable ? "executable" : "advisory only"}</p></div>
+        <div class="queue-kv"><h4>Default decision</h4><p>${entry.defaultDecision ?? "n/a"}</p></div>
+        <div class="queue-kv"><h4>Priority hint</h4><p>${entry.priorityHint ?? "n/a"}</p></div>
       </div>
       ${planStateSummary
         ? html`
@@ -65,6 +436,24 @@ function renderOperatorDecisionEntry(entry: FrontendOperatorDecisionInboxEntry) 
         <h4>Resolver command or artifact</h4>
         <pre>${entry.resolverCommandOrArtifact}</pre>
       </section>
+      ${entry.decisionSurface === "mission_health_feedback"
+        ? renderMissionFeedbackActions(entry, context)
+        : nothing}
+      ${entry.decisionSurface === "gap_formalization_review"
+        ? renderGapFormalizationActions(entry, context)
+        : nothing}
+      ${entry.decisionSurface === "discovery_routing_review"
+        ? renderDiscoveryRoutingReviewActions(entry, context)
+        : nothing}
+      ${entry.decisionSurface === "runtime_host_selection"
+        ? renderRuntimeHostSelectionActions(entry, context)
+        : nothing}
+      ${entry.decisionSurface === "runtime_promotion_seam_decision"
+        ? renderRuntimePromotionSeamActions(entry, context)
+        : nothing}
+      ${entry.decisionSurface === "runtime_registry_acceptance"
+        ? renderRuntimeRegistryAcceptanceActions(entry, context)
+        : nothing}
       ${entry.relatedArtifacts.length
         ? html`<section class="queue-highlight"><h4>Related artifacts</h4><ul>${entry.relatedArtifacts.map((artifact) => html`<li>${artifactLink(artifact)}</li>`)}</ul></section>`
         : nothing}
@@ -189,7 +578,10 @@ function renderDashboardFocusCard(input: {
   `;
 }
 
-export function renderOperatorDecisionInboxPage(inbox: FrontendOperatorDecisionInboxReport) {
+export function renderOperatorDecisionInboxPage(
+  inbox: FrontendOperatorDecisionInboxReport,
+  context: OperatorInboxRendererContext,
+) {
   const missionHealthFeedback = inbox.entries.filter((entry) => entry.decisionSurface === "mission_health_feedback");
   const runtimeHostSelection = inbox.entries.filter((entry) => entry.decisionSurface === "runtime_host_selection");
   const runtimePromotionSeamDecision = inbox.entries.filter((entry) => entry.decisionSurface === "runtime_promotion_seam_decision");
@@ -203,7 +595,7 @@ export function renderOperatorDecisionInboxPage(inbox: FrontendOperatorDecisionI
       <h2>${title}</h2>
       <p class="muted">${description}</p>
       ${entries.length
-        ? html`<div class="decision-entry-list">${entries.map((entry) => renderOperatorDecisionEntry(entry))}</div>`
+        ? html`<div class="decision-entry-list">${entries.map((entry) => renderOperatorDecisionEntry(entry, context))}</div>`
         : html`<div class="queue-empty muted">No actionable entries for this group.</div>`}
     </section>
   `;
@@ -211,7 +603,7 @@ export function renderOperatorDecisionInboxPage(inbox: FrontendOperatorDecisionI
   return html`
     <section class="panel">
       <h2>Operator Decision Inbox</h2>
-      <p class="muted">Live read-only triage over current Engine, Discovery, Architecture, and Runtime decision gates. This page is API-backed by Engine coordination state; it does not resolve routes, write host-selection artifacts, run host adapters, create Architecture materialization artifacts, or write registry entries.</p>
+      <p class="muted">Live triage over current Engine, Discovery, Architecture, and Runtime decision gates. Mission evolution, gap formalization, Discovery routing review, Runtime host selection, Runtime promotion seams, and proof-backed Runtime registry acceptance are executable here; lane-native materialization and downstream runtime execution remain separate explicit steps.</p>
       <div class="queue-summary-grid">
         ${renderQueueStat("Actionable entries", inbox.summary.totalActionableEntries, "Current Discovery, Architecture, and Runtime decisions requiring explicit operator attention.")}
         ${renderQueueStat("Mission feedback", inbox.summary.missionHealthFeedbackCount, "Mission evolution proposals generated from mission-health pressure and routed into an explicit operator review loop.")}

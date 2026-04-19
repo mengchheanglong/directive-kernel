@@ -19,10 +19,10 @@ Use this contract when:
 - the adapted/improved mechanism needs a product-owned materialization decision
 - an existing adopted mechanism is being re-evaluated for artifact type or scope
 
-If the Decide step needs a deterministic machine-readable resolution, use `architecture/lib/architecture-adoption-resolution.ts`.
-If the Decide step also needs a canonical schema-shaped adoption artifact, emit it through `architecture/lib/architecture-adoption-artifacts.ts`.
-If the Decide step should resolve review, resolve adoption, and retain the resulting decision as one canonical closeout flow, use `architecture/lib/architecture-closeout.ts`.
-If that adoption artifact should be retained beside an adopted record, emit it through `architecture/lib/architecture-adoption-decision-writer.ts`.
+If the Decide step needs a deterministic machine-readable resolution, use `architecture/lib/adoption/architecture-adoption-resolution.ts`.
+If the Decide step also needs a canonical schema-shaped adoption artifact, emit it through `architecture/lib/adoption/architecture-adoption-artifacts.ts`.
+If the Decide step should resolve review, resolve adoption, and retain the resulting decision as one canonical closeout flow, use `architecture/lib/experiments/architecture-closeout.ts`.
+If that adoption artifact should be retained beside an adopted record, emit it through `architecture/lib/adoption/architecture-adoption-decision-writer.ts`.
 That writer may consume raw review input and resolve the review/adoption path before retaining the decision artifact.
 
 ## Adoption decision surface

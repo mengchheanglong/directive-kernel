@@ -8,18 +8,26 @@ import {
   createFilesystemDirectiveEngineStore,
   createDirectiveWorkspaceEngineLanes,
   createMemoryDirectiveEngineStore,
-  assessDirectiveEngineRouting,
-  createDefaultDirectiveMission,
-  inferDirectiveEngineSourceType,
-  countTokenOverlap,
-  resolveDirectiveEngineStoreRecordPath,
   type DirectiveEngineRunRecord,
 } from "../../engine/index.ts";
+import {
+  fileExistsInDirectiveWorkspace,
+  isDirectiveWorkspaceArtifactReference,
+  readLinkedArtifactIfPresent,
+  recordExpectedArtifactIfMissing,
+  recordInconsistentLink,
+  recordMissingLinkedArtifactIfAbsent,
+} from "../../engine/artifact-link-validation.ts";
+import { countTokenOverlap } from "../../engine/engine-source-utils.ts";
+import { createDefaultDirectiveMission } from "../../engine/mission/default-mission.ts";
+import { assessDirectiveEngineRouting } from "../../engine/routing/index.ts";
+import { inferDirectiveEngineSourceType } from "../../engine/source-type-inference.ts";
+import { resolveDirectiveEngineStoreRecordPath } from "../../engine/storage.ts";
 import {
   readDirectiveEngineProcessFingerprintCacheStats,
   resetDirectiveEngineProcessFingerprintCache,
 } from "../../engine/directive-engine.ts";
-import { appendDiscoveryIntakeQueueEntry } from "../../discovery/lib/discovery-intake-queue-writer.ts";
+import { appendDiscoveryIntakeQueueEntry } from "../../discovery/lib/intake/discovery-intake-queue-writer.ts";
 import {
   buildArchitectureGap,
   buildArchitectureMission,
@@ -399,6 +407,81 @@ export async function runFilesystemStoreCachingChecks() {
 }
 
 export function runEngineContractSurfaceChecks() {
+  const artifactRoot = path.resolve(
+    os.tmpdir(),
+    `directive-kernel-artifact-link-check-${Date.now()}`,
+  );
+  const linkedArtifactPath = "runtime/06-promotion-specifications/example.json";
+  const linkedArtifactAbsolutePath = path.join(artifactRoot, linkedArtifactPath);
+  fs.mkdirSync(path.dirname(linkedArtifactAbsolutePath), { recursive: true });
+  fs.writeFileSync(linkedArtifactAbsolutePath, JSON.stringify({ ok: true }), "utf8");
+
+  assert.equal(
+    isDirectiveWorkspaceArtifactReference("runtime\\06-promotion-specifications\\example.json"),
+    true,
+    "Artifact-link validation should treat workspace-relative backslash paths as valid workspace artifact references",
+  );
+  assert.equal(
+    isDirectiveWorkspaceArtifactReference("https://example.com/spec.json"),
+    false,
+    "Artifact-link validation should reject non-workspace artifact references",
+  );
+  assert.equal(
+    fileExistsInDirectiveWorkspace(artifactRoot, linkedArtifactPath),
+    true,
+    "Artifact-link validation should resolve workspace-relative artifact paths against the directive root",
+  );
+  assert.deepEqual(
+    readLinkedArtifactIfPresent({
+      directiveRoot: artifactRoot,
+      relativePath: linkedArtifactPath,
+      read: (relativePath) => ({ relativePath }),
+    }),
+    { relativePath: linkedArtifactPath },
+    "Linked-artifact reads should delegate only when the workspace-relative target exists",
+  );
+  assert.equal(
+    readLinkedArtifactIfPresent({
+      directiveRoot: artifactRoot,
+      relativePath: "runtime/06-promotion-specifications/missing.json",
+      read: () => ({ unreachable: true }),
+    }),
+    null,
+    "Linked-artifact reads should stay null for missing workspace-relative artifacts",
+  );
+  const validationState = {
+    missingExpectedArtifacts: [] as string[],
+    inconsistentLinks: [] as string[],
+  };
+  recordExpectedArtifactIfMissing({
+    directiveRoot: artifactRoot,
+    state: validationState,
+    relativePath: "runtime/06-promotion-specifications/missing.json",
+  });
+  recordExpectedArtifactIfMissing({
+    directiveRoot: artifactRoot,
+    state: validationState,
+    relativePath: "https://example.com/spec.json",
+  });
+  recordMissingLinkedArtifactIfAbsent({
+    directiveRoot: artifactRoot,
+    state: validationState,
+    relativePath: "runtime/06-promotion-specifications/missing.json",
+    label: "promotion specification",
+  });
+  recordInconsistentLink(validationState, "duplicate issue");
+  recordInconsistentLink(validationState, "duplicate issue");
+  assert.deepEqual(
+    validationState.missingExpectedArtifacts,
+    ["runtime/06-promotion-specifications/missing.json"],
+    "Expected-artifact tracking should record only missing workspace-relative artifacts once",
+  );
+  assert.deepEqual(
+    validationState.inconsistentLinks,
+    ["missing linked promotion specification: runtime/06-promotion-specifications/missing.json", "duplicate issue"],
+    "Inconsistent-link tracking should stay deduplicated and keep explicit missing-link messages",
+  );
+
   const recurringPolicyEvents = buildRecurringArchitecturePolicyEvents();
   const overlapFromArray = countTokenOverlap(
     ["alpha", "beta", "gamma"],

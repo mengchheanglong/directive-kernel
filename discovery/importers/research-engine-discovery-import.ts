@@ -7,15 +7,15 @@ import { requiredString } from "../../shared/lib/validation.ts";
 import type {
   DiscoveryIntakeQueueDocument,
   DiscoverySourceType,
-} from "../../discovery/lib/discovery-intake-queue-writer.ts";
+} from "../lib/intake/discovery-intake-queue-writer.ts";
 import {
   submitDirectiveDiscoveryFrontDoor,
   type DirectiveDiscoveryFrontDoorResult,
-} from "../../discovery/lib/discovery-front-door.ts";
+} from "../lib/front-door/discovery-front-door.ts";
 import type {
   DiscoverySubmissionRequest,
   DiscoverySubmissionShape,
-} from "../../discovery/lib/discovery-submission-router.ts";
+} from "../lib/front-door/discovery-submission-router.ts";
 
 type ResearchEngineArtifactRefs = {
   source_intelligence_packet: string;

@@ -1,4 +1,5 @@
 import { readJson } from "../../shared/lib/file-io.ts";
+import type { DirectiveEnginePlanProgressUpdate } from "../../engine/types.ts";
 import {
   approveGapFormalization,
   approveMissionFeedbackEntry,
@@ -11,17 +12,17 @@ import {
   rejectGapFormalization,
   rejectMissionFeedbackEntry,
   revertMissionEvolution,
-} from "../../engine/index.ts";
-import { refreshDiscoveryGapWorklist } from "../../discovery/lib/discovery-gap-worklist-refresh.ts";
+} from "../../engine/mission/index.ts";
+import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/discovery-gap-worklist-refresh.ts";
 
-import type { DiscoverySubmissionRequest } from "../../discovery/lib/discovery-submission-router.ts";
-import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/runtime-follow-up-record-writer.ts";
-import type { RuntimeProofBundleRequest } from "../../runtime/lib/runtime-proof-bundle-writer.ts";
-import type { RuntimePromotionRecordRequest } from "../../runtime/lib/runtime-promotion-record-writer.ts";
-import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/runtime-registry-entry-writer.ts";
-import type { RuntimeRecordRequest } from "../../runtime/lib/runtime-record-writer.ts";
-import type { RuntimeTransformationProofRequest } from "../../runtime/lib/runtime-transformation-proof-writer.ts";
-import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/runtime-transformation-record-writer.ts";
+import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
+import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/runtime-follow-up-record-writer.ts";
+import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/runtime-proof-bundle-writer.ts";
+import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/runtime-promotion-record-writer.ts";
+import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
+import type { RuntimeRecordRequest } from "../../runtime/lib/writers/runtime-record-writer.ts";
+import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/runtime-transformation-proof-writer.ts";
+import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/runtime-transformation-record-writer.ts";
 import { bootstrapStandaloneHostWorkspace } from "./bootstrap.ts";
 import {
   applyStandaloneHostConfigOverrides,
@@ -44,6 +45,8 @@ type CommandName =
   | "acceptance-quickstart"
   | "discovery-submit"
   | "discovery-overview"
+  | "engine-plan-progress"
+  | "engine-reroute"
   | "mission-feedback"
   | "mission-preview"
   | "mission-approve"
@@ -53,6 +56,9 @@ type CommandName =
   | "gap-formalize"
   | "gap-approve"
   | "gap-reject"
+  | "runtime-host-selection-resolve"
+  | "runtime-promotion-seam-resolve"
+  | "runtime-registry-accept"
   | "runtime-followup-write"
   | "runtime-record-write"
   | "runtime-proof-write"
@@ -81,6 +87,8 @@ Commands:
   acceptance-quickstart --output-root <path> [--host-name <name>] [--relative-output-path <path>] [--generated-at <iso>]
   discovery-submit (--directive-root <path> | --config <path>) --input-json-path <path> [--received-at <yyyy-mm-dd>] [--unresolved-gap-id <id> ...] [--persistence-sqlite-path <path>] [--dry-run] [--process-with-engine]
   discovery-overview (--directive-root <path> | --config <path>) [--max-entries <n>] [--received-at <yyyy-mm-dd>] [--persistence-sqlite-path <path>]
+  engine-plan-progress (--directive-root <path> | --config <path>) --run-id <id> --plan <extraction|adaptation|improvement|proof> --item-type <type> [--index <n>] --status <pending|in_progress|completed|skipped> [--at <iso>] [--persistence-sqlite-path <path>]
+  engine-reroute (--directive-root <path> | --config <path>) --run-id <id> --answers-json-path <path> [--received-at <iso>] [--persistence-sqlite-path <path>]
   mission-feedback (--directive-root <path> | --config <path>)
   mission-preview (--directive-root <path> | --config <path>) --feedback-id <id>
   mission-approve (--directive-root <path> | --config <path>) --feedback-id <id> --rationale <text> [--cascade-scope <none|low_confidence|conflicted|discovery_held>] [--run-id <id> ...]
@@ -90,6 +98,9 @@ Commands:
   gap-formalize (--directive-root <path> | --config <path>)
   gap-approve (--directive-root <path> | --config <path>) --formalization-id <id> --priority <high|medium|low> --rationale <text>
   gap-reject (--directive-root <path> | --config <path>) --formalization-id <id> --rationale <text>
+  runtime-host-selection-resolve (--directive-root <path> | --config <path>) --promotion-readiness-path <path> --decision <select_standalone|select_web|confirm_inferred|override|defer> --rationale <text> [--selected-host <text>] [--reviewed-by <actor>] [--resolved-confidence <high|medium|low>] [--persistence-sqlite-path <path>]
+  runtime-promotion-seam-resolve (--directive-root <path> | --config <path>) --promotion-readiness-path <path> --rationale <text> [--approved-by <actor>] [--persistence-sqlite-path <path>]
+  runtime-registry-accept (--directive-root <path> | --config <path>) --promotion-record-path <path> --rationale <text> [--accepted-by <actor>] [--persistence-sqlite-path <path>]
   runtime-followup-write (--directive-root <path> | --config <path>) --input-json-path <path> [--persistence-sqlite-path <path>]
   runtime-record-write (--directive-root <path> | --config <path>) --input-json-path <path> [--persistence-sqlite-path <path>]
   runtime-proof-write (--directive-root <path> | --config <path>) --input-json-path <path> [--persistence-sqlite-path <path>]
@@ -328,6 +339,79 @@ async function main() {
     return;
   }
 
+  if (command === "engine-plan-progress") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const host = createRuntimeHostFromFlags(flags, runtimeConfig);
+    try {
+      const plan = readRequiredFlag(flags, "plan");
+      if (
+        plan !== "extraction"
+        && plan !== "adaptation"
+        && plan !== "improvement"
+        && plan !== "proof"
+      ) {
+        throw new Error("Invalid value for --plan");
+      }
+      const status = readRequiredFlag(flags, "status");
+      if (
+        status !== "pending"
+        && status !== "in_progress"
+        && status !== "completed"
+        && status !== "skipped"
+      ) {
+        throw new Error("Invalid value for --status");
+      }
+
+      const itemType = readRequiredFlag(flags, "item-type");
+      const indexRaw = readOptionalFlag(flags, "index");
+      const index = indexRaw == null ? undefined : Number(indexRaw);
+      if (indexRaw != null && (!Number.isInteger(index) || index < 0)) {
+        throw new Error("Invalid value for --index");
+      }
+
+      const update: DirectiveEnginePlanProgressUpdate = index == null
+        ? {
+            plan,
+            itemType,
+            status,
+          }
+        : {
+            plan,
+            itemType,
+            index,
+            status,
+          };
+      const result = await host.updateEnginePlanProgress({
+        runId: readRequiredFlag(flags, "run-id"),
+        updates: [update],
+        at: readOptionalFlag(flags, "at") ?? null,
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, record: result }, null, 2)}\n`);
+    } finally {
+      host.close();
+    }
+    return;
+  }
+
+  if (command === "engine-reroute") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const host = createRuntimeHostFromFlags(flags, runtimeConfig);
+    try {
+      const answers = readJson<Record<string, unknown>>(
+        readRequiredFlag(flags, "answers-json-path"),
+      );
+      const result = await host.reRouteEngineRunWithAnswers({
+        runId: readRequiredFlag(flags, "run-id"),
+        answers,
+        receivedAt: readOptionalFlag(flags, "received-at") ?? null,
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
+    } finally {
+      host.close();
+    }
+    return;
+  }
+
   if (command === "mission-preview") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
@@ -435,6 +519,82 @@ async function main() {
       operatorRationale: readRequiredFlag(flags, "rationale"),
     });
     process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === "runtime-host-selection-resolve") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const host = createRuntimeHostFromFlags(flags, runtimeConfig);
+    try {
+      const decision = readRequiredFlag(flags, "decision");
+      if (
+        decision !== "select_standalone"
+        && decision !== "select_web"
+        && decision !== "confirm_inferred"
+        && decision !== "override"
+        && decision !== "defer"
+      ) {
+        throw new Error("Invalid value for --decision");
+      }
+      const resolvedConfidence = readOptionalFlag(flags, "resolved-confidence");
+      if (
+        resolvedConfidence
+        && resolvedConfidence !== "high"
+        && resolvedConfidence !== "medium"
+        && resolvedConfidence !== "low"
+      ) {
+        throw new Error("Invalid value for --resolved-confidence");
+      }
+      const result = await host.writeRuntimeHostSelectionResolution({
+        promotionReadinessPath: readRequiredFlag(flags, "promotion-readiness-path"),
+        decision,
+        selectedHost: readOptionalFlag(flags, "selected-host") ?? "",
+        rationale: readRequiredFlag(flags, "rationale"),
+        reviewedBy: readOptionalFlag(flags, "reviewed-by") ?? "standalone-host-cli",
+        resolvedConfidence: resolvedConfidence as "high" | "medium" | "low" | undefined,
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    } finally {
+      host.close();
+    }
+    return;
+  }
+
+  if (command === "runtime-promotion-seam-resolve") {
+    const promotionReadinessPath = readRequiredFlag(flags, "promotion-readiness-path");
+    const rationale = readRequiredFlag(flags, "rationale");
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+
+    const host = createRuntimeHostFromFlags(flags, runtimeConfig);
+    try {
+      const result = await host.writeRuntimePromotionSeamDecision({
+        promotionReadinessPath,
+        rationale,
+        approvedBy: readOptionalFlag(flags, "approved-by") ?? "standalone-host-cli",
+      });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    } finally {
+      host.close();
+    }
+    return;
+  }
+
+  if (command === "runtime-registry-accept") {
+    const promotionRecordPath = readRequiredFlag(flags, "promotion-record-path");
+    const rationale = readRequiredFlag(flags, "rationale");
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+
+    const host = createRuntimeHostFromFlags(flags, runtimeConfig);
+    try {
+      const result = await host.writeRuntimeRegistryAcceptanceDecision({
+        promotionRecordPath,
+        rationale,
+        acceptedBy: readOptionalFlag(flags, "accepted-by") ?? "standalone-host-cli",
+      });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    } finally {
+      host.close();
+    }
     return;
   }
 

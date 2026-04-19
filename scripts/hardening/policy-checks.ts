@@ -5,28 +5,32 @@ import path from "node:path";
 
 import {
   DirectiveEngine,
-  appendDecisionPolicyEvent,
-  appendRoutingCorrection,
-  assessDirectiveEngineRouting,
-  compileDecisionPolicySuggestions,
   createDirectiveWorkspaceEngineLanes,
   createMemoryDirectiveEngineStore,
-  deriveDirectiveRoutingOutcomes,
-  deriveDirectiveRoutingQualityAssessment,
-  extractSourceSignalTokens,
-  readDecisionPolicyLedger,
-  readRoutingCorrectionLedger,
-  deriveRoutingCorrectionAdjustments,
   type DirectiveEngineCapabilityGap,
   type DirectiveEngineMissionInput,
   type DirectiveEngineProcessSourceInput,
-  type RoutingCorrectionEntry,
 } from "../../engine/index.ts";
+import {
+  appendDecisionPolicyEvent,
+  compileDecisionPolicySuggestions,
+  readDecisionPolicyLedger,
+} from "../../engine/decision-policy-ledger.ts";
+import {
+  appendRoutingCorrection,
+  assessDirectiveEngineRouting,
+  deriveDirectiveRoutingQualityAssessment,
+  deriveRoutingCorrectionAdjustments,
+  extractSourceSignalTokens,
+  readRoutingCorrectionLedger,
+  type RoutingCorrectionEntry,
+} from "../../engine/routing/index.ts";
+import { deriveDirectiveRoutingOutcomes } from "../../engine/outcome-tracker.ts";
 import {
   readSourceSignalTokenCacheStats,
   resetSourceSignalTokenCache,
 } from "../../engine/routing/routing-correction-ledger.ts";
-import { writeDiscoveryRoutingReviewResolution } from "../../discovery/lib/discovery-routing-review-resolution.ts";
+import { writeDiscoveryRoutingReviewResolution } from "../../discovery/lib/routing/discovery-routing-review-resolution.ts";
 import {
   runDiscoveryFrontDoorStarterSmoke,
 } from "../../hosts/integration-kit/starter/discovery-front-door-adapter.smoke.template.ts";

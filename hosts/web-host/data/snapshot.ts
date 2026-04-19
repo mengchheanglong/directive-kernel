@@ -7,43 +7,43 @@ import {
   type DirectiveArchitectureResultEvidenceSlot,
   type DirectiveArchitectureBoundedResultArtifact,
   type DirectiveArchitectureBoundedStartArtifact,
-} from "../../../architecture/lib/architecture-bounded-closeout.ts";
+} from "../../../architecture/lib/experiments/architecture-bounded-closeout.ts";
 import {
   type DirectiveArchitectureImplementationResultDetail,
-} from "../../../architecture/lib/architecture-implementation-result.ts";
+} from "../../../architecture/lib/materialization/architecture-implementation-result.ts";
 import {
   type DirectiveArchitectureRetentionDetail,
-} from "../../../architecture/lib/architecture-retention.ts";
+} from "../../../architecture/lib/materialization/architecture-retention.ts";
 import {
   type DirectiveArchitectureIntegrationRecordDetail,
-} from "../../../architecture/lib/architecture-integration-record.ts";
+} from "../../../architecture/lib/materialization/architecture-integration-record.ts";
 import {
   type DirectiveArchitectureConsumptionRecordDetail,
-} from "../../../architecture/lib/architecture-consumption-record.ts";
+} from "../../../architecture/lib/materialization/architecture-consumption-record.ts";
 import {
   type DirectiveArchitecturePostConsumptionEvaluationDetail,
-} from "../../../architecture/lib/architecture-post-consumption-evaluation.ts";
+} from "../../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
 import {
   readDirectiveArchitectureHandoffArtifact,
   type DirectiveArchitectureHandoffArtifact,
-} from "../../../architecture/lib/architecture-handoff-start.ts";
+} from "../../../architecture/lib/experiments/architecture-handoff-start.ts";
 import {
   readDirectiveDiscoveryRoutingArtifact,
   type DirectiveDiscoveryRoutingArtifact,
-} from "../../../discovery/lib/discovery-route-opener.ts";
+} from "../../../discovery/lib/routing/discovery-route-opener.ts";
 import {
   readDirectiveRuntimeFollowUpArtifact,
   type DirectiveRuntimeFollowUpArtifact,
-} from "../../../runtime/lib/runtime-follow-up-opener.ts";
+} from "../../../runtime/lib/openers/runtime-follow-up-opener.ts";
 import {
   type DirectiveRuntimeRecordArtifact,
-} from "../../../runtime/lib/runtime-record-proof-opener.ts";
+} from "../../../runtime/lib/openers/runtime-record-proof-opener.ts";
 import {
   type DirectiveRuntimeProofArtifact,
-} from "../../../runtime/lib/runtime-proof-runtime-capability-boundary-opener.ts";
+} from "../../../runtime/lib/openers/runtime-proof-runtime-capability-boundary-opener.ts";
 import {
   type DirectiveRuntimeRuntimeCapabilityBoundaryArtifact,
-} from "../../../runtime/lib/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
+} from "../../../runtime/lib/openers/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
 import {
   readDirectiveEngineRunDetail,
   readDirectiveEngineRunsOverview,

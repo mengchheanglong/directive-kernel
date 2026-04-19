@@ -12,7 +12,7 @@ Canonical surfaces:
 - `discovery/gap-worklist.json`
 - `discovery/intake-queue.json`
 - `knowledge/active-mission.md`
-- `discovery/lib/discovery-gap-worklist-generator.ts`
+- `discovery/lib/gaps/discovery-gap-worklist-generator.ts`
 
 Required item fields:
 - `gap_id`
@@ -51,8 +51,8 @@ Priority score fields:
 - `score_breakdown.blocker_penalty` represents current blocking drag and lowers total priority
 
 Scoring rule:
-- canonical scorer lives in `discovery/lib/discovery-gap-priority.ts`
-- canonical generator lives in `discovery/lib/discovery-gap-worklist-generator.ts`
+- canonical scorer lives in `discovery/lib/gaps/discovery-gap-priority.ts`
+- canonical generator lives in `discovery/lib/gaps/discovery-gap-worklist-generator.ts`
 - current weighted model:
   - base priority: `high=50`, `medium=35`, `low=20`
   - `mission_pressure * 5`

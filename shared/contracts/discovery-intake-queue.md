@@ -10,20 +10,20 @@
 - Every new candidate MUST have a queue entry before routing
 - Markdown fast-path records SHOULD also be created for human readability
 - Queue entries use the schema at `shared/schemas/discovery-intake-queue-entry.schema.json`
-- Queue writes should go through `discovery/lib/discovery-intake-queue-writer.ts` and the host intake writer wrapper, not through ad hoc JSON mutation
-- Unified Discovery submissions should go through `discovery/lib/discovery-submission-router.ts` and the host `discovery:submit` wrapper when an operator wants one payload that can stay queue-only, create a fast-path record, or generate the split-case record set automatically
-- Queue status transitions should go through `discovery/lib/discovery-intake-queue-transition.ts` and the host transition writer wrapper, not through ad hoc JSON mutation
-- Queue lifecycle sync updates should go through `discovery/lib/discovery-intake-lifecycle-sync.ts` and the host lifecycle sync wrapper when queue state and artifact linkages change together
-- Simple routed Discovery records should go through `discovery/lib/discovery-fast-path-record-writer.ts` and the unified submission wrapper rather than handwritten fast-path markdown
-- Split Discovery routing records should go through `discovery/lib/discovery-routing-record-writer.ts` and the host routing-record writer wrapper so routing markdown and queue linkage stay synchronized
-- Split Discovery completion records should go through `discovery/lib/discovery-completion-record-writer.ts` and the host completion-record writer wrapper so final result markdown and queue completion linkage stay synchronized
-- Split Discovery intake + triage + routing (+ optional completion) case records should go through `discovery/lib/discovery-case-record-writer.ts` and the host case-record writer wrapper when one candidate needs the full split path from a single canonical payload
+- Queue writes should go through `discovery/lib/intake/discovery-intake-queue-writer.ts` and the host intake writer wrapper, not through ad hoc JSON mutation
+- Unified Discovery submissions should go through `discovery/lib/front-door/discovery-submission-router.ts` and the host `discovery:submit` wrapper when an operator wants one payload that can stay queue-only, create a fast-path record, or generate the split-case record set automatically
+- Queue status transitions should go through `discovery/lib/intake/discovery-intake-queue-transition.ts` and the host transition writer wrapper, not through ad hoc JSON mutation
+- Queue lifecycle sync updates should go through `discovery/lib/intake/discovery-intake-lifecycle-sync.ts` and the host lifecycle sync wrapper when queue state and artifact linkages change together
+- Simple routed Discovery records should go through `discovery/lib/records/discovery-fast-path-record-writer.ts` and the unified submission wrapper rather than handwritten fast-path markdown
+- Split Discovery routing records should go through `discovery/lib/routing/discovery-routing-record-writer.ts` and the host routing-record writer wrapper so routing markdown and queue linkage stay synchronized
+- Split Discovery completion records should go through `discovery/lib/records/discovery-completion-record-writer.ts` and the host completion-record writer wrapper so final result markdown and queue completion linkage stay synchronized
+- Split Discovery intake + triage + routing (+ optional completion) case records should go through `discovery/lib/records/discovery-case-record-writer.ts` and the host case-record writer wrapper when one candidate needs the full split path from a single canonical payload
 - Split-case queue linkage should use `intake_record_path`; fast-path queue linkage should use `fast_path_record_path`
 - Queue entries SHOULD include an `operating_mode` field (`note`, `standard`, or `deep`) set at triage time — see `CLAUDE.md` Operating modes section for classification rules
 - Queue entries that reference a capability gap must use a valid `gap_id` from `discovery/capability-gaps.json`
 - Queue entries that declare mission alignment must reference an objective from `knowledge/active-mission.md`
 - Queue validation checker runs as a gate (exit 1 on failure)
-- Front-door routine coverage is measured by `discovery/lib/discovery-front-door-coverage.ts`
+- Front-door routine coverage is measured by `discovery/lib/front-door/discovery-front-door-coverage.ts`
 
 ## Primary Mode Constraints
 
@@ -48,7 +48,7 @@ Transitioned from shadow to primary on 2026-03-22:
 - Criteria partially met: backfill entries lack `fast_path_record_path` but all correspond to real routing-log records
 
 Routine-usage follow-up closed on 2026-03-23:
-- canonical front-door coverage analysis now lives at `discovery/lib/discovery-front-door-coverage.ts`
+- canonical front-door coverage analysis now lives at `discovery/lib/front-door/discovery-front-door-coverage.ts`
 - split-case queue linkage normalized to `intake_record_path`
 - native post-primary Discovery coverage now measures against live corpus usage instead of hand-counted markdown ratios
 

@@ -5,7 +5,7 @@ import { normalizeRelativePath } from "../../../shared/lib/path-normalization.ts
 import {
   readDirectiveArchitectureHandoffArtifact,
   type DirectiveArchitectureHandoffArtifact,
-} from "../../../architecture/lib/architecture-handoff-start.ts";
+} from "../../../architecture/lib/experiments/architecture-handoff-start.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 
 export type FrontendHandoffStub = {

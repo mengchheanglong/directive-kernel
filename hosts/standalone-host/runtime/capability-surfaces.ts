@@ -10,7 +10,7 @@ import {
 import {
   DIRECTIVE_RUNTIME_TO_HOST_CONTRACT_PATH,
   readDirectiveRuntimePromotionSpecification,
-} from "../../../runtime/lib/runtime-promotion-specification.ts";
+} from "../../../runtime/lib/host/runtime-promotion-specification.ts";
 
 import type {
   StandaloneBlisspixelDeeprDescriptor,

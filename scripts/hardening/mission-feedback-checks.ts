@@ -5,10 +5,13 @@ import fs from "node:fs";
 
 import {
   DirectiveEngine,
-  approveGapFormalization,
-  approveMissionFeedbackEntry,
   createFilesystemDirectiveEngineStore,
   createDirectiveWorkspaceEngineLanes,
+  type DirectiveEngineMissionInput,
+} from "../../engine/index.ts";
+import {
+  approveGapFormalization,
+  approveMissionFeedbackEntry,
   listGapFormalizationRecords,
   listMissionEvolutionHistory,
   listPendingGapFormalizationCandidates,
@@ -20,10 +23,9 @@ import {
   rejectMissionFeedbackEntry,
   revertMissionEvolution,
   supersedeMissionEvolution,
-  type DirectiveEngineMissionInput,
-} from "../../engine/index.ts";
-import { buildOperatorDecisionInboxReport } from "../../engine/coordination/operator-decision-inbox.ts";
-import { refreshDiscoveryGapWorklist } from "../../discovery/lib/discovery-gap-worklist-refresh.ts";
+} from "../../engine/mission/index.ts";
+import { buildOperatorDecisionInboxReport } from "../../engine/coordination/operator-decision-inbox/operator-decision-inbox.ts";
+import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/discovery-gap-worklist-refresh.ts";
 import {
   buildArchitectureSourceInput,
   writeJson,

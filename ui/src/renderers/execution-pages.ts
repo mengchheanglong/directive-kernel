@@ -1,6 +1,7 @@
 import { html, nothing } from "lit";
 
 import type {
+  FrontendExecutablePlanAction,
   FrontendEngineRunDetail,
   FrontendEngineRunRecord,
   FrontendEngineRunsOverview,
@@ -42,7 +43,131 @@ type EngineRunDetailRendererContext = {
   renderEarnedAutonomy: (value: FrontendEngineRunRecord["routingAssessment"] extends infer T ? T extends { earnedAutonomy?: infer D } ? D | null | undefined : null | undefined : null | undefined) => unknown;
   renderGoalCopilot: (value: FrontendEngineRunRecord["routingAssessment"] extends infer T ? T extends { goalCopilot?: infer D } ? D | null | undefined : null | undefined : null | undefined) => unknown;
   renderPriorPlanContext: (value: FrontendEngineRunRecord["priorPlanContext"] | null | undefined) => unknown;
+  rerouteEngineRun: (form: HTMLFormElement, runId: string) => Promise<void>;
+  updateEnginePlanProgress: (
+    runId: string,
+    action: FrontendExecutablePlanAction,
+    status: FrontendExecutablePlanAction["status"],
+  ) => Promise<void>;
 };
+
+type StructuredReroutePrompt = {
+  field: string;
+  question: string;
+  whyItMatters: string;
+  exampleAnswer: string | null;
+  predictedEffect: string | null;
+};
+
+function collectStructuredReroutePrompts(record: FrontendEngineRunRecord) {
+  const prompts = new Map<string, StructuredReroutePrompt>();
+  for (const entry of record.routingAssessment?.confidenceRecovery?.requestedInputs ?? []) {
+    prompts.set(entry.field, {
+      field: entry.field,
+      question: entry.question,
+      whyItMatters: entry.whyItMatters,
+      exampleAnswer: entry.exampleAnswer,
+      predictedEffect: null,
+    });
+  }
+  for (const entry of record.routingAssessment?.followUpQuestions?.questions ?? []) {
+    if (prompts.has(entry.field)) {
+      continue;
+    }
+    prompts.set(entry.field, {
+      field: entry.field,
+      question: entry.question,
+      whyItMatters: entry.whyItMatters,
+      exampleAnswer: entry.exampleAnswer,
+      predictedEffect: entry.predictedEffect,
+    });
+  }
+  return [...prompts.values()];
+}
+
+function renderStructuredRerouteInput(prompt: StructuredReroutePrompt) {
+  const fieldName = `answer:${prompt.field}`;
+  if (
+    prompt.field === "source.primaryAdoptionTarget"
+    || prompt.field === "mission.adoptionTarget"
+  ) {
+    return html`
+      <select name=${fieldName}>
+        <option value="">Leave unchanged</option>
+        <option value="discovery">discovery</option>
+        <option value="architecture">architecture</option>
+        <option value="runtime">runtime</option>
+      </select>
+    `;
+  }
+  if (
+    prompt.field === "source.containsExecutableCode"
+    || prompt.field === "source.improvesDirectiveWorkspace"
+    || prompt.field === "source.containsWorkflowPattern"
+  ) {
+    return html`
+      <select name=${fieldName}>
+        <option value="">Leave unchanged</option>
+        <option value="true">true</option>
+        <option value="false">false</option>
+      </select>
+    `;
+  }
+  if (prompt.field === "source.workflowBoundaryShape") {
+    return html`
+      <select name=${fieldName}>
+        <option value="">Leave unchanged</option>
+        <option value="bounded_protocol">bounded_protocol</option>
+        <option value="iterative_loop">iterative_loop</option>
+      </select>
+    `;
+  }
+  if (
+    prompt.field === "mission.usefulnessSignals"
+    || prompt.field === "mission.constraints"
+    || prompt.field === "mission.capabilityLanes"
+  ) {
+    return html`<textarea name=${fieldName} placeholder=${prompt.exampleAnswer ?? "One item per line"}></textarea>`;
+  }
+  return html`<input name=${fieldName} placeholder=${prompt.exampleAnswer ?? ""} />`;
+}
+
+function renderStructuredRerouteSection(
+  record: FrontendEngineRunRecord,
+  context: Pick<EngineRunDetailRendererContext, "rerouteEngineRun">,
+) {
+  const prompts = collectStructuredReroutePrompts(record);
+  if (!prompts.length) {
+    return nothing;
+  }
+
+  return html`
+    <section class="panel warning">
+      <h3>Reroute with structured answers</h3>
+      <p>
+        Fill only the highest-signal fields below. Submitting creates a new Engine run using the same source plus these explicit answers.
+      </p>
+      <form @submit=${async (event: SubmitEvent) => {
+        event.preventDefault();
+        await context.rerouteEngineRun(event.currentTarget as HTMLFormElement, record.runId);
+      }}>
+        ${prompts.map((prompt) => html`
+          <div class="row">
+            <label>${prompt.field}</label>
+            <div class="muted">${prompt.question}</div>
+            <div class="muted">${prompt.whyItMatters}</div>
+            ${prompt.predictedEffect ? html`<div class="muted">Effect: ${prompt.predictedEffect}</div>` : nothing}
+            ${prompt.exampleAnswer ? html`<div class="muted">Example: ${prompt.exampleAnswer}</div>` : nothing}
+            ${renderStructuredRerouteInput(prompt)}
+          </div>
+        `)}
+        <div class="actions">
+          <button type="submit">Create rerouted run</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
 
 export function renderEngineRunsPage(overview: FrontendEngineRunsOverview) {
   return html`<section class="panel"><h2>Engine runs</h2><table><thead><tr><th>run id</th><th>candidate</th><th>lane</th><th>usefulness</th><th>review pressure</th><th>decision</th><th>created</th></tr></thead><tbody>
@@ -60,6 +185,7 @@ export function renderEngineRunsPage(overview: FrontendEngineRunsOverview) {
 
 function renderExecutablePlanState(
   record: FrontendEngineRunRecord,
+  context: Pick<EngineRunDetailRendererContext, "updateEnginePlanProgress">,
 ) {
   const state = record.executablePlanState;
   if (!state?.actions?.length) {
@@ -118,6 +244,33 @@ function renderExecutablePlanState(
             <li>
               <strong>${action.title}</strong> (${action.plan} / ${action.owner} / ${action.status})
               ${action.detail ? html`<div class="muted">${action.detail}</div>` : nothing}
+              ${action.owner === "operator"
+                ? html`
+                  <div class="actions" style="margin-top:8px;">
+                    ${action.status === "pending"
+                      ? html`
+                        <button @click=${async () => {
+                          await context.updateEnginePlanProgress(record.runId, action, "in_progress");
+                        }}>Mark In Progress</button>
+                      `
+                      : nothing}
+                    ${action.status !== "completed" && action.status !== "skipped"
+                      ? html`
+                        <button @click=${async () => {
+                          await context.updateEnginePlanProgress(record.runId, action, "completed");
+                        }}>Mark Complete</button>
+                      `
+                      : nothing}
+                    ${action.status !== "skipped" && action.status !== "completed"
+                      ? html`
+                        <button @click=${async () => {
+                          await context.updateEnginePlanProgress(record.runId, action, "skipped");
+                        }}>Skip</button>
+                      `
+                      : nothing}
+                  </div>
+                `
+                : html`<div class="muted">Owner: ${action.owner}. This page stays read-only for non-operator-owned actions.</div>`}
             </li>
           `)}</ul>`
           : html`<p class="muted">No next actions are currently exposed.</p>`}
@@ -207,6 +360,7 @@ export function renderEngineRunDetailPage(
     ` : nothing}
     ${context.renderConfidenceRecovery(record.routingAssessment?.confidenceRecovery)}
     ${context.renderFollowUpQuestions(record.routingAssessment?.followUpQuestions)}
+    ${renderStructuredRerouteSection(record, context)}
     ${context.renderMissionHealth(record.routingAssessment?.missionHealth)}
     ${context.renderSourceMemory(record.routingAssessment?.sourceMemory)}
     ${context.renderSourceSimilarity(record.routingAssessment?.sourceSimilarity)}
@@ -216,7 +370,7 @@ export function renderEngineRunDetailPage(
     ${context.renderEarnedAutonomy(record.routingAssessment?.earnedAutonomy)}
     ${context.renderGoalCopilot(record.routingAssessment?.goalCopilot)}
     ${context.renderPriorPlanContext(record.priorPlanContext)}
-    ${renderExecutablePlanState(record)}
+    ${renderExecutablePlanState(record, context)}
     <section class=${noDownstream ? "panel warning" : "panel message"}>
       <h3>Related queue and handoff state</h3>
       <div class="muted">queue status: ${queueEntry?.status ?? "n/a"} | routing target: ${queueEntry?.routing_target ?? "n/a"}</div>

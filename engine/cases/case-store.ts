@@ -8,11 +8,11 @@ import {
   type DirectiveCaseMirrorEvent,
 } from "./case-event-log.ts";
 import type { DirectiveMirroredNoteArchitectureCloseoutProjectionInput } from "../../architecture/lib/control/architecture-note-closeout-projections.ts";
-import type { DirectiveMirroredDiscoveryFrontDoorProjectionInput } from "../../discovery/lib/discovery-front-door-projections.ts";
-import type { DirectiveMirroredRuntimeFollowUpOpenProjectionInput } from "../../runtime/lib/runtime-follow-up-projections.ts";
-import type { DirectiveMirroredRuntimeProofOpenProjectionInput } from "../../runtime/lib/runtime-proof-open-projections.ts";
-import type { DirectiveMirroredRuntimeCapabilityBoundaryOpenProjectionInput } from "../../runtime/lib/runtime-capability-boundary-projections.ts";
-import type { DirectiveMirroredRuntimePromotionReadinessOpenProjectionInput } from "../../runtime/lib/runtime-promotion-readiness-projections.ts";
+import type { DirectiveMirroredDiscoveryFrontDoorProjectionInput } from "../../discovery/lib/front-door/discovery-front-door-projections.ts";
+import type { DirectiveMirroredRuntimeFollowUpOpenProjectionInput } from "../../runtime/lib/projections/runtime-follow-up-projections.ts";
+import type { DirectiveMirroredRuntimeProofOpenProjectionInput } from "../../runtime/lib/projections/runtime-proof-open-projections.ts";
+import type { DirectiveMirroredRuntimeCapabilityBoundaryOpenProjectionInput } from "../../runtime/lib/projections/runtime-capability-boundary-projections.ts";
+import type { DirectiveMirroredRuntimePromotionReadinessOpenProjectionInput } from "../../runtime/lib/projections/runtime-promotion-readiness-projections.ts";
 import { readJson, writeJson as writeJsonPretty } from "../../shared/lib/file-io.ts";
 
 export type DirectiveMirroredDiscoveryCaseRecord = {

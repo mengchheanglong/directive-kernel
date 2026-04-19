@@ -5,7 +5,7 @@ import {
   buildDirectiveReadOnlyLifecycleCoordinationReport,
   type DirectiveReadOnlyLifecycleCoordinationBucketId,
   type DirectiveReadOnlyLifecycleCoordinationReport,
-} from "./read-only-lifecycle-coordination.ts";
+} from "./read-only-lifecycle-coordination/read-only-lifecycle-coordination.ts";
 import { readJson } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import { getDefaultDirectiveWorkspaceRoot } from "../../shared/lib/workspace-root.ts";

@@ -17,11 +17,24 @@ Instead:
 - Discovery record materialization
 - bounded research-engine imports
 
+## Internal grouped surfaces
+
+- `gaps/`
+  Gap prioritization and worklist generation/selection/refresh.
+- `front-door/`
+  Front-door intake orchestration, mission routing, and front-door reporting support.
+- `intake/`
+  Intake queue writes, queue transitions, and intake lifecycle sync.
+- `routing/`
+  Routing record handling, route opening, review resolution, and effective-boundary helpers.
+- `records/`
+  Discovery record materialization for case, completion, and fast-path records.
+
 ## Start here
 
 - `index.ts`
   Barrel export for the Discovery lane operating surface.
 
-Use the barrel for navigation first, then open the specific `discovery-*` module you need.
+Use the grouped subfolder indexes first, then open the specific `discovery-*` module you need.
 
 Keep Discovery-specific executable code here. Artifact storage remains under the numbered `discovery/` folders and should not be treated like normal module layout.

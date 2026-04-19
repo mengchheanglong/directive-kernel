@@ -13,7 +13,7 @@ import {
 import {
   runHostIntegrationAcceptanceQuickstart,
 } from "../lib/run-host-integration-acceptance-quickstart.ts";
-import type { DiscoverySubmissionRequest } from "../../../discovery/lib/discovery-submission-router.ts";
+import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
 
 type CommandName =
   | "acceptance-quickstart"

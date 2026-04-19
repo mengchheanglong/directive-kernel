@@ -13,6 +13,7 @@ import {
   recordMatchesProcessFingerprint,
   resetDirectiveEngineProcessFingerprintCache,
 } from "./process-fingerprint.ts";
+import { withOperationTimeout } from "./operation-timeout.ts";
 import { type DirectiveEngineLaneSet } from "./lane.ts";
 import { inferDirectiveEngineSourceType } from "./source-type-inference.ts";
 import {
@@ -48,33 +49,6 @@ export {
   resetDirectiveEngineProcessFingerprintCache,
 };
 
-function withTimeout<T>(
-  operation: Promise<T> | T,
-  timeoutMs: number,
-  label: string,
-) {
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
-    return Promise.resolve(operation);
-  }
-
-  return new Promise<T>((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error(`timeout:${label}:${timeoutMs}ms`));
-    }, timeoutMs);
-
-    Promise.resolve(operation).then(
-      (value) => {
-        clearTimeout(timeout);
-        resolve(value);
-      },
-      (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      },
-    );
-  });
-}
-
 export class DirectiveEngine {
   readonly store: DirectiveEngineStore;
   readonly laneSet: DirectiveEngineLaneSet;
@@ -100,6 +74,10 @@ export class DirectiveEngine {
     this.hostAdapters = [...(input.hostAdapters ?? [])];
     this.storeTimeoutMs = input.storeTimeoutMs ?? 5_000;
     this.hostAdapterTimeoutMs = input.hostAdapterTimeoutMs ?? 5_000;
+  }
+
+  private withStoreTimeout<T>(operation: Promise<T> | T, label: string) {
+    return withOperationTimeout(operation, this.storeTimeoutMs, label);
   }
 
   async processMinimalSource(
@@ -145,11 +123,7 @@ export class DirectiveEngine {
       source,
       mission,
     });
-    const existingRuns = await withTimeout(
-      this.store.listRuns(),
-      this.storeTimeoutMs,
-      "store.listRuns",
-    );
+    const existingRuns = await this.listRuns();
     const duplicateRecord = [...existingRuns]
       .reverse()
       .find((record) => recordMatchesProcessFingerprint({
@@ -190,13 +164,13 @@ export class DirectiveEngine {
       routingAssessment,
     });
 
-    await withTimeout(this.store.writeRun(runRecord), this.storeTimeoutMs, "store.writeRun");
+    await this.withStoreTimeout(this.store.writeRun(runRecord), "store.writeRun");
 
     const adapterResults = await collectHostAdapterResults({
       adapters: this.hostAdapters,
       record: runRecord,
       timeoutMs: this.hostAdapterTimeoutMs,
-      withTimeout,
+      withTimeout: withOperationTimeout,
     });
 
     return {
@@ -240,7 +214,7 @@ export class DirectiveEngine {
       currentRecord: updatedRecord,
     });
 
-    await withTimeout(this.store.updateRun(updatedRecord), this.storeTimeoutMs, "store.updateRun");
+    await this.withStoreTimeout(this.store.updateRun(updatedRecord), "store.updateRun");
     return updatedRecord;
   }
 
@@ -289,10 +263,10 @@ export class DirectiveEngine {
   }
 
   async getRun(runId: string) {
-    return withTimeout(this.store.readRun(runId), this.storeTimeoutMs, "store.readRun");
+    return this.withStoreTimeout(this.store.readRun(runId), "store.readRun");
   }
 
   async listRuns() {
-    return withTimeout(this.store.listRuns(), this.storeTimeoutMs, "store.listRuns");
+    return this.withStoreTimeout(this.store.listRuns(), "store.listRuns");
   }
 }

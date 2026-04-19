@@ -1,41 +1,41 @@
 import {
   readDirectiveArchitectureHandoffArtifact,
   type DirectiveArchitectureHandoffArtifact,
-} from "../../architecture/lib/architecture-handoff-start.ts";
+} from "../../architecture/lib/experiments/architecture-handoff-start.ts";
 import {
   readDirectiveArchitectureBoundedResultArtifact,
   readDirectiveArchitectureBoundedStartArtifact,
   type DirectiveArchitectureBoundedResultArtifact,
   type DirectiveArchitectureBoundedStartArtifact,
-} from "../../architecture/lib/architecture-bounded-closeout.ts";
+} from "../../architecture/lib/experiments/architecture-bounded-closeout.ts";
 import {
   readDirectiveArchitectureAdoptionDetail,
   type DirectiveArchitectureAdoptionDetail,
-} from "../../architecture/lib/architecture-result-adoption.ts";
+} from "../../architecture/lib/adoption/architecture-result-adoption.ts";
 import {
   readDirectiveArchitectureImplementationTargetDetail,
   type DirectiveArchitectureImplementationTargetDetail,
-} from "../../architecture/lib/architecture-implementation-target.ts";
+} from "../../architecture/lib/materialization/architecture-implementation-target.ts";
 import {
   readDirectiveArchitectureImplementationResultDetail,
   type DirectiveArchitectureImplementationResultDetail,
-} from "../../architecture/lib/architecture-implementation-result.ts";
+} from "../../architecture/lib/materialization/architecture-implementation-result.ts";
 import {
   readDirectiveArchitectureRetentionDetail,
   type DirectiveArchitectureRetentionDetail,
-} from "../../architecture/lib/architecture-retention.ts";
+} from "../../architecture/lib/materialization/architecture-retention.ts";
 import {
   readDirectiveArchitectureIntegrationRecordDetail,
   type DirectiveArchitectureIntegrationRecordDetail,
-} from "../../architecture/lib/architecture-integration-record.ts";
+} from "../../architecture/lib/materialization/architecture-integration-record.ts";
 import {
   readDirectiveArchitectureConsumptionRecordDetail,
   type DirectiveArchitectureConsumptionRecordDetail,
-} from "../../architecture/lib/architecture-consumption-record.ts";
+} from "../../architecture/lib/materialization/architecture-consumption-record.ts";
 import {
   readDirectiveArchitecturePostConsumptionEvaluationDetail,
   type DirectiveArchitecturePostConsumptionEvaluationDetail,
-} from "../../architecture/lib/architecture-post-consumption-evaluation.ts";
+} from "../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
 import {
   lookupArchitectureDeepTailLinkedArtifactPath,
   recordArchitectureDeepTailLinkedArtifactPath,

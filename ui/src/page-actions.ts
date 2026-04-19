@@ -1,4 +1,8 @@
 import { getJson } from "./app-utils.ts";
+import type {
+  FrontendExecutablePlanAction,
+  FrontendMissionFeedbackPreview,
+} from "./types/index.ts";
 
 function slugifyCandidateId(value: string) {
   return value
@@ -70,6 +74,128 @@ export async function approveDiscoveryRouteAction(routingPath: string) {
   return `/handoffs/view?path=${encodeURIComponent(result.stubRelativePath)}`;
 }
 
+export async function resolveDiscoveryRoutingReviewAction(
+  form: HTMLFormElement,
+  routingRecordPath: string,
+) {
+  const data = new FormData(form);
+  const decision = String(data.get("decision") || "").trim();
+  if (
+    decision !== "confirm_architecture"
+    && decision !== "confirm_runtime"
+    && decision !== "redirect_to_architecture"
+    && decision !== "redirect_to_runtime"
+    && decision !== "reject"
+    && decision !== "defer"
+  ) {
+    throw new Error("discovery_review_decision_invalid");
+  }
+  const rationale = String(data.get("rationale") || "").trim();
+  if (!rationale) {
+    throw new Error("discovery_review_rationale_required");
+  }
+  const resolvedConfidence = String(data.get("resolved_confidence") || "").trim();
+
+  return getJson("/api/discovery/resolve-routing-review", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      routingRecordPath,
+      decision,
+      rationale,
+      resolvedConfidence:
+        resolvedConfidence === "high"
+        || resolvedConfidence === "medium"
+        || resolvedConfidence === "low"
+          ? resolvedConfidence
+          : undefined,
+    }),
+  });
+}
+
+export async function resolveRuntimeHostSelectionAction(
+  form: HTMLFormElement,
+  promotionReadinessPath: string,
+) {
+  const data = new FormData(form);
+  const decision = String(data.get("decision") || "").trim();
+  if (
+    decision !== "select_standalone"
+    && decision !== "select_web"
+    && decision !== "confirm_inferred"
+    && decision !== "override"
+    && decision !== "defer"
+  ) {
+    throw new Error("runtime_host_selection_decision_invalid");
+  }
+  const rationale = String(data.get("rationale") || "").trim();
+  if (!rationale) {
+    throw new Error("runtime_host_selection_rationale_required");
+  }
+  const selectedHost = String(data.get("selected_host") || "").trim();
+  if (decision === "override" && !selectedHost) {
+    throw new Error("runtime_host_selection_selected_host_required");
+  }
+  const resolvedConfidence = String(data.get("resolved_confidence") || "").trim();
+
+  return getJson("/api/runtime/host-selection-resolutions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      promotionReadinessPath,
+      decision,
+      selectedHost,
+      rationale,
+      resolvedConfidence:
+        resolvedConfidence === "high"
+        || resolvedConfidence === "medium"
+        || resolvedConfidence === "low"
+          ? resolvedConfidence
+          : undefined,
+    }),
+  });
+}
+
+export async function resolveRuntimePromotionSeamDecisionAction(
+  form: HTMLFormElement,
+  promotionReadinessPath: string,
+) {
+  const data = new FormData(form);
+  const rationale = String(data.get("rationale") || "").trim();
+  if (!rationale) {
+    throw new Error("runtime_promotion_seam_rationale_required");
+  }
+
+  return getJson("/api/runtime/promotion-seam-decisions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      promotionReadinessPath,
+      rationale,
+    }),
+  });
+}
+
+export async function acceptRuntimeRegistryAcceptanceAction(
+  form: HTMLFormElement,
+  promotionRecordPath: string,
+) {
+  const data = new FormData(form);
+  const rationale = String(data.get("rationale") || "").trim();
+  if (!rationale) {
+    throw new Error("runtime_registry_acceptance_rationale_required");
+  }
+
+  return getJson("/api/runtime/registry-acceptance-decisions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      promotionRecordPath,
+      rationale,
+    }),
+  });
+}
+
 export async function approveRuntimeFollowUpAction(followUpPath: string) {
   const result: any = await getJson("/api/runtime/open-follow-up", {
     method: "POST",
@@ -116,6 +242,188 @@ export async function approveRuntimePromotionReadinessAction(capabilityBoundaryP
     }),
   });
   return `/artifacts?path=${encodeURIComponent(result.promotionReadinessRelativePath)}`;
+}
+
+export async function previewMissionFeedbackAction(feedbackId: string) {
+  return getJson<FrontendMissionFeedbackPreview>("/api/mission/preview", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ feedbackId }),
+  });
+}
+
+export async function approveMissionFeedbackAction(form: HTMLFormElement, feedbackId: string) {
+  const data = new FormData(form);
+  const rationale = String(data.get("rationale") || "").trim();
+  if (!rationale) {
+    throw new Error("mission_feedback_rationale_required");
+  }
+  const cascadeScope = String(data.get("cascade_scope") || "none").trim() as
+    "none" | "low_confidence" | "conflicted" | "discovery_held";
+  const approvedRunIds = cascadeScope === "none"
+    ? []
+    : [...data.entries()]
+      .filter(([key, value]) =>
+        key === `approved_run_id:${cascadeScope}` && String(value ?? "").trim().length > 0
+      )
+      .map(([, value]) => String(value).trim());
+
+  return getJson("/api/mission/approve", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      feedbackId,
+      rationale,
+      cascadeScope,
+      approvedRunIds,
+    }),
+  });
+}
+
+export async function rejectMissionFeedbackAction(form: HTMLFormElement, feedbackId: string) {
+  const data = new FormData(form);
+  const rationale = String(data.get("rationale") || "").trim();
+  if (!rationale) {
+    throw new Error("mission_feedback_rationale_required");
+  }
+
+  return getJson("/api/mission/reject", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      feedbackId,
+      rationale,
+    }),
+  });
+}
+
+export async function approveGapFormalizationAction(form: HTMLFormElement, formalizationId: string) {
+  const data = new FormData(form);
+  const rationale = String(data.get("rationale") || "").trim();
+  if (!rationale) {
+    throw new Error("gap_formalization_rationale_required");
+  }
+  const priority = String(data.get("priority") || "medium").trim();
+  if (priority !== "high" && priority !== "medium" && priority !== "low") {
+    throw new Error("gap_formalization_priority_invalid");
+  }
+
+  return getJson("/api/gaps/approve", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      formalizationId,
+      rationale,
+      priority,
+    }),
+  });
+}
+
+export async function rejectGapFormalizationAction(form: HTMLFormElement, formalizationId: string) {
+  const data = new FormData(form);
+  const rationale = String(data.get("rationale") || "").trim();
+  if (!rationale) {
+    throw new Error("gap_formalization_rationale_required");
+  }
+
+  return getJson("/api/gaps/reject", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      formalizationId,
+      rationale,
+    }),
+  });
+}
+
+function parseStructuredAnswerValue(field: string, rawValue: string) {
+  const value = rawValue.trim();
+  if (!value) {
+    return null;
+  }
+
+  if (
+    field === "mission.usefulnessSignals"
+    || field === "mission.constraints"
+    || field === "mission.capabilityLanes"
+  ) {
+    return value
+      .split(/\r?\n|,/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  if (
+    field === "source.containsExecutableCode"
+    || field === "source.improvesDirectiveWorkspace"
+    || field === "source.containsWorkflowPattern"
+  ) {
+    if (value === "true") {
+      return true;
+    }
+    if (value === "false") {
+      return false;
+    }
+    return null;
+  }
+
+  return value;
+}
+
+export async function rerouteEngineRunAction(form: HTMLFormElement, runId: string) {
+  const data = new FormData(form);
+  const answers: Record<string, unknown> = {};
+
+  for (const [key, raw] of data.entries()) {
+    if (!key.startsWith("answer:")) {
+      continue;
+    }
+    const field = key.slice("answer:".length);
+    const parsedValue = parseStructuredAnswerValue(field, String(raw ?? ""));
+    if (parsedValue == null) {
+      continue;
+    }
+    answers[field] = parsedValue;
+  }
+
+  if (Object.keys(answers).length === 0) {
+    throw new Error("reroute_answers_required");
+  }
+
+  const result: any = await getJson(`/api/engine-runs/${encodeURIComponent(runId)}/reroute`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ answers }),
+  });
+  return `/engine-runs/${encodeURIComponent(result.result.record.runId)}`;
+}
+
+export async function updateEnginePlanProgressAction(input: {
+  runId: string;
+  action: FrontendExecutablePlanAction;
+  status: FrontendExecutablePlanAction["status"];
+}) {
+  const update = input.action.itemIndex == null
+    ? {
+        plan: input.action.plan,
+        itemType: input.action.itemType,
+        status: input.status,
+      }
+    : {
+        plan: input.action.plan,
+        itemType: input.action.itemType,
+        index: input.action.itemIndex,
+        status: input.status,
+      };
+
+  const result: any = await getJson(`/api/engine-runs/${encodeURIComponent(input.runId)}/plan-progress`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      updates: [update],
+    }),
+  });
+  return result.record;
 }
 
 export async function startArchitectureAction(handoffPath: string) {

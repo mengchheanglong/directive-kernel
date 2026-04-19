@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import type { DiscoverySubmissionRequest } from "../../../discovery/lib/discovery-submission-router.ts";
+import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
 import { submitDiscoveryEntryThroughFrontDoor } from "./discovery-front-door-adapter.template.ts";
 
 function writeJson(filePath: string, value: unknown) {

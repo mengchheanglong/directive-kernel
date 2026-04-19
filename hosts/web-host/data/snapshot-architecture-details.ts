@@ -5,23 +5,23 @@ import { normalizeRelativePath } from "../../../shared/lib/path-normalization.ts
 import {
   readDirectiveArchitectureImplementationTargetDetail,
   readDirectiveArchitectureImplementationTargetPathForAdoption,
-} from "../../../architecture/lib/architecture-implementation-target.ts";
+} from "../../../architecture/lib/materialization/architecture-implementation-target.ts";
 import {
   readDirectiveArchitectureImplementationResultDetail,
   readDirectiveArchitectureImplementationResultPathForTarget,
-} from "../../../architecture/lib/architecture-implementation-result.ts";
+} from "../../../architecture/lib/materialization/architecture-implementation-result.ts";
 import {
   readDirectiveArchitectureRetentionDetail,
-} from "../../../architecture/lib/architecture-retention.ts";
+} from "../../../architecture/lib/materialization/architecture-retention.ts";
 import {
   readDirectiveArchitectureIntegrationRecordDetail,
-} from "../../../architecture/lib/architecture-integration-record.ts";
+} from "../../../architecture/lib/materialization/architecture-integration-record.ts";
 import {
   readDirectiveArchitectureConsumptionRecordDetail,
-} from "../../../architecture/lib/architecture-consumption-record.ts";
+} from "../../../architecture/lib/materialization/architecture-consumption-record.ts";
 import {
   readDirectiveArchitecturePostConsumptionEvaluationDetail,
-} from "../../../architecture/lib/architecture-post-consumption-evaluation.ts";
+} from "../../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import {
   resolveDirectiveWorkspaceArtifactAbsolutePath,

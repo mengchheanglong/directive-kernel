@@ -14,7 +14,7 @@ import {
 import {
   runDirectiveRuntimeActionByExplicitInvocation,
   type DirectiveRuntimeSharedInvocationSuccessResult,
-} from "../runtime-runner-invocation.ts";
+} from "../runners/runtime-runner-invocation.ts";
 
 export type DirectiveRuntimeTwoStepSequenceInterruptionPoint =
   | "after_before_step_1_checkpoint"

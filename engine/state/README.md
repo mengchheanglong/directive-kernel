@@ -24,8 +24,16 @@ It is Engine cross-cutting code, not lane-local code.
   Discovery routing and monitor focus resolution.
 - `shared-state-helpers.ts`
   Cross-lane shared state helpers.
-- `runtime-focus.ts`
-  Runtime-focused state resolution.
+- `runtime-focus/`
+  Runtime-focused state resolution family.
+  - `runtime-focus.ts`
+    Runtime-focused state resolver shell.
+  - `runtime-focus-readers.ts`
+    Runtime artifact readers and canonical local read-model types used by the Runtime resolver.
+  - `runtime-focus-paths.ts`
+    Runtime path inference and candidate-path lookup helpers used by the Runtime resolver.
+  - `runtime-focus-legacy.ts`
+    Legacy Runtime state builders kept separate from the current Runtime artifact-chain resolver.
 - `artifact-storage.ts`
   Engine-owned artifact path/storage compatibility helpers.
 - `runtime-artifact-types.ts`
@@ -34,6 +42,7 @@ It is Engine cross-cutting code, not lane-local code.
   Real barrel export for this grouped state surface.
 
 The grouped files here are the canonical state read-model surface. Historical alias names are not the authoritative entrypoints anymore.
+Use `artifact-storage.ts` directly; the old shared compatibility bridge has been retired.
 
 ## Rule
 

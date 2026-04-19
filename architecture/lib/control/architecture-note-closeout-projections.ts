@@ -5,17 +5,17 @@ import { writeUtf8 } from "../../../shared/lib/file-io.ts";
 import {
   buildDirectiveArchitectureCloseoutFile,
   type DirectiveArchitectureCloseoutWriteRequest,
-} from "../architecture-closeout.ts";
+} from "../experiments/architecture-closeout.ts";
 import {
   upsertDirectiveArchitectureAdoptionDecisionArtifact,
-} from "../architecture-adoption-decision-store.ts";
+} from "../adoption/architecture-adoption-decision-store.ts";
 import type {
   ArchitectureValueShape,
-} from "../architecture-adoption-resolution.ts";
+} from "../adoption/architecture-adoption-resolution.ts";
 import {
   readDirectiveArchitectureHandoffArtifact,
   type DirectiveArchitectureHandoffArtifact,
-} from "../architecture-handoff-start.ts";
+} from "../experiments/architecture-handoff-start.ts";
 import { readDirectiveCaseMirrorEvents } from "../../../engine/cases/case-event-log.ts";
 import { readDirectiveMirroredDiscoveryCaseRecord } from "../../../engine/cases/case-store.ts";
 
