@@ -1,4 +1,8 @@
-import type { DirectiveCallableCapability } from "../../core/callable-contract.ts";
+import type {
+  DirectiveCallableCapability,
+  DirectiveCallableExecutionInput,
+  DirectiveCallableExecutionResult,
+} from "../../core/callable-contract.ts";
 import {
   RESEARCH_VAULT_SOURCE_PACK_CAPABILITY_ID,
   queryResearchVaultSourcePack,
@@ -30,22 +34,23 @@ function validateInput(tool: string, input: Record<string, unknown>) {
   if (typeof input.query !== "string" || !input.query.trim()) {
     return "query-source-pack requires a non-empty 'query' string";
   }
+  const maxItems = input.maxItems;
   if (
-    input.maxItems !== undefined
-    && (!Number.isInteger(input.maxItems) || input.maxItems < 1 || input.maxItems > 5)
+    maxItems !== undefined
+    && maxItems !== null
+    && (typeof maxItems !== "number" || !Number.isInteger(maxItems) || maxItems < 1 || maxItems > 5)
   ) {
     return "'maxItems' must be an integer from 1 to 5";
   }
   return null;
 }
 
-export async function executeResearchVaultSourcePackTool(input: {
-  tool: ResearchVaultSourcePackToolName;
-  input: Record<string, unknown>;
-  timeoutMs?: number;
-}) {
+export async function executeResearchVaultSourcePackTool(
+  input: DirectiveCallableExecutionInput,
+): Promise<DirectiveCallableExecutionResult> {
   const startedAt = new Date();
   const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
+  const tool = input.tool as ResearchVaultSourcePackToolName;
   const baseMeta = {
     startedAt: startedAt.toISOString(),
     completedAt: "",
@@ -58,7 +63,7 @@ export async function executeResearchVaultSourcePackTool(input: {
     const completedAt = new Date();
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: "disabled" as const,
       result: null,
       metadata: {
@@ -69,12 +74,12 @@ export async function executeResearchVaultSourcePackTool(input: {
     };
   }
 
-  const validationError = validateInput(input.tool, input.input);
+  const validationError = validateInput(tool, input.input);
   if (validationError) {
     const completedAt = new Date();
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: "validation_error" as const,
       result: validationError,
       metadata: {
@@ -94,7 +99,7 @@ export async function executeResearchVaultSourcePackTool(input: {
 
   return {
     ok: result.ok,
-    tool: input.tool,
+    tool,
     status: result.ok ? ("success" as const) : ("validation_error" as const),
     result,
     metadata: {

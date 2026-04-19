@@ -191,8 +191,8 @@ export function renderWorkflowMapPage(
         renderRow: (run: { record: FrontendEngineRunRecord }) => {
           const planState = summarizeRunPlanState(run.record);
           const nextStep = planState?.nextActions[0]
-            ?? run.record.integrationProposal?.nextAction
-            ?? null;
+            ?? run.record.reportPlan?.summary
+            ?? `Integrate via ${run.record.integrationProposal?.integrationMode ?? "n/a"}`;
           const metaParts = [
             `Usefulness: ${run.record.candidate.usefulnessLevel}`,
             `proof kind: ${run.record.proofPlan?.proofKind ?? "n/a"}`,

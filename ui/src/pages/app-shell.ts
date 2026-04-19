@@ -927,6 +927,7 @@ class DirectiveUiApp extends LitElement {
         this.page.inbox as FrontendOperatorDecisionInboxReport,
         {
           renderRuntimeCaseStrip: this.renderRuntimeCaseStrip.bind(this),
+          currentHeadLink: this.currentHeadLink.bind(this),
         },
       );
     }

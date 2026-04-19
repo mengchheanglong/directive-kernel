@@ -64,6 +64,10 @@ type QueueEntry = {
   result_record_path?: string | null;
   notes?: string | null;
   operating_mode?: string | null;
+  submission_origin?: string | null;
+  discovery_signal_band?: string | null;
+  signal_total_score?: number | null;
+  signal_score_summary?: string | null;
 };
 
 type GenericDiscoveryMonitorArtifact = {
@@ -81,7 +85,9 @@ type GenericDiscoveryMonitorArtifact = {
 
 type GenericRuntimePromotionReadinessArtifact = GenericRuntimePromotionReadinessArtifactBase;
 
-export { normalizeAbsolutePath as normalizePath };
+const normalizePath = normalizeAbsolutePath;
+
+export { normalizePath };
 
 export { normalizeRelativePath };
 
@@ -977,9 +983,10 @@ export function mergeNonNullLinkedArtifacts(
     return;
   }
 
+  const mutableTarget = target as Record<string, unknown>;
   for (const [key, value] of Object.entries(source)) {
     if (value) {
-      target[key as keyof DirectiveWorkspaceLinkedArtifacts] = value;
+      mutableTarget[key] = value;
     }
   }
 }

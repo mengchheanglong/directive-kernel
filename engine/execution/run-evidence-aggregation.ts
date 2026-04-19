@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { DiscoveryIntakeQueueEntry } from "../../discovery/lib/intake/discovery-intake-queue-writer.ts";
 import {
+  describeDirectiveEngineGapPressure,
   type DirectiveEngineRunArtifact,
   type StoredDirectiveEngineRunRecord,
 } from "./engine-run-artifacts.ts";
@@ -152,6 +153,7 @@ function readAllRunRecords(engineRunsRoot: string): DirectiveEngineRunArtifact[]
           recordPath,
           reportPath: null,
           reportExcerpt: null,
+          gapPressure: describeDirectiveEngineGapPressure(parsed),
           record: parsed,
         });
       }

@@ -52,6 +52,17 @@ function resolveDirectiveRoot(directiveRoot?: string) {
   return normalizeAbsolutePath(resolveDirectiveWorkspaceRoot(directiveRoot));
 }
 
+function listFilesystemRuns(directiveRoot?: string) {
+  const store = createFilesystemDirectiveEngineStore({
+    engineRunsRoot: resolveEngineRunsRoot(directiveRoot),
+  });
+  const runs = store.listRuns();
+  if (runs instanceof Promise) {
+    throw new Error("invalid_state: filesystem mission feedback requires synchronous run listing");
+  }
+  return runs;
+}
+
 function resolveEngineRunsRoot(directiveRoot?: string) {
   return normalizeAbsolutePath(
     path.join(resolveDirectiveRoot(directiveRoot), "runtime", "standalone-host", "engine-runs"),
@@ -304,10 +315,7 @@ export function generateMissionFeedbackEntries(input: {
 export function listMissionFeedbackEntries(input?: {
   directiveRoot?: string;
 }) {
-  const store = createFilesystemDirectiveEngineStore({
-    engineRunsRoot: resolveEngineRunsRoot(input?.directiveRoot),
-  });
-  const existingRuns = store.listRuns();
+  const existingRuns = listFilesystemRuns(input?.directiveRoot);
   const mission = readCurrentMissionSnapshot({
     directiveRoot: input?.directiveRoot,
     fallbackMission: existingRuns.at(-1)?.mission ?? null,
@@ -342,10 +350,7 @@ function resolveMissionFeedbackEntry(input: {
 }
 
 function resolveCurrentMissionAndRuns(directiveRoot?: string) {
-  const store = createFilesystemDirectiveEngineStore({
-    engineRunsRoot: resolveEngineRunsRoot(directiveRoot),
-  });
-  const existingRuns = store.listRuns();
+  const existingRuns = listFilesystemRuns(directiveRoot);
   const mission = readCurrentMissionSnapshot({
     directiveRoot,
     fallbackMission: existingRuns.at(-1)?.mission ?? null,

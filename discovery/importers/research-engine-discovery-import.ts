@@ -8,6 +8,8 @@ import type {
   DiscoveryIntakeQueueDocument,
   DiscoverySourceType,
 } from "../lib/intake/discovery-intake-queue-writer.ts";
+import type { DirectiveEngineSourceItem } from "../../engine/types.ts";
+import { normalizeWorkflowBoundaryShape } from "../../engine/source-input-normalization.ts";
 import {
   submitDirectiveDiscoveryFrontDoor,
   type DirectiveDiscoveryFrontDoorResult,
@@ -567,7 +569,9 @@ function inferResearchEngineStructuralSignals(input: {
   const structuralSignalBand = optionalString(input.candidate.structural_signal_band);
   const structuralSignalSummary = optionalString(input.candidate.structural_signal_summary);
   const providerSeamSummary = optionalString(input.candidate.provider_seam_summary);
-  const workflowBoundaryShapeHint = optionalString(input.candidate.workflow_boundary_shape_hint);
+  const workflowBoundaryShapeHint = normalizeWorkflowBoundaryShape(
+    optionalString(input.candidate.workflow_boundary_shape_hint),
+  );
   const recommendedLaneTarget = optionalString(input.candidate.recommended_lane_target);
   const laneTargetRationale = optionalString(input.candidate.lane_target_rationale);
   const workflowPhaseScores = optionalIntegerRecord(
@@ -630,7 +634,7 @@ function inferResearchEngineStructuralSignals(input: {
     combinedText,
   ) || recommendedLaneTarget === "architecture" || workflowPhaseLabels.length >= 2 || providerSeamSummary !== null || structuralSignalBand === "extractive_structural";
 
-  const workflowBoundaryShape =
+  const workflowBoundaryShape: DirectiveEngineSourceItem["workflowBoundaryShape"] =
     workflowBoundaryShapeHint
       ?? (/\b(provider seam|provider abstraction|acquisition|synthesis|phase|phases|staged|boundary|boundaries|protocol|outline)\b/u.test(
       combinedText,

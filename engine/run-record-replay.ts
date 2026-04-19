@@ -52,7 +52,7 @@ function applyMissionPreviewChange(input: {
     ...input.mission,
     currentObjective:
       input.change.objective !== undefined
-        ? normalizeText(input.change.objective) || null
+        ? normalizeText(input.change.objective) || input.mission.currentObjective
         : input.mission.currentObjective,
     usefulnessSignals: normalizeOptionalMissionList(
       input.change.usefulnessSignals,

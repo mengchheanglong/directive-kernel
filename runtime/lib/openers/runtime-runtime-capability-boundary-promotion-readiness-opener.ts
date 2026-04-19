@@ -244,8 +244,8 @@ export function readDirectiveRuntimeRuntimeCapabilityBoundaryArtifact(input: {
   }
 
   const content = readUtf8(capabilityBoundaryAbsolutePath);
-  const linkedRuntimeProofPath = extractBulletValue(content, "Proof artifact");
-  const linkedRuntimeRecordPath = extractBulletValue(content, "Runtime record");
+  const linkedRuntimeProofPath = extractBulletValue(content, "Proof artifact", 'invalid_input: missing "Proof artifact" in Runtime runtime capability boundary');
+  const linkedRuntimeRecordPath = extractBulletValue(content, "Runtime record", 'invalid_input: missing "Runtime record" in Runtime runtime capability boundary');
   const proofArtifact = readDirectiveRuntimeProofArtifact({
     directiveRoot,
     runtimeProofPath: linkedRuntimeProofPath,
@@ -254,8 +254,8 @@ export function readDirectiveRuntimeRuntimeCapabilityBoundaryArtifact(input: {
     directiveRoot,
     runtimeRecordPath: linkedRuntimeRecordPath,
   });
-  const boundaryDate = extractBulletValue(content, "Opened on");
-  const candidateId = extractBulletValue(content, "Candidate id");
+  const boundaryDate = extractBulletValue(content, "Opened on", 'invalid_input: missing "Opened on" in Runtime runtime capability boundary');
+  const candidateId = extractBulletValue(content, "Candidate id", 'invalid_input: missing "Candidate id" in Runtime runtime capability boundary');
   const promotionReadinessRelativePath = buildPromotionReadinessRelativePath({
     boundaryDate,
     candidateId,
@@ -263,7 +263,7 @@ export function readDirectiveRuntimeRuntimeCapabilityBoundaryArtifact(input: {
   const promotionReadinessAbsolutePath = path
     .resolve(directiveRoot, promotionReadinessRelativePath)
     .replace(/\\/g, "/");
-  const currentProofStatus = extractBulletValue(content, "Current Runtime proof status");
+  const currentProofStatus = extractBulletValue(content, "Current Runtime proof status", 'invalid_input: missing "Current Runtime proof status" in Runtime runtime capability boundary');
 
   return {
     title: extractMarkdownTitle(content, "runtime capability boundary title"),
@@ -401,6 +401,11 @@ export function openDirectiveRuntimePromotionReadiness(input: {
     receivedAt: snapshotAt,
     queueStatus: mirrored.record?.queueStatus ?? "routed",
     linkedArtifacts: {
+      intakeRecordPath: mirrored.record?.linkedArtifacts.intakeRecordPath ?? null,
+      triageRecordPath: mirrored.record?.linkedArtifacts.triageRecordPath ?? null,
+      routingRecordPath: mirrored.record?.linkedArtifacts.routingRecordPath ?? null,
+      engineRunRecordPath: mirrored.record?.linkedArtifacts.engineRunRecordPath ?? null,
+      engineRunReportPath: mirrored.record?.linkedArtifacts.engineRunReportPath ?? null,
       runtimeFollowUpPath: artifact.linkedFollowUpPath,
       runtimeRecordPath: artifact.linkedRuntimeRecordPath,
       runtimeProofPath: artifact.linkedRuntimeProofPath,

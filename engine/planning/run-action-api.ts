@@ -678,7 +678,7 @@ function applyPlanProgressUpdates(input: {
               fallbackAt: input.at,
             }),
           };
-        } else {
+        } else if (update.itemType === "requiredEvidence" || update.itemType === "requiredGates") {
           structuredProofPlan = {
             ...structuredProofPlan,
             [update.itemType]: updateIndexedPlanItems({
@@ -772,7 +772,7 @@ function applyStructuredAnswersToRecordInput(input: {
         next.source.missionAlignmentHint = normalizeText(value) || null;
         break;
       case "mission.currentObjective":
-        next.mission.currentObjective = normalizeText(value) || null;
+        next.mission.currentObjective = normalizeText(value) || next.mission.currentObjective;
         break;
       case "mission.usefulnessSignals":
         next.mission.usefulnessSignals = Array.isArray(value)

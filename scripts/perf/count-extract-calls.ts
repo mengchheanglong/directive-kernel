@@ -8,6 +8,7 @@ import { DirectiveEngine } from "../../engine/directive-engine.ts";
 import { createMemoryDirectiveEngineStore } from "../../engine/storage.ts";
 import { createDirectiveWorkspaceEngineLanes } from "../../engine/directive-workspace-lanes.ts";
 import { readSourceSignalTokenCacheStats, resetSourceSignalTokenCache } from "../../engine/routing/routing-correction-ledger.ts";
+import type { DirectiveEngineSourceItem } from "../../engine/types.ts";
 
 const ROUNDS = 30;
 
@@ -21,7 +22,7 @@ const MISSION = {
   context: "Production system",
 };
 
-const types = ["paper", "github-repo", "product-doc", "theory", "technical-essay"];
+const types: DirectiveEngineSourceItem["sourceType"][] = ["paper", "github-repo", "product-doc", "theory", "technical-essay"];
 const targets = ["runtime", "architecture", "discovery", null] as const;
 const topics = [
   "OpenTelemetry collector pipeline configuration",

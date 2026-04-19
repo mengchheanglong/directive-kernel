@@ -183,6 +183,57 @@ function readRepeatedFlag(flags: FlagMap, name: string) {
   return flags[name] ?? [];
 }
 
+function buildPlanProgressUpdate(input: {
+  plan: "extraction" | "adaptation" | "improvement" | "proof";
+  itemType: string;
+  status: "pending" | "in_progress" | "completed" | "skipped";
+  index?: number;
+}): DirectiveEnginePlanProgressUpdate {
+  const index = input.index;
+  switch (input.plan) {
+    case "extraction":
+      if (
+        (input.itemType === "extractedValue" || input.itemType === "excludedBaggage")
+        && index !== undefined
+      ) {
+        return { plan: input.plan, itemType: input.itemType, index, status: input.status };
+      }
+      break;
+    case "adaptation":
+      if (input.itemType === "directiveOwnedForm" && index === undefined) {
+        return { plan: input.plan, itemType: input.itemType, status: input.status };
+      }
+      if (input.itemType === "adaptedValue" && index !== undefined) {
+        return { plan: input.plan, itemType: input.itemType, index, status: input.status };
+      }
+      break;
+    case "improvement":
+      if (input.itemType === "intendedDelta" && index === undefined) {
+        return { plan: input.plan, itemType: input.itemType, status: input.status };
+      }
+      if (input.itemType === "improvementGoals" && index !== undefined) {
+        return { plan: input.plan, itemType: input.itemType, index, status: input.status };
+      }
+      break;
+    case "proof":
+      if (
+        (input.itemType === "objective" || input.itemType === "rollbackPrompt")
+        && index === undefined
+      ) {
+        return { plan: input.plan, itemType: input.itemType, status: input.status };
+      }
+      if (
+        (input.itemType === "requiredEvidence" || input.itemType === "requiredGates")
+        && index !== undefined
+      ) {
+        return { plan: input.plan, itemType: input.itemType, index, status: input.status };
+      }
+      break;
+  }
+
+  throw new Error(`Invalid item type/index combination for --plan ${input.plan}`);
+}
+
 
 
 function readOptionalRuntimeConfig(
@@ -303,7 +354,7 @@ async function main() {
         ? await host.submitDiscoveryEntryWithEngine(request, dryRun)
         : await host.submitDiscoveryEntry(request, dryRun);
 
-      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
     }
@@ -365,22 +416,16 @@ async function main() {
       const itemType = readRequiredFlag(flags, "item-type");
       const indexRaw = readOptionalFlag(flags, "index");
       const index = indexRaw == null ? undefined : Number(indexRaw);
-      if (indexRaw != null && (!Number.isInteger(index) || index < 0)) {
+      if (indexRaw != null && (index === undefined || !Number.isInteger(index) || index < 0)) {
         throw new Error("Invalid value for --index");
       }
 
-      const update: DirectiveEnginePlanProgressUpdate = index == null
-        ? {
-            plan,
-            itemType,
-            status,
-          }
-        : {
-            plan,
-            itemType,
-            index,
-            status,
-          };
+      const update = buildPlanProgressUpdate({
+        plan,
+        itemType,
+        index,
+        status,
+      });
       const result = await host.updateEnginePlanProgress({
         runId: readRequiredFlag(flags, "run-id"),
         updates: [update],
@@ -553,7 +598,7 @@ async function main() {
         reviewedBy: readOptionalFlag(flags, "reviewed-by") ?? "standalone-host-cli",
         resolvedConfidence: resolvedConfidence as "high" | "medium" | "low" | undefined,
       });
-      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
     }
@@ -737,7 +782,7 @@ async function main() {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const timeoutMsRaw = readOptionalFlag(flags, "timeout-ms");
     const timeoutMs = timeoutMsRaw ? Number(timeoutMsRaw) : undefined;
-    if (timeoutMsRaw && (!Number.isFinite(timeoutMs) || timeoutMs <= 0)) {
+    if (timeoutMsRaw && (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0)) {
       throw new Error("Invalid value for --timeout-ms");
     }
     const persistArtifactsRaw = readOptionalFlag(flags, "persist-artifacts");

@@ -185,15 +185,15 @@ export function readDirectiveRuntimeFollowUpArtifact(input: {
   }
 
   const content = readUtf8(followUpAbsolutePath);
-  const candidateId = extractBulletValue(content, "Candidate id");
-  const followUpDate = extractBulletValue(content, "Follow-up date");
+  const candidateId = extractBulletValue(content, "Candidate id", 'invalid_input: missing "Candidate id" in Runtime follow-up record');
+  const followUpDate = extractBulletValue(content, "Follow-up date", 'invalid_input: missing "Follow-up date" in Runtime follow-up record');
   const runtimeRecordRelativePath = buildRuntimeRecordRelativePath({
     followUpDate,
     candidateId,
   });
   const runtimeRecordAbsolutePath = path.resolve(directiveRoot, runtimeRecordRelativePath).replace(/\\/g, "/");
 
-  const currentStatus = extractBulletValue(content, "Current status");
+  const currentStatus = extractBulletValue(content, "Current status", 'invalid_input: missing "Current status" in Runtime follow-up record');
 
   const artifact: DirectiveRuntimeFollowUpArtifact = {
     title: extractMarkdownTitle(content, "follow-up title"),
@@ -340,6 +340,11 @@ export function openDirectiveRuntimeFollowUp(input: {
     receivedAt: snapshotAt,
     queueStatus: mirrored.record?.queueStatus ?? "routed",
     linkedArtifacts: {
+      intakeRecordPath: mirrored.record?.linkedArtifacts.intakeRecordPath ?? null,
+      triageRecordPath: mirrored.record?.linkedArtifacts.triageRecordPath ?? null,
+      routingRecordPath: mirrored.record?.linkedArtifacts.routingRecordPath ?? null,
+      engineRunRecordPath: mirrored.record?.linkedArtifacts.engineRunRecordPath ?? null,
+      engineRunReportPath: mirrored.record?.linkedArtifacts.engineRunReportPath ?? null,
       runtimeFollowUpPath: artifact.followUpRelativePath,
       runtimeRecordPath: artifact.runtimeRecordRelativePath,
       runtimeProofPath: artifact.runtimeProofRelativePath,

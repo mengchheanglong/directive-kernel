@@ -35,6 +35,7 @@ import {
   describeDirectiveEngineGapPressure,
   type DirectiveEngineGapPressureDetail,
 } from "../../../engine/execution/engine-run-artifacts.ts";
+import type { DirectiveEngineRoutingAssessment } from "../../../engine/types.ts";
 
 type DirectiveEngineRunRecordLike = {
   runId: string;
@@ -47,7 +48,9 @@ type DirectiveEngineRunRecordLike = {
     candidateName: string;
     usefulnessLevel: string;
     missionPriorityScore?: number;
+    confidence?: string;
     matchedGapId?: string | null;
+    requiresHumanReview?: boolean;
   };
   analysis: {
     usefulnessRationale: string;
@@ -60,233 +63,7 @@ type DirectiveEngineRunRecordLike = {
     currentState?: string;
     desiredState?: string;
   }>;
-  routingAssessment?: {
-    confidence?: string;
-    matchedGapId?: string | null;
-    matchedGapRank?: number | null;
-    routeConflict?: boolean;
-    needsHumanReview?: boolean;
-    digest?: {
-      headline: string;
-      explanation: string;
-      primaryConcern: {
-        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "narrative_action" | "gap_pressure";
-        summary: string;
-        suggestedAction: string;
-      } | null;
-      secondaryConcerns: Array<{
-        kind: "conflict" | "low_confidence" | "mission_weakness" | "stalled_thread" | "narrative_action" | "gap_pressure";
-        summary: string;
-      }>;
-      threadContext: string | null;
-      trustLevel: string;
-    };
-    missionSpecificityWarning?: string | null;
-    missionHealth?: {
-      overallScore: number;
-      healthGrade: "A" | "B" | "C" | "D" | "F";
-      objectiveSpecificityScore: number;
-      usefulnessSignalQualityScore: number;
-      constraintQualityScore: number;
-      lanePriorityClarityScore: number;
-      overmatchRiskScore: number;
-      stalenessRiskScore: number;
-      warnings: string[];
-      tensionSignals: string[];
-      rationale: string[];
-      suggestedObjectiveRewrite: string | null;
-      suggestedConstraintAdditions: string[];
-    } | null;
-    ambiguitySummary?: {
-      topLaneId: string;
-      runnerUpLaneId: string | null;
-      scoreDelta: number;
-      conflictingSignalFamilies: string[];
-      conflictingLaneIds: string[];
-    } | null;
-    goalCopilot?: {
-      overallScore: number;
-      objectiveSpecificityScore: number;
-      usefulnessSignalQualityScore: number;
-      constraintQualityScore: number;
-      laneClarityScore: number;
-      warnings: string[];
-      rationale: string[];
-      suggestedObjective: string | null;
-      suggestedConstraints: string[];
-      suggestedUsefulnessSignals: string[];
-      suggestedCapabilityLanes: string[];
-    } | null;
-    confidenceRecovery?: {
-      summary: string;
-      confidenceLift: string;
-      requestedInputs: Array<{
-        field: string;
-        question: string;
-        whyItMatters: string;
-        exampleAnswer: string | null;
-      }>;
-    } | null;
-    followUpQuestions?: {
-      summary: string;
-      questions: Array<{
-        field: string;
-        question: string;
-        whyItMatters: string;
-        exampleAnswer: string | null;
-        predictedEffect: string;
-      }>;
-    } | null;
-    gapRadar?: {
-      summary: string;
-      suggestions: Array<{
-        radarId: string;
-        targetLaneId: string;
-        confidence: string;
-        evidenceCount: number;
-        summary: string;
-        recommendedChange: string;
-        signalTokens: string[];
-        relatedOpenGapId: string | null;
-        suggestedPriority: string;
-      }>;
-    } | null;
-    earnedAutonomy?: {
-      routeClass: string;
-      overallScore: number;
-      evidenceCount: number;
-      operatorAgreementRate: number | null;
-      reviewClearRate: number | null;
-      reversalCount: number;
-      autoApprovalEligible: boolean;
-      approvalReductionApplied: boolean;
-      summary: string;
-      rationale: string[];
-    } | null;
-    sourceMemory?: {
-      summary: string;
-      biasAdjustments: Record<string, number>;
-      matchingTopics: Array<{
-        token: string;
-        recentCount: number;
-        totalCount: number;
-        dominantLaneId: string;
-      }>;
-      matchingRouteClass: {
-        routeClass: string;
-        laneId: string;
-        sourceType: string;
-        recentCount: number;
-        totalCount: number;
-        lastSeenAt: string;
-      } | null;
-      rationale: string[];
-    } | null;
-    sourceSimilarity?: {
-      summary: string;
-      relatedSources: Array<{
-        runId: string;
-        candidateId: string;
-        candidateName: string;
-        laneId: string;
-        decisionState: string;
-        receivedAt: string;
-        similarityScore: number;
-        sharedTokens: string[];
-        summary: string;
-      }>;
-    } | null;
-    narrativeContext?: {
-      summary: string;
-      primaryThread: {
-        threadId: string;
-        name: string;
-        state: "nascent" | "developing" | "mature" | "stalled" | "completed";
-        summary: string;
-        sourceCount: number;
-        firstSeenAt: string;
-        lastSeenAt: string;
-        activeSpanDays: number;
-        currentSourceOverlap: number;
-        topTokens: string[];
-        laneTendency: {
-          dominantLaneId: string;
-          dominancePercent: number;
-          laneCounts: Record<string, number>;
-          biasAdjustment: number;
-        };
-        gapCoverage: {
-          dominantGapId: string | null;
-          matchedGapIds: string[];
-          status: "none" | "emerging" | "partially_addressed" | "closed";
-        };
-        followThrough: {
-          completedProofCount: number;
-          stalledProofCount: number;
-          followThroughRate: number;
-        };
-        demandSignals: Array<{
-          kind: string;
-          priority: string;
-          summary: string;
-          requestedLaneId: string | null;
-        }>;
-        relatedRunIds: string[];
-      } | null;
-      relatedThreads: Array<{
-        threadId: string;
-        name: string;
-        state: "nascent" | "developing" | "mature" | "stalled" | "completed";
-        summary: string;
-        sourceCount: number;
-        firstSeenAt: string;
-        lastSeenAt: string;
-        activeSpanDays: number;
-        currentSourceOverlap: number;
-        topTokens: string[];
-        laneTendency: {
-          dominantLaneId: string;
-          dominancePercent: number;
-          laneCounts: Record<string, number>;
-          biasAdjustment: number;
-        };
-        gapCoverage: {
-          dominantGapId: string | null;
-          matchedGapIds: string[];
-          status: "none" | "emerging" | "partially_addressed" | "closed";
-        };
-        followThrough: {
-          completedProofCount: number;
-          stalledProofCount: number;
-          followThroughRate: number;
-        };
-        demandSignals: Array<{
-          kind: string;
-          priority: string;
-          summary: string;
-          requestedLaneId: string | null;
-        }>;
-        relatedRunIds: string[];
-      }>;
-      biasAdjustments: Record<string, number>;
-      demandSignals: Array<{
-        kind: string;
-        priority: string;
-        summary: string;
-        requestedLaneId: string | null;
-      }>;
-      rationale: string[];
-    } | null;
-    laneProportions?: Record<string, number>;
-    secondaryLanes?: Array<{
-      laneId: string;
-      proportion: number;
-      reason: string;
-    }>;
-    scoreBreakdown?: {
-      gapAlignment?: number;
-    };
-  };
+  routingAssessment?: DirectiveEngineRoutingAssessment;
   extractionPlan: {
     extractedValue: string[];
     excludedBaggage: string[];
@@ -307,6 +84,17 @@ type DirectiveEngineRunRecordLike = {
     hostDependence?: string | null;
   };
 };
+
+type EngineRunMatch = {
+  record: DirectiveEngineRunRecordLike;
+  recordAbsolutePath: string;
+  recordRelativePath: string;
+  reportAbsolutePath: string | null;
+  reportRelativePath: string | null;
+};
+
+type DirectiveEngineRunRoutingAssessment =
+  NonNullable<DirectiveEngineRunRecordLike["routingAssessment"]>;
 
 export type DirectiveDiscoveryRoutingArtifact = {
   title: string;
@@ -345,9 +133,9 @@ export type DirectiveDiscoveryRoutingArtifact = {
   routingConfidence: string | null;
   routeConflict: boolean | null;
   needsHumanReview: boolean | null;
-  digest: DirectiveEngineRunRecordLike["routingAssessment"]["digest"] | null;
+  digest: DirectiveEngineRunRoutingAssessment["digest"] | null;
   missionSpecificityWarning: string | null;
-  missionHealth: DirectiveEngineRunRecordLike["routingAssessment"]["missionHealth"] | null;
+  missionHealth: DirectiveEngineRunRoutingAssessment["missionHealth"] | null;
   explanationBreakdown: {
     keywordSignals: string[];
     metadataSignals: string[];
@@ -391,7 +179,7 @@ export type DirectiveDiscoveryRoutingArtifact = {
       exampleAnswer: string | null;
     }>;
   } | null;
-  followUpQuestions: DirectiveEngineRunRecordLike["routingAssessment"]["followUpQuestions"] | null;
+  followUpQuestions: DirectiveEngineRunRoutingAssessment["followUpQuestions"] | null;
   gapRadar: {
     summary: string;
     suggestions: Array<{
@@ -418,9 +206,9 @@ export type DirectiveDiscoveryRoutingArtifact = {
     summary: string;
     rationale: string[];
   } | null;
-  sourceMemory: DirectiveEngineRunRecordLike["routingAssessment"]["sourceMemory"] | null;
-  sourceSimilarity: DirectiveEngineRunRecordLike["routingAssessment"]["sourceSimilarity"] | null;
-  narrativeContext: DirectiveEngineRunRecordLike["routingAssessment"]["narrativeContext"] | null;
+  sourceMemory: DirectiveEngineRunRoutingAssessment["sourceMemory"] | null;
+  sourceSimilarity: DirectiveEngineRunRoutingAssessment["sourceSimilarity"] | null;
+  narrativeContext: DirectiveEngineRunRoutingAssessment["narrativeContext"] | null;
   laneProportions: Record<string, number> | null;
   secondaryLanes: Array<{
     laneId: string;
@@ -789,7 +577,7 @@ function isDirectiveEngineRunRecordLike(value: unknown): value is DirectiveEngin
 function findEngineRunForCandidate(input: {
   directiveRoot: string;
   candidateId: string;
-}) {
+}): EngineRunMatch | null {
   const engineRunsRoot = path.join(input.directiveRoot, "runtime", "standalone-host", "engine-runs");
   if (!fs.existsSync(engineRunsRoot)) {
     return null;
@@ -840,7 +628,7 @@ function readEngineRunByRecordPath(input: {
   candidateId: string;
   recordRelativePath: string;
   reportRelativePath: string | null;
-}) {
+}): EngineRunMatch | null {
   const recordRelativePath = resolveDirectiveWorkspaceRelativePath(
     input.directiveRoot,
     input.recordRelativePath,

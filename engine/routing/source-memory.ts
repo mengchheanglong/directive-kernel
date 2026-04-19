@@ -230,9 +230,12 @@ export function deriveDirectiveSourceMemoryAssessment(input: {
   const biasAdjustments = zeroLaneCounts();
   for (const topic of matchingTopics) {
     const lane = topic.dominantLaneId;
-    if (topic.recentCount >= 2) {
+    if (
+      topic.recentCount >= 2
+      && (lane === "discovery" || lane === "architecture" || lane === "runtime")
+    ) {
       const next = Math.min(3, biasAdjustments[lane] + 1);
-      biasAdjustments[lane as "discovery" | "architecture" | "runtime"] = next;
+      biasAdjustments[lane] = next;
     }
   }
 

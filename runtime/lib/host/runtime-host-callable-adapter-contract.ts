@@ -1,9 +1,9 @@
 export const RUNTIME_HOST_CALLABLE_ADAPTER_CONTRACT_VERSION =
   "host_callable_adapter.v1" as const;
 export const RUNTIME_HOST_CALLABLE_ADAPTER_CONTRACT_PATH =
-  "shared/contracts/host-callable-adapter.md";
+  "shared/contracts/host-callable-adapter.md" as const;
 export const RUNTIME_HOST_CALLABLE_ADAPTER_SCHEMA_PATH =
-  "shared/schemas/host-callable-adapter.v1.schema.json";
+  "shared/schemas/host-callable-adapter.v1.schema.json" as const;
 
 export type RuntimeHostCallableAdapterKind =
   | "descriptor_callable"

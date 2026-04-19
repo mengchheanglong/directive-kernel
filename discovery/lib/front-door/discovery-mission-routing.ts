@@ -413,7 +413,7 @@ function deriveReviewGuidance(input: {
   routeConflict: boolean;
   confidence: DiscoveryMissionRoutingConfidence;
   needsHumanReview: boolean;
-}) {
+}): DiscoveryMissionRoutingAssessment["review_guidance"] {
   if (input.routeConflict && input.recommendedTrack === "architecture") {
     return {
       guidance_kind: "conflicted_architecture_review",
@@ -427,7 +427,7 @@ function deriveReviewGuidance(input: {
       ],
       stop_line:
         "Do not open downstream Architecture work until the conflicted route is explicitly reviewed.",
-    } as const;
+    };
   }
 
   if (input.routeConflict && input.recommendedTrack === "runtime") {
@@ -443,7 +443,7 @@ function deriveReviewGuidance(input: {
       ],
       stop_line:
         "Do not open Runtime follow-up while the route conflict remains unresolved.",
-    } as const;
+    };
   }
 
   if (input.confidence === "low" && input.recommendedTrack === "discovery") {
@@ -459,7 +459,7 @@ function deriveReviewGuidance(input: {
       ],
       stop_line:
         "Do not assign Architecture or Runtime ownership while routing confidence stays low.",
-    } as const;
+    };
   }
 
   if (input.needsHumanReview && input.recommendedTrack !== "discovery") {
@@ -475,7 +475,7 @@ function deriveReviewGuidance(input: {
       ],
       stop_line:
         "Do not open the downstream stub until the bounded lane review is complete.",
-    } as const;
+    };
   }
 
   return null;
@@ -537,7 +537,7 @@ function deriveRecommendedShape(
     if (
       input.recommendedTrack === "architecture" &&
       (
-        (input.request.source_type !== undefined && STRUCTURAL_SOURCE_TYPES.has(input.request.source_type)) ||
+        (input.request.source_type !== undefined && input.request.source_type !== null && STRUCTURAL_SOURCE_TYPES.has(input.request.source_type)) ||
         input.structuralSignal > 0
       )
     ) {
@@ -546,7 +546,7 @@ function deriveRecommendedShape(
     if (
       input.recommendedTrack === "runtime" &&
       (
-        (input.request.source_type !== undefined && RUNTIME_SOURCE_TYPES.has(input.request.source_type)) ||
+        (input.request.source_type !== undefined && input.request.source_type !== null && RUNTIME_SOURCE_TYPES.has(input.request.source_type)) ||
         input.transformationSignal > 0 ||
         input.runtimeSignal > 0
       )

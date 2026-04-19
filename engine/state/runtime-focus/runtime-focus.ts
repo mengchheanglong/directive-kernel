@@ -62,6 +62,7 @@ import type {
   GenericRuntimePromotionRecordArtifact,
 } from "./runtime-focus-readers.ts";
 import {
+  isAcceptedRuntimeRegistryArtifact,
   readGenericCallableIntegrationArtifact,
   readGenericRuntimePromotionReadinessArtifact,
   readGenericRuntimePromotionRecordArtifact,

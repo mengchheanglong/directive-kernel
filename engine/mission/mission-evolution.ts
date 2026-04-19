@@ -217,11 +217,15 @@ function normalizeMissionContext(
   const activeMissionMarkdown =
     normalizeText(mission.activeMissionMarkdown) || buildMissionMarkdown(mission);
   const parsed = parseMissionMarkdown(activeMissionMarkdown);
+  const defaultMission = createDefaultDirectiveMission();
 
   return {
     missionId: normalizeText(mission.missionId) || null,
     currentObjective:
-      normalizeText(mission.currentObjective) || parsed.currentObjective || createDefaultDirectiveMission().currentObjective,
+      normalizeText(mission.currentObjective)
+      || parsed.currentObjective
+      || normalizeText(defaultMission.currentObjective)
+      || "Mission objective not provided.",
     usefulnessSignals:
       (mission.usefulnessSignals ?? []).map((value) => normalizeText(value)).filter(Boolean).length > 0
         ? (mission.usefulnessSignals ?? []).map((value) => normalizeText(value)).filter(Boolean)
@@ -483,7 +487,7 @@ export function previewMissionEvolution(input: {
   const currentMission = input.currentMission
     ? normalizeMissionContext(input.currentMission)
     : readCurrentMissionSnapshot({ directiveRoot: input.directiveRoot })
-      ?? createDefaultDirectiveMission();
+      ?? normalizeMissionContext(createDefaultDirectiveMission());
   const proposedMission = normalizeMissionContext(input.proposedMission);
   const generatedAt = normalizeText(input.receivedAt) || new Date().toISOString();
   const affectedRuns = input.existingRuns

@@ -101,6 +101,7 @@ export type DirectiveWorkspaceLinkedArtifacts = {
   runtimePromotionSpecificationPath: string | null;
   runtimeHostSelectionResolutionPath: string | null;
   runtimeCallableStubPath: string | null;
+  runtimeCallableStatus?: "callable" | "not_implemented" | null;
   runtimeHostConsumptionReportPath: string | null;
 };
 

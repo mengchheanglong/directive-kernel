@@ -3,9 +3,10 @@ import path from "node:path";
 
 import type {
   DirectiveEngineCapabilityGap,
-  DirectiveEngineMissionInput,
+  DirectiveEngineMissionContext,
   DirectiveEngineProcessSourceInput,
 } from "../../engine/index.ts";
+import { resolveMissionContext } from "../../engine/mission/mission-context.ts";
 
 export function writeJson(filePath: string, value: unknown) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -29,8 +30,8 @@ export function buildArchitectureGap(): DirectiveEngineCapabilityGap {
   };
 }
 
-export function buildArchitectureMission(): DirectiveEngineMissionInput {
-  return {
+export function buildArchitectureMission(): DirectiveEngineMissionContext {
+  return resolveMissionContext({
     missionId: "hardening-smoke",
     currentObjective: "Improve directive workspace routing workflow architecture boundaries",
     usefulnessSignals: [
@@ -49,7 +50,7 @@ export function buildArchitectureMission(): DirectiveEngineMissionInput {
     ],
     successSignal: "One bounded routing improvement is materially clearer than before.",
     adoptionTarget: "architecture",
-  };
+  });
 }
 
 export function buildRecurringArchitecturePolicyEvents() {

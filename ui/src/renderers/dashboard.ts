@@ -20,6 +20,7 @@ import { artifactLink, formatDecisionSurface } from "./shared";
 
 type HomeRendererContext = {
   renderRuntimeCaseStrip: (entry: FrontendRuntimeSummaryCase | FrontendQueueEntry) => unknown;
+  currentHeadLink: (entry: FrontendQueueEntry) => unknown;
 };
 
 type OperatorInboxRendererContext = {
@@ -721,7 +722,11 @@ export function renderHomePage(
                 </div>
                 <div class="lane-head-strip-grid" style="margin-top:14px;">
                   ${runtimePrimary ? context.renderRuntimeCaseStrip(runtimePrimary) : nothing}
-                  ${architecturePrimary ? renderArchitectureCaseStrip(architecturePrimary) : nothing}
+                  ${architecturePrimary
+                    ? renderArchitectureCaseStrip(architecturePrimary, {
+                        currentHeadLink: context.currentHeadLink,
+                      })
+                    : nothing}
                 </div>
               </section>
             `

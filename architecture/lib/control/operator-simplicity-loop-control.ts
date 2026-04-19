@@ -363,6 +363,7 @@ export function buildDirectiveOperatorSimplicityLoopControlReport(input?: {
 
   const setupReadiness = {
     hasMigrationAnchor: fs.existsSync(path.join(directiveRoot, status.anchorPath)),
+    hasOperatorStart: false,
     hasControlReadme: fs.existsSync(path.join(directiveRoot, "control/README.md")),
     hasControlStateReadme: fs.existsSync(path.join(directiveRoot, "control/state/README.md")),
     hasStateReadme: fs.existsSync(path.join(directiveRoot, "state/README.md")),

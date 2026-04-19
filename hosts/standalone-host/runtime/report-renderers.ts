@@ -63,8 +63,7 @@ export function renderStandaloneScientifyHostConsumptionReport(input: {
     sampleInvocation: {
       tool: input.invocationResult.execution.record.invocation.tool,
       status: input.invocationResult.execution.rawResult.status,
-      persistArtifacts:
-        input.invocationResult.execution.record.invocation.persistArtifacts,
+      persistArtifacts: input.invocationResult.execution.absolutePaths !== null,
       returned: typeof raw?.returned === "number" ? raw.returned : null,
       topTitle:
         Array.isArray(raw?.works) && raw.works.length > 0

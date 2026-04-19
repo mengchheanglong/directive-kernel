@@ -155,15 +155,18 @@ export function renderHandoffsPage(
   return html`
     ${snapshot.handoffWarnings?.length ? html`<section class="panel warning"><h3>Invalid handoff artifacts</h3><p class="muted">These are shown as raw files so the UI remains operable even when one handoff artifact is malformed.</p></section>` : nothing}
     <section class="panel"><h2>Handoff stubs</h2><table><thead><tr><th>title</th><th>lane</th><th>status</th><th>candidate id</th><th>artifact</th><th>bounded start</th></tr></thead><tbody>
-      ${snapshot.handoffStubs.length ? snapshot.handoffStubs.map((stub) => html`
+      ${snapshot.handoffStubs.length ? snapshot.handoffStubs.map((stub) => {
+        const startRelativePath = stub.startRelativePath;
+        return html`
         <tr>
           <td>${stub.kind === "architecture_handoff_invalid" ? context.artifactLink(stub.relativePath) : html`<a href=${`/handoffs/view?path=${encodeURIComponent(stub.relativePath)}`} @click=${(event: Event) => { event.preventDefault(); navTo(`/handoffs/view?path=${encodeURIComponent(stub.relativePath)}`); }}>${stub.title}</a>`}${stub.warning ? html`<div class="muted">${stub.warning}</div>` : nothing}</td>
           <td><span class="pill">${stub.lane}</span></td>
           <td>${stub.status}</td>
           <td>${stub.candidateId}</td>
           <td>${context.artifactLink(stub.relativePath)}</td>
-          <td>${stub.lane === "architecture" ? (stub.kind === "architecture_handoff_invalid" ? html`<span class="muted">invalid handoff artifact</span>` : stub.startRelativePath ? html`<a href=${`/architecture-starts/view?path=${encodeURIComponent(stub.startRelativePath)}`} @click=${(event: Event) => { event.preventDefault(); navTo(`/architecture-starts/view?path=${encodeURIComponent(stub.startRelativePath)}`); }}>view bounded start</a>` : html`<button class="secondary" @click=${() => context.startArchitecture(stub.relativePath)}>start bounded work</button>`) : html`<span class="muted">no start path yet</span>`}</td>
-        </tr>`) : html`<tr><td colspan="6" class="muted">No handoff stubs found.</td></tr>`}
+          <td>${stub.lane === "architecture" ? (stub.kind === "architecture_handoff_invalid" ? html`<span class="muted">invalid handoff artifact</span>` : startRelativePath ? html`<a href=${`/architecture-starts/view?path=${encodeURIComponent(startRelativePath)}`} @click=${(event: Event) => { event.preventDefault(); navTo(`/architecture-starts/view?path=${encodeURIComponent(startRelativePath)}`); }}>view bounded start</a>` : html`<button class="secondary" @click=${() => context.startArchitecture(stub.relativePath)}>start bounded work</button>`) : html`<span class="muted">no start path yet</span>`}</td>
+        </tr>`;
+      }) : html`<tr><td colspan="6" class="muted">No handoff stubs found.</td></tr>`}
     </tbody></table></section>
   `;
 }

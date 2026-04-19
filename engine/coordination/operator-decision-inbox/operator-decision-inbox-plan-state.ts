@@ -82,6 +82,9 @@ export function buildLatestPlanStateSummaryByCandidateId(directiveRoot: string) 
     if (!candidateId || !runId || summaries.has(candidateId)) {
       continue;
     }
+    if (!parsed) {
+      continue;
+    }
 
     const summary = buildPlanStateSummary({
       runId,

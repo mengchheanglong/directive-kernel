@@ -42,6 +42,7 @@ import {
 } from "../../architecture/lib/control/architecture-deep-tail-linkage-index.ts";
 import {
   ARCHITECTURE_DEEP_TAIL_STAGE,
+  matchesArchitectureDeepTailStagePath,
 } from "../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
 import type { ArchitectureDeepTailStageId } from "../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
 import {

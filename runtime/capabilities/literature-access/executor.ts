@@ -16,6 +16,11 @@ import {
   getDirectiveRuntimeScientifyLiteratureAccessTool,
   listDirectiveRuntimeScientifyLiteratureAccessTools,
 } from "./bundle.ts";
+import type {
+  DirectiveCallableCapability,
+  DirectiveCallableExecutionInput,
+  DirectiveCallableExecutionResult,
+} from "../../core/callable-contract.ts";
 
 // --- Configuration ---
 
@@ -40,25 +45,8 @@ export function isLiteratureAccessCapabilityEnabled(): boolean {
 
 // --- Execution types ---
 
-export interface CallableExecutionInput {
-  tool: ScientifyLiteratureAccessToolName;
-  input: Record<string, unknown>;
-  timeoutMs?: number;
-}
-
-export interface CallableExecutionResult {
-  ok: boolean;
-  tool: ScientifyLiteratureAccessToolName;
-  status: "success" | "error" | "timeout" | "disabled" | "validation_error";
-  result: unknown;
-  metadata: {
-    startedAt: string;
-    completedAt: string;
-    durationMs: number;
-    timeoutMs: number;
-    capabilityId: string;
-  };
-}
+export type CallableExecutionInput = DirectiveCallableExecutionInput;
+export type CallableExecutionResult = DirectiveCallableExecutionResult;
 
 // --- Input validation ---
 
@@ -133,10 +121,11 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 const CAPABILITY_ID = "dw-source-scientify-research-workflow-plugin-2026-03-27";
 
 export async function executeLiteratureAccessTool(
-  input: CallableExecutionInput,
-): Promise<CallableExecutionResult> {
+  input: DirectiveCallableExecutionInput,
+): Promise<DirectiveCallableExecutionResult> {
   const startedAt = new Date();
   const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
+  const tool = input.tool as ScientifyLiteratureAccessToolName;
 
   const baseMeta = {
     startedAt: startedAt.toISOString(),
@@ -151,7 +140,7 @@ export async function executeLiteratureAccessTool(
     const completedAt = new Date();
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: "disabled",
       result: null,
       metadata: {
@@ -163,14 +152,14 @@ export async function executeLiteratureAccessTool(
   }
 
   // Validate tool name
-  const toolDef = getDirectiveRuntimeScientifyLiteratureAccessTool(input.tool);
+  const toolDef = getDirectiveRuntimeScientifyLiteratureAccessTool(tool);
   if (!toolDef) {
     const completedAt = new Date();
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: "validation_error",
-      result: `Unknown tool: ${input.tool}`,
+      result: `Unknown tool: ${tool}`,
       metadata: {
         ...baseMeta,
         completedAt: completedAt.toISOString(),
@@ -180,13 +169,13 @@ export async function executeLiteratureAccessTool(
   }
 
   // Validate input
-  const validator = TOOL_INPUT_VALIDATORS[input.tool];
+  const validator = TOOL_INPUT_VALIDATORS[tool];
   const validationError = validator(input.input);
   if (validationError) {
     const completedAt = new Date();
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: "validation_error",
       result: validationError,
       metadata: {
@@ -203,7 +192,7 @@ export async function executeLiteratureAccessTool(
     const completedAt = new Date();
     return {
       ok: true,
-      tool: input.tool,
+      tool,
       status: "success",
       result,
       metadata: {
@@ -217,7 +206,7 @@ export async function executeLiteratureAccessTool(
     const isTimeout = error instanceof Error && error.message.includes("timed out");
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: isTimeout ? "timeout" : "error",
       result: error instanceof Error ? error.message : String(error),
       metadata: {
@@ -254,7 +243,7 @@ export const LITERATURE_ACCESS_CALLABLE_CAPABILITY = {
  * Returns the literature-access capability conforming to the shared
  * DirectiveCallableCapability contract from runtime/core/callable-contract.ts.
  */
-export function createLiteratureAccessCallableCapability() {
+export function createLiteratureAccessCallableCapability(): DirectiveCallableCapability {
   return {
     descriptor: {
       capabilityId: CAPABILITY_ID,

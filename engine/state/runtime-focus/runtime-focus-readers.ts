@@ -23,6 +23,12 @@ import {
   stripInlineBackticks,
 } from "../shared-state-helpers.ts";
 
+export type {
+  GenericRuntimeProofArtifact,
+  GenericRuntimeRecordArtifact,
+  GenericRuntimeRuntimeCapabilityBoundaryArtifact,
+} from "../runtime-artifact-types.ts";
+
 export type GenericRuntimePromotionReadinessArtifact =
   GenericRuntimePromotionReadinessArtifactBase & {
     linkedPromotionRecordPath: string | null;

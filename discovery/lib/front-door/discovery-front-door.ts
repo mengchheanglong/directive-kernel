@@ -858,12 +858,12 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
       discoveryFrontDoor: projectionInput,
     },
   });
-  let downstream = {
+  let downstream: DirectiveDiscoveryFrontDoorResult["downstream"] = {
     autoOpened: false,
     routeDestination: null,
     stubKind: null,
     stubRelativePath: null,
-  } satisfies DirectiveDiscoveryFrontDoorResult["downstream"];
+  };
   if (
     !requiresHumanApproval
     && (

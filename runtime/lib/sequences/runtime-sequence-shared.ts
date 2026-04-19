@@ -210,7 +210,10 @@ function interruptedResult(input: {
     executedActionCount: input.executedActionCount,
     completedStepCount: input.record.completedStepCount,
     lifecycleState: "interrupted",
-    checkpointStage: input.record.checkpointStage,
+    checkpointStage:
+      input.record.checkpointStage === "completed"
+        ? "after_step_2"
+        : input.record.checkpointStage,
     sequenceRecordPath: input.sequenceRecordPath,
     sequenceRecord: input.record,
     reason: input.reason,
@@ -601,11 +604,12 @@ export function runDirectiveRuntimeTwoStepSequence(input: {
       executedActionCount,
     });
   } catch (error) {
-    return sequenceFailed({
+    sequenceFailed({
       directiveRoot: input.directiveRoot,
       record,
       checkpointStage: record.checkpointStage,
       error,
     });
+    throw new Error("unreachable");
   }
 }

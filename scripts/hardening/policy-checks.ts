@@ -379,7 +379,7 @@ export async function runEarnedAutonomyIntegrationCheck() {
       workflowBoundaryShape: null,
     },
     mission: {
-      ...mission,
+      ...buildArchitectureMission(),
       activeMissionMarkdown: "",
     },
     openGaps: [],

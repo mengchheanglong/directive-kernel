@@ -216,8 +216,8 @@ export function readDirectiveRuntimeProofArtifact(input: {
     throw new Error("invalid_input: runtimeProofPath must point to a follow-up review Runtime proof artifact");
   }
 
-  const candidateId = extractBulletValue(content, "Candidate id");
-  const proofDate = extractBulletValue(content, "Opened on");
+  const candidateId = extractBulletValue(content, "Candidate id", 'invalid_input: missing "Candidate id" in Runtime proof artifact');
+  const proofDate = extractBulletValue(content, "Opened on", 'invalid_input: missing "Opened on" in Runtime proof artifact');
   const linkedRuntimeRecordPath = extractLegacyRuntimeRecordPathFromProof(content);
   const runtimeRecordArtifact = readDirectiveRuntimeRecordArtifact({
     directiveRoot,
@@ -230,7 +230,7 @@ export function readDirectiveRuntimeProofArtifact(input: {
   const runtimeCapabilityBoundaryAbsolutePath = path
     .resolve(directiveRoot, runtimeCapabilityBoundaryRelativePath)
     .replace(/\\/g, "/");
-  const currentStatus = extractBulletValue(content, "Current status");
+  const currentStatus = extractBulletValue(content, "Current status", 'invalid_input: missing "Current status" in Runtime proof artifact');
 
   return {
     title: extractMarkdownTitle(content, "runtime proof title"),
@@ -362,6 +362,11 @@ export function openDirectiveRuntimeProofRuntimeCapabilityBoundary(input: {
     receivedAt: snapshotAt,
     queueStatus: mirrored.record?.queueStatus ?? "routed",
     linkedArtifacts: {
+      intakeRecordPath: mirrored.record?.linkedArtifacts.intakeRecordPath ?? null,
+      triageRecordPath: mirrored.record?.linkedArtifacts.triageRecordPath ?? null,
+      routingRecordPath: mirrored.record?.linkedArtifacts.routingRecordPath ?? null,
+      engineRunRecordPath: mirrored.record?.linkedArtifacts.engineRunRecordPath ?? null,
+      engineRunReportPath: mirrored.record?.linkedArtifacts.engineRunReportPath ?? null,
       runtimeFollowUpPath: artifact.linkedFollowUpPath,
       runtimeRecordPath: artifact.linkedRuntimeRecordPath,
       runtimeProofPath: artifact.runtimeProofRelativePath,

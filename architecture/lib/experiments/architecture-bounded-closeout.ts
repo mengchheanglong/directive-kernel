@@ -1459,6 +1459,11 @@ export function closeDirectiveArchitectureNoteHandoff(
       caseId: handoffArtifact.candidateId,
     });
     if (!mirrored.record) {
+      if (!queueEntry.routing_record_path) {
+        throw new Error(
+          `invalid_state: NOTE Architecture closeout requires a discovery routing record for ${handoffArtifact.candidateId}`,
+        );
+      }
       const routing = readDirectiveDiscoveryRoutingArtifact({
         directiveRoot: handoffArtifact.directiveRoot,
         routingPath: queueEntry.routing_record_path,
@@ -1500,6 +1505,11 @@ export function closeDirectiveArchitectureNoteHandoff(
       receivedAt: snapshotAt,
       queueStatus: "completed",
       linkedArtifacts: {
+        intakeRecordPath: queueEntry.intake_record_path ?? null,
+        triageRecordPath: null,
+        routingRecordPath: queueEntry.routing_record_path,
+        engineRunRecordPath: handoffArtifact.engineRunRecordPath,
+        engineRunReportPath: handoffArtifact.engineRunReportPath,
         architectureHandoffPath: handoffArtifact.handoffRelativePath,
         architectureDecisionPath: handoffArtifact.resultRelativePath.replace(/\.md$/u, "-adoption-decision.json"),
         resultRecordPath: handoffArtifact.resultRelativePath,

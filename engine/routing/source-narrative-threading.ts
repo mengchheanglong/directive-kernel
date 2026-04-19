@@ -14,6 +14,7 @@ import type {
 } from "../types.ts";
 
 type DirectiveNarrativeLaneCounts = Record<"discovery" | "architecture" | "runtime", number>;
+type DirectiveNarrativeKnownLaneId = keyof DirectiveNarrativeLaneCounts;
 
 export type DirectiveNarrativeThreadState =
   | "nascent"
@@ -97,6 +98,7 @@ type InternalThread = {
 };
 
 type ThreadTokenIndex = Map<string, Set<InternalThread>>;
+type DirectiveNarrativeGapCoverage = DirectiveSourceNarrativeThread["gapCoverage"];
 
 export type DirectiveSourceNarrativeThreadBuild = {
   threads: InternalThread[];
@@ -190,7 +192,7 @@ function missionTopicTokens(mission: DirectiveEngineMissionContext) {
 }
 
 function dominantLane(counts: DirectiveNarrativeLaneCounts) {
-  const ranked = (Object.entries(counts) as Array<["discovery" | "architecture" | "runtime", number]>)
+  const ranked = (Object.entries(counts) as Array<[DirectiveNarrativeKnownLaneId, number]>)
     .sort((left, right) => {
       if (right[1] !== left[1]) {
         return right[1] - left[1];
@@ -282,7 +284,10 @@ function inferThreadName(thread: InternalThread) {
   return latestTitle;
 }
 
-function inferGapCoverage(thread: InternalThread, _mission: DirectiveEngineMissionContext) {
+function inferGapCoverage(
+  thread: InternalThread,
+  _mission: DirectiveEngineMissionContext,
+): DirectiveNarrativeGapCoverage {
   const matchedGapIds = thread.runs
     .map((run) => run.routingAssessment.matchedGapId)
     .filter((gapId): gapId is string => Boolean(gapId));
@@ -298,7 +303,7 @@ function inferGapCoverage(thread: InternalThread, _mission: DirectiveEngineMissi
       dominantGapId: null,
       matchedGapIds: [],
       status: "none",
-    } as const;
+    };
   }
 
   const latestRun = thread.runs[thread.runs.length - 1];
@@ -314,7 +319,7 @@ function inferGapCoverage(thread: InternalThread, _mission: DirectiveEngineMissi
         : successfulCount > 0
           ? "partially_addressed"
           : "emerging",
-  } as const;
+  };
 }
 
 function inferThreadState(input: {
@@ -460,7 +465,7 @@ function projectGapCoverage(input: {
   thread: InternalThread;
   mission: DirectiveEngineMissionContext;
   currentMatchedGapId: string | null;
-}) {
+}): DirectiveNarrativeGapCoverage {
   const base = inferGapCoverage(input.thread, input.mission);
   if (!input.currentMatchedGapId) {
     return base;
@@ -481,7 +486,7 @@ function projectGapCoverage(input: {
           ? "partially_addressed"
           : "emerging"
         : base.status,
-  } as const;
+  };
 }
 
 function addThreadTokensToIndex(input: {
@@ -533,7 +538,7 @@ export function buildDirectiveSourceNarrativeThreads(input: {
     const candidate = candidateThreads
       .map((thread) => ({
         thread,
-        overlap: countTokenOverlap(runTokens, thread.tokenCounts),
+        overlap: countTokenOverlap(runTokens, thread.tokenCounts.keys()),
         hoursGap: hoursBetween(thread.lastSeenAt, run.receivedAt),
       }))
       .filter((entry) => entry.overlap >= 3)
@@ -638,14 +643,14 @@ export function deriveDirectiveSourceNarrativeContext(input: {
 
   const sourceTokens = uniqueTokens(extractSourceSignalTokens(input.sourceText));
   const relatedThreads = threads.threads
-    .map((thread) => {
+    .flatMap((thread) => {
       const currentSourceOverlap = countTokenOverlap(
         sourceTokens,
-        thread.tokenCounts,
+        thread.tokenCounts.keys(),
       );
       const hoursGap = hoursBetween(thread.lastSeenAt, generatedAt);
       if (currentSourceOverlap < 3 || hoursGap < 0 || hoursGap > 14 * 24) {
-        return null;
+        return [];
       }
 
       const projectedLaneCounts = {
@@ -700,7 +705,7 @@ export function deriveDirectiveSourceNarrativeContext(input: {
         projectedLaneCounts,
       });
 
-      return {
+      return [{
         threadId: thread.threadId,
         name,
         state,
@@ -734,9 +739,8 @@ export function deriveDirectiveSourceNarrativeContext(input: {
         },
         demandSignals,
         relatedRunIds: thread.runs.map((run) => run.runId).slice(-5),
-      } satisfies DirectiveSourceNarrativeThread;
+      } satisfies DirectiveSourceNarrativeThread];
     })
-    .filter((thread): thread is DirectiveSourceNarrativeThread => thread !== null)
     .sort((left, right) => {
       if (right.currentSourceOverlap !== left.currentSourceOverlap) {
         return right.currentSourceOverlap - left.currentSourceOverlap;

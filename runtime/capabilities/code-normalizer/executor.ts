@@ -16,7 +16,11 @@
  */
 
 import { normalizeCode } from "./normalizer.ts";
-import type { DirectiveCallableCapability } from "../../core/callable-contract.ts";
+import type {
+  DirectiveCallableCapability,
+  DirectiveCallableExecutionInput,
+  DirectiveCallableExecutionResult,
+} from "../../core/callable-contract.ts";
 
 // --- Configuration ---
 
@@ -84,31 +88,12 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 // --- Execution types ---
 
-interface ExecutionInput {
-  tool: CodeNormalizerToolName;
-  input: Record<string, unknown>;
-  timeoutMs?: number;
-}
-
-interface ExecutionResult {
-  ok: boolean;
-  tool: string;
-  status: "success" | "error" | "timeout" | "disabled" | "validation_error";
-  result: unknown;
-  metadata: {
-    startedAt: string;
-    completedAt: string;
-    durationMs: number;
-    timeoutMs: number;
-    capabilityId: string;
-  };
-}
-
 // --- Public executor ---
 
-async function execute(input: ExecutionInput): Promise<ExecutionResult> {
+async function execute(input: DirectiveCallableExecutionInput): Promise<DirectiveCallableExecutionResult> {
   const startedAt = new Date();
   const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
+  const tool = input.tool as CodeNormalizerToolName;
 
   const baseMeta = {
     startedAt: startedAt.toISOString(),
@@ -122,7 +107,7 @@ async function execute(input: ExecutionInput): Promise<ExecutionResult> {
     const completedAt = new Date();
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: "disabled",
       result: null,
       metadata: {
@@ -133,12 +118,12 @@ async function execute(input: ExecutionInput): Promise<ExecutionResult> {
     };
   }
 
-  const validationError = validateInput(input.tool, input.input);
+  const validationError = validateInput(tool, input.input);
   if (validationError) {
     const completedAt = new Date();
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: "validation_error",
       result: validationError,
       metadata: {
@@ -161,7 +146,7 @@ async function execute(input: ExecutionInput): Promise<ExecutionResult> {
     const completedAt = new Date();
     return {
       ok: true,
-      tool: input.tool,
+      tool,
       status: "success",
       result,
       metadata: {
@@ -175,7 +160,7 @@ async function execute(input: ExecutionInput): Promise<ExecutionResult> {
     const isTimeout = error instanceof Error && error.message.includes("timed out");
     return {
       ok: false,
-      tool: input.tool,
+      tool,
       status: isTimeout ? "timeout" : "error",
       result: error instanceof Error ? error.message : String(error),
       metadata: {

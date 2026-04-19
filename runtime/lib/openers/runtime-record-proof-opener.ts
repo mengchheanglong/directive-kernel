@@ -210,9 +210,9 @@ export function readDirectiveRuntimeRecordArtifact(input: {
   }
 
   const content = readUtf8(runtimeRecordAbsolutePath);
-  const candidateId = extractBulletValue(content, "Candidate id");
-  const runtimeRecordDate = extractBulletValue(content, "Review date");
-  const linkedFollowUpRecord = extractBulletValue(content, "Source follow-up record");
+  const candidateId = extractBulletValue(content, "Candidate id", 'invalid_input: missing "Candidate id" in Legacy Runtime record');
+  const runtimeRecordDate = extractBulletValue(content, "Review date", 'invalid_input: missing "Review date" in Legacy Runtime record');
+  const linkedFollowUpRecord = extractBulletValue(content, "Source follow-up record", 'invalid_input: missing "Source follow-up record" in Legacy Runtime record');
   const followUpArtifact = readDirectiveRuntimeFollowUpArtifact({
     directiveRoot,
     followUpPath: linkedFollowUpRecord,
@@ -222,7 +222,7 @@ export function readDirectiveRuntimeRecordArtifact(input: {
     candidateId,
   });
   const runtimeProofAbsolutePath = path.resolve(directiveRoot, runtimeProofRelativePath).replace(/\\/g, "/");
-  const currentStatus = extractBulletValue(content, "Current status");
+  const currentStatus = extractBulletValue(content, "Current status", 'invalid_input: missing "Current status" in Legacy Runtime record');
 
   return {
     title: extractMarkdownTitle(content, "runtime record title"),
@@ -350,6 +350,11 @@ export function openDirectiveRuntimeRecordProof(input: {
     receivedAt: snapshotAt,
     queueStatus: mirrored.record?.queueStatus ?? "routed",
     linkedArtifacts: {
+      intakeRecordPath: mirrored.record?.linkedArtifacts.intakeRecordPath ?? null,
+      triageRecordPath: mirrored.record?.linkedArtifacts.triageRecordPath ?? null,
+      routingRecordPath: mirrored.record?.linkedArtifacts.routingRecordPath ?? null,
+      engineRunRecordPath: mirrored.record?.linkedArtifacts.engineRunRecordPath ?? null,
+      engineRunReportPath: mirrored.record?.linkedArtifacts.engineRunReportPath ?? null,
       runtimeFollowUpPath: artifact.linkedFollowUpRecord,
       runtimeRecordPath: artifact.runtimeRecordRelativePath,
       runtimeProofPath: artifact.runtimeProofRelativePath,

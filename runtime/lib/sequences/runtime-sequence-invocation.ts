@@ -5,11 +5,13 @@ import {
   runDirectiveRuntimeFollowUpProofTwoStepSequence,
   type DirectiveRuntimeFollowUpProofSequenceInput,
   type DirectiveRuntimeFollowUpProofSequenceResult,
+  type DirectiveRuntimeFollowUpProofSequenceSuccessResult,
 } from "./runtime-follow-up-proof-sequence.ts";
 import {
   runDirectiveRuntimeProofCapabilityBoundaryTwoStepSequence,
   type DirectiveRuntimeProofCapabilityBoundarySequenceInput,
   type DirectiveRuntimeProofCapabilityBoundarySequenceResult,
+  type DirectiveRuntimeProofCapabilityBoundarySequenceSuccessResult,
 } from "./runtime-proof-capability-boundary-sequence.ts";
 
 export const DIRECTIVE_RUNTIME_NAMED_SEQUENCE_KINDS = [
@@ -67,8 +69,8 @@ export type DirectiveRuntimeNamedSequenceSuccessResult =
     lifecycleState: "completed";
     checkpointStage: "completed";
     stepResults:
-      | DirectiveRuntimeFollowUpProofSequenceResult["stepResults"]
-      | DirectiveRuntimeProofCapabilityBoundarySequenceResult["stepResults"];
+      | DirectiveRuntimeFollowUpProofSequenceSuccessResult["stepResults"]
+      | DirectiveRuntimeProofCapabilityBoundarySequenceSuccessResult["stepResults"];
   };
 
 export type DirectiveRuntimeNamedSequenceInterruptedResult =
@@ -102,10 +104,6 @@ function dispatchNamedSequence(input: DirectiveRuntimeNamedSequenceInput & { dir
         sequenceId: input.sequenceId,
         testInterruptPoint: input.testInterruptPoint,
       });
-    default: {
-      const exhaustiveCheck: never = input.sequenceKind;
-      throw new Error(`invalid_input: unsupported named Runtime sequence kind: ${exhaustiveCheck}`);
-    }
   }
 }
 
@@ -118,7 +116,7 @@ export function runDirectiveRuntimeNamedSequenceByExplicitInvocation(
     directiveRoot,
   });
 
-  if (dispatched.ok) {
+  if ("stepResults" in dispatched) {
     return {
       ok: true,
       sequenceKind: input.sequenceKind,

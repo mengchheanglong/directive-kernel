@@ -493,7 +493,7 @@ export function runEngineContractSurfaceChecks() {
       ["beta", 1],
       ["gamma", 1],
       ["delta", 1],
-    ]),
+    ]).keys(),
   );
   assert.equal(
     overlapFromMap,

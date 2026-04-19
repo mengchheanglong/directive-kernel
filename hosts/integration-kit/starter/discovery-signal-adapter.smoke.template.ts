@@ -65,15 +65,15 @@ export async function runDiscoverySignalStarterSmoke() {
   });
 
   assertCondition(
-    healthyResult.submitted === false,
+    "submitted" in healthyResult && healthyResult.submitted === false,
     "healthy runtime verification signal must not submit into Discovery",
   );
   assertCondition(
-    runtimeResult.status === "pending",
+    "status" in runtimeResult && runtimeResult.status === "pending",
     "stale runtime verification signal must submit a pending Discovery entry",
   );
   assertCondition(
-    maintenanceResult.status === "pending",
+    "status" in maintenanceResult && maintenanceResult.status === "pending",
     "maintenance watchdog signal must submit a pending Discovery entry",
   );
 

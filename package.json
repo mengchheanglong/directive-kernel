@@ -11,6 +11,7 @@
     "ui:start": "node --experimental-strip-types ./scripts/start-ui.ts",
     "frontend:install": "pnpm install",
     "frontend:build": "pnpm --filter @directive/kernel-ui build",
+    "typecheck": "pnpm exec tsc --noEmit -p tsconfig.repo.json && pnpm --filter @directive/kernel-ui exec tsc --noEmit -p tsconfig.json",
     "check:hardening": "node --experimental-strip-types ./scripts/check-system-hardening.ts",
     "dev": "node --experimental-strip-types ./scripts/run-ui-dev.ts",
     "start": "pnpm --filter @directive/kernel-ui build && node --experimental-strip-types ./scripts/start-ui.ts",

@@ -10,6 +10,7 @@ import {
   upsertDirectiveArchitectureAdoptionDecisionArtifact,
 } from "../adoption/architecture-adoption-decision-store.ts";
 import type {
+  ArchitectureUsefulnessLevel,
   ArchitectureValueShape,
 } from "../adoption/architecture-adoption-resolution.ts";
 import {
@@ -83,11 +84,19 @@ function buildNoteArchitectureCloseoutRequest(input: {
     .toLowerCase()
     .includes("yes");
 
+  const usefulnessLevel = (
+    handoffArtifact.usefulnessLevel === "direct"
+    || handoffArtifact.usefulnessLevel === "structural"
+    || handoffArtifact.usefulnessLevel === "meta"
+  )
+    ? handoffArtifact.usefulnessLevel
+    : "structural";
+
   return {
     recordRelativePath: handoffArtifact.resultRelativePath,
     sourceId: handoffArtifact.candidateId,
     adoptionDate: projectionInput.snapshotAt.slice(0, 10),
-    usefulnessLevel: handoffArtifact.usefulnessLevel,
+    usefulnessLevel: usefulnessLevel as ArchitectureUsefulnessLevel,
     valueShape: projectionInput.valueShape,
     readinessCheck: {
       source_analysis_complete: true,
