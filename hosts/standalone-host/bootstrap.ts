@@ -429,17 +429,17 @@ Contents:
 
 Quickstart:
 Run these from the Directive Kernel repo root:
-1. \`tsx hosts/standalone-host/cli.ts discovery-submit --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_EXAMPLE_SUBMISSION_FILENAME}\`
-2. \`tsx hosts/standalone-host/cli.ts discovery-overview --config ${input.outputRoot}/${input.configFilename}\`
-3. \`tsx hosts/standalone-host/cli.ts runtime-followup-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_FOLLOW_UP_FILENAME}\`
-4. \`tsx hosts/standalone-host/cli.ts runtime-record-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_RECORD_FILENAME}\`
-5. \`tsx hosts/standalone-host/cli.ts runtime-proof-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_PROOF_FILENAME}\`
-6. \`tsx hosts/standalone-host/cli.ts runtime-transformation-proof-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_TRANSFORMATION_PROOF_FILENAME}\`
-7. \`tsx hosts/standalone-host/cli.ts runtime-transformation-record-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_TRANSFORMATION_RECORD_FILENAME}\`
-8. \`tsx hosts/standalone-host/cli.ts runtime-promotion-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_PROMOTION_FILENAME}\`
-9. \`tsx hosts/standalone-host/cli.ts runtime-registry-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_REGISTRY_FILENAME}\`
-10. \`tsx hosts/standalone-host/cli.ts runtime-overview --config ${input.outputRoot}/${input.configFilename}\`
-11. \`tsx hosts/standalone-host/cli.ts serve --config ${input.outputRoot}/${input.configFilename}\`
+1. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts discovery-submit --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_EXAMPLE_SUBMISSION_FILENAME}\`
+2. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts discovery-overview --config ${input.outputRoot}/${input.configFilename}\`
+3. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts runtime-followup-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_FOLLOW_UP_FILENAME}\`
+4. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts runtime-record-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_RECORD_FILENAME}\`
+5. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts runtime-proof-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_PROOF_FILENAME}\`
+6. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts runtime-transformation-proof-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_TRANSFORMATION_PROOF_FILENAME}\`
+7. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts runtime-transformation-record-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_TRANSFORMATION_RECORD_FILENAME}\`
+8. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts runtime-promotion-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_PROMOTION_FILENAME}\`
+9. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts runtime-registry-write --config ${input.outputRoot}/${input.configFilename} --input-json-path ${input.outputRoot}/${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_REGISTRY_FILENAME}\`
+10. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts runtime-overview --config ${input.outputRoot}/${input.configFilename}\`
+11. \`node --experimental-strip-types ./hosts/standalone-host/cli.ts serve --config ${input.outputRoot}/${input.configFilename}\`
 
 Notes:
 - the host is local/shareable by design

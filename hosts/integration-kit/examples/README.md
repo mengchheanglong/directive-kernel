@@ -17,3 +17,8 @@ CLI pairings:
 
 - `print-submission-example --shape <front_door|queue_only|fast_path|split_case>`
 - `submission-memory-dry-run --input-json-path <submission example>`
+
+Notes:
+
+- `discovery-submission-front-door.json` keeps a concrete `capability_gap_id` so hosts can exercise gap-aware front-door routing. When you dry-run that example, also pass `--unresolved-gap-id gap-example-front-door`.
+- The queue-only, fast-path, and split-case examples do not require that extra gap flag.
