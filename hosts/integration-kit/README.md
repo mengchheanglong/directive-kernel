@@ -27,6 +27,11 @@ Main references:
 - `shared/contracts/directive-kernel-goal-input.md`
 - `DIRECTIVE_GOAL.md`
 - `shared/contracts/runtime-to-host.md`
+- `hosts/integration-kit/FIRST_INTEGRATION.md`
 
 Use the starter folder when your host needs copied templates.
 Use direct package imports when your host can depend on the kernel repo directly.
+
+For the first real consuming-host path, start with:
+- `hosts/integration-kit/FIRST_INTEGRATION.md`
+- `hosts/integration-kit/examples/first-consuming-host.flow.ts`

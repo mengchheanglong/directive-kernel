@@ -1,0 +1,12 @@
+{
+  "goalId": "openclaw-current-goal",
+  "goalStatement": "Improve the host operating system with one bounded useful capability or one bounded engine improvement.",
+  "whyNow": "The host is integrating Directive Kernel for the first real bounded source-routing pass.",
+  "adoptionTarget": "architecture",
+  "constraints": [
+    "keep Discovery first",
+    "keep review explicit",
+    "do not widen autonomy"
+  ],
+  "successSignal": "The host can submit one source through Discovery and read back a clear kernel-owned state summary without reimplementing routing logic."
+}

@@ -4,6 +4,7 @@ export * from "./discovery-host-storage-bridge.memory.ts";
 export * from "./discovery-host-storage-bridge.filesystem.ts";
 export * from "./discovery-overview-reader.ts";
 export * from "./discovery-signal-adapter.ts";
+export * from "./first-host-integration.ts";
 export * from "./host-integration-acceptance.ts";
 export * from "./write-host-integration-acceptance-report.ts";
 export * from "./run-host-integration-acceptance-quickstart.ts";

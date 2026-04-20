@@ -13,12 +13,18 @@ import {
 import {
   runHostIntegrationAcceptanceQuickstart,
 } from "../lib/run-host-integration-acceptance-quickstart.ts";
+import {
+  runFirstHostIntegrationFlow,
+  type FirstHostGoalEnvelopeInput,
+  type FirstHostSourceInput,
+} from "../lib/first-host-integration.ts";
 import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
 
 type CommandName =
   | "acceptance-quickstart"
   | "submission-memory-dry-run"
-  | "print-submission-example";
+  | "print-submission-example"
+  | "first-integration-flow";
 
 type FlagMap = Record<string, string[]>;
 
@@ -34,6 +40,7 @@ Commands:
   acceptance-quickstart --host-name <name> --module-surface <package_import|starter_copy|mixed> --output-root <path> [--relative-output-path <path>] [--generated-at <iso>]
   submission-memory-dry-run --input-json-path <path> [--directive-root <path>] [--received-at <yyyy-mm-dd>] [--unresolved-gap-id <id> ...]
   print-submission-example --shape <front_door|queue_only|fast_path|split_case>
+  first-integration-flow --directive-root <path> --goal-json-path <path> --source-json-path <path> [--received-at <iso>]
 `);
 }
 
@@ -190,6 +197,41 @@ function handlePrintSubmissionExample(flags: FlagMap) {
   );
 }
 
+async function handleFirstIntegrationFlow(flags: FlagMap) {
+  const directiveRoot = readRequiredFlag(flags, "directive-root");
+  const goalJsonPath = readRequiredFlag(flags, "goal-json-path");
+  const sourceJsonPath = readRequiredFlag(flags, "source-json-path");
+  const receivedAt = readOptionalFlag(flags, "received-at");
+  const goal = readJson<FirstHostGoalEnvelopeInput>(goalJsonPath);
+  const source = readJson<FirstHostSourceInput>(sourceJsonPath);
+  const result = await runFirstHostIntegrationFlow({
+    directiveRoot,
+    goal,
+    source,
+    receivedAt,
+  });
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        ok: true,
+        command: "first-integration-flow",
+        directiveRoot,
+        goalSource: result.goalResolution.source,
+        request: result.request,
+        submission: result.submission,
+        snapshot: {
+          discoveryOverview: result.snapshot.discoveryOverview,
+          workspaceState: result.snapshot.workspaceState,
+          operatorInboxSummary: result.snapshot.operatorInbox.summary,
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
 async function main() {
   const { command, flags } = parseArgs(process.argv.slice(2));
 
@@ -207,6 +249,9 @@ async function main() {
       return;
     case "print-submission-example":
       handlePrintSubmissionExample(flags);
+      return;
+    case "first-integration-flow":
+      await handleFirstIntegrationFlow(flags);
       return;
     default:
       printUsage();

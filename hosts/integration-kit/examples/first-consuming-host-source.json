@@ -1,0 +1,11 @@
+{
+  "candidateId": "first-consuming-host-probe",
+  "candidateName": "First Consuming Host Probe",
+  "sourceType": "workflow-writeup",
+  "sourceReference": "https://example.com/first-consuming-host-probe",
+  "summary": "Probe whether a larger operating system can pass one bounded source into Directive Kernel and read back the routed state cleanly.",
+  "notes": "First host integration example flow.",
+  "containsWorkflowPattern": true,
+  "improvesDirectiveWorkspace": true,
+  "workflowBoundaryShape": "bounded_protocol"
+}
