@@ -125,7 +125,7 @@ const postConsumptionEvaluation: ArchitectureDeepTailStageDefinition = {
 };
 
 /**
- * All deep-tail stages in chain order (04 â†’ 09).
+ * All deep-tail stages in chain order (04 to 09).
  */
 export const ARCHITECTURE_DEEP_TAIL_STAGES = [
   implementationTarget,
@@ -171,4 +171,3 @@ export function matchesArchitectureDeepTailStagePath(
 ) {
   return relativePath.startsWith(stage.pathPrefix) || relativePath.startsWith(stage.storagePathPrefix);
 }
-

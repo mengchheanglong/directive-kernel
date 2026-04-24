@@ -59,4 +59,4 @@ Keep the host thin:
 - do not bypass Discovery to open Runtime or Architecture artifacts directly
 - do not replace the operator inbox with host-local lifecycle semantics
 
-The host may decide how to display state, but it should not redefine the kernel’s bounded workflow model.
+The host may decide how to display state, but it should not redefine the kernel's bounded workflow model.
