@@ -19,7 +19,8 @@
     "architecture/**/*.ts",
     "hosts/**/*.ts",
     "shared/**/*.ts",
-    "scripts/**/*.ts"
+    "scripts/**/*.ts",
+    "tests/**/*.ts"
   ],
   "exclude": [
     "ui/**",

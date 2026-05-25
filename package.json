@@ -12,12 +12,14 @@
     "frontend:install": "pnpm install",
     "frontend:build": "pnpm --filter @directive/kernel-ui build",
     "typecheck": "pnpm exec tsc --noEmit -p tsconfig.repo.json && pnpm --filter @directive/kernel-ui exec tsc --noEmit -p tsconfig.json",
-    "check:first-integration": "node --experimental-strip-types ./scripts/check-first-integration.ts",
-    "check:hardening": "node --experimental-strip-types ./scripts/check-system-hardening.ts",
+    "check:first-integration": "vitest run tests/integration/first-integration.test.ts",
+    "check:hardening": "vitest run tests/integration/hardening",
     "dev": "node --experimental-strip-types ./scripts/run-ui-dev.ts",
     "start": "pnpm --filter @directive/kernel-ui build && node --experimental-strip-types ./scripts/start-ui.ts",
     "standalone:cli": "node --experimental-strip-types ./hosts/standalone-host/cli.ts",
-    "web:serve": "node --experimental-strip-types ./hosts/web-host/cli.ts serve --directive-root ."
+    "web:serve": "node --experimental-strip-types ./hosts/web-host/cli.ts serve --directive-root .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "exports": {
     ".": "./index.ts",
@@ -69,6 +71,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
-    "tsx": "^4.21.0"
+    "fast-check": "^3.22.0",
+    "tsx": "^4.21.0",
+    "vitest": "^2.1.0"
   }
 }
