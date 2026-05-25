@@ -39,6 +39,10 @@ import {
   startStandaloneHostServer,
   startStandaloneHostServerFromConfig,
 } from "./server.ts";
+import {
+  formatTryCommandOutput,
+  runStandaloneHostTryCommand,
+} from "./try-command.ts";
 
 type CommandName =
   | "init"
@@ -75,7 +79,8 @@ type CommandName =
   | "runtime-blisspixel-deepr-descriptor-callable"
   | "runtime-live-mini-swe-agent"
   | "runtime-overview"
-  | "serve";
+  | "serve"
+  | "try";
 
 type FlagMap = Record<string, string[]>;
 
@@ -118,6 +123,7 @@ Commands:
   runtime-live-mini-swe-agent (--directive-root <path> | --config <path>) [--persistence-sqlite-path <path>]
   runtime-overview (--directive-root <path> | --config <path>) [--max-entries <n>] [--persistence-sqlite-path <path>]
   serve (--directive-root <path> | --config <path>) [--host <host>] [--port <port>] [--received-at <yyyy-mm-dd>] [--unresolved-gap-id <id> ...] [--auth-bearer-token <token>] [--persistence-sqlite-path <path>]
+  try [--output-root <path>]
 `);
 }
 
@@ -1016,6 +1022,13 @@ async function main() {
     process.on("SIGTERM", () => {
       void shutdown();
     });
+    return;
+  }
+
+  if (command === "try") {
+    const outputRoot = readOptionalFlag(flags, "output-root") ?? null;
+    const result = await runStandaloneHostTryCommand({ outputRoot });
+    process.stdout.write(`${formatTryCommandOutput(result)}\n`);
     return;
   }
 

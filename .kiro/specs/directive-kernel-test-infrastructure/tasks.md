@@ -140,18 +140,18 @@ Wire up Vitest as the kernel's test runner, add fast-check property tests for fo
   - Run `pnpm run typecheck` to confirm no TypeScript regressions from the new test files (the test files are TS and must satisfy `tsconfig.repo.json`'s `verbatimModuleSyntax` rules)
   - Ask the user if questions arise
 
-- [ ] 14. Add GitHub Actions CI workflow
+- [x] 14. Add GitHub Actions CI workflow
   - [x] 14.1 Add `.github/workflows/ci.yml`
     - Trigger on `push` and `pull_request`
     - Use `actions/checkout@v4`, `pnpm/action-setup@v4` (reads `packageManager` from `package.json`), `actions/setup-node@v4` with `node-version: "22"` and `cache: "pnpm"`
     - Run `pnpm install --frozen-lockfile`, then `pnpm run typecheck`, then `pnpm run test`
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
-  - [~] 14.2 Verify the workflow on a feature branch
+  - [x] 14.2 Verify the workflow on a feature branch
     - Push the branch and confirm the workflow runs and passes on GitHub
     - If the runner cannot pull `pnpm@10.32.1` from the `packageManager` field, pin it explicitly with `pnpm/action-setup@v4` `version` input
     - _Requirements: 10.2, 10.3_
 
-- [~] 15. Final checkpoint — close the F1 work
+- [x] 15. Final checkpoint — close the F1 work
   - Confirm `pnpm run test` is green locally and in CI
   - Confirm `pnpm run check:first-integration` and `pnpm run check:hardening` still work as call sites (they now route through Vitest)
   - Update `Fix_Plan.md` to mark F1 complete and note any property failures discovered during this work as separate Fix Plan items

@@ -21,47 +21,47 @@ Order in the table reflects recommended sequencing within each priority band.
 
 ## Priority summary
 
-| # | Item | Priority | Effort |
-|---|------|----------|--------|
-| F1 | Wire up real test infrastructure | P0 | M |
-| F2 | Compile to JS for production runs | P0 | M |
-| F3 | Build a 60-second hello world quickstart | P0 | S |
-| F4 | Vocabulary diet + glossary | P0 | M |
-| F5 | Audit and prune `shared/contracts/` | P1 | M |
-| F6 | Resolve the three "runtime" surface confusion | P1 | S |
-| F7 | Freeze `DirectiveEngineRunRecord` schema + migration policy | P1 | M |
-| F8 | Decide UI direction: read-only vs operator workbench | P1 | M–L |
-| F9 | Surface-area prune in `engine/` and `runtime/lib/` | P2 | L |
-| F10 | Pick an audience and over-serve them | P2 | varies |
-| F11 | Prefix prune and file/type naming consistency | P1 | M |
-| F12 | Decide on the numbered folder convention (keep, simplify, drop) | P2 | S |
-| F13 | Concurrency / locking story for filesystem persistence | P1 | M |
-| F14 | Data retention and ledger rotation policy | P1 | M |
-| F15 | Security posture: threat model, SSRF protection, input sanitization | P0 | M |
-| F16 | Schema ↔ example drift CI check | P2 | S |
+| # | Item | Priority | Effort | Status |
+|---|------|----------|--------|--------|
+| F1 | Wire up real test infrastructure | P0 | M | ✅ done |
+| F2 | Compile to JS for production runs | P0 | M | |
+| F3 | Build a 60-second hello world quickstart | P0 | S | ✅ done |
+| F4 | Vocabulary diet + glossary | P0 | M | |
+| F5 | Audit and prune `shared/contracts/` | P1 | M | |
+| F6 | Resolve the three "runtime" surface confusion | P1 | S | |
+| F7 | Freeze `DirectiveEngineRunRecord` schema + migration policy | P1 | M | |
+| F8 | Decide UI direction: read-only vs operator workbench | P1 | M–L | |
+| F9 | Surface-area prune in `engine/` and `runtime/lib/` | P2 | L | |
+| F10 | Pick an audience and over-serve them | P2 | varies | |
+| F11 | Prefix prune and file/type naming consistency | P1 | M | |
+| F12 | Decide on the numbered folder convention (keep, simplify, drop) | P2 | S | |
+| F13 | Concurrency / locking story for filesystem persistence | P1 | M | |
+| F14 | Data retention and ledger rotation policy | P1 | M | |
+| F15 | Security posture: threat model, SSRF protection, input sanitization | P0 | M | |
+| F16 | Schema ↔ example drift CI check | P2 | S | |
 
 ---
 
 ## F1 — Wire up real test infrastructure
 
-**Priority:** P0 · **Effort:** M
+**Status:** ✅ done · **Priority:** P0 · **Effort:** M
 
-**Problem.** Schema version is 8, the routing assessor has deep branching, the decision ledger is the central learning loop, the approval boundary is a runtime invariant — and there is no kernel-level test runner. `check:first-integration` and `check:hardening` are bespoke scripts, not a harness. The Python research-engine has tests; the TypeScript kernel does not.
+**Spec:** `.kiro/specs/directive-kernel-test-infrastructure/`
 
-**Fix.**
-1. Add Vitest as the kernel test runner. Add `pnpm run test` and `pnpm run test:watch` scripts.
-2. Add `fast-check` for property-based tests on:
-   - `process-fingerprint.ts` — same input → same hash; small mutations → different hash.
-   - `decision-policy-ledger.ts` — append-only invariant; suggestion compilation determinism.
-   - `approval-boundary.ts` — guards reject every disallowed state.
-   - `source-input-normalization.ts` — round-trip stability.
-3. Add unit tests for every lane definition in `engine/directive-workspace-lanes.ts` covering each plan callback path.
-4. Convert `check:first-integration` and `check:hardening` into Vitest suites under `tests/integration/` so they run with `pnpm test` and produce structured output.
-5. Add a CI config (GitHub Actions or equivalent) running `typecheck` + `test` on push.
+**Outcome.** Vitest 2.x harness with fast-check 3.x property tests. 46 tests across 10 files, ~3.3s wall clock. CI workflow at `.github/workflows/ci.yml` runs typecheck + test on push and PR; verified green on first push. The custom `check:first-integration` and `check:hardening` scripts now invoke Vitest while keeping their original npm script names; the original `scripts/check-*.ts` entry points kept for one cycle as deprecation shims.
 
-**Files.** New `vitest.config.ts`, `tests/` tree, updated `package.json` scripts. Keep the existing scripts as thin wrappers for back-compat or delete after migration.
+**Coverage delivered.**
+- 6 property tests (100 iterations each) covering process-fingerprint determinism + sensitivity, decision-policy-ledger append-only invariant + suggestion compiler determinism, approval-boundary classification consistency across all four guards, and source-input-normalization idempotence.
+- 17 lane unit tests covering all three lanes × four plan callbacks, both `transformationSignal` branches on the runtime proof, the architecture `planIntegration` `nextAction` invariant, and `laneOverrides` propagation.
+- 9 first-integration tests (one `it(...)` per original `assert.equal`) and 12 hardening tests (one `it(...)` per migrated helper).
 
-**Risk.** Discovering bugs the codebase has been silently carrying. That is the point — better now than from a consumer.
+**Side fixes during F1.**
+- `tsconfig.repo.json` `include` now covers `tests/**/*.ts` so typecheck actually validates test files.
+- `vitest.config.ts` ships a tiny resolver plugin that defers `node:sqlite` to `createRequire` (Vite 5 does not yet recognize that experimental Node builtin).
+
+**Unblocks:** F2, F4, F7, F11, F13, F14.
+
+**Original scope note (preserved for history).** ~~The kernel uses `node --experimental-strip-types` for direct TS execution today. Tests should run on the same model OR use Vitest's native TS support — pick whichever is cleaner.~~ → Chose Vitest's native TS support via Vite. The `--experimental-strip-types` flag is no longer needed by the test runner; production scripts still use it pending F2.
 
 ---
 
@@ -103,6 +103,32 @@ Order in the table reflects recommended sequencing within each priority band.
 **Files.** New command in `hosts/standalone-host/cli.ts`, updated `README.md`, possibly new `docs/quickstart.md`.
 
 **Risk.** Low. The command composes existing entry points.
+
+---
+
+## F3 — Build a 60-second hello world quickstart
+
+**Status:** ✅ done · **Priority:** P0 · **Effort:** S
+
+**Spec:** `.kiro/specs/directive-kernel-hello-world-quickstart/`
+
+**Outcome.** `pnpm try` runs the kernel end-to-end against the canonical sample source in a fresh `os.tmpdir()` directive root and prints the routing decision, run id, and artifact path on six lines plus a next-step pointer. No config files, no JSON to write. README opens with a 10-line "Try It" block before "What This Repo Is For".
+
+**Components delivered.**
+- `hosts/standalone-host/try-command.ts` — exports `runStandaloneHostTryCommand` (in-process runner) and `formatTryCommandOutput` (printer). The runner reads the integration-kit's existing `discovery-submission-front-door.json` example, builds an inline goal envelope, seeds `discovery/capability-gaps.json` with the sample's gap id (because the intake-queue writer rejects unknown gap ids), and composes `runFirstHostIntegrationFlow`.
+- `hosts/standalone-host/cli.ts` — new `try` subcommand wired into the dispatcher with `--output-root` flag and matching usage line.
+- `package.json` — new `pnpm try` script (and the `try` subcommand also accessible via `standalone:cli try`).
+- `README.md` — new "Try It" block at the top, 10 lines, with a TODO marker for the deferred terminal cast.
+- `tests/integration/try-command.test.ts` — 6 in-process tests covering run id non-empty, DIRECTIVE_GOAL.md content, candidate id, lane id, artifact existence, and a bounded property test asserting artifact-path realness across default/existing/missing-nested override roots.
+- `tests/integration/try-command-cli.test.ts` — 2 subprocess tests asserting plain-text output, regex shapes, no-JSON guarantee, and the `--output-root` missing-value error path.
+
+**Side fix during F3.** Task 1's runner originally produced `capability_gap_id must reference an unresolved gap` because `runFirstHostIntegrationFlow` scaffolds an empty `capability-gaps.json`. The runner now seeds the gap before invoking the flow, exploiting the prepare step's `if (!fs.existsSync)` short-circuit. The sample source JSON stays canonical.
+
+**Out of scope (deferred).**
+- `--serve` flag to boot the web host inline. Print-and-exit is the current model; adding `--serve` later is additive.
+- Recorded terminal cast. README has a `<!-- TODO -->` marker.
+
+**Original scope note (preserved for history).** Task 5.2 (property test) and 5.3 (subprocess smoke) were spec'd as optional but executed as required because Requirement 7.5 explicitly mandates the subprocess case.
 
 ---
 

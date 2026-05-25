@@ -9,6 +9,17 @@ Use it when you want your project to:
 - turn useful results into something reusable
 - see the current state in a simple host or UI
 
+## Try It
+
+```powershell
+pnpm install
+pnpm try
+```
+
+That runs the kernel end-to-end against a sample source in a fresh temp directive root and prints the routing decision and artifact path. No config files, no JSON to write.
+
+<!-- TODO: replace this block with a recorded terminal cast (Fix_Plan.md F3 follow-up). -->
+
 ## What This Repo Is For
 
 Use Directive Kernel when you want your project to take in outside sources, judge them against your current goal, and move them through a clear workflow instead of handling everything by hand.

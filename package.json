@@ -17,6 +17,7 @@
     "dev": "node --experimental-strip-types ./scripts/run-ui-dev.ts",
     "start": "pnpm --filter @directive/kernel-ui build && node --experimental-strip-types ./scripts/start-ui.ts",
     "standalone:cli": "node --experimental-strip-types ./hosts/standalone-host/cli.ts",
+    "try": "node --experimental-strip-types ./hosts/standalone-host/cli.ts try",
     "web:serve": "node --experimental-strip-types ./hosts/web-host/cli.ts serve --directive-root .",
     "test": "vitest run",
     "test:watch": "vitest"
