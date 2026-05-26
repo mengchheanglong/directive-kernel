@@ -30,6 +30,8 @@ jobs:
 
       - run: pnpm run check:contracts
 
+      - run: pnpm run check:examples
+
       - run: pnpm run test
 
       - run: pnpm run check:build
