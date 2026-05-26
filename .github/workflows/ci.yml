@@ -28,6 +28,8 @@ jobs:
 
       - run: pnpm run check:naming
 
+      - run: pnpm run check:contracts
+
       - run: pnpm run test
 
       - run: pnpm run check:build

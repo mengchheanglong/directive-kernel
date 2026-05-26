@@ -153,7 +153,7 @@ DirectiveMirroredRuntimeProofOpen...      → MirroredRuntimeProofOpen...
 | `engine/execution/directive-runner-state.ts` | `engine/execution/runner-state.ts` |
 | `shared/schemas/directive-engine-run-record.schema.json` | `shared/schemas/run-record.schema.json` (Section A row 13) |
 | `shared/contracts/directive-kernel-goal-input.md` | `shared/contracts/goal-input.md` |
-| `shared/contracts/directive-kernel-repo-baseline.md` | `shared/contracts/repo-baseline.md` |
+| `shared/contracts/directive-kernel-repo-baseline.md` | `docs/contracts/repo-baseline.md` |
 
 **Note for `engine/directive-engine.ts` → `engine/index.ts`:** before moving, check whether `engine/index.ts` already exists and merge cleanly. The current `engine/directive-engine.ts` is the kernel's main orchestrator class; it makes sense as `engine/index.ts`.
 

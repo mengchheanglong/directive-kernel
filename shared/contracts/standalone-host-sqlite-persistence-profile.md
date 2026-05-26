@@ -1,3 +1,5 @@
+**Enforced by:** hosts/standalone-host/persistence.ts
+
 # Standalone Host SQLite Persistence Profile
 
 This contract defines the optional SQLite-backed persistence lane for the Directive Workspace standalone reference host.

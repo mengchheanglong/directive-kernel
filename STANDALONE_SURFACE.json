@@ -59,7 +59,7 @@
     },
     {
       "id": "kernel-goal-contract",
-      "path": "shared/contracts/directive-kernel-goal-input.md",
+      "path": "shared/contracts/goal-input.md",
       "kind": "product_doc"
     },
     {

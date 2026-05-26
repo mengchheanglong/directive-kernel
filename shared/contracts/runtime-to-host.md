@@ -1,3 +1,5 @@
+**Enforced by:** runtime/lib/host/promotion-specification.ts
+
 # Runtime To Host Contract
 
 Use this contract when a host loads a Runtime promotion specification for an explicitly approved Runtime case.

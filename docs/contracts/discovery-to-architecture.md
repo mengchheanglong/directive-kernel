@@ -28,6 +28,6 @@ These fields are advisory. Architecture owns the full analysis via `source-analy
 
 - Discovery routes.
 - Architecture performs deeper evaluation.
-- When the handoff involves a source, Architecture's next required step is a source analysis per `shared/contracts/source-analysis-contract.md`.
+- When the handoff involves a source, Architecture's next required step is a source analysis per `docs/contracts/source-analysis-contract.md`.
 - Architecture should not skip the source-analysis step and jump directly to extraction or adoption.
-- The source-analysis contract output feeds the adaptation-decision contract (`shared/contracts/adaptation-decision-contract.md`), which governs the extract → adapt → improve chain.
+- The source-analysis contract output feeds the adaptation-decision contract (`docs/contracts/adaptation-decision-contract.md`), which governs the extract → adapt → improve chain.

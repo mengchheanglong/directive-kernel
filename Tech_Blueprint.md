@@ -246,7 +246,7 @@ Handoff → Bounded Closeout → Adoption → Materialization
 ### 8.1 Contracts (`shared/contracts/`)
 
 ~50 markdown behavioral contracts. Key ones:
-- `directive-kernel-goal-input.md` — goal envelope (goalId, goalStatement, whyNow, adoptionTarget, constraints, successSignal)
+- `goal-input.md` — goal envelope (goalId, goalStatement, whyNow, adoptionTarget, constraints, successSignal)
 - `host-integration-boundary.md`, `host-callable-adapter.md` — host seam contracts
 - `discovery-to-runtime.md`, `discovery-to-architecture.md` — lane handoff contracts
 - `lifecycle-transition-policy.md`, `command-class-approval-policy.md` — governance
@@ -390,7 +390,7 @@ No kernel-level test runner is wired. The Python research-engine has `python -m 
 
 ### 13.1 Contract
 
-Defined in `shared/contracts/directive-kernel-goal-input.md`:
+Defined in `shared/contracts/goal-input.md`:
 
 ```json
 {

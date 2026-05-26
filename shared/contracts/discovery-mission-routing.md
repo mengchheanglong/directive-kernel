@@ -1,3 +1,5 @@
+**Enforced by:** discovery/lib/front-door/mission-routing.ts
+
 # Discovery Mission Routing
 
 Last updated: 2026-03-22

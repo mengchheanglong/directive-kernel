@@ -1,7 +1,7 @@
 # Architecture Review Checklist Template
 
 Use this when an Architecture proposal, slice, policy, or contract needs a structured review pass.
-If the review needs a deterministic next-state recommendation, feed the completed structure into `shared/lib/architecture-review-resolution.ts`.
+If the review needs a deterministic next-state recommendation, feed the completed structure into `architecture/lib/adoption/review-resolution.ts`.
 
 - Review profile:
   - `architecture_review_guardrails/v1`

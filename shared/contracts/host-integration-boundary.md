@@ -1,3 +1,5 @@
+**Enforced by:** hosts/standalone-host/bootstrap.ts
+
 # Host Integration Boundary
 
 Directive Workspace is a **standalone product**, not a Mission Control feature set.

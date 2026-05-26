@@ -1,3 +1,5 @@
+**Enforced by:** runtime/lib/host/promotion-specification.ts
+
 # Architecture To Runtime Handoff
 
 Use this handoff when Architecture has extracted a useful callable/runtime follow-up and the next step belongs in Runtime rather than further framework evaluation.

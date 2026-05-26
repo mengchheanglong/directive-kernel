@@ -1,3 +1,5 @@
+**Enforced by:** hosts/integration-kit/lib/host-integration-acceptance.ts
+
 # Host Integration Acceptance
 
 This contract defines the minimum acceptance standard for any host that claims to integrate Directive Workspace correctly.

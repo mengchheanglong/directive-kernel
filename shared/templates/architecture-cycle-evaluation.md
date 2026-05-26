@@ -1,7 +1,7 @@
 # Architecture Cycle Evaluation
 
 Use this template at the start of each new Architecture wave or cycle to evaluate self-improvement.
-Enforces `shared/contracts/architecture-self-improvement-contract.md`.
+Enforces `docs/contracts/architecture-self-improvement-contract.md`.
 
 ---
 

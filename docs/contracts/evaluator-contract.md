@@ -42,7 +42,7 @@ Applicable metrics for source adaptation:
 
 These are informational evaluators, not gates. They help Architecture track whether the source-adaptation chain is producing genuine adaptation/improvement value or silently defaulting to the weak `extract → adopt` pattern.
 
-Reference: `shared/contracts/source-analysis-contract.md`, `shared/contracts/adaptation-decision-contract.md`
+Reference: `docs/contracts/source-analysis-contract.md`, `docs/contracts/adaptation-decision-contract.md`
 
 ## Relationship to existing verification
 

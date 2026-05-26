@@ -24,7 +24,7 @@ Use `lib/` for real executable dependencies. Use `starter/` only when you need c
 Main references:
 - `shared/contracts/host-integration-boundary.md`
 - `shared/contracts/host-integration-acceptance.md`
-- `shared/contracts/directive-kernel-goal-input.md`
+- `shared/contracts/goal-input.md`
 - `DIRECTIVE_GOAL.md`
 - `shared/contracts/runtime-to-host.md`
 - `hosts/integration-kit/FIRST_INTEGRATION.md`

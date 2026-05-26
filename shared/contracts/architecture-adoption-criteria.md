@@ -1,3 +1,5 @@
+**Enforced by:** architecture/lib/adoption/resolution.ts
+
 # Architecture Adoption Criteria
 
 Profile: `architecture_adoption_criteria/v1`

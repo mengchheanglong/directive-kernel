@@ -1,3 +1,5 @@
+**Enforced by:** architecture/lib/materialization/due-check.ts
+
 # Architecture Artifact Lifecycle
 
 Profile: `architecture_artifact_lifecycle/v2`

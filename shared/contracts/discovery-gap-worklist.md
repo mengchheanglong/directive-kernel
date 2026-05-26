@@ -1,3 +1,5 @@
+**Enforced by:** discovery/lib/gaps/gap-worklist-generator.ts
+
 # Discovery Gap Worklist
 
 Last updated: 2026-03-22

@@ -1,3 +1,5 @@
+**Enforced by:** engine/mission/evolution.ts
+
 # Mission Evolution
 
 Mission evolution records capture approved changes to the active engine mission.

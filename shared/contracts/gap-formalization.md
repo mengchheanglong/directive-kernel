@@ -1,3 +1,5 @@
+**Enforced by:** engine/mission/gap-formalization.ts
+
 # Gap Formalization
 
 Gap formalization converts repeated gap-radar pressure into an explicit capability gap.

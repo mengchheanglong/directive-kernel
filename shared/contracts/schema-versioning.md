@@ -1,3 +1,5 @@
+**Enforced by:** shared/schemas/migrations/index.ts
+
 # Schema versioning policy
 
 This document is the source of truth for how `@directive/kernel` versions

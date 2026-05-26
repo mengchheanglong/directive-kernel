@@ -27,7 +27,7 @@ readable companion to that audit.
 - **Artifact**: A persisted JSON document produced by the kernel during a
   run. See [`shared/contracts/`](./shared/contracts/).
 - **Audit**: An auditable record or a code review of kernel output. See
-  [`shared/contracts/design-review-skill-guard.md`](./shared/contracts/design-review-skill-guard.md).
+  [`docs/contracts/design-review-skill-guard.md`](./docs/contracts/design-review-skill-guard.md).
 - **Bearer**: A bearer token used by hosts to authenticate with the
   kernel. See
   [`shared/contracts/standalone-host-api-auth-guard.md`](./shared/contracts/standalone-host-api-auth-guard.md).
@@ -62,14 +62,14 @@ readable companion to that audit.
   [`discovery/README.md`](./discovery/README.md).
 - **Evaluation**: The post-consumption evaluation stage where operator
   feedback is collected. See
-  [`shared/contracts/evaluator-contract.md`](./shared/contracts/evaluator-contract.md).
+  [`docs/contracts/evaluator-contract.md`](./docs/contracts/evaluator-contract.md).
 - **Event**: An event record produced by the kernel. See
   [`engine/storage.ts`](./engine/storage.ts).
 - **Experiment**: An architecture experiment that tests a proposed change
   before adoption. See
   [`architecture/lib/experiments/`](./architecture/lib/experiments/).
 - **Feedback**: Operator feedback collected during evaluation. See
-  [`shared/contracts/experiment-score-feedback.md`](./shared/contracts/experiment-score-feedback.md).
+  [`docs/contracts/experiment-score-feedback.md`](./docs/contracts/experiment-score-feedback.md).
 - **Front door**: The Discovery submission entry point where sources
   enter the kernel. See
   [`discovery/lib/front-door/index.ts`](./discovery/lib/front-door/index.ts).
@@ -157,10 +157,10 @@ readable companion to that audit.
   [`shared/schemas/run-record.schema.json`](./shared/schemas/run-record.schema.json).
 - **Seam**: A workflow seam that marks a decision point between lifecycle
   stages. See
-  [`shared/contracts/lifecycle-transition-policy.md`](./shared/contracts/lifecycle-transition-policy.md).
+  [`docs/contracts/lifecycle-transition-policy.md`](./docs/contracts/lifecycle-transition-policy.md).
 - **Signal**: A source signal token used in routing to classify the
   source. See
-  [`shared/contracts/intake-stack-signals.md`](./shared/contracts/intake-stack-signals.md).
+  [`docs/contracts/intake-stack-signals.md`](./docs/contracts/intake-stack-signals.md).
 - **Snapshot**: A snapshot artifact that captures the state of a
   directive root at a point in time. See
   [`engine/storage.ts`](./engine/storage.ts).

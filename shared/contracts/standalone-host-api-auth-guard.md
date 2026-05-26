@@ -1,3 +1,5 @@
+**Enforced by:** hosts/standalone-host/server.ts
+
 # Standalone Host API Auth Guard
 
 This contract defines the bounded API auth rule for the standalone reference host.

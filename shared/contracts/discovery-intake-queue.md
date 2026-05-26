@@ -1,3 +1,5 @@
+**Enforced by:** discovery/lib/intake/queue-writer.ts
+
 # Discovery Intake Queue Contract
 
 ## Mode

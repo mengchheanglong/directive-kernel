@@ -1,3 +1,5 @@
+**Enforced by:** hosts/standalone-host/config.ts
+
 # Standalone Host Runtime Profile
 
 This contract defines the bounded runtime profile for the product-owned standalone reference host.

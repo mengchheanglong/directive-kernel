@@ -72,7 +72,7 @@ Common ways to provide goals:
    - if your project has no goal model yet, keep Discovery review-first until an operator sets direction
 
 Goal contract:
-- [shared/contracts/directive-kernel-goal-input.md](./shared/contracts/directive-kernel-goal-input.md)
+- [shared/contracts/goal-input.md](./shared/contracts/goal-input.md)
 
 Shared helper:
 - `@directive/kernel/shared/directive-goal`

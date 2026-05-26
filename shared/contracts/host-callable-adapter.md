@@ -1,3 +1,5 @@
+**Enforced by:** runtime/lib/host/callable-adapter-contract.ts
+
 # Host Callable Adapter Contract
 
 Contract version: `host_callable_adapter.v1`

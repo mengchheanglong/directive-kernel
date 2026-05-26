@@ -1,3 +1,5 @@
+**Enforced by:** shared/lib/goal.ts
+
 # Directive Kernel Goal Input
 
 Directive Kernel needs current goal context from the consuming project.

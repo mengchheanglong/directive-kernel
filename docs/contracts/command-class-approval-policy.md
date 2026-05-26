@@ -7,7 +7,7 @@ Canonical policy id:
 - `command_class_approval_policy/v1`
 
 Linked contract:
-- `shared/contracts/command-mediation-contract.md`
+- `docs/contracts/command-mediation-contract.md`
 
 Current candidate:
 - `al-parked-cli-anything`
