@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/runtime-follow-up",
+  "title": "Runtime Follow-Up Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "follow_up_date",
+    "current_decision_state",
+    "origin_track",
+    "proposed_host",
+    "current_status"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1 },
+    "follow_up_date": { "type": "string", "format": "date" },
+    "current_decision_state": { "type": "string", "minLength": 1 },
+    "origin_track": { "type": "string", "minLength": 1 },
+    "runtime_value_to_operationalize": { "type": "string" },
+    "proposed_host": { "type": "string", "minLength": 1 },
+    "proposed_integration_mode": { "type": "string" },
+    "source_pack_allowlist_profile": { "type": "string" },
+    "allowed_export_surfaces": { "type": "array", "items": { "type": "string" } },
+    "excluded_baggage": { "type": "array", "items": { "type": "string" } },
+    "promotion_contract_path": { "type": "string" },
+    "reentry_preconditions": { "type": "array", "items": { "type": "string" } },
+    "required_proof": { "type": "array", "items": { "type": "string" } },
+    "required_gates": { "type": "array", "items": { "type": "string" } },
+    "trial_scope_limit": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "rollback": { "type": "string" },
+    "no_op_path": { "type": "string" },
+    "review_cadence": { "type": "string" },
+    "current_status": { "type": "string", "minLength": 1 }
+  }
+}

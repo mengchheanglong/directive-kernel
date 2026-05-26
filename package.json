@@ -17,6 +17,7 @@
     "check:build": "pnpm run build && node ./scripts/run-with-check-build.mjs",
     "check:naming": "tsx scripts/check-naming.ts",
     "check:contracts": "tsx scripts/check-contracts.ts",
+    "check:examples": "tsx scripts/check-example-schemas.ts",
     "dev": "tsx ./scripts/run-ui-dev.ts",
     "start": "pnpm run build && pnpm --filter @directive/kernel-ui build && node ./dist/hosts/web-host/cli.js serve --directive-root .",
     "standalone:cli": "node ./dist/hosts/standalone-host/cli.js",
@@ -308,6 +309,8 @@
   "devDependencies": {
     "@types/node": "^25.5.2",
     "fast-check": "^3.22.0",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vitest": "^2.1.0"

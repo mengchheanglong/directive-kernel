@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/first-consuming-host-goal-envelope",
+  "title": "First Consuming Host Goal Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goalId",
+    "goalStatement",
+    "whyNow",
+    "adoptionTarget",
+    "successSignal"
+  ],
+  "properties": {
+    "goalId": { "type": "string", "minLength": 1 },
+    "goalStatement": { "type": "string", "minLength": 1 },
+    "whyNow": { "type": "string", "minLength": 1 },
+    "adoptionTarget": { "type": "string", "minLength": 1 },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "successSignal": { "type": "string", "minLength": 1 }
+  }
+}

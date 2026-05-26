@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/runtime-record",
+  "title": "Runtime Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "runtime_record_date",
+    "current_status"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1 },
+    "runtime_record_date": { "type": "string", "format": "date" },
+    "origin_path": { "type": "string" },
+    "linked_follow_up_record": { "type": "string" },
+    "runtime_objective": { "type": "string" },
+    "proposed_host": { "type": "string" },
+    "proposed_runtime_surface": { "type": "string" },
+    "execution_slice": { "type": "string" },
+    "required_proof": { "type": "string" },
+    "required_gates": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "rollback": { "type": "string" },
+    "current_status": { "type": "string", "minLength": 1 },
+    "next_decision_point": { "type": "string" },
+    "supporting_contracts": { "type": "array", "items": { "type": "string" } }
+  }
+}

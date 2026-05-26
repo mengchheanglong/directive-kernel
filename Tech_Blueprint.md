@@ -237,7 +237,7 @@ Handoff → Bounded Closeout → Adoption → Materialization
 
 ### 7.4 Artifact Folders (in consuming project)
 
-`01-experiments/` → `02-adopted/` → `03-deferred-or-rejected/` → `04-materialization/{04-targets, 05-results, 06-retained, 07-integration, 08-consumption, 09-post-consumption}`
+`01-experiments/` → `02-adopted/` → `03-deferred-or-rejected/` → `04-materialization/{implementation-targets, implementation-results, retained, integration-records, consumption-records, post-consumption-evaluations}`
 
 ---
 

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/PROMOTION_PROFILES",
+  "title": "Promotion Profiles",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "updatedAt",
+    "policy",
+    "notes",
+    "profiles"
+  ],
+  "properties": {
+    "status": { "type": "string", "minLength": 1 },
+    "updatedAt": { "type": "string", "format": "date" },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selectorField",
+        "familyField",
+        "proofShapeField",
+        "primaryHostCheckerField",
+        "resolutionRule",
+        "proofShapeRule",
+        "hostCheckerRule",
+        "nonApplicableFieldRule"
+      ],
+      "properties": {
+        "selectorField": { "type": "string" },
+        "familyField": { "type": "string" },
+        "proofShapeField": { "type": "string" },
+        "primaryHostCheckerField": { "type": "string" },
+        "resolutionRule": { "type": "string" },
+        "proofShapeRule": { "type": "string" },
+        "hostCheckerRule": { "type": "string" },
+        "nonApplicableFieldRule": { "type": "string" }
+      }
+    },
+    "notes": { "type": "array", "items": { "type": "string" } },
+    "profiles": { "type": "array" }
+  }
+}

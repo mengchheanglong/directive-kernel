@@ -68,12 +68,12 @@ const ARCHITECTURE_SCAFFOLD_DIRS = [
   path.join("architecture", "01-experiments"),
   path.join("architecture", "02-adopted"),
   path.join("architecture", "03-deferred-or-rejected"),
-  path.join("architecture", "04-materialization", "04-implementation-targets"),
-  path.join("architecture", "04-materialization", "05-implementation-results"),
-  path.join("architecture", "04-materialization", "06-retained"),
-  path.join("architecture", "04-materialization", "07-integration-records"),
-  path.join("architecture", "04-materialization", "08-consumption-records"),
-  path.join("architecture", "04-materialization", "09-post-consumption-evaluations"),
+  path.join("architecture", "04-materialization", "implementation-targets"),
+  path.join("architecture", "04-materialization", "implementation-results"),
+  path.join("architecture", "04-materialization", "retained"),
+  path.join("architecture", "04-materialization", "integration-records"),
+  path.join("architecture", "04-materialization", "consumption-records"),
+  path.join("architecture", "04-materialization", "post-consumption-evaluations"),
 ] as const;
 
 const RUNTIME_SCAFFOLD_DIRS = [
@@ -416,7 +416,7 @@ Contents:
 - \`directive-root/\` - local Directive root for Discovery/runtime artifacts
 - canonical lane scaffold:
   - \`discovery/01-intake\` ... \`discovery/reference\`
-  - \`architecture/01-experiments\` ... \`architecture/04-materialization/09-post-consumption-evaluations\`
+  - \`architecture/01-experiments\` ... \`architecture/04-materialization/post-consumption-evaluations\`
   - \`runtime/00-follow-up\` ... \`runtime/08-registry\`
 - \`${DEFAULT_STANDALONE_BOOTSTRAP_EXAMPLE_SUBMISSION_FILENAME}\` - queue-only Discovery submission example
 - \`${DEFAULT_STANDALONE_BOOTSTRAP_RUNTIME_FOLLOW_UP_FILENAME}\` - Runtime follow-up example

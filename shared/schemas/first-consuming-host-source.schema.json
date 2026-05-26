@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/first-consuming-host-source",
+  "title": "First Consuming Host Source",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidateId",
+    "candidateName",
+    "sourceType",
+    "sourceReference",
+    "summary",
+    "notes"
+  ],
+  "properties": {
+    "candidateId": { "type": "string", "minLength": 1 },
+    "candidateName": { "type": "string", "minLength": 1 },
+    "sourceType": { "type": "string", "minLength": 1 },
+    "sourceReference": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "notes": { "type": "string", "minLength": 1 },
+    "containsWorkflowPattern": { "type": "boolean" },
+    "improvesDirectiveWorkspace": { "type": "boolean" },
+    "workflowBoundaryShape": { "type": "string", "minLength": 1 }
+  }
+}

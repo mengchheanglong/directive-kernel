@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/runtime-proof-bundle",
+  "title": "Runtime Proof Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "proof_date",
+    "pass_fail_summary",
+    "status"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1 },
+    "proof_date": { "type": "string", "format": "date" },
+    "linked_runtime_record": { "type": "string" },
+    "required_proof_items": { "type": "array", "items": { "type": "string" } },
+    "validation_commands": { "type": "array", "items": { "type": "string" } },
+    "source_proof_artifacts": { "type": "array", "items": { "type": "string" } },
+    "gate_snapshot": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "overall_result": { "type": "string" },
+        "evaluated_gates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "command": { "type": "string" },
+              "result": { "type": "string" }
+            }
+          }
+        },
+        "evidence": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "pass_fail_summary": { "type": "string", "minLength": 1 },
+    "rollback_verification": { "type": "string" },
+    "status": { "type": "string", "minLength": 1 }
+  }
+}

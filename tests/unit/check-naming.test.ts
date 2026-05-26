@@ -12,6 +12,8 @@ const FIXTURE: Record<string, string> = {
     "export const x = 1;",
   "runtime/lib/openers/follow-up.ts":
     "export const ok = () => {};",
+  "architecture/04-materialization/04-bad/some-file.ts":
+    "export const x = 1;",
 };
 
 describe("check-naming", () => {
@@ -23,5 +25,6 @@ describe("check-naming", () => {
     expect(byRule("folder-prefix-filename").length).toBeGreaterThanOrEqual(1);
     expect(byRule("directive-prefix-export").length).toBeGreaterThanOrEqual(1);
     expect(byRule("double-prefix-filename").length).toBeGreaterThanOrEqual(1);
+    expect(byRule("nested-numbered-subfolder").length).toBe(1);
   });
 });

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/runtime-registry-entry",
+  "title": "Runtime Registry Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "registry_date",
+    "host",
+    "runtime_status"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1 },
+    "registry_date": { "type": "string", "format": "date" },
+    "linked_promotion_record": { "type": "string" },
+    "host": { "type": "string", "minLength": 1 },
+    "runtime_surface": { "type": "string" },
+    "runtime_status": { "type": "string", "minLength": 1 },
+    "proof_path": { "type": "string" },
+    "last_validated_by": { "type": "string" },
+    "last_validation_date": { "type": "string", "format": "date" },
+    "active_risks": { "type": "array", "items": { "type": "string" } },
+    "rollback_path": { "type": "string" },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -18,4 +18,6 @@
 
    The script exits 0 on a clean tree and 1 when any violation is found. Violation details are printed to stderr.
 
-6. **Related documents.** See [GLOSSARY.md](GLOSSARY.md) for the canonical vocabulary and [shared/contracts/schema-versioning.md](shared/contracts/schema-versioning.md) for schema evolution policies.
+6. **Top-level lane folders use a numeric prefix when canonical ordering matters; nested folders inside any lane do NOT use a numeric prefix.** For example, `architecture/01-experiments/` and `architecture/04-materialization/` are ordered top-level lanes; `architecture/04-materialization/implementation-targets/` (not `04-implementation-targets/`) is a nested subfolder whose sibling order is not meaningful.
+
+7. **Related documents.** See [GLOSSARY.md](GLOSSARY.md) for the canonical vocabulary and [shared/contracts/schema-versioning.md](shared/contracts/schema-versioning.md) for schema evolution policies.

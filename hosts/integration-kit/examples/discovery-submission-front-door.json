@@ -1,4 +1,5 @@
 {
+  "$schema": "shared/schemas/discovery-submission-request.schema.json",
   "candidate_id": "dw-example-front-door",
   "candidate_name": "Example Engine-Backed Front-Door Candidate",
   "source_type": "workflow-writeup",

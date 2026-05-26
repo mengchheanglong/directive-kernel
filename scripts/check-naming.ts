@@ -7,6 +7,14 @@ export interface Violation {
   detail: string;
 }
 
+// Rule 5: segments matching ^0\d- nested directly inside another segment also matching ^0\d-
+const NUMBERED_SEGMENT_RE = /^0\d-/;
+const NESTED_NUMBERED_SCOPE_DIRS = new Set([
+  "architecture",
+  "runtime",
+  "discovery",
+]);
+
 export const DIRECTIVE_PREFIX_ALLOWLIST: ReadonlyArray<string> = [
   // engine/types.ts:DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION
   // Why: This constant gates Storage_Version_Check. Renaming it would
@@ -92,6 +100,28 @@ export function scanForNamingViolations(
         file: rel,
         detail: `filename "${basename}" has repeated prefix "${doubleMatch[1]}-${doubleMatch[1]}-"`,
       });
+    }
+
+    // Rule 5: nested-numbered-subfolder
+    if (dirname && dirname !== ".") {
+      const segments = dirname.split("/");
+      const topScope = segments[0];
+      if (NESTED_NUMBERED_SCOPE_DIRS.has(topScope)) {
+        for (let i = 1; i < segments.length; i++) {
+          const current = segments[i];
+          const parent = segments[i - 1];
+          if (
+            NUMBERED_SEGMENT_RE.test(current) &&
+            NUMBERED_SEGMENT_RE.test(parent)
+          ) {
+            violations.push({
+              rule: "nested-numbered-subfolder",
+              file: rel,
+              detail: `numbered segment "${current}" is nested inside numbered segment "${parent}"`,
+            });
+          }
+        }
+      }
     }
   }
 

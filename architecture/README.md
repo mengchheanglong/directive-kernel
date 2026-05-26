@@ -17,11 +17,11 @@ The consuming project's generated `directive-root` should expose the active Arch
 - `01-experiments/`
 - `02-adopted/`
 - `03-deferred-or-rejected/`
-- `04-materialization/04-implementation-targets/`
-- `04-materialization/05-implementation-results/`
-- `04-materialization/06-retained/`
-- `04-materialization/07-integration-records/`
-- `04-materialization/08-consumption-records/`
-- `04-materialization/09-post-consumption-evaluations/`
+- `04-materialization/implementation-targets/`
+- `04-materialization/implementation-results/`
+- `04-materialization/retained/`
+- `04-materialization/integration-records/`
+- `04-materialization/consumption-records/`
+- `04-materialization/post-consumption-evaluations/`
 
 Those folders are state/artifact surfaces, not source-code modules. They belong in the consuming project's `directive-root`, not as empty source folders in the package itself.

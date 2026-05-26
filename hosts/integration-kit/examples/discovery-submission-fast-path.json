@@ -1,4 +1,5 @@
 {
+  "$schema": "shared/schemas/discovery-submission-request.schema.json",
   "candidate_id": "dw-example-fast-path",
   "candidate_name": "Example Fast-Path Discovery Candidate",
   "source_type": "github-repo",

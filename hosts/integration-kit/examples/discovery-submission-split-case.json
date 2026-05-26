@@ -1,4 +1,5 @@
 {
+  "$schema": "shared/schemas/discovery-submission-request.schema.json",
   "candidate_id": "dw-example-split-case",
   "candidate_name": "Example Split-Case Discovery Candidate",
   "source_type": "paper",

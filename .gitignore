@@ -43,7 +43,7 @@ architecture/05-reference-patterns/
 architecture/06-retired/
 architecture/07-integrations/
 architecture/08-consumption/
-architecture/09-post-consumption-evaluations/
+architecture/post-consumption-evaluations/
 
 runtime/00-follow-up/*
 !runtime/00-follow-up/README.md

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/IMPORT_SOURCE_POLICY",
+  "title": "Import Source Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "updatedAt",
+    "policy",
+    "sources"
+  ],
+  "properties": {
+    "status": { "type": "string", "minLength": 1 },
+    "updatedAt": { "type": "string", "format": "date" },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "defaultImportRule",
+        "explicitImportRule",
+        "blockedRule"
+      ],
+      "properties": {
+        "defaultImportRule": { "type": "string" },
+        "explicitImportRule": { "type": "string" },
+        "blockedRule": { "type": "string" }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "availability",
+          "requiredClassification",
+          "requiredActivationMode",
+          "note"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "availability": { "type": "string", "minLength": 1 },
+          "requiredClassification": { "type": "string", "minLength": 1 },
+          "requiredActivationMode": { "type": "string", "minLength": 1 },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}
