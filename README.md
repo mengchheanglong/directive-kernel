@@ -106,6 +106,9 @@ pnpm install
 If you want live web/provider research, also configure the optional provider keys described in:
 - [discovery/research-engine/README.md](./discovery/research-engine/README.md)
 
+Before embedding the kernel in another host, review the security boundary:
+- [SECURITY.md](./SECURITY.md)
+
 ## Build and Run
 
 The kernel has two execution paths.

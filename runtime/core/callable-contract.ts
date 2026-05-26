@@ -31,6 +31,7 @@ export interface DirectiveCallableExecutionInput {
   tool: string;
   input: Record<string, unknown>;
   timeoutMs?: number;
+  allowExternalFetches?: boolean;
 }
 
 export type DirectiveCallableExecutionStatus =

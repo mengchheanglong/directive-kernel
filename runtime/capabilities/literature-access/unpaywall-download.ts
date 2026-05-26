@@ -14,6 +14,11 @@
 
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import {
+  assertLiteratureFetchUrl,
+  literatureFetchError,
+  type LiteratureAccessFetchOptions,
+} from "./fetch-security.ts";
 
 const UNPAYWALL_API = "https://api.unpaywall.org/v2";
 const POLITE_POOL_EMAIL = "research@openclaw.ai";
@@ -65,8 +70,13 @@ interface UnpaywallApiResponse {
 
 // --- Internal helpers ---
 
-async function downloadPDF(url: string, outputPath: string): Promise<boolean> {
+async function downloadPDF(
+  url: string,
+  outputPath: string,
+  options: LiteratureAccessFetchOptions,
+): Promise<boolean> {
   try {
+    await assertLiteratureFetchUrl(url, options);
     const response = await fetch(url, {
       headers: { "User-Agent": USER_AGENT },
       redirect: "follow",
@@ -84,7 +94,10 @@ async function downloadPDF(url: string, outputPath: string): Promise<boolean> {
     const buffer = await response.arrayBuffer();
     writeFileSync(outputPath, Buffer.from(buffer));
     return true;
-  } catch {
+  } catch (error) {
+    if (literatureFetchError(error)) {
+      throw error;
+    }
     return false;
   }
 }
@@ -93,6 +106,7 @@ async function downloadPDF(url: string, outputPath: string): Promise<boolean> {
 
 export async function unpaywallDownload(
   input: UnpaywallDownloadInput,
+  options: LiteratureAccessFetchOptions = {},
 ): Promise<UnpaywallDownloadResult> {
   const rawDois = input.dois;
 
@@ -131,6 +145,7 @@ export async function unpaywallDownload(
   for (const doi of dois) {
     try {
       const apiUrl = `${UNPAYWALL_API}/${encodeURIComponent(doi)}?email=${POLITE_POOL_EMAIL}`;
+      await assertLiteratureFetchUrl(apiUrl, options);
       const response = await fetch(apiUrl, {
         headers: { "User-Agent": USER_AGENT },
       });
@@ -175,7 +190,7 @@ export async function unpaywallDownload(
       const filename = `${sanitizedDoi}.pdf`;
       const outputPath = join(resolvedOutputDir, filename);
 
-      const downloaded = await downloadPDF(pdfUrl, outputPath);
+      const downloaded = await downloadPDF(pdfUrl, outputPath, options);
 
       if (downloaded) {
         results.push({
@@ -197,6 +212,13 @@ export async function unpaywallDownload(
         failedCount++;
       }
     } catch (error) {
+      const fetchGuardError = literatureFetchError(error);
+      if (fetchGuardError) {
+        return {
+          ok: false,
+          ...fetchGuardError,
+        };
+      }
       results.push({
         doi,
         status: "api_error",

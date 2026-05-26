@@ -7,6 +7,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { writeJsonAtomic, appendJsonLine } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
+import {
+  sanitizeText,
+  TEXT_FIELD_LIMITS,
+} from "../../shared/lib/text-sanitizer.ts";
 
 import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
 import type { DirectiveEnginePlanProgressUpdate } from "../../engine/types.ts";
@@ -18,6 +22,8 @@ import type { RuntimeRecordRequest } from "../../runtime/lib/writers/runtime-rec
 import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/runtime-transformation-proof-writer.ts";
 import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/runtime-transformation-record-writer.ts";
 import {
+  DEFAULT_STANDALONE_HOST_RATE_LIMIT_BURST,
+  DEFAULT_STANDALONE_HOST_RATE_LIMIT_REQUESTS_PER_MINUTE,
   DEFAULT_STANDALONE_RUNTIME_ARTIFACTS_RELATIVE_ROOT,
   STANDALONE_HOST_CONFIG_MODE,
   type ResolvedStandaloneHostAuth,
@@ -26,6 +32,7 @@ import {
 } from "./config.ts";
 import { createStandaloneHostPersistenceLedger } from "./persistence.ts";
 import { createStandaloneFilesystemHost } from "./filesystem-host.ts";
+import { createRateLimiter, type RateLimiterConfig } from "./rate-limiter.ts";
 
 type JsonValue = Record<string, unknown>;
 
@@ -37,8 +44,10 @@ export type StartStandaloneHostServerOptions = {
   receivedAt?: string;
   initialQueue?: JsonValue;
   auth?: ResolvedStandaloneHostAuth;
+  rateLimit?: Omit<RateLimiterConfig, "now">;
   persistence?: ResolvedStandaloneHostPersistence;
   runtimeArtifactsRoot?: string;
+  allowExternalFetches?: boolean;
   writeStatusFile?: boolean;
   writeAccessLog?: boolean;
   writeBootLog?: boolean;
@@ -116,6 +125,17 @@ function resolveStandaloneHostAuth(
   );
 }
 
+function resolveStandaloneHostRateLimit(
+  rateLimit: StartStandaloneHostServerOptions["rateLimit"],
+): Omit<RateLimiterConfig, "now"> {
+  return {
+    requestsPerMinute:
+      rateLimit?.requestsPerMinute
+      ?? DEFAULT_STANDALONE_HOST_RATE_LIMIT_REQUESTS_PER_MINUTE,
+    burst: rateLimit?.burst ?? DEFAULT_STANDALONE_HOST_RATE_LIMIT_BURST,
+  };
+}
+
 function isProtectedRoute(
   pathname: string,
   auth: ResolvedStandaloneHostAuth,
@@ -170,6 +190,74 @@ function readBody(req: IncomingMessage) {
     req.on("end", () => resolve(body));
     req.on("error", reject);
   });
+}
+
+const SANITIZED_TEXT_FIELD_LIMITS: Record<string, number> = {
+  candidate_name: TEXT_FIELD_LIMITS.candidateName,
+  candidateName: TEXT_FIELD_LIMITS.candidateName,
+  source_reference: TEXT_FIELD_LIMITS.sourceReference,
+  sourceReference: TEXT_FIELD_LIMITS.sourceReference,
+  mission_alignment: TEXT_FIELD_LIMITS.missionAlignment,
+  missionAlignment: TEXT_FIELD_LIMITS.missionAlignment,
+  notes: TEXT_FIELD_LIMITS.rationale,
+  goal_statement: TEXT_FIELD_LIMITS.goalStatement,
+  goalStatement: TEXT_FIELD_LIMITS.goalStatement,
+  currentObjective: TEXT_FIELD_LIMITS.goalStatement,
+  rationale: TEXT_FIELD_LIMITS.rationale,
+  operator_rationale: TEXT_FIELD_LIMITS.rationale,
+  operatorRationale: TEXT_FIELD_LIMITS.rationale,
+  preview_markdown: TEXT_FIELD_LIMITS.missionPreviewMarkdown,
+  previewMarkdown: TEXT_FIELD_LIMITS.missionPreviewMarkdown,
+};
+
+function sanitizeFreeTextFields(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeFreeTextFields(entry));
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const output: Record<string, unknown> = {};
+  for (const [fieldName, fieldValue] of Object.entries(value)) {
+    const maxBytes = SANITIZED_TEXT_FIELD_LIMITS[fieldName];
+    if (maxBytes !== undefined) {
+      if (fieldValue === null || fieldValue === undefined) {
+        output[fieldName] = fieldValue;
+      } else if (Array.isArray(fieldValue)) {
+        output[fieldName] = fieldValue.map((entry) =>
+          sanitizeText(entry as string, {
+            fieldName,
+            maxBytes,
+          }),
+        );
+      } else {
+        output[fieldName] = sanitizeText(fieldValue as string, {
+          fieldName,
+          maxBytes,
+        });
+      }
+      continue;
+    }
+    output[fieldName] = sanitizeFreeTextFields(fieldValue);
+  }
+  return output;
+}
+
+function parseSanitizedJsonBody(rawBody: string) {
+  return sanitizeFreeTextFields(JSON.parse(rawBody));
+}
+
+function parseSanitizerError(message: string) {
+  const match = /^(sanitize_too_long|sanitize_invalid_type):([^:]+)/u.exec(message);
+  if (!match) {
+    return null;
+  }
+  return {
+    field: match[2],
+    reason: message,
+  };
 }
 
 function parseOptionalPositiveInt(value: string | null) {
@@ -286,6 +374,13 @@ function createStandaloneHostRuntimeRecorder(
           runtimeArtifactsRoot,
           server,
         });
+        if (auth.mode === "none") {
+          appendJsonLine(bootLogPath, {
+            event: "warning",
+            reason: "rate_limit_disabled_due_to_no_auth",
+            recordedAt,
+          });
+        }
       }
     },
     recordRequest(event: {
@@ -344,12 +439,16 @@ export function startStandaloneHostServer(
   const bindHost = options.host ?? "127.0.0.1";
   const bindPort = options.port ?? 8787;
   const auth = resolveStandaloneHostAuth(options.auth);
+  const rateLimit = resolveStandaloneHostRateLimit(options.rateLimit);
+  const rateLimiter =
+    auth.mode === "static_bearer" ? createRateLimiter(rateLimit) : null;
   const standaloneHost = createStandaloneFilesystemHost({
     directiveRoot: options.directiveRoot,
     unresolvedGapIds: options.unresolvedGapIds,
     receivedAt: options.receivedAt,
     initialQueue: options.initialQueue,
     persistence: options.persistence,
+    allowExternalFetches: options.allowExternalFetches,
   });
   const runtimeRecorder = createStandaloneHostRuntimeRecorder(options);
   let closed = false;
@@ -372,6 +471,33 @@ export function startStandaloneHostServer(
         routeId = "auth_guard";
         writeUnauthorized(res);
         return;
+      }
+
+      if (
+        method === "POST"
+        && rateLimiter
+        && isProtectedRoute(pathname, auth)
+      ) {
+        const bearerToken = resolveBearerToken(req);
+        if (!bearerToken) {
+          routeId = "auth_guard";
+          writeUnauthorized(res);
+          return;
+        }
+        const decision = rateLimiter.consume(bearerToken);
+        if (!decision.allowed) {
+          routeId = "rate_limit";
+          res.setHeader(
+            "Retry-After",
+            String(decision.retryAfterSeconds),
+          );
+          writeJson(res, 429, {
+            ok: false,
+            error: "rate_limited",
+            retryAfterSeconds: decision.retryAfterSeconds,
+          });
+          return;
+        }
       }
 
       if (method === "GET" && pathname === "/health") {
@@ -422,7 +548,7 @@ export function startStandaloneHostServer(
         const processWithEngine =
           requestUrl.searchParams.get("process_with_engine") === "1";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as DiscoverySubmissionRequest;
+        const request = parseSanitizedJsonBody(rawBody) as DiscoverySubmissionRequest;
         const result = processWithEngine
           ? await standaloneHost.submitDiscoveryEntryWithEngine(request, dryRun)
           : await standaloneHost.submitDiscoveryEntry(request, dryRun);
@@ -433,7 +559,7 @@ export function startStandaloneHostServer(
         if (method === "POST" && pathname === "/api/engine/plan-progress") {
           routeId = "engine_plan_progress";
           const rawBody = await readBody(req);
-          const request = JSON.parse(rawBody) as {
+          const request = parseSanitizedJsonBody(rawBody) as {
             runId: string;
           updates: DirectiveEnginePlanProgressUpdate[];
           at?: string | null;
@@ -450,7 +576,7 @@ export function startStandaloneHostServer(
         if (method === "POST" && pathname === "/api/engine/reroute") {
           routeId = "engine_reroute";
           const rawBody = await readBody(req);
-          const request = JSON.parse(rawBody) as {
+          const request = parseSanitizedJsonBody(rawBody) as {
             runId: string;
             answers: Record<string, unknown>;
             receivedAt?: string | null;
@@ -467,7 +593,7 @@ export function startStandaloneHostServer(
         if (method === "POST" && pathname === "/api/runtime/follow-ups") {
         routeId = "runtime_followup_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as RuntimeFollowUpRecordRequest;
+        const request = parseSanitizedJsonBody(rawBody) as RuntimeFollowUpRecordRequest;
         const result = await standaloneHost.writeRuntimeFollowUp(request);
         writeJson(res, 200, result);
         return;
@@ -476,7 +602,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/records") {
         routeId = "runtime_record_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as RuntimeRecordRequest;
+        const request = parseSanitizedJsonBody(rawBody) as RuntimeRecordRequest;
         const result = await standaloneHost.writeRuntimeRecord(request);
         writeJson(res, 200, result);
         return;
@@ -485,7 +611,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/proof-bundles") {
         routeId = "runtime_proof_bundle_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as RuntimeProofBundleRequest;
+        const request = parseSanitizedJsonBody(rawBody) as RuntimeProofBundleRequest;
         const result = await standaloneHost.writeRuntimeProofBundle(request);
         writeJson(res, 200, result);
         return;
@@ -494,7 +620,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/transformation-proofs") {
         routeId = "runtime_transformation_proof_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as RuntimeTransformationProofRequest;
+        const request = parseSanitizedJsonBody(rawBody) as RuntimeTransformationProofRequest;
         const result = await standaloneHost.writeRuntimeTransformationProof(request);
         writeJson(res, 200, result);
         return;
@@ -503,7 +629,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/transformation-records") {
         routeId = "runtime_transformation_record_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as RuntimeTransformationRecordRequest;
+        const request = parseSanitizedJsonBody(rawBody) as RuntimeTransformationRecordRequest;
         const result = await standaloneHost.writeRuntimeTransformationRecord(request);
         writeJson(res, 200, result);
         return;
@@ -512,7 +638,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/promotion-records") {
         routeId = "runtime_promotion_record_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as RuntimePromotionRecordRequest;
+        const request = parseSanitizedJsonBody(rawBody) as RuntimePromotionRecordRequest;
         const result = await standaloneHost.writeRuntimePromotionRecord(request);
         writeJson(res, 200, result);
         return;
@@ -521,7 +647,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/host-selection-resolutions") {
         routeId = "runtime_host_selection_resolution_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as {
+        const request = parseSanitizedJsonBody(rawBody) as {
           promotionReadinessPath: string;
           decision:
             | "select_standalone"
@@ -549,7 +675,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/promotion-seam-decisions") {
         routeId = "runtime_promotion_seam_decision_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as {
+        const request = parseSanitizedJsonBody(rawBody) as {
           promotionReadinessPath: string;
           rationale: string;
           approvedBy?: string;
@@ -566,7 +692,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/registry-entries") {
         routeId = "runtime_registry_entry_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as RuntimeRegistryEntryRequest;
+        const request = parseSanitizedJsonBody(rawBody) as RuntimeRegistryEntryRequest;
         const result = await standaloneHost.writeRuntimeRegistryEntry(request);
         writeJson(res, 200, result);
         return;
@@ -575,7 +701,7 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/registry-acceptance-decisions") {
         routeId = "runtime_registry_acceptance_decision_write";
         const rawBody = await readBody(req);
-        const request = JSON.parse(rawBody) as {
+        const request = parseSanitizedJsonBody(rawBody) as {
           promotionRecordPath: string;
           rationale: string;
           acceptedBy?: string;
@@ -600,6 +726,16 @@ export function startStandaloneHostServer(
       const message = String((error as Error).message || error);
       requestError = message;
       routeId = routeId === "request_parse" ? "request_error" : routeId;
+      const sanitizerError = parseSanitizerError(message);
+      if (sanitizerError) {
+        writeJson(res, 400, {
+          ok: false,
+          error: "invalid_input",
+          field: sanitizerError.field,
+          reason: sanitizerError.reason,
+        });
+        return;
+      }
       const statusCode =
         message === "request_body_too_large" || message.startsWith("invalid_")
           ? 400
@@ -686,8 +822,10 @@ export function startStandaloneHostServerFromConfig(
     receivedAt: config.receivedAt,
     initialQueue: config.initialQueue,
     auth: config.auth,
+    rateLimit: config.rateLimit,
     persistence: config.persistence,
     runtimeArtifactsRoot: config.runtimeArtifacts.root,
+    allowExternalFetches: config.runtime.allowExternalFetches,
     writeStatusFile: config.runtimeArtifacts.writeStatusFile,
     writeAccessLog: config.runtimeArtifacts.writeAccessLog,
     writeBootLog: config.runtimeArtifacts.writeBootLog,

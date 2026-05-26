@@ -54,11 +54,13 @@
     },
     "radarSummary": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 5000
     },
     "radarRecommendedChange": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 5000
     },
     "radarSignalTokens": {
       "type": "array",
@@ -69,7 +71,8 @@
       "minimum": 1
     },
     "operatorRationale": {
-      "type": ["string", "null"]
+      "type": ["string", "null"],
+      "maxLength": 5000
     },
     "operatorApprovedPriority": {
       "enum": ["high", "medium", "low", null]

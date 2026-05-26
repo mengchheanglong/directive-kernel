@@ -46,7 +46,8 @@
     },
     "operatorRationale": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 5000
     },
     "previousEvolutionId": {
       "type": ["string", "null"]
@@ -68,13 +69,13 @@
       ],
       "properties": {
         "missionId": { "type": ["string", "null"] },
-        "currentObjective": { "type": "string", "minLength": 1 },
+        "currentObjective": { "type": "string", "minLength": 1, "maxLength": 5000 },
         "usefulnessSignals": { "type": "array", "items": { "type": "string" } },
         "capabilityLanes": { "type": "array", "items": { "type": "string" } },
         "constraints": { "type": "array", "items": { "type": "string" } },
         "successSignal": { "type": ["string", "null"] },
         "adoptionTarget": { "type": ["string", "null"] },
-        "activeMissionMarkdown": { "type": "string" }
+        "activeMissionMarkdown": { "type": "string", "maxLength": 50000 }
       }
     },
     "appliedDelta": {
@@ -106,7 +107,7 @@
       "properties": {
         "affectedRunCount": { "type": "integer", "minimum": 0 },
         "rerouteCandidateCount": { "type": "integer", "minimum": 0 },
-        "confidenceDeltaSummary": { "type": "string", "minLength": 1 }
+        "confidenceDeltaSummary": { "type": "string", "minLength": 1, "maxLength": 50000 }
       }
     },
     "cascade": {

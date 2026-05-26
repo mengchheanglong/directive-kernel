@@ -84,6 +84,32 @@
         }
       }
     },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowExternalFetches": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "rateLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requestsPerMinute": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 60
+        },
+        "burst": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 10
+        }
+      }
+    },
     "runtimeArtifacts": {
       "type": "object",
       "additionalProperties": false,

@@ -12,6 +12,8 @@ export const DEFAULT_STANDALONE_RUNTIME_ARTIFACTS_RELATIVE_ROOT =
 export const DEFAULT_STANDALONE_HOST_PROTECTED_ROUTE_PREFIXES = ["/api/"] as const;
 export const DEFAULT_STANDALONE_HOST_PERSISTENCE_SQLITE_FILENAME =
   "standalone-host.sqlite";
+export const DEFAULT_STANDALONE_HOST_RATE_LIMIT_REQUESTS_PER_MINUTE = 60;
+export const DEFAULT_STANDALONE_HOST_RATE_LIMIT_BURST = 10;
 
 export type ResolvedStandaloneHostAuth =
   | {
@@ -63,6 +65,13 @@ export type StandaloneHostConfig = {
     mode?: "filesystem" | "filesystem_and_sqlite";
     sqlitePath?: string;
   };
+  runtime?: {
+    allowExternalFetches?: boolean;
+  };
+  rateLimit?: {
+    requestsPerMinute?: number;
+    burst?: number;
+  };
 };
 
 export type ResolvedStandaloneHostConfig = {
@@ -78,6 +87,13 @@ export type ResolvedStandaloneHostConfig = {
   };
   auth: ResolvedStandaloneHostAuth;
   persistence: ResolvedStandaloneHostPersistence;
+  runtime: {
+    allowExternalFetches: boolean;
+  };
+  rateLimit: {
+    requestsPerMinute: number;
+    burst: number;
+  };
   runtimeArtifacts: {
     root: string;
     relativeRoot: string;
@@ -155,6 +171,24 @@ function readOptionalPort(value: unknown, fieldName: string) {
     || value > 65535
   ) {
     throw new Error(`${fieldName} must be an integer between 0 and 65535`);
+  }
+  return value;
+}
+
+function readOptionalIntegerAtLeast(
+  value: unknown,
+  fieldName: string,
+  minimum: number,
+) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (
+    typeof value !== "number"
+    || !Number.isInteger(value)
+    || value < minimum
+  ) {
+    throw new Error(`${fieldName} must be an integer >= ${minimum}`);
   }
   return value;
 }
@@ -297,6 +331,8 @@ export function resolveStandaloneHostConfig(
   const server = readOptionalJsonObject(config.server, "server") ?? {};
   const runtimeArtifacts =
     readOptionalJsonObject(config.runtimeArtifacts, "runtimeArtifacts") ?? {};
+  const runtime = readOptionalJsonObject(config.runtime, "runtime") ?? {};
+  const rateLimit = readOptionalJsonObject(config.rateLimit, "rateLimit") ?? {};
 
   const relativeRoot =
     readOptionalString(runtimeArtifacts.relativeRoot, "runtimeArtifacts.relativeRoot")
@@ -325,6 +361,24 @@ export function resolveStandaloneHostConfig(
       directiveRoot,
       relativeRoot,
     ),
+    runtime: {
+      allowExternalFetches:
+        readOptionalBoolean(
+          runtime.allowExternalFetches,
+          "runtime.allowExternalFetches",
+        ) ?? true,
+    },
+    rateLimit: {
+      requestsPerMinute:
+        readOptionalIntegerAtLeast(
+          rateLimit.requestsPerMinute,
+          "rateLimit.requestsPerMinute",
+          1,
+        ) ?? DEFAULT_STANDALONE_HOST_RATE_LIMIT_REQUESTS_PER_MINUTE,
+      burst:
+        readOptionalIntegerAtLeast(rateLimit.burst, "rateLimit.burst", 0)
+        ?? DEFAULT_STANDALONE_HOST_RATE_LIMIT_BURST,
+    },
     runtimeArtifacts: {
       relativeRoot,
       root: normalizeAbsolutePath(path.resolve(directiveRoot, relativeRoot)),
@@ -394,6 +448,12 @@ export function applyStandaloneHostConfigOverrides(
           experimentalRuntime: true,
         }
       : config.persistence,
+    runtime: {
+      ...config.runtime,
+    },
+    rateLimit: {
+      ...config.rateLimit,
+    },
     runtimeArtifacts: {
       ...config.runtimeArtifacts,
       root: normalizeAbsolutePath(

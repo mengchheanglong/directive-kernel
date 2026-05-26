@@ -22,7 +22,7 @@
   ],
   "properties": {
     "candidate_id": { "type": "string", "minLength": 1 },
-    "candidate_name": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1, "maxLength": 200 },
     "record_date": { "type": "string", "format": "date" },
     "source_type": {
       "type": "string",
@@ -37,9 +37,9 @@
         "internal-signal"
       ]
     },
-    "source_reference": { "type": "string", "minLength": 1 },
-    "claimed_value": { "type": "string", "minLength": 1 },
-    "first_pass_summary": { "type": "string", "minLength": 1 },
+    "source_reference": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "claimed_value": { "type": "string", "minLength": 1, "maxLength": 5000 },
+    "first_pass_summary": { "type": "string", "minLength": 1, "maxLength": 5000 },
     "adoption_target": { "type": "string", "minLength": 1 },
     "decision_state": {
       "type": "string",
@@ -49,8 +49,8 @@
       "type": "string",
       "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference"]
     },
-    "why_this_route": { "type": "string", "minLength": 1 },
-    "why_not_alternatives": { "type": "string", "minLength": 1 },
+    "why_this_route": { "type": "string", "minLength": 1, "maxLength": 5000 },
+    "why_not_alternatives": { "type": "string", "minLength": 1, "maxLength": 5000 },
     "need_bounded_proof": { "type": "string", "minLength": 1 },
     "next_artifact": { "type": "string", "minLength": 1 },
     "source_location_on_disk": { "type": ["string", "null"] },
@@ -70,7 +70,7 @@
     "compaction_reason": { "type": ["string", "null"] },
     "reentry_trigger": { "type": ["string", "null"] },
     "review_cadence": { "type": ["string", "null"] },
-    "mission_alignment": { "type": ["string", "null"] },
+    "mission_alignment": { "type": ["string", "null"], "maxLength": 5000 },
     "capability_gap_id": { "type": ["string", "null"] },
     "gap_worklist_rank": { "type": ["string", "null"] },
     "output_relative_path": { "type": ["string", "null"] }

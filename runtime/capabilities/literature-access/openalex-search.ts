@@ -12,6 +12,12 @@
  * - Same sort fallback to relevance_score
  */
 
+import {
+  assertLiteratureFetchUrl,
+  literatureFetchError,
+  type LiteratureAccessFetchOptions,
+} from "./fetch-security.ts";
+
 const OPENALEX_API = "https://api.openalex.org/works";
 const DEFAULT_MAX_RESULTS = 15;
 const MAX_RESULTS_LIMIT = 50;
@@ -104,6 +110,7 @@ const SORT_MAP: Record<string, string> = {
 
 export async function openalexSearch(
   input: OpenAlexSearchInput,
+  options: LiteratureAccessFetchOptions = {},
 ): Promise<OpenAlexSearchResult> {
   const { query, filter } = input;
   const maxResults = Math.min(
@@ -128,10 +135,18 @@ export async function openalexSearch(
 
   let response: Response;
   try {
+    await assertLiteratureFetchUrl(url, options);
     response = await fetch(url, {
       headers: { "User-Agent": USER_AGENT },
     });
   } catch (error) {
+    const fetchGuardError = literatureFetchError(error);
+    if (fetchGuardError) {
+      return {
+        ok: false,
+        ...fetchGuardError,
+      };
+    }
     return {
       ok: false,
       error: "network_error",

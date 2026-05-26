@@ -15,5 +15,12 @@
   },
   "persistence": {
     "mode": "filesystem_and_sqlite"
+  },
+  "runtime": {
+    "allowExternalFetches": true
+  },
+  "rateLimit": {
+    "requestsPerMinute": 60,
+    "burst": 10
   }
 }

@@ -83,6 +83,7 @@ export type StandaloneScientifyHostInvocationRequest = {
   tool: StandaloneScientifyToolDescriptor["tool"];
   input: Record<string, unknown>;
   timeoutMs?: number;
+  allowExternalFetches?: boolean;
   executionAt?: string;
   persistArtifacts?: boolean;
 };

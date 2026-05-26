@@ -37,7 +37,7 @@ Order in the table reflects recommended sequencing within each priority band.
 | F12 | Decide on the numbered folder convention (keep, simplify, drop) | P2 | S | |
 | F13 | Concurrency / locking story for filesystem persistence | P1 | M | |
 | F14 | Data retention and ledger rotation policy | P1 | M | |
-| F15 | Security posture: threat model, SSRF protection, input sanitization | P0 | M | |
+| F15 | Security posture: threat model, SSRF protection, input sanitization | P0 | M | ✅ done |
 | F16 | Schema ↔ example drift CI check | P2 | S | |
 
 ---
@@ -399,7 +399,45 @@ The kernel ships with no opinion on this, which means every consuming project ha
 
 ## F15 — Security posture: threat model, SSRF protection, input sanitization
 
-**Priority:** P0 · **Effort:** M · **Depends on:** —
+**Status:** ✅ done · **Priority:** P0 · **Effort:** M · **Depends on:** —
+
+**Spec:** `.kiro/specs/directive-kernel-security-posture/`
+
+**Outcome.** The kernel now has a documented security policy, a shared SSRF
+guard wired into every TypeScript literature-access fetch site, config-driven
+offline mode, standalone-host API input sanitization, per-token POST rate
+limiting under bearer auth, and a Vitest hardening gate covering the full F15
+security surface.
+
+**Components delivered.**
+- `SECURITY.md` documents the threat model, in-scope/out-of-scope boundary,
+  offline mode, secret-handling policy, reporting channel, and Python provider
+  follow-ups.
+- `shared/lib/ssrf-guard.ts` blocks non-HTTP(S) schemes, blocked IP ranges,
+  poisoned DNS/literal IPs, optional allowlist mismatches, and offline mode.
+- `shared/lib/text-sanitizer.ts` strips unsafe controls and enforces UTF-8 byte
+  caps on API free-text fields.
+- `hosts/standalone-host/rate-limiter.ts` provides an in-memory token bucket
+  with a proved `requestsPerMinute + burst` sliding-window bound.
+- Standalone host config/schema/bootstrap examples now expose
+  `runtime.allowExternalFetches` and `rateLimit`.
+- Standalone host protected POST routes now rate-limit in bearer mode and emit
+  a boot warning when auth is disabled.
+- Standalone host POST bodies now sanitize recognized free-text fields before
+  existing handlers receive them.
+- Literature-access tools (`arxiv-search`, `arxiv-download`,
+  `openalex-search`, `unpaywall-download`) call the SSRF guard immediately
+  before fetch and return `external_fetches_disabled` in offline mode.
+- New property tests cover SSRF guard behavior, sanitizer behavior, and the
+  rate limiter invariant.
+- New hardening integration test covers blocked ranges, schemes, loopback
+  handling, rate-limit 429, sanitizer behavior, offline executor failure,
+  schema constraints, policy docs, README linkage, and secret-pattern audit.
+
+**Verification.**
+- `pnpm run typecheck` → green
+- `pnpm run test` → 16 files / 69 passed + 5 skipped
+- `pnpm run check:build` → green compiled-output smoke
 
 **Problem.** The kernel's whole job is ingesting external sources, often by URL. The research-engine has live providers (GitHub, Tavily, Exa, Firecrawl, Unpaywall) that fetch arbitrary HTTP. The standalone host serves a bearer-auth-guarded API but there is no documented threat model, no SSRF protection, no input sanitization policy, no rate limiting, no documentation about what running the host actually exposes.
 

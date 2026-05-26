@@ -17,6 +17,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
+import {
+  assertLiteratureFetchUrl,
+  literatureFetchError,
+  type LiteratureAccessFetchOptions,
+} from "./fetch-security.ts";
 
 const RATE_LIMIT_MS = 3000;
 
@@ -89,9 +94,11 @@ async function findTexFiles(dir: string): Promise<string[]> {
 async function downloadPdf(
   arxivId: string,
   outputDir: string,
+  options: LiteratureAccessFetchOptions,
 ): Promise<InternalDownloadResult> {
   try {
     const pdfUrl = `https://arxiv.org/pdf/${arxivId}.pdf`;
+    await assertLiteratureFetchUrl(pdfUrl, options);
     const response = await fetch(pdfUrl);
     if (!response.ok) {
       return {
@@ -112,12 +119,14 @@ async function downloadPdf(
       files: [`${arxivId}.pdf`],
     };
   } catch (error) {
+    const fetchGuardError = literatureFetchError(error);
     return {
       success: false,
       format: "pdf",
       path: "",
       files: [],
-      error: String(error),
+      error: fetchGuardError?.error ?? String(error),
+      fallbackReason: fetchGuardError?.message,
     };
   }
 }
@@ -125,6 +134,7 @@ async function downloadPdf(
 async function downloadTexSource(
   arxivId: string,
   outputDir: string,
+  options: LiteratureAccessFetchOptions,
 ): Promise<InternalDownloadResult> {
   const paperDir = path.join(outputDir, arxivId);
   await fs.promises.mkdir(paperDir, { recursive: true });
@@ -133,10 +143,11 @@ async function downloadTexSource(
   const tarPath = path.join(paperDir, "source.tar.gz");
 
   try {
+    await assertLiteratureFetchUrl(srcUrl, options);
     const response = await fetch(srcUrl);
     if (!response.ok) {
       const reason = `Source download failed: HTTP ${response.status} ${response.statusText}`;
-      const result = await downloadPdf(arxivId, outputDir);
+      const result = await downloadPdf(arxivId, outputDir, options);
       return { ...result, fallbackReason: reason };
     }
 
@@ -152,7 +163,7 @@ async function downloadTexSource(
       const files = await findTexFiles(paperDir);
       if (files.length === 0) {
         const reason = "No .tex files found in source archive";
-        const result = await downloadPdf(arxivId, outputDir);
+        const result = await downloadPdf(arxivId, outputDir, options);
         return { ...result, fallbackReason: reason };
       }
       return { success: true, format: "tex", path: paperDir, files };
@@ -167,8 +178,19 @@ async function downloadTexSource(
       };
     }
   } catch (error) {
+    const fetchGuardError = literatureFetchError(error);
+    if (fetchGuardError) {
+      return {
+        success: false,
+        format: "tex",
+        path: "",
+        files: [],
+        error: fetchGuardError.error,
+        fallbackReason: fetchGuardError.message,
+      };
+    }
     const reason = `Source extraction error: ${error instanceof Error ? error.message : String(error)}`;
-    const result = await downloadPdf(arxivId, outputDir);
+    const result = await downloadPdf(arxivId, outputDir, options);
     return { ...result, fallbackReason: reason };
   }
 }
@@ -177,6 +199,7 @@ async function downloadTexSource(
 
 export async function arxivDownload(
   input: ArxivDownloadInput,
+  options: LiteratureAccessFetchOptions = {},
 ): Promise<ArxivDownloadResult> {
   const { arxiv_ids, output_dir } = input;
 
@@ -189,6 +212,17 @@ export async function arxivDownload(
   }
 
   const resolvedOutputDir = path.resolve(output_dir ?? "papers");
+  try {
+    await assertLiteratureFetchUrl("https://arxiv.org/", options);
+  } catch (error) {
+    const fetchGuardError = literatureFetchError(error);
+    if (fetchGuardError) {
+      return {
+        ok: false,
+        ...fetchGuardError,
+      };
+    }
+  }
   await fs.promises.mkdir(resolvedOutputDir, { recursive: true });
 
   const downloads: ArxivDownloadItemResult[] = [];
@@ -201,7 +235,7 @@ export async function arxivDownload(
       await delay(RATE_LIMIT_MS);
     }
 
-    const result = await downloadTexSource(arxivId, resolvedOutputDir);
+    const result = await downloadTexSource(arxivId, resolvedOutputDir, options);
 
     downloads.push({
       arxiv_id: arxivId,

@@ -16,13 +16,20 @@ export type ScientifyLiteratureAccessToolName =
   | "openalex-search"
   | "unpaywall-download";
 
+export type LiteratureAccessExecutionOptions = {
+  allowExternalFetches?: boolean;
+};
+
 export type DirectiveRuntimeCallableBundleTool = {
   tool: ScientifyLiteratureAccessToolName;
   functionName: string;
   modulePath: string;
   inputType: string;
   resultType: string;
-  invoke: (input: unknown) => Promise<unknown>;
+  invoke: (
+    input: unknown,
+    options?: LiteratureAccessExecutionOptions,
+  ) => Promise<unknown>;
 };
 
 type ScientifyBundleToolRecord = Record<
@@ -37,7 +44,7 @@ const SCIENTIFY_LITERATURE_ACCESS_TOOL_RECORD: ScientifyBundleToolRecord = {
     modulePath: "runtime/capabilities/literature-access/arxiv-search.ts",
     inputType: "ArxivSearchInput",
     resultType: "Promise<ArxivSearchResult>",
-    invoke: (input) => arxivSearch(input as ArxivSearchInput),
+    invoke: (input, options) => arxivSearch(input as ArxivSearchInput, options),
   },
   "arxiv-download": {
     tool: "arxiv-download",
@@ -45,7 +52,7 @@ const SCIENTIFY_LITERATURE_ACCESS_TOOL_RECORD: ScientifyBundleToolRecord = {
     modulePath: "runtime/capabilities/literature-access/arxiv-download.ts",
     inputType: "ArxivDownloadInput",
     resultType: "Promise<ArxivDownloadResult>",
-    invoke: (input) => arxivDownload(input as ArxivDownloadInput),
+    invoke: (input, options) => arxivDownload(input as ArxivDownloadInput, options),
   },
   "openalex-search": {
     tool: "openalex-search",
@@ -53,7 +60,7 @@ const SCIENTIFY_LITERATURE_ACCESS_TOOL_RECORD: ScientifyBundleToolRecord = {
     modulePath: "runtime/capabilities/literature-access/openalex-search.ts",
     inputType: "OpenAlexSearchInput",
     resultType: "Promise<OpenAlexSearchResult>",
-    invoke: (input) => openalexSearch(input as OpenAlexSearchInput),
+    invoke: (input, options) => openalexSearch(input as OpenAlexSearchInput, options),
   },
   "unpaywall-download": {
     tool: "unpaywall-download",
@@ -61,7 +68,8 @@ const SCIENTIFY_LITERATURE_ACCESS_TOOL_RECORD: ScientifyBundleToolRecord = {
     modulePath: "runtime/capabilities/literature-access/unpaywall-download.ts",
     inputType: "UnpaywallDownloadInput",
     resultType: "Promise<UnpaywallDownloadResult>",
-    invoke: (input) => unpaywallDownload(input as UnpaywallDownloadInput),
+    invoke: (input, options) =>
+      unpaywallDownload(input as UnpaywallDownloadInput, options),
   },
 };
 

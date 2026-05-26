@@ -63,6 +63,7 @@ export type CreateStandaloneFilesystemHostOptions = {
   initialQueue?: JsonValue;
   persistence?: ResolvedStandaloneHostPersistence;
   runtimeArtifactsRoot?: string;
+  allowExternalFetches?: boolean;
 };
 
 function normalizeRelativeDirectivePath(
@@ -603,7 +604,10 @@ export function createStandaloneFilesystemHost(
         await loadStandaloneRuntimeOperationsModule();
       return invokeStandaloneScientifyLiteratureAccessTool({
         directiveRoot: harness.directiveRoot,
-        request: input,
+        request: {
+          ...input,
+          allowExternalFetches: options.allowExternalFetches ?? true,
+        },
       });
     },
     async readLiveMiniSweAgentDescriptor() {
@@ -697,6 +701,7 @@ export function createStandaloneFilesystemHostFromConfig(
     initialQueue: config.initialQueue,
     persistence: config.persistence,
     runtimeArtifactsRoot: config.runtimeArtifacts.root,
+    allowExternalFetches: config.runtime.allowExternalFetches,
   });
 }
 

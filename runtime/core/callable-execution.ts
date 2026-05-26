@@ -94,6 +94,7 @@ export type DirectiveRuntimeCallableExecutionInput = {
   tool: string;
   input: Record<string, unknown>;
   timeoutMs?: number;
+  allowExternalFetches?: boolean;
   executionAt?: string;
   persistArtifacts?: boolean;
 };
@@ -104,6 +105,7 @@ export type DirectiveRuntimeCallableDirectExecutionInput = {
   tool: string;
   input: Record<string, unknown>;
   timeoutMs?: number;
+  allowExternalFetches?: boolean;
   executionAt?: string;
   persistArtifacts?: boolean;
 };
@@ -284,6 +286,7 @@ async function executeWithSharedBoundary(input: {
   tool: string;
   invocationInput: Record<string, unknown>;
   timeoutMs: number;
+  allowExternalFetches?: boolean;
 }) {
   const startedAt = new Date();
 
@@ -293,6 +296,7 @@ async function executeWithSharedBoundary(input: {
         tool: input.tool,
         input: input.invocationInput,
         timeoutMs: input.timeoutMs,
+        allowExternalFetches: input.allowExternalFetches,
       }),
       input.timeoutMs,
     );
@@ -361,6 +365,7 @@ export async function runDirectiveCallableCapabilityWithExecutionSurface(
     tool: input.tool,
     invocationInput: input.input,
     timeoutMs,
+    allowExternalFetches: input.allowExternalFetches,
   });
   const inputSummary = summarizeUnknown(input.input);
   const record: DirectiveRuntimeCallableExecutionRecord = {
@@ -425,6 +430,7 @@ export async function runDirectiveRuntimeCallableExecution(
     tool: input.tool,
     input: input.input,
     timeoutMs: input.timeoutMs,
+    allowExternalFetches: input.allowExternalFetches,
     executionAt: input.executionAt,
     persistArtifacts: input.persistArtifacts,
   });

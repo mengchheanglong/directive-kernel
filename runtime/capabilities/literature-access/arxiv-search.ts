@@ -12,6 +12,12 @@
  * - Same sort fallback to "relevance"
  */
 
+import {
+  assertLiteratureFetchUrl,
+  literatureFetchError,
+  type LiteratureAccessFetchOptions,
+} from "./fetch-security.ts";
+
 const ARXIV_API_URL = "https://export.arxiv.org/api/query";
 const DEFAULT_MAX_RESULTS = 10;
 const MAX_RESULTS_LIMIT = 50;
@@ -149,6 +155,7 @@ function parseAtomXml(xml: string): ParsedPaper[] {
 
 export async function arxivSearch(
   input: ArxivSearchInput,
+  options: LiteratureAccessFetchOptions = {},
 ): Promise<ArxivSearchResult> {
   const { query, date_from } = input;
   const maxResults = Math.min(
@@ -162,8 +169,16 @@ export async function arxivSearch(
 
   let response: Response;
   try {
+    await assertLiteratureFetchUrl(url, options);
     response = await fetch(url);
   } catch (error) {
+    const fetchGuardError = literatureFetchError(error);
+    if (fetchGuardError) {
+      return {
+        ok: false,
+        ...fetchGuardError,
+      };
+    }
     return {
       ok: false,
       error: "network_error",

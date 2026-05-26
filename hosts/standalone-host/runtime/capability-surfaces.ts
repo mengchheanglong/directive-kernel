@@ -145,6 +145,7 @@ export async function invokeStandaloneScientifyLiteratureAccessTool(input: {
     tool: input.request.tool,
     input: input.request.input,
     timeoutMs: input.request.timeoutMs,
+    allowExternalFetches: input.request.allowExternalFetches,
     executionAt: input.request.executionAt,
     persistArtifacts: input.request.persistArtifacts,
   });

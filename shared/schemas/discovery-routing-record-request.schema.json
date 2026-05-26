@@ -20,7 +20,7 @@
   ],
   "properties": {
     "candidate_id": { "type": "string", "minLength": 1 },
-    "candidate_name": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1, "maxLength": 200 },
     "route_date": { "type": "string", "format": "date" },
     "source_type": {
       "type": "string",
@@ -44,8 +44,8 @@
       "type": "string",
       "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference"]
     },
-    "why_this_route": { "type": "string", "minLength": 1 },
-    "why_not_alternatives": { "type": "string", "minLength": 1 },
+    "why_this_route": { "type": "string", "minLength": 1, "maxLength": 5000 },
+    "why_not_alternatives": { "type": "string", "minLength": 1, "maxLength": 5000 },
     "receiving_track_owner": { "type": "string", "minLength": 1 },
     "required_next_artifact": { "type": "string", "minLength": 1 },
     "linked_intake_record": { "type": "string", "minLength": 1 },

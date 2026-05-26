@@ -188,7 +188,12 @@ export async function executeLiteratureAccessTool(
 
   // Execute with timeout
   try {
-    const result = await withTimeout(toolDef.invoke(input.input), timeoutMs);
+    const result = await withTimeout(
+      toolDef.invoke(input.input, {
+        allowExternalFetches: input.allowExternalFetches,
+      }),
+      timeoutMs,
+    );
     const completedAt = new Date();
     return {
       ok: true,

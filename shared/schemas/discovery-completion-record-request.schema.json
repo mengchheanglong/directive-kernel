@@ -21,7 +21,7 @@
   ],
   "properties": {
     "candidate_id": { "type": "string", "minLength": 1 },
-    "candidate_name": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1, "maxLength": 200 },
     "decision_date": { "type": "string", "format": "date" },
     "decision_state": {
       "type": "string",
@@ -32,7 +32,7 @@
       "type": "string",
       "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference"]
     },
-    "rationale": { "type": "string", "minLength": 1 },
+    "rationale": { "type": "string", "minLength": 1, "maxLength": 5000 },
     "evidence_path": { "type": "string", "minLength": 1 },
     "validation_method": { "type": "string", "minLength": 1 },
     "rollback_note": { "type": "string", "minLength": 1 },

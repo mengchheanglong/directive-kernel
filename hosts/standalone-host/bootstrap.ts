@@ -570,6 +570,13 @@ export function bootstrapStandaloneHostWorkspace(
           },
         }
       : {}),
+    runtime: {
+      allowExternalFetches: true,
+    },
+    rateLimit: {
+      requestsPerMinute: 60,
+      burst: 10,
+    },
     ...(includeAuthTemplate
       ? {
           auth: {

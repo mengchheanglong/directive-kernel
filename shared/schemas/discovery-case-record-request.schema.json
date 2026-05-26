@@ -13,7 +13,7 @@
   ],
   "properties": {
     "candidate_id": { "type": "string", "minLength": 1 },
-    "candidate_name": { "type": "string", "minLength": 1 },
+    "candidate_name": { "type": "string", "minLength": 1, "maxLength": 200 },
     "intake": {
       "type": "object",
       "additionalProperties": false,
@@ -42,10 +42,10 @@
             "internal-signal"
           ]
         },
-        "source_reference": { "type": "string", "minLength": 1 },
+        "source_reference": { "type": "string", "minLength": 1, "maxLength": 2000 },
         "submitted_by": { "type": "string", "minLength": 1 },
-        "why_it_entered_the_system": { "type": "string", "minLength": 1 },
-        "claimed_value": { "type": "string", "minLength": 1 },
+        "why_it_entered_the_system": { "type": "string", "minLength": 1, "maxLength": 5000 },
+        "claimed_value": { "type": "string", "minLength": 1, "maxLength": 5000 },
         "initial_relevance_to_workspace": { "type": "string", "minLength": 1 },
         "suspected_adoption_target": { "type": "string", "minLength": 1 },
         "source_location_on_disk": { "type": ["string", "null"] },
@@ -57,7 +57,7 @@
         "stack_external_dependencies": { "type": ["string", "null"] },
         "stack_data_model_assumptions": { "type": ["string", "null"] },
         "stack_integration_shape": { "type": ["string", "null"] },
-        "immediate_notes": { "type": ["string", "null"] },
+        "immediate_notes": { "type": ["string", "null"], "maxLength": 5000 },
         "output_relative_path": { "type": ["string", "null"] }
       }
     },
@@ -85,7 +85,7 @@
       ],
       "properties": {
         "triage_date": { "type": "string", "format": "date" },
-        "first_pass_summary": { "type": "string", "minLength": 1 },
+        "first_pass_summary": { "type": "string", "minLength": 1, "maxLength": 5000 },
         "problem_it_appears_to_solve": { "type": "string", "minLength": 1 },
         "extractable_value_hypothesis": { "type": "string", "minLength": 1 },
         "routing_recommendation": { "type": "string", "minLength": 1 },
@@ -144,8 +144,8 @@
           "type": "string",
           "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference"]
         },
-        "why_this_route": { "type": "string", "minLength": 1 },
-        "why_not_alternatives": { "type": "string", "minLength": 1 },
+        "why_this_route": { "type": "string", "minLength": 1, "maxLength": 5000 },
+        "why_not_alternatives": { "type": "string", "minLength": 1, "maxLength": 5000 },
         "receiving_track_owner": { "type": "string", "minLength": 1 },
         "required_next_artifact": { "type": "string", "minLength": 1 },
         "handoff_contract_used": { "type": ["string", "null"] },
@@ -179,7 +179,7 @@
           "type": "string",
           "enum": ["runtime", "architecture", "monitor", "defer", "reject", "reference"]
         },
-        "rationale": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 5000 },
         "evidence_path": { "type": "string", "minLength": 1 },
         "validation_method": { "type": "string", "minLength": 1 },
         "rollback_note": { "type": "string", "minLength": 1 },
