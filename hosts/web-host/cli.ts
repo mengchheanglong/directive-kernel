@@ -4,7 +4,11 @@ function printUsage() {
   process.stdout.write(`Directive Kernel UI CLI
 
 Commands:
-  serve --directive-root <path> [--host <host>] [--port <port>]
+  serve [--directive-root <path>] [--host <host>] [--port <port>]
+
+Environment variables (overridden by explicit flags):
+  DIRECTIVE_UI_HOST, DIRECTIVE_FRONTEND_HOST     default host
+  DIRECTIVE_UI_PORT, DIRECTIVE_FRONTEND_PORT     default port
 `);
 }
 
@@ -39,19 +43,27 @@ async function main() {
     process.exit(1);
   }
 
-  const directiveRoot = String(flags["directive-root"] || "").trim();
-  if (!directiveRoot) {
-    throw new Error("Missing required flag --directive-root");
-  }
+  // --directive-root is optional. When omitted the host serves the current
+  // working directory, which matches the `pnpm start` flow that runs the
+  // server from the repo root.
+  const directiveRoot = String(flags["directive-root"] || process.cwd()).trim();
 
-  const port = flags.port ? Number(flags.port) : undefined;
+  const hostFlag = flags.host
+    || process.env.DIRECTIVE_UI_HOST
+    || process.env.DIRECTIVE_FRONTEND_HOST
+    || "127.0.0.1";
+
+  const portFlag = flags.port
+    || process.env.DIRECTIVE_UI_PORT
+    || process.env.DIRECTIVE_FRONTEND_PORT;
+  const port = portFlag ? Number(portFlag) : undefined;
   if (port !== undefined && (!Number.isInteger(port) || port < 0 || port > 65535)) {
     throw new Error("Invalid value for --port");
   }
 
   const handle = await startDirectiveUiServer({
     directiveRoot,
-    host: flags.host,
+    host: hostFlag,
     port,
   });
 
@@ -68,6 +80,16 @@ async function main() {
       2,
     )}\n`,
   );
+
+  // Keep the process alive until SIGINT/SIGTERM, then close gracefully.
+  // Mirrors the previous `scripts/start-ui.ts` shutdown behavior so this CLI
+  // is a superset of that script.
+  const close = async () => {
+    await handle.close();
+    process.exit(0);
+  };
+  process.on("SIGINT", () => void close());
+  process.on("SIGTERM", () => void close());
 }
 
 void main();

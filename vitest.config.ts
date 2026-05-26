@@ -52,8 +52,11 @@ export default defineConfig({
     isolate: true,
   },
   resolve: {
-    // Vitest reads tsconfig.repo.json automatically through Vite's TS support;
-    // no manual path mapping is required because the kernel uses relative imports
-    // with explicit .ts extensions throughout.
+    // Force Vite/Vitest to match the "development" exports condition we
+    // added in package.json so tests resolve in-repo imports through the
+    // .ts source path. Without this, Vite would pick "import" or "default"
+    // and try to read paths under ./dist that don't exist in fresh
+    // checkouts.
+    conditions: ["development", "import", "default"],
   },
 });

@@ -24,7 +24,7 @@ Order in the table reflects recommended sequencing within each priority band.
 | # | Item | Priority | Effort | Status |
 |---|------|----------|--------|--------|
 | F1 | Wire up real test infrastructure | P0 | M | ✅ done |
-| F2 | Compile to JS for production runs | P0 | M | |
+| F2 | Compile to JS for production runs | P0 | M | ✅ done |
 | F3 | Build a 60-second hello world quickstart | P0 | S | ✅ done |
 | F4 | Vocabulary diet + glossary | P0 | M | |
 | F5 | Audit and prune `shared/contracts/` | P1 | M | |
@@ -67,42 +67,40 @@ Order in the table reflects recommended sequencing within each priority band.
 
 ## F2 — Compile to JS for production runs
 
-**Priority:** P0 · **Effort:** M
+**Status:** ✅ done · **Priority:** P0 · **Effort:** M
 
-**Problem.** Every entry point uses `node --experimental-strip-types`. That flag is experimental, version-coupled, can be removed or changed in any Node release, and offers no diagnostics when it misbehaves. Shipping a kernel on an experimental runtime flag is not a production posture.
+**Spec:** `.kiro/specs/directive-kernel-js-build/`
 
-**Fix.**
-1. Add a `tsc` build that emits ESM JS + `.d.ts` files into `dist/` for the kernel surfaces (`engine/`, `discovery/lib/`, `runtime/`, `architecture/lib/`, `shared/`, `hosts/`).
-2. Update `package.json` `exports` to dual-publish: `import` → `./dist/...js`, `types` → `./dist/...d.ts`, with a `development` condition still pointing at `.ts` so contributors keep direct execution.
-3. Update `start`, `web:serve`, and `standalone:cli` scripts to run from `dist/` in production. Keep `dev` running TypeScript directly via `tsx` (drop `--experimental-strip-types`).
-4. Add `pnpm run build` to the root and wire it into CI.
-5. Document the dev-vs-prod execution model in the README.
+**Outcome.** The kernel now ships a real `tsc`-based build emitting compiled ESM JavaScript, type definitions, and source maps to `/dist/`. Production scripts (`web:serve`, `standalone:cli`, `start`, `ui:start`) execute compiled JS on stable Node with no `--experimental-strip-types` flag. Dev tooling (Vitest, `tsx`, `pnpm dev`, `pnpm try`) continues to run against `.ts` source via the new `development` exports condition. CI gates on a real build, and a separate `pnpm run check:build` step asserts post-build smoke.
 
-**Files.** New `tsconfig.build.json`, updated `package.json` (scripts + exports), updated `hosts/standalone-host/cli.ts` and `hosts/web-host/cli.ts` shebangs / docs.
+**Components delivered.**
+- `tsconfig.build.json` extending `tsconfig.repo.json` with emit settings (`noEmit:false`, `outDir`, declarations, source maps, `rewriteRelativeImportExtensions:true`).
+- `scripts/copy-runtime-assets.mjs` copies the seven JSON examples under `hosts/integration-kit/examples/` into `dist/` so source code that resolves them via `import.meta.url` keeps working post-build.
+- `scripts/run-with-check-build.mjs` cross-platform helper that sets `CHECK_BUILD=1` and re-execs Vitest (no `cross-env` devDep).
+- `package.json` `exports` rewritten — every entry now uses `{development, types, import, default}` with `development` first so dev tooling resolves source.
+- `package.json` scripts updated: `build`, `prepublishOnly`, `check:build` added; `dev`/`ui:dev` use `tsx`; `web:serve`/`standalone:cli`/`start`/`ui:start` run from `/dist/`. `try` stays on `tsx` source so the F3 hello-world stays setup-free.
+- `vitest.config.ts` adds `resolve.conditions: ["development", "import", "default"]` so Vitest matches the `development` condition.
+- `.github/workflows/ci.yml` runs `install → build → typecheck → test → check:build`.
+- `.gitignore` ignores `/dist/` at repo root (preserves existing `ui/dist/`).
+- `README.md` adds a "Build and Run" section explaining the dev-vs-prod split.
+- `tests/integration/build-smoke.test.ts` is the bounded property test for Post-Build Smoke (Property 1): exits 0 against compiled `try` and asserts the `standalone:cli` and `web-host` CLIs load from `/dist/` without `ERR_MODULE_NOT_FOUND`. Gated by `CHECK_BUILD=1` so `pnpm test` stays source-only.
 
-**Risk.** Export-path drift. Mitigated by writing a small `scripts/check-exports.ts` that imports every public path from `dist/` and asserts it resolves.
+**Side fixes during F2.**
+- `hosts/web-host/cli.ts` was extended to be a superset of `scripts/start-ui.ts` before consolidation: optional `--directive-root` (defaults to cwd), env var fallbacks (`DIRECTIVE_UI_HOST`, `DIRECTIVE_FRONTEND_HOST`, `DIRECTIVE_UI_PORT`, `DIRECTIVE_FRONTEND_PORT`), SIGINT/SIGTERM graceful shutdown.
+- `scripts/run-ui-dev.ts` switched its internal child-process invocation from `--experimental-strip-types` to `tsx`, so the dev path is uniformly source-driven.
+- `tests/integration/try-command-cli.test.ts` (from F3) updated to spawn via `tsx` instead of `--experimental-strip-types`, removing the experimental flag from the test path.
+- `pnpm try` originally rewritten to run from `/dist/` per the spec but reverted to `tsx ./hosts/standalone-host/cli.ts try` after smoke testing showed it broke the F3 promise of a setup-free hello-world. README "Try It" block stays correct as a result.
 
----
+**Verification.**
+- `pnpm install` → clean
+- `pnpm run typecheck` → green (kernel + UI)
+- `pnpm run test` → 12 files / 54 passed + 5 skipped (build-smoke deferred to check:build)
+- `pnpm try` → green (no `/dist/` required)
+- `pnpm run build` → green, dist/ produced with all expected emitted JS, declarations, source maps, and the 7 JSON examples
+- `pnpm run check:build` → green (build-smoke property over compiled try, standalone:cli, web-host CLI)
+- `git status` → `/dist/` is hidden
 
-## F3 — Build a 60-second hello world quickstart
-
-**Priority:** P0 · **Effort:** S
-
-**Problem.** The README's path from `init` to "I see a useful result" is a chapter, not a sentence. There is no hardcoded end-to-end path that proves the kernel works without writing config or JSON.
-
-**Fix.**
-1. Add a `kernel try` (or `standalone:cli try`) command that:
-   - Creates a temp directive root.
-   - Writes a minimal `DIRECTIVE_GOAL.md`.
-   - Submits a hardcoded sample source (`hosts/integration-kit/examples/discovery-submission-front-door.json` already exists).
-   - Runs the engine, prints the routing decision and run id, prints the path to the resulting artifact.
-   - Optionally opens the web host on a free port.
-2. Add a 5-line "Try it" block at the very top of the README.
-3. Add a recorded terminal cast (`vhs` or asciinema) embedded in the README.
-
-**Files.** New command in `hosts/standalone-host/cli.ts`, updated `README.md`, possibly new `docs/quickstart.md`.
-
-**Risk.** Low. The command composes existing entry points.
+**Unblocks:** F4 (vocabulary), F11 (naming), F7 (schema freeze) can now bundle into a clean v8→v9 cut with tests + build gating in place.
 
 ---
 

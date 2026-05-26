@@ -8,6 +8,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DIRECTIVE_ROOT = path.resolve(SCRIPT_DIR, "..");
 const UI_ROOT = path.join(DIRECTIVE_ROOT, "ui");
 const VITE_BIN = path.join(DIRECTIVE_ROOT, "ui", "node_modules", "vite", "bin", "vite.js");
+const TSX_BIN = path.join(DIRECTIVE_ROOT, "node_modules", "tsx", "dist", "cli.mjs");
 
 function readEnv(name: string, legacyName: string, fallback: string) {
   return process.env[name] || process.env[legacyName] || fallback;
@@ -92,6 +93,9 @@ async function main() {
   if (!fs.existsSync(VITE_BIN)) {
     throw new Error("Missing UI dev dependency: vite. Run `pnpm install` from the repo root.");
   }
+  if (!fs.existsSync(TSX_BIN)) {
+    throw new Error("Missing root dev dependency: tsx. Run `pnpm install` from the repo root.");
+  }
 
   const resolvedApiPort = await resolveOpenPort(DEV_HOST, API_PORT, "ui API");
   const resolvedDevPort = await resolveOpenPort(DEV_HOST, DEV_PORT, "ui dev");
@@ -99,7 +103,7 @@ async function main() {
   const appOrigin = `http://${DEV_HOST}:${resolvedDevPort}`;
 
   const hostProcess = spawnChild(process.execPath, [
-    "--experimental-strip-types",
+    TSX_BIN,
     "./scripts/start-ui.ts",
     "--host",
     DEV_HOST,

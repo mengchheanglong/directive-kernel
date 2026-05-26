@@ -8,12 +8,13 @@ import { describe, expect, it } from "vitest";
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TEST_DIR, "..", "..");
 const CLI_RELATIVE_PATH = "./hosts/standalone-host/cli.ts";
+const TSX_BIN = path.join(REPO_ROOT, "node_modules", "tsx", "dist", "cli.mjs");
 
 describe("standalone host try command (subprocess)", () => {
   it("prints the plain-text Try Output and produces a real artifact on disk", () => {
     const result = spawnSync(
       process.execPath,
-      ["--experimental-strip-types", CLI_RELATIVE_PATH, "try"],
+      [TSX_BIN, CLI_RELATIVE_PATH, "try"],
       {
         cwd: REPO_ROOT,
         encoding: "utf8",
@@ -72,7 +73,7 @@ describe("standalone host try command (subprocess)", () => {
     const result = spawnSync(
       process.execPath,
       [
-        "--experimental-strip-types",
+        TSX_BIN,
         CLI_RELATIVE_PATH,
         "try",
         "--output-root",

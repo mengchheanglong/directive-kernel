@@ -7,73 +7,307 @@
   "scripts": {
     "ui:install": "pnpm install",
     "ui:build": "pnpm --filter @directive/kernel-ui build",
-    "ui:dev": "node --experimental-strip-types ./scripts/run-ui-dev.ts",
-    "ui:start": "node --experimental-strip-types ./scripts/start-ui.ts",
+    "ui:dev": "tsx ./scripts/run-ui-dev.ts",
+    "ui:start": "node ./dist/hosts/web-host/cli.js serve --directive-root .",
     "frontend:install": "pnpm install",
     "frontend:build": "pnpm --filter @directive/kernel-ui build",
     "typecheck": "pnpm exec tsc --noEmit -p tsconfig.repo.json && pnpm --filter @directive/kernel-ui exec tsc --noEmit -p tsconfig.json",
     "check:first-integration": "vitest run tests/integration/first-integration.test.ts",
     "check:hardening": "vitest run tests/integration/hardening",
-    "dev": "node --experimental-strip-types ./scripts/run-ui-dev.ts",
-    "start": "pnpm --filter @directive/kernel-ui build && node --experimental-strip-types ./scripts/start-ui.ts",
-    "standalone:cli": "node --experimental-strip-types ./hosts/standalone-host/cli.ts",
-    "try": "node --experimental-strip-types ./hosts/standalone-host/cli.ts try",
-    "web:serve": "node --experimental-strip-types ./hosts/web-host/cli.ts serve --directive-root .",
+    "check:build": "pnpm run build && node ./scripts/run-with-check-build.mjs",
+    "dev": "tsx ./scripts/run-ui-dev.ts",
+    "start": "pnpm run build && pnpm --filter @directive/kernel-ui build && node ./dist/hosts/web-host/cli.js serve --directive-root .",
+    "standalone:cli": "node ./dist/hosts/standalone-host/cli.js",
+    "try": "tsx ./hosts/standalone-host/cli.ts try",
+    "web:serve": "node ./dist/hosts/web-host/cli.js serve --directive-root .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build": "tsc -p tsconfig.build.json && node ./scripts/copy-runtime-assets.mjs",
+    "prepublishOnly": "pnpm run build"
   },
   "exports": {
-    ".": "./index.ts",
-    "./engine": "./engine/index.ts",
-    "./engine/cases": "./engine/cases/index.ts",
-    "./engine/coordination": "./engine/coordination/index.ts",
-    "./engine/execution": "./engine/execution/index.ts",
-    "./integration-kit": "./hosts/integration-kit/index.ts",
-    "./integration-kit/cli": "./hosts/integration-kit/cli/host-integration-kit-cli.ts",
-    "./integration-kit/starter": "./hosts/integration-kit/starter/index.ts",
-    "./standalone-host": "./hosts/standalone-host/index.ts",
-    "./standalone-host/bootstrap": "./hosts/standalone-host/bootstrap.ts",
-    "./standalone-host/cli": "./hosts/standalone-host/cli.ts",
-    "./standalone-host/config": "./hosts/standalone-host/config.ts",
-    "./standalone-host/persistence": "./hosts/standalone-host/persistence.ts",
-    "./standalone-host/server": "./hosts/standalone-host/server.ts",
-    "./ui": "./hosts/web-host/index.ts",
-    "./ui/cli": "./hosts/web-host/cli.ts",
-    "./ui/server": "./hosts/web-host/server.ts",
-    "./frontend": "./hosts/web-host/index.ts",
-    "./frontend/cli": "./hosts/web-host/cli.ts",
-    "./frontend/server": "./hosts/web-host/server.ts",
-    "./architecture": "./architecture/lib/index.ts",
-    "./architecture/control": "./architecture/lib/control/index.ts",
-    "./architecture/adoption": "./architecture/lib/adoption/index.ts",
-    "./architecture/materialization": "./architecture/lib/materialization/index.ts",
-    "./architecture/experiments": "./architecture/lib/experiments/index.ts",
-    "./discovery": "./discovery/lib/index.ts",
-    "./discovery/gaps": "./discovery/lib/gaps/index.ts",
-    "./discovery/front-door": "./discovery/lib/front-door/index.ts",
-    "./discovery/intake": "./discovery/lib/intake/index.ts",
-    "./discovery/routing": "./discovery/lib/routing/index.ts",
-    "./discovery/records": "./discovery/lib/records/index.ts",
-    "./discovery/importers": "./discovery/importers/index.ts",
-    "./runtime": "./runtime/lib/index.ts",
-    "./runtime/openers": "./runtime/lib/openers/index.ts",
-    "./runtime/projections": "./runtime/lib/projections/index.ts",
-    "./runtime/runners": "./runtime/lib/runners/index.ts",
-    "./runtime/sequences": "./runtime/lib/sequences/index.ts",
-    "./runtime/writers": "./runtime/lib/writers/index.ts",
-    "./runtime/host": "./runtime/lib/host/index.ts",
-    "./runtime/control": "./runtime/lib/control/index.ts",
-    "./engine/state": "./engine/state/index.ts",
-    "./engine/mission": "./engine/mission/index.ts",
-    "./engine/routing": "./engine/routing/index.ts",
-    "./engine/planning": "./engine/planning/index.ts",
-    "./shared/directive-goal": "./shared/lib/directive-goal.ts",
-    "./runtime/core/runtime-core-contract": "./runtime/core/runtime-core-contract.ts"
+    ".": {
+      "development": "./index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./engine": {
+      "development": "./engine/index.ts",
+      "types": "./dist/engine/index.d.ts",
+      "import": "./dist/engine/index.js",
+      "default": "./dist/engine/index.js"
+    },
+    "./engine/cases": {
+      "development": "./engine/cases/index.ts",
+      "types": "./dist/engine/cases/index.d.ts",
+      "import": "./dist/engine/cases/index.js",
+      "default": "./dist/engine/cases/index.js"
+    },
+    "./engine/coordination": {
+      "development": "./engine/coordination/index.ts",
+      "types": "./dist/engine/coordination/index.d.ts",
+      "import": "./dist/engine/coordination/index.js",
+      "default": "./dist/engine/coordination/index.js"
+    },
+    "./engine/execution": {
+      "development": "./engine/execution/index.ts",
+      "types": "./dist/engine/execution/index.d.ts",
+      "import": "./dist/engine/execution/index.js",
+      "default": "./dist/engine/execution/index.js"
+    },
+    "./integration-kit": {
+      "development": "./hosts/integration-kit/index.ts",
+      "types": "./dist/hosts/integration-kit/index.d.ts",
+      "import": "./dist/hosts/integration-kit/index.js",
+      "default": "./dist/hosts/integration-kit/index.js"
+    },
+    "./integration-kit/cli": {
+      "development": "./hosts/integration-kit/cli/host-integration-kit-cli.ts",
+      "types": "./dist/hosts/integration-kit/cli/host-integration-kit-cli.d.ts",
+      "import": "./dist/hosts/integration-kit/cli/host-integration-kit-cli.js",
+      "default": "./dist/hosts/integration-kit/cli/host-integration-kit-cli.js"
+    },
+    "./integration-kit/starter": {
+      "development": "./hosts/integration-kit/starter/index.ts",
+      "types": "./dist/hosts/integration-kit/starter/index.d.ts",
+      "import": "./dist/hosts/integration-kit/starter/index.js",
+      "default": "./dist/hosts/integration-kit/starter/index.js"
+    },
+    "./standalone-host": {
+      "development": "./hosts/standalone-host/index.ts",
+      "types": "./dist/hosts/standalone-host/index.d.ts",
+      "import": "./dist/hosts/standalone-host/index.js",
+      "default": "./dist/hosts/standalone-host/index.js"
+    },
+    "./standalone-host/bootstrap": {
+      "development": "./hosts/standalone-host/bootstrap.ts",
+      "types": "./dist/hosts/standalone-host/bootstrap.d.ts",
+      "import": "./dist/hosts/standalone-host/bootstrap.js",
+      "default": "./dist/hosts/standalone-host/bootstrap.js"
+    },
+    "./standalone-host/cli": {
+      "development": "./hosts/standalone-host/cli.ts",
+      "types": "./dist/hosts/standalone-host/cli.d.ts",
+      "import": "./dist/hosts/standalone-host/cli.js",
+      "default": "./dist/hosts/standalone-host/cli.js"
+    },
+    "./standalone-host/config": {
+      "development": "./hosts/standalone-host/config.ts",
+      "types": "./dist/hosts/standalone-host/config.d.ts",
+      "import": "./dist/hosts/standalone-host/config.js",
+      "default": "./dist/hosts/standalone-host/config.js"
+    },
+    "./standalone-host/persistence": {
+      "development": "./hosts/standalone-host/persistence.ts",
+      "types": "./dist/hosts/standalone-host/persistence.d.ts",
+      "import": "./dist/hosts/standalone-host/persistence.js",
+      "default": "./dist/hosts/standalone-host/persistence.js"
+    },
+    "./standalone-host/server": {
+      "development": "./hosts/standalone-host/server.ts",
+      "types": "./dist/hosts/standalone-host/server.d.ts",
+      "import": "./dist/hosts/standalone-host/server.js",
+      "default": "./dist/hosts/standalone-host/server.js"
+    },
+    "./ui": {
+      "development": "./hosts/web-host/index.ts",
+      "types": "./dist/hosts/web-host/index.d.ts",
+      "import": "./dist/hosts/web-host/index.js",
+      "default": "./dist/hosts/web-host/index.js"
+    },
+    "./ui/cli": {
+      "development": "./hosts/web-host/cli.ts",
+      "types": "./dist/hosts/web-host/cli.d.ts",
+      "import": "./dist/hosts/web-host/cli.js",
+      "default": "./dist/hosts/web-host/cli.js"
+    },
+    "./ui/server": {
+      "development": "./hosts/web-host/server.ts",
+      "types": "./dist/hosts/web-host/server.d.ts",
+      "import": "./dist/hosts/web-host/server.js",
+      "default": "./dist/hosts/web-host/server.js"
+    },
+    "./frontend": {
+      "development": "./hosts/web-host/index.ts",
+      "types": "./dist/hosts/web-host/index.d.ts",
+      "import": "./dist/hosts/web-host/index.js",
+      "default": "./dist/hosts/web-host/index.js"
+    },
+    "./frontend/cli": {
+      "development": "./hosts/web-host/cli.ts",
+      "types": "./dist/hosts/web-host/cli.d.ts",
+      "import": "./dist/hosts/web-host/cli.js",
+      "default": "./dist/hosts/web-host/cli.js"
+    },
+    "./frontend/server": {
+      "development": "./hosts/web-host/server.ts",
+      "types": "./dist/hosts/web-host/server.d.ts",
+      "import": "./dist/hosts/web-host/server.js",
+      "default": "./dist/hosts/web-host/server.js"
+    },
+    "./architecture": {
+      "development": "./architecture/lib/index.ts",
+      "types": "./dist/architecture/lib/index.d.ts",
+      "import": "./dist/architecture/lib/index.js",
+      "default": "./dist/architecture/lib/index.js"
+    },
+    "./architecture/control": {
+      "development": "./architecture/lib/control/index.ts",
+      "types": "./dist/architecture/lib/control/index.d.ts",
+      "import": "./dist/architecture/lib/control/index.js",
+      "default": "./dist/architecture/lib/control/index.js"
+    },
+    "./architecture/adoption": {
+      "development": "./architecture/lib/adoption/index.ts",
+      "types": "./dist/architecture/lib/adoption/index.d.ts",
+      "import": "./dist/architecture/lib/adoption/index.js",
+      "default": "./dist/architecture/lib/adoption/index.js"
+    },
+    "./architecture/materialization": {
+      "development": "./architecture/lib/materialization/index.ts",
+      "types": "./dist/architecture/lib/materialization/index.d.ts",
+      "import": "./dist/architecture/lib/materialization/index.js",
+      "default": "./dist/architecture/lib/materialization/index.js"
+    },
+    "./architecture/experiments": {
+      "development": "./architecture/lib/experiments/index.ts",
+      "types": "./dist/architecture/lib/experiments/index.d.ts",
+      "import": "./dist/architecture/lib/experiments/index.js",
+      "default": "./dist/architecture/lib/experiments/index.js"
+    },
+    "./discovery": {
+      "development": "./discovery/lib/index.ts",
+      "types": "./dist/discovery/lib/index.d.ts",
+      "import": "./dist/discovery/lib/index.js",
+      "default": "./dist/discovery/lib/index.js"
+    },
+    "./discovery/gaps": {
+      "development": "./discovery/lib/gaps/index.ts",
+      "types": "./dist/discovery/lib/gaps/index.d.ts",
+      "import": "./dist/discovery/lib/gaps/index.js",
+      "default": "./dist/discovery/lib/gaps/index.js"
+    },
+    "./discovery/front-door": {
+      "development": "./discovery/lib/front-door/index.ts",
+      "types": "./dist/discovery/lib/front-door/index.d.ts",
+      "import": "./dist/discovery/lib/front-door/index.js",
+      "default": "./dist/discovery/lib/front-door/index.js"
+    },
+    "./discovery/intake": {
+      "development": "./discovery/lib/intake/index.ts",
+      "types": "./dist/discovery/lib/intake/index.d.ts",
+      "import": "./dist/discovery/lib/intake/index.js",
+      "default": "./dist/discovery/lib/intake/index.js"
+    },
+    "./discovery/routing": {
+      "development": "./discovery/lib/routing/index.ts",
+      "types": "./dist/discovery/lib/routing/index.d.ts",
+      "import": "./dist/discovery/lib/routing/index.js",
+      "default": "./dist/discovery/lib/routing/index.js"
+    },
+    "./discovery/records": {
+      "development": "./discovery/lib/records/index.ts",
+      "types": "./dist/discovery/lib/records/index.d.ts",
+      "import": "./dist/discovery/lib/records/index.js",
+      "default": "./dist/discovery/lib/records/index.js"
+    },
+    "./discovery/importers": {
+      "development": "./discovery/importers/index.ts",
+      "types": "./dist/discovery/importers/index.d.ts",
+      "import": "./dist/discovery/importers/index.js",
+      "default": "./dist/discovery/importers/index.js"
+    },
+    "./runtime": {
+      "development": "./runtime/lib/index.ts",
+      "types": "./dist/runtime/lib/index.d.ts",
+      "import": "./dist/runtime/lib/index.js",
+      "default": "./dist/runtime/lib/index.js"
+    },
+    "./runtime/openers": {
+      "development": "./runtime/lib/openers/index.ts",
+      "types": "./dist/runtime/lib/openers/index.d.ts",
+      "import": "./dist/runtime/lib/openers/index.js",
+      "default": "./dist/runtime/lib/openers/index.js"
+    },
+    "./runtime/projections": {
+      "development": "./runtime/lib/projections/index.ts",
+      "types": "./dist/runtime/lib/projections/index.d.ts",
+      "import": "./dist/runtime/lib/projections/index.js",
+      "default": "./dist/runtime/lib/projections/index.js"
+    },
+    "./runtime/runners": {
+      "development": "./runtime/lib/runners/index.ts",
+      "types": "./dist/runtime/lib/runners/index.d.ts",
+      "import": "./dist/runtime/lib/runners/index.js",
+      "default": "./dist/runtime/lib/runners/index.js"
+    },
+    "./runtime/sequences": {
+      "development": "./runtime/lib/sequences/index.ts",
+      "types": "./dist/runtime/lib/sequences/index.d.ts",
+      "import": "./dist/runtime/lib/sequences/index.js",
+      "default": "./dist/runtime/lib/sequences/index.js"
+    },
+    "./runtime/writers": {
+      "development": "./runtime/lib/writers/index.ts",
+      "types": "./dist/runtime/lib/writers/index.d.ts",
+      "import": "./dist/runtime/lib/writers/index.js",
+      "default": "./dist/runtime/lib/writers/index.js"
+    },
+    "./runtime/host": {
+      "development": "./runtime/lib/host/index.ts",
+      "types": "./dist/runtime/lib/host/index.d.ts",
+      "import": "./dist/runtime/lib/host/index.js",
+      "default": "./dist/runtime/lib/host/index.js"
+    },
+    "./runtime/control": {
+      "development": "./runtime/lib/control/index.ts",
+      "types": "./dist/runtime/lib/control/index.d.ts",
+      "import": "./dist/runtime/lib/control/index.js",
+      "default": "./dist/runtime/lib/control/index.js"
+    },
+    "./engine/state": {
+      "development": "./engine/state/index.ts",
+      "types": "./dist/engine/state/index.d.ts",
+      "import": "./dist/engine/state/index.js",
+      "default": "./dist/engine/state/index.js"
+    },
+    "./engine/mission": {
+      "development": "./engine/mission/index.ts",
+      "types": "./dist/engine/mission/index.d.ts",
+      "import": "./dist/engine/mission/index.js",
+      "default": "./dist/engine/mission/index.js"
+    },
+    "./engine/routing": {
+      "development": "./engine/routing/index.ts",
+      "types": "./dist/engine/routing/index.d.ts",
+      "import": "./dist/engine/routing/index.js",
+      "default": "./dist/engine/routing/index.js"
+    },
+    "./engine/planning": {
+      "development": "./engine/planning/index.ts",
+      "types": "./dist/engine/planning/index.d.ts",
+      "import": "./dist/engine/planning/index.js",
+      "default": "./dist/engine/planning/index.js"
+    },
+    "./shared/directive-goal": {
+      "development": "./shared/lib/directive-goal.ts",
+      "types": "./dist/shared/lib/directive-goal.d.ts",
+      "import": "./dist/shared/lib/directive-goal.js",
+      "default": "./dist/shared/lib/directive-goal.js"
+    },
+    "./runtime/core/runtime-core-contract": {
+      "development": "./runtime/core/runtime-core-contract.ts",
+      "types": "./dist/runtime/core/runtime-core-contract.d.ts",
+      "import": "./dist/runtime/core/runtime-core-contract.js",
+      "default": "./dist/runtime/core/runtime-core-contract.js"
+    }
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
     "fast-check": "^3.22.0",
     "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
     "vitest": "^2.1.0"
   }
 }

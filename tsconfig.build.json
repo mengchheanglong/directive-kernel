@@ -1,0 +1,40 @@
+{
+  "extends": "./tsconfig.repo.json",
+
+  "compilerOptions": {
+    "noEmit": false,
+
+    "outDir": "./dist",
+
+    "rootDir": ".",
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    "rewriteRelativeImportExtensions": true,
+
+    "allowImportingTsExtensions": false,
+
+    "isolatedModules": true
+  },
+
+  "include": [
+    "index.ts",
+    "engine/**/*.ts",
+    "discovery/**/*.ts",
+    "runtime/**/*.ts",
+    "architecture/**/*.ts",
+    "hosts/**/*.ts",
+    "shared/**/*.ts"
+  ],
+
+  "exclude": [
+    "ui/**",
+    "node_modules/**",
+    "local/**",
+    "tests/**",
+    "scripts/**",
+    "dist/**"
+  ]
+}
