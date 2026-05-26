@@ -18,7 +18,7 @@ import {
   type FirstHostGoalEnvelopeInput,
   type FirstHostSourceInput,
 } from "../lib/first-host-integration.ts";
-import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
+import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/submission-router.ts";
 
 type CommandName =
   | "acceptance-quickstart"

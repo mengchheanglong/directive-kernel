@@ -1,14 +1,14 @@
 import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
 
-import type { DirectiveEngineSourceItem } from "../../engine/types.ts";
-import { normalizeText } from "../../engine/engine-source-utils.ts";
-import { normalizeDirectiveEngineSourceType } from "../../engine/source-type-normalization.ts";
+import type { EngineSourceItem } from "../../engine/types.ts";
+import { normalizeText } from "../../engine/source-utils.ts";
+import { normalizeEngineSourceType } from "../../engine/source-type-normalization.ts";
 import {
   normalizeOptionalBoolean,
   normalizePrimaryAdoptionTarget,
   normalizeWorkflowBoundaryShape,
-  validateDirectiveEngineSource,
+  validateEngineSource,
 } from "../../engine/source-input-normalization.ts";
 import { sourceInputArb } from "./_arbitraries/source-input.ts";
 
@@ -18,18 +18,18 @@ import { sourceInputArb } from "./_arbitraries/source-input.ts";
 // `normalize(source) → source` function. It exports per-field normalizers
 // (`normalizeOptionalBoolean`, `normalizePrimaryAdoptionTarget`,
 // `normalizeWorkflowBoundaryShape`) and a validator
-// (`validateDirectiveEngineSource`) that throws on bad input. The composite
+// (`validateEngineSource`) that throws on bad input. The composite
 // source-record normalization that production code actually performs lives
 // inline in `prepareProcessSourceInput` in `engine/process-source-record.ts`,
 // where it combines the field normalizers from this module with
-// `normalizeText` from `engine-source-utils.ts` and
-// `normalizeDirectiveEngineSourceType` from `source-type-normalization.ts`,
-// then runs `validateDirectiveEngineSource` at the end.
+// `normalizeText` from `source-utils.ts` and
+// `normalizeEngineSourceType` from `source-type-normalization.ts`,
+// then runs `validateEngineSource` at the end.
 //
 // To make Property 6 well-defined we mirror that exact pipeline in this
 // file as the local `normalizeSource` helper. With this shape the
-// normalizer accepts a `DirectiveEngineSourceItem` and returns a
-// `DirectiveEngineSourceItem`, so `normalize(normalize(x))` type-checks
+// normalizer accepts a `EngineSourceItem` and returns a
+// `EngineSourceItem`, so `normalize(normalize(x))` type-checks
 // and the idempotence assertion is meaningful — we exercise the same
 // transformations production runs, only without the surrounding
 // mission/receivedAt machinery that `prepareProcessSourceInput` also
@@ -43,11 +43,11 @@ function normalizeNotes(notes: string[] | null | undefined): string[] {
   return (notes ?? []).map((note) => normalizeText(note)).filter(Boolean);
 }
 
-function normalizeSource(input: DirectiveEngineSourceItem): DirectiveEngineSourceItem {
-  const normalized: DirectiveEngineSourceItem = {
+function normalizeSource(input: EngineSourceItem): EngineSourceItem {
+  const normalized: EngineSourceItem = {
     ...input,
     sourceId: normalizeText(input.sourceId) || null,
-    sourceType: normalizeDirectiveEngineSourceType(input.sourceType),
+    sourceType: normalizeEngineSourceType(input.sourceType),
     sourceRef: normalizeText(input.sourceRef),
     title:
       normalizeText(input.title)
@@ -63,7 +63,7 @@ function normalizeSource(input: DirectiveEngineSourceItem): DirectiveEngineSourc
     workflowBoundaryShape: normalizeWorkflowBoundaryShape(input.workflowBoundaryShape),
     notes: normalizeNotes(input.notes),
   };
-  validateDirectiveEngineSource(normalized);
+  validateEngineSource(normalized);
   return normalized;
 }
 
@@ -83,7 +83,7 @@ describe("source-input-normalization", () => {
   it("Property 6: normalize(normalize(x)) deep-equals normalize(x)", () => {
     fc.assert(
       fc.property(sourceInputArb, (input) => {
-        let once: DirectiveEngineSourceItem;
+        let once: EngineSourceItem;
         try {
           once = normalizeSource(input);
         } catch {

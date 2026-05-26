@@ -1,9 +1,9 @@
 import type {
-  DirectiveEnginePrimaryAdoptionTarget,
-  DirectiveEngineSourceItem,
-  DirectiveEngineWorkflowBoundaryShape,
+  EnginePrimaryAdoptionTarget,
+  EngineSourceItem,
+  EngineWorkflowBoundaryShape,
 } from "./types.ts";
-import { normalizeText } from "./engine-source-utils.ts";
+import { normalizeText } from "./source-utils.ts";
 
 export function normalizeOptionalBoolean(value: unknown) {
   if (value === true || value === false) {
@@ -14,7 +14,7 @@ export function normalizeOptionalBoolean(value: unknown) {
 
 export function normalizePrimaryAdoptionTarget(
   value: unknown,
-): DirectiveEnginePrimaryAdoptionTarget | null {
+): EnginePrimaryAdoptionTarget | null {
   if (value === "discovery" || value === "architecture" || value === "runtime") {
     return value;
   }
@@ -23,14 +23,14 @@ export function normalizePrimaryAdoptionTarget(
 
 export function normalizeWorkflowBoundaryShape(
   value: unknown,
-): DirectiveEngineWorkflowBoundaryShape | null {
+): EngineWorkflowBoundaryShape | null {
   if (value === "bounded_protocol" || value === "iterative_loop") {
     return value;
   }
   return null;
 }
 
-export function validateDirectiveEngineSource(source: DirectiveEngineSourceItem) {
+export function validateEngineSource(source: EngineSourceItem) {
   const sourceId = normalizeText(source.sourceId);
   const sourceRef = normalizeText(source.sourceRef);
   const title = normalizeText(source.title);

@@ -1,9 +1,9 @@
 import path from "node:path";
 
-import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/routing/discovery-route-opener.ts";
+import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/routing/route-opener.ts";
 import {
-  type StoredDirectiveEngineRunRecord,
-} from "../execution/engine-run-artifacts.ts";
+  type StoredEngineRunRecord,
+} from "../execution/run-artifacts.ts";
 import {
   readLinkedArtifactIfPresent,
   recordMissingLinkedArtifactIfAbsent,
@@ -25,15 +25,15 @@ import {
   resolveDirectiveRelativePath,
   zeroLinkedArtifacts,
 } from "./shared-state-helpers.ts";
-import type { DirectiveWorkspaceResolvedFocus } from "./resolve-directive-workspace-state.ts";
+import type { WorkspaceResolvedFocus } from "./resolve-workspace-state.ts";
 
 export function resolveEngineFocus(input: {
   directiveRoot: string;
   artifactPath: string;
-}): DirectiveWorkspaceResolvedFocus {
+}): WorkspaceResolvedFocus {
   const relativePath = resolveDirectiveRelativePath(input.directiveRoot, input.artifactPath, "artifactPath");
   const absolutePath = path.join(input.directiveRoot, relativePath);
-  const record = JSON.parse(readUtf8(absolutePath)) as StoredDirectiveEngineRunRecord;
+  const record = JSON.parse(readUtf8(absolutePath)) as StoredEngineRunRecord;
   const queueEntry = findQueueEntryByCandidateId(input.directiveRoot, record.candidate.candidateId);
   const reportPath = relativePath.replace(/\.json$/i, ".md");
 
@@ -112,7 +112,7 @@ export function resolveEngineFocus(input: {
 export function resolveArchitectureWorkspaceFocus(input: {
   directiveRoot: string;
   artifactPath: string;
-}): DirectiveWorkspaceResolvedFocus {
+}): WorkspaceResolvedFocus {
   const architecture = resolveArchitectureFocusFromAnyPath({
     directiveRoot: input.directiveRoot,
     artifactPath: input.artifactPath,
@@ -199,7 +199,7 @@ export function resolveArchitectureWorkspaceFocus(input: {
 export function resolveRuntimeWorkspaceFocus(input: {
   directiveRoot: string;
   artifactPath: string;
-}): DirectiveWorkspaceResolvedFocus {
+}): WorkspaceResolvedFocus {
   const runtime = resolveRuntimeFocusFromAnyPath({
     directiveRoot: input.directiveRoot,
     artifactPath: input.artifactPath,

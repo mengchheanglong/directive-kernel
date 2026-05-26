@@ -1,21 +1,21 @@
-import { DIRECTIVE_WORKSPACE_V0, type DirectiveRuntimeStatus } from "./runtime-core-contract";
+import { DIRECTIVE_WORKSPACE_V0, type RuntimeStatus } from "./contract";
 
-export type DirectiveLifecycleCapabilityInput = {
+export type LifecycleCapabilityInput = {
   createdAt: string;
-  runtimeStatus: DirectiveRuntimeStatus;
+  runtimeStatus: RuntimeStatus;
 };
 
-export type DirectiveLifecycleDecisionInput = {
+export type LifecycleDecisionInput = {
   createdAt: string;
   decision: string;
 };
 
-export type DirectiveLifecycleIntegrationInput = {
+export type LifecycleIntegrationInput = {
   status: string;
   updatedAt: string;
 };
 
-export type DirectiveIntegrationProofArtifactInput = {
+export type IntegrationProofArtifactInput = {
   capabilityId: string;
   title: string;
   sourceRef: string;
@@ -25,12 +25,12 @@ export type DirectiveIntegrationProofArtifactInput = {
   summary: string;
 };
 
-export type DirectiveIntegrationProofReportInput =
-  DirectiveIntegrationProofArtifactInput & {
+export type IntegrationProofReportInput =
+  IntegrationProofArtifactInput & {
     artifactPath: string;
   };
 
-export type DirectiveDecisionReportInput = {
+export type DecisionReportInput = {
   capabilityId: string;
   title: string;
   sourceType: string;
@@ -62,9 +62,9 @@ export function computeDirectiveLeadTimeHours(
 }
 
 export function summarizeDirectiveLifecycle(input: {
-  capability: DirectiveLifecycleCapabilityInput;
-  decisions: DirectiveLifecycleDecisionInput[];
-  integrations: DirectiveLifecycleIntegrationInput[];
+  capability: LifecycleCapabilityInput;
+  decisions: LifecycleDecisionInput[];
+  integrations: LifecycleIntegrationInput[];
 }) {
   const latestDecision = input.decisions[0] || null;
   const decisionLeadTimeHours = latestDecision
@@ -92,7 +92,7 @@ export function summarizeDirectiveLifecycle(input: {
 }
 
 export function buildDirectiveIntegrationProofArtifactContent(
-  input: DirectiveIntegrationProofArtifactInput,
+  input: IntegrationProofArtifactInput,
 ) {
   return [
     "# Directive Integration Proof",
@@ -109,7 +109,7 @@ export function buildDirectiveIntegrationProofArtifactContent(
 }
 
 export function buildDirectiveIntegrationProofReportContent(
-  input: DirectiveIntegrationProofReportInput,
+  input: IntegrationProofReportInput,
 ) {
   return [
     "# Directive Integration Proof",
@@ -126,7 +126,7 @@ export function buildDirectiveIntegrationProofReportContent(
 }
 
 export function buildDirectiveDecisionReportContent(
-  input: DirectiveDecisionReportInput,
+  input: DecisionReportInput,
 ) {
   return [
     "# Directive Workspace Decision",

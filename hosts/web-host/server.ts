@@ -21,7 +21,7 @@ export type StartDirectiveUiServerOptions = {
   port?: number;
 };
 
-export type DirectiveUiServerHandle = {
+export type UiServerHandle = {
   server: NodeHttpServer;
   host: string;
   port: number;
@@ -31,7 +31,7 @@ export type DirectiveUiServerHandle = {
 };
 
 export type StartDirectiveFrontendServerOptions = StartDirectiveUiServerOptions;
-export type DirectiveFrontendServerHandle = DirectiveUiServerHandle;
+export type FrontendServerHandle = UiServerHandle;
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const UI_APP_ROOT = path.resolve(MODULE_DIR, "..", "..", "ui");
@@ -41,7 +41,7 @@ const UI_OPERATOR_ACTOR = "directive-ui-operator";
 
 export function startDirectiveUiServer(
   options: StartDirectiveUiServerOptions,
-): Promise<DirectiveUiServerHandle> {
+): Promise<UiServerHandle> {
   const directiveRoot = normalizeAbsolutePath(options.directiveRoot);
   const host = options.host || "127.0.0.1";
   const port = options.port ?? 0;
@@ -131,5 +131,5 @@ export function startDirectiveUiServer(
 
 export const startDirectiveFrontendServer = startDirectiveUiServer;
 export type StartDirectiveWorkbenchServerOptions = StartDirectiveUiServerOptions;
-export type DirectiveWorkbenchServerHandle = DirectiveUiServerHandle;
+export type WorkbenchServerHandle = UiServerHandle;
 export const startDirectiveWorkbenchServer = startDirectiveUiServer;

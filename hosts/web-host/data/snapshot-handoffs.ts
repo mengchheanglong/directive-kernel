@@ -3,9 +3,9 @@ import path from "node:path";
 
 import { normalizeRelativePath } from "../../../shared/lib/path-normalization.ts";
 import {
-  readDirectiveArchitectureHandoffArtifact,
-  type DirectiveArchitectureHandoffArtifact,
-} from "../../../architecture/lib/experiments/architecture-handoff-start.ts";
+  readArchitectureHandoffArtifact,
+  type ArchitectureHandoffArtifact,
+} from "../../../architecture/lib/experiments/handoff-start.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 
 export type FrontendHandoffStub = {
@@ -233,14 +233,14 @@ export function readArchitectureHandoffStubs(input: {
   const maxEntries = Math.max(1, input.maxEntries ?? 20);
   if (!fs.existsSync(experimentsRoot)) {
     return {
-      artifacts: [] as DirectiveArchitectureHandoffArtifact[],
+      artifacts: [] as ArchitectureHandoffArtifact[],
       stubs: [] as FrontendHandoffStub[],
       warnings: [] as string[],
     };
   }
 
   const warnings: string[] = [];
-  const artifacts: DirectiveArchitectureHandoffArtifact[] = [];
+  const artifacts: ArchitectureHandoffArtifact[] = [];
   const stubs = fs
     .readdirSync(experimentsRoot, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith("-engine-handoff.md"))
@@ -250,7 +250,7 @@ export function readArchitectureHandoffStubs(input: {
       const relativePath = normalizeRelativePath(path.join("architecture", "01-experiments", entry.name));
 
       try {
-        const handoff = readDirectiveArchitectureHandoffArtifact({
+        const handoff = readArchitectureHandoffArtifact({
           directiveRoot: input.directiveRoot,
           handoffPath: relativePath,
         });

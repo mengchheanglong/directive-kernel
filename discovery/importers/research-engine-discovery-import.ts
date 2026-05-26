@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 
@@ -7,17 +7,17 @@ import { requiredString } from "../../shared/lib/validation.ts";
 import type {
   DiscoveryIntakeQueueDocument,
   DiscoverySourceType,
-} from "../lib/intake/discovery-intake-queue-writer.ts";
-import type { DirectiveEngineSourceItem } from "../../engine/types.ts";
+} from "../lib/intake/queue-writer.ts";
+import type { EngineSourceItem } from "../../engine/types.ts";
 import { normalizeWorkflowBoundaryShape } from "../../engine/source-input-normalization.ts";
 import {
   submitDirectiveDiscoveryFrontDoor,
-  type DirectiveDiscoveryFrontDoorResult,
-} from "../lib/front-door/discovery-front-door.ts";
+  type DiscoveryFrontDoorResult,
+} from "../lib/front-door/front-door.ts";
 import type {
   DiscoverySubmissionRequest,
   DiscoverySubmissionShape,
-} from "../lib/front-door/discovery-submission-router.ts";
+} from "../lib/front-door/submission-router.ts";
 
 type ResearchEngineArtifactRefs = {
   source_intelligence_packet: string;
@@ -164,7 +164,7 @@ export type ResearchEngineDiscoveryImportResult = {
     sourceReference: string;
     sourceType: DiscoverySourceType;
     strongSignalReason: string | null;
-    discovery: DirectiveDiscoveryFrontDoorResult;
+    discovery: DiscoveryFrontDoorResult;
   }>;
 };
 
@@ -634,7 +634,7 @@ function inferResearchEngineStructuralSignals(input: {
     combinedText,
   ) || recommendedLaneTarget === "architecture" || workflowPhaseLabels.length >= 2 || providerSeamSummary !== null || structuralSignalBand === "extractive_structural";
 
-  const workflowBoundaryShape: DirectiveEngineSourceItem["workflowBoundaryShape"] =
+  const workflowBoundaryShape: EngineSourceItem["workflowBoundaryShape"] =
     workflowBoundaryShapeHint
       ?? (/\b(provider seam|provider abstraction|acquisition|synthesis|phase|phases|staged|boundary|boundaries|protocol|outline)\b/u.test(
       combinedText,

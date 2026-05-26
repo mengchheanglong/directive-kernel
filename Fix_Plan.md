@@ -26,14 +26,14 @@ Order in the table reflects recommended sequencing within each priority band.
 | F1 | Wire up real test infrastructure | P0 | M | ✅ done |
 | F2 | Compile to JS for production runs | P0 | M | ✅ done |
 | F3 | Build a 60-second hello world quickstart | P0 | S | ✅ done |
-| F4 | Vocabulary diet + glossary | P0 | M | |
+| F4 | Vocabulary diet + glossary | P0 | M | ✅ done |
 | F5 | Audit and prune `shared/contracts/` | P1 | M | |
 | F6 | Resolve the three "runtime" surface confusion | P1 | S | |
-| F7 | Freeze `DirectiveEngineRunRecord` schema + migration policy | P1 | M | |
+| F7 | Freeze `DirectiveEngineRunRecord` schema + migration policy | P1 | M | ✅ done |
 | F8 | Decide UI direction: read-only vs operator workbench | P1 | M–L | |
 | F9 | Surface-area prune in `engine/` and `runtime/lib/` | P2 | L | |
 | F10 | Pick an audience and over-serve them | P2 | varies | |
-| F11 | Prefix prune and file/type naming consistency | P1 | M | |
+| F11 | Prefix prune and file/type naming consistency | P1 | M | ✅ done |
 | F12 | Decide on the numbered folder convention (keep, simplify, drop) | P2 | S | |
 | F13 | Concurrency / locking story for filesystem persistence | P1 | M | |
 | F14 | Data retention and ledger rotation policy | P1 | M | |
@@ -131,6 +131,129 @@ Order in the table reflects recommended sequencing within each priority band.
 ---
 
 ## F4 — Vocabulary diet + glossary
+
+**Status:** ✅ done · **Priority:** P0 · **Effort:** M · **Shipped as:** part of the v8 → v9 cut bundle (with F7 + F11)
+
+**Spec:** `.kiro/specs/directive-kernel-v9-cut/`
+
+**Outcome.** The kernel ships a documented vocabulary in `GLOSSARY.md` at the repo root. Eight metaphor-heavy terms have been renamed to plain English across every kernel surface (TypeScript identifiers, JSON property keys, JSON Schema text, contracts, READMEs, root docs). The do-not-touch list (`mission`, `lane`, `discovery`, `runtime`, `architecture`, `kernel`, `directive root`) is documented and enforced. A new contributor opening the kernel for the first time no longer has to learn invented vocabulary before reading a contract or a code path.
+
+**Components delivered.**
+- `GLOSSARY.md` at the repo root with one-sentence definitions and canonical-source links for every term in the post-rename vocabulary.
+- `GLOSSARY_CANDIDATES.md` — audit deliverable produced by Claude during the audit phase, lists all 8 canonical renames plus the do-not-touch and keep-as-is dispositions.
+- 8 vocabulary renames applied repo-wide:
+  - `earned autonomy` → `operator trust score` (`earnedAutonomy` → `operatorTrustScore`)
+  - `gap radar` → `open gaps view` (`gapRadar` → `openGapsView`)
+  - `narrative threading` → `source thread context` (`narrativeThreading` → `sourceThreadContext`)
+  - `deep tail` → `materialization tail` (`deepTail` → `materializationTail`)
+  - `legal next seams` → `allowed next steps` (`legalNextSeams` → `allowedNextSteps`)
+  - `forbidden scope expansion` → `out of scope` (`forbiddenScopeExpansion` → `outOfScope`)
+  - `bounded closeout` → `closeout` (`boundedCloseout` → `closeout`)
+  - `integrity gate` → `integrity check` (`integrityGate` → `integrityCheck`)
+- `tests/integration/vocabulary-sweep.test.ts` — CI-gated sweep that scans the repo for residual LHS matches outside the documented allowlist (`GLOSSARY_CANDIDATES.md`, `Fix_Plan.md` history, `shared/schemas/migrations/v8-to-v9.ts`).
+
+**Side fixes during F4.**
+- The vocabulary sweep test rejected one near-miss occurrence in a code comment that was not on the audit's call-site list; the audit was extended during execution to keep the sweep test green.
+- Several lane README sentences had ambiguous tense after the rename (e.g. "the gap radar surfaces" → "the open gaps view surfaces"); reworded for grammar.
+
+**Verification.**
+- `pnpm run typecheck` → green (kernel + UI)
+- `pnpm run test` → 88 passed / 5 skipped, 21 files, ~5s
+- `pnpm run check:build` → green (post-build smoke over the four production scripts)
+- `pnpm run check:naming` → green
+- `pnpm try` → green (engine routes the sample source end-to-end)
+- `tests/integration/vocabulary-sweep.test.ts` → green (zero LHS matches outside the allowlist)
+
+**Unblocks:** F5 (the contracts pruning will be reviewed against the renamed vocabulary, not the old one), F8 (UI direction decisions reference the post-rename concept names).
+
+---
+
+## F7 — Freeze `DirectiveEngineRunRecord` schema + migration policy
+
+**Status:** ✅ done · **Priority:** P1 · **Effort:** M · **Shipped as:** part of the v8 → v9 cut bundle (with F4 + F11)
+
+**Spec:** `.kiro/specs/directive-kernel-v9-cut/`
+
+**Outcome.** The run-record schema ships at version 9 with a written versioning policy at `shared/contracts/schema-versioning.md`. A minimal migration framework lives at `shared/schemas/migrations/` with one file per version bump. The engine store applies migrations in-flight on read so adopters with v8 records on disk continue to work; future-version records are rejected with a clear error. The `package.json` bumps from `0.1.x` to `0.2.0` to mark the schema break.
+
+**Components delivered.**
+- `shared/schemas/migrations/index.ts` — `Schema_Migration_Registry` keyed by source version. Adding a future migration is exactly two changes: drop in `v<v>-to-v<v+1>.ts`, add one entry to the registry. No plugin discovery, no CLI.
+- `shared/schemas/migrations/v8-to-v9.ts` — first concrete migration. `migrate(record)` rewrites every Vocabulary_Rename_Set field, rewrites `$schema` URI in both relative and absolute forms, sets `schemaVersion: 9`. `rollback(record)` is bijective on the documented field set.
+- `shared/schemas/run-record.schema.json` — v9 schema at `$id: https://directive-workspace.dev/schemas/run-record.schema.json`. Old `directive-engine-run-record.schema.json` deleted outright (no redirect per the documented hard-break rule).
+- `engine/storage.ts` — new `readThroughVersionCheck` helper wired into `readRun` and `listRuns` for both `createFilesystemDirectiveEngineStore` and `createMemoryDirectiveEngineStore` (4 call sites). Three error families: `schema_version_unreadable:`, `schema_version_unmigratable:`, `schema_version_future:`. Never mutates the on-disk file.
+- `shared/contracts/schema-versioning.md` — written policy: version-bump rule, migration requirement, forward+reverse property-test requirement, schema-URI hard-break rule, package-version bump rule, link to v8-to-v9 as the first concrete application.
+- `tests/property/v8-to-v9-migration.property.test.ts` — Properties 1 + 2 (structural lossless + round-trip lossless on the lossless field set).
+- `tests/property/storage-version-check.property.test.ts` — Properties 3 + 4 + 5 (pass-through, future-version reject, unmigratable reject).
+- `tests/integration/hardening/schema-version-check.test.ts` — 12 hardening tests covering v7/v8/v9/v10 read paths × both stores × both read methods.
+- `package.json` version flipped `0.1.0` → `0.2.0`.
+
+**Side fixes during F7.**
+- `engine/types.ts` widened the schema-version history-aware union from `8` to `8 | 9` so the migration framework's intermediate states typecheck cleanly.
+- The schema-versioning policy document explicitly grandfathers `DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION` as the one allowed `Directive`-prefixed identifier inside the kernel; renaming it would have rippled through the migration framework during the v8→v9 cut itself.
+
+**Verification.**
+- `pnpm run typecheck` → green
+- `pnpm run test` → 88 passed including the 5 new property tests + 12 hardening tests
+- `pnpm run check:build` → green
+- v7 read fails with `schema_version_unmigratable: no migration registered for v7 → v8 (record at v7, target v9)`
+- v8 read returns a v9 record with renamed fields and rewritten `$schema`; on-disk file unchanged (byte-comparison in the hardening test)
+- v9 read returns the record unchanged on every field
+- v10 read fails with `schema_version_future: record is v10, kernel supports up to v9`
+
+**Unblocks:** F13 (concurrency/locking story can build on the documented schema-versioning policy and the existing storage-layer contract), F14 (data retention will reuse the migration framework's per-version-bump pattern).
+
+---
+
+## F11 — Prefix prune and file/type naming consistency
+
+**Status:** ✅ done · **Priority:** P1 · **Effort:** M · **Shipped as:** part of the v8 → v9 cut bundle (with F4 + F7)
+
+**Spec:** `.kiro/specs/directive-kernel-v9-cut/`
+
+**Outcome.** The kernel no longer carries the `Directive` brand prefix on internal exports, redundant lane-name prefixes on file basenames, or the `directive-` filename prefix. Every Naming_Rename_Table row landed; ~376 `Directive`-prefixed exports were renamed across roughly 80 files; ~52 lane-prefix files were moved via `smartRelocate`. A CI lint at `scripts/check-naming.ts` enforces the four naming rules going forward.
+
+**Components delivered.**
+- 13 canonical Naming_Rename_Table renames from `requirements.md` Requirement 4:
+  - 5 type renames (`DirectiveEngineSourceItem` → `EngineSourceItem`, etc.)
+  - 2 function renames (`requireDirectiveExplicitApproval` → `requireExplicitApproval`, etc.)
+  - 5 file moves (`discovery-front-door.ts` → `front-door.ts`, etc.)
+  - 1 schema-file rename (`directive-engine-run-record.schema.json` → `run-record.schema.json`)
+- Section B bulk-rename rules applied:
+  - **B1**: ~376 `Directive`-prefixed exports renamed across the kernel (only the allowlisted `DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION` constant in `engine/types.ts` remains)
+  - **B2**: ~52 files moved across `discovery/lib/`, `runtime/lib/`, `architecture/lib/`, plus barrel-file rewrites and importer updates
+  - **B3**: 6 `directive-*.ts` files moved (the schema file is part of Section A row 13)
+- `package.json` `exports` map retargeted in lockstep across all four conditions (`development`, `types`, `import`, `default`); subpath keys preserved.
+- `DIRECTIVE_PREFIX_INVENTORY.md` — audit deliverable produced by Claude during the audit phase, lists Section A canonical 13 + Section B bulk rules + Section C allowlist seed.
+- `CONTRIBUTING.md` — new naming-rules section with the four rules + the `pnpm run check:naming` invocation + cross-links to `GLOSSARY.md` and `shared/contracts/schema-versioning.md`.
+- `scripts/check-naming.ts` — CI lint with four rules: `directive-prefix-filename`, `folder-prefix-filename` (walks every ancestor folder, not just the immediate parent), `directive-prefix-export`, `double-prefix-filename`. Exports `scanForNamingViolations` for unit testing; CLI entry walks the real file tree and exits non-zero on any violation.
+- `tests/unit/check-naming.test.ts` — synthetic-fixture unit test asserting each of the 4 rules fires exactly once on its target.
+- `.github/workflows/ci.yml` — new `check:naming` step inserted between `typecheck` and `test`.
+
+**Side fixes during F11.**
+- The original `check-naming.ts` Rule 2 was scoped too narrowly — it only flagged files starting with the immediate parent folder name, missing the much more common pattern of `runtime-*.ts` files inside `runtime/lib/openers/` (the lane name, not the immediate parent). Fixed in the eval feedback loop by walking every ancestor folder name in the path.
+- The lint script's CLI initially scanned compiled `.js`/`.d.ts` files in the working tree, producing false positives. Added skips for `research-engine/`, `generated/`, `.js`, and `.d.ts` files.
+- The `bounded-closeout.ts` / `closeout.ts` collision in `architecture/lib/experiments/` was resolved during execution: the larger 70KB implementation kept the canonical `closeout.ts` name, the smaller 6.8KB companion became `closeout-writer.ts` to preserve the separate concern.
+- The `discovery/lib/front-door/discovery-front-door.ts` rename initially landed as a barrel `index.ts` re-exporting the original file (incorrect). Resolved during the eval feedback loop: the impl is now `front-door.ts`, the barrel `index.ts` re-exports it.
+- The `runtime/core/generated/runtime-core-contract.d.ts` declaration file was left as-is per the lint's `.d.ts` skip rule — it regenerates from source.
+
+**Verification.**
+- `pnpm run typecheck` → green (kernel + UI clean across all 165 changed files + 52 file moves)
+- `pnpm run test` → 88 passed
+- `pnpm run check:build` → green (every `package.json` `exports` retarget resolves from `dist/`)
+- `pnpm run check:naming` → green (zero violations across `discovery/`, `runtime/`, `architecture/`, `engine/`, `shared/`, `hosts/`, `scripts/`)
+- `tests/unit/check-naming.test.ts` → green (each of 4 rules fires once on its synthetic-fixture target)
+- Audit re-sweeps:
+  - `^export ... Directive[A-Z]` declarations outside `engine/types.ts` → zero
+  - `<lane>-*.ts` files inside `<lane>/` folders → zero (the one remaining is a generated `.d.ts` correctly excluded by the lint)
+  - `^directive-*.ts` files → zero in source paths
+  - `architecture-bounded-closeout.ts` → resolved into `closeout.ts` + `closeout-writer.ts`
+  - `discovery-front-door.ts` → resolved into `front-door.ts` + `index.ts` barrel
+
+**Unblocks:** F5 (the contracts review can rely on the lint to keep the post-rename naming stable), F8 (UI direction decisions get a clean public surface to design against), F9 (surface-area prune can build on the audited inventory rather than rediscovering it), F13 (concurrency story can reference the post-rename type names without disambiguation).
+
+---
+
+## F4 — Vocabulary diet + glossary (original spec, preserved for history)
 
 **Priority:** P0 · **Effort:** M
 

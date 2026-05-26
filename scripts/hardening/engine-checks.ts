@@ -1,14 +1,14 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import {
-  DirectiveEngine,
-  createFilesystemDirectiveEngineStore,
+  Engine,
+  createFilesystemEngineStore,
   createDirectiveWorkspaceEngineLanes,
-  createMemoryDirectiveEngineStore,
-  type DirectiveEngineRunRecord,
+  createMemoryEngineStore,
+  type EngineRunRecord,
 } from "../../engine/index.ts";
 import {
   fileExistsInDirectiveWorkspace,
@@ -18,16 +18,16 @@ import {
   recordInconsistentLink,
   recordMissingLinkedArtifactIfAbsent,
 } from "../../engine/artifact-link-validation.ts";
-import { countTokenOverlap } from "../../engine/engine-source-utils.ts";
+import { countTokenOverlap } from "../../engine/source-utils.ts";
 import { createDefaultDirectiveMission } from "../../engine/mission/default-mission.ts";
-import { assessDirectiveEngineRouting } from "../../engine/routing/index.ts";
-import { inferDirectiveEngineSourceType } from "../../engine/source-type-inference.ts";
-import { resolveDirectiveEngineStoreRecordPath } from "../../engine/storage.ts";
+import { assessEngineRouting } from "../../engine/routing/index.ts";
+import { inferEngineSourceType } from "../../engine/source-type-inference.ts";
+import { resolveEngineStoreRecordPath } from "../../engine/storage.ts";
 import {
-  readDirectiveEngineProcessFingerprintCacheStats,
-  resetDirectiveEngineProcessFingerprintCache,
-} from "../../engine/directive-engine.ts";
-import { appendDiscoveryIntakeQueueEntry } from "../../discovery/lib/intake/discovery-intake-queue-writer.ts";
+  readEngineProcessFingerprintCacheStats,
+  resetEngineProcessFingerprintCache,
+} from "../../engine/engine.ts";
+import { appendDiscoveryIntakeQueueEntry } from "../../discovery/lib/intake/queue-writer.ts";
 import {
   buildArchitectureGap,
   buildArchitectureMission,
@@ -35,10 +35,10 @@ import {
   buildRecurringArchitecturePolicyEvents,
 } from "./support.ts";
 
-export async function runDirectiveEngineHardeningChecks() {
-  const engine = new DirectiveEngine({
+export async function runEngineHardeningChecks() {
+  const engine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createMemoryDirectiveEngineStore(),
+    store: createMemoryEngineStore(),
     hostAdapters: [
       {
         id: "throws",
@@ -72,7 +72,7 @@ export async function runDirectiveEngineHardeningChecks() {
 
   const first = await engine.processSource(buildArchitectureSourceInput());
   assert.equal(first.record.selectedLane.laneId, "architecture");
-  assert.equal(first.record.schemaVersion, 8);
+  assert.equal(first.record.schemaVersion, 9);
   assert.equal(first.record.decision.requiresHumanApproval, false);
   assert.equal(first.record.decision.decisionState, "accept_for_architecture");
   assert.equal(first.record.routingAssessment.digest.headline, "Architecture, high confidence.");
@@ -173,7 +173,7 @@ export async function runDirectiveEngineHardeningChecks() {
   const second = await engine.processSource(buildArchitectureSourceInput());
   assert.equal(second.deduplicated, true);
   assert.equal(second.duplicateOfRunId, first.record.runId);
-  resetDirectiveEngineProcessFingerprintCache({ clearCache: true });
+  resetEngineProcessFingerprintCache({ clearCache: true });
   const duplicateMiss = await engine.processSource({
     ...buildArchitectureSourceInput(),
     source: {
@@ -187,7 +187,7 @@ export async function runDirectiveEngineHardeningChecks() {
     true,
     "The first unique source should persist normally before later duplicate checks can hit the fingerprint cache",
   );
-  const duplicateMissStats = readDirectiveEngineProcessFingerprintCacheStats();
+  const duplicateMissStats = readEngineProcessFingerprintCacheStats();
   assert.ok(
     duplicateMissStats.misses > 0,
     "The first fingerprint comparison over existing records should populate the fingerprint cache",
@@ -212,7 +212,7 @@ export async function runDirectiveEngineHardeningChecks() {
   });
   assert.equal(duplicateWarm.deduplicated, true);
   assert.equal(duplicateWarm.duplicateOfRunId, duplicateMiss.record.runId);
-  const duplicateHitStats = readDirectiveEngineProcessFingerprintCacheStats();
+  const duplicateHitStats = readEngineProcessFingerprintCacheStats();
   assert.ok(
     duplicateHitStats.hits > 0,
     "Repeated duplicate detection should reuse cached historical record fingerprints once the matching record has been fingerprinted",
@@ -323,8 +323,8 @@ export async function runFilesystemStoreCachingChecks() {
     `directive-kernel-storage-cache-${Date.now()}`,
     "engine-runs",
   );
-  const writerStore = createFilesystemDirectiveEngineStore({ engineRunsRoot });
-  const writerEngine = new DirectiveEngine({
+  const writerStore = createFilesystemEngineStore({ engineRunsRoot });
+  const writerEngine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
     store: writerStore,
   });
@@ -342,7 +342,7 @@ export async function runFilesystemStoreCachingChecks() {
   });
   void second;
 
-  const readerStore = createFilesystemDirectiveEngineStore({ engineRunsRoot });
+  const readerStore = createFilesystemEngineStore({ engineRunsRoot });
   const originalReadFileSync = fs.readFileSync;
   let readCount = 0;
   fs.readFileSync = ((...args: Parameters<typeof fs.readFileSync>) => {
@@ -350,8 +350,8 @@ export async function runFilesystemStoreCachingChecks() {
     return originalReadFileSync(...args);
   }) as typeof fs.readFileSync;
 
-  let initialRecords: DirectiveEngineRunRecord[] = [];
-  let cachedRecords: DirectiveEngineRunRecord[] = [];
+  let initialRecords: EngineRunRecord[] = [];
+  let cachedRecords: EngineRunRecord[] = [];
   try {
     initialRecords = await readerStore.listRuns();
     const initialReadCount = readCount;
@@ -390,8 +390,8 @@ export async function runFilesystemStoreCachingChecks() {
       ...storedFirstRecord.source,
       title: "Externally Updated Candidate",
     },
-  } satisfies DirectiveEngineRunRecord;
-  const recordPath = resolveDirectiveEngineStoreRecordPath({
+  } satisfies EngineRunRecord;
+  const recordPath = resolveEngineStoreRecordPath({
     engineRunsRoot,
     record: first.record,
   });
@@ -501,21 +501,21 @@ export function runEngineContractSurfaceChecks() {
     "Token-overlap lookup reuse must preserve the exact overlap count when the right-hand side is already a lookup structure",
   );
   assert.equal(
-    inferDirectiveEngineSourceType({
+    inferEngineSourceType({
       title: "Repository",
       url: "https://github.com/example/directive-kernel",
     }),
     "github-repo",
   );
   assert.equal(
-    inferDirectiveEngineSourceType({
+    inferEngineSourceType({
       title: "New routing paper",
       url: "https://arxiv.org/abs/2604.12345",
     }),
     "paper",
   );
 
-  const vagueResult = assessDirectiveEngineRouting({
+  const vagueResult = assessEngineRouting({
     source: {
       sourceType: "paper",
       sourceRef: "https://example.com/test",
@@ -544,7 +544,7 @@ export function runEngineContractSurfaceChecks() {
   assert.ok(typeof vagueResult.earnedAutonomy.overallScore === "number");
   assert.ok(vagueResult.digest.headline.length > 0);
 
-  const specificResult = assessDirectiveEngineRouting({
+  const specificResult = assessEngineRouting({
     source: {
       sourceType: "workflow-writeup",
       sourceRef: "https://example.com/test2",
@@ -571,7 +571,7 @@ export function runEngineContractSurfaceChecks() {
   assert.ok(specificResult.digest.headline.startsWith("Architecture, "));
   assert.ok(specificResult.digest.headline.endsWith(" confidence."));
 
-  const missionWeaknessResult = assessDirectiveEngineRouting({
+  const missionWeaknessResult = assessEngineRouting({
     source: {
       sourceType: "workflow-writeup",
       sourceRef: "https://example.com/mission-weakness",
@@ -600,7 +600,7 @@ export function runEngineContractSurfaceChecks() {
     "mission_weakness",
   );
 
-  const metadataOverrideResult = assessDirectiveEngineRouting({
+  const metadataOverrideResult = assessEngineRouting({
     source: {
       sourceType: "workflow-writeup",
       sourceRef: "https://example.com/test3",
@@ -627,7 +627,7 @@ export function runEngineContractSurfaceChecks() {
   assert.equal(metadataOverrideResult.routeConflict, false);
   assert.equal(metadataOverrideResult.confidence, "high");
 
-  const conflictResult = assessDirectiveEngineRouting({
+  const conflictResult = assessEngineRouting({
     source: {
       sourceType: "workflow-writeup",
       sourceRef: "https://example.com/conflict",
@@ -653,7 +653,7 @@ export function runEngineContractSurfaceChecks() {
   assert.equal(conflictResult.routeConflict, true);
   assert.equal(conflictResult.digest.primaryConcern?.kind, "conflict");
 
-  const radarResult = assessDirectiveEngineRouting({
+  const radarResult = assessEngineRouting({
     source: {
       sourceType: "workflow-writeup",
       sourceRef: "https://example.com/test-gap-radar",

@@ -14,7 +14,7 @@
 
 // --- Capability descriptor ---
 
-export interface DirectiveCallableCapabilityDescriptor {
+export interface CallableCapabilityDescriptor {
   capabilityId: string;
   status: "callable" | "disabled";
   form: string;
@@ -27,21 +27,21 @@ export interface DirectiveCallableCapabilityDescriptor {
 
 // --- Execution input/output ---
 
-export interface DirectiveCallableExecutionInput {
+export interface CallableExecutionInput {
   tool: string;
   input: Record<string, unknown>;
   timeoutMs?: number;
   allowExternalFetches?: boolean;
 }
 
-export type DirectiveCallableExecutionStatus =
+export type CallableExecutionStatus =
   | "success"
   | "error"
   | "timeout"
   | "disabled"
   | "validation_error";
 
-export interface DirectiveCallableExecutionMetadata {
+export interface CallableExecutionMetadata {
   startedAt: string;
   completedAt: string;
   durationMs: number;
@@ -49,19 +49,19 @@ export interface DirectiveCallableExecutionMetadata {
   capabilityId: string;
 }
 
-export interface DirectiveCallableExecutionResult {
+export interface CallableExecutionResult {
   ok: boolean;
   tool: string;
-  status: DirectiveCallableExecutionStatus;
+  status: CallableExecutionStatus;
   result: unknown;
-  metadata: DirectiveCallableExecutionMetadata;
+  metadata: CallableExecutionMetadata;
 }
 
 // --- Callable capability interface ---
 
-export interface DirectiveCallableCapability {
-  descriptor: DirectiveCallableCapabilityDescriptor;
-  execute: (input: DirectiveCallableExecutionInput) => Promise<DirectiveCallableExecutionResult>;
+export interface CallableCapability {
+  descriptor: CallableCapabilityDescriptor;
+  execute: (input: CallableExecutionInput) => Promise<CallableExecutionResult>;
   disable: () => void;
   enable: () => void;
   isEnabled: () => boolean;
@@ -77,7 +77,7 @@ export interface DirectiveCallableCapability {
 // --- Contract compliance check ---
 
 export function checkCallableContractCompliance(
-  capability: DirectiveCallableCapability,
+  capability: CallableCapability,
 ): { ok: boolean; violations: string[] } {
   const violations: string[] = [];
   const d = capability.descriptor;

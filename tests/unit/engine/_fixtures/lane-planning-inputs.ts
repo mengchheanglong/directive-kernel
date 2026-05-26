@@ -16,28 +16,28 @@
 // variant sets that field to `1`; the "without" variant sets it to `0`.
 
 import type {
-  DirectiveEngineLaneAdaptationPlanningInput,
-  DirectiveEngineLaneDefinition,
-  DirectiveEngineLaneExtractionPlanningInput,
-  DirectiveEngineLaneImprovementPlanningInput,
-  DirectiveEngineLaneIntegrationPlanningInput,
-  DirectiveEngineLanePlanningInput,
-  DirectiveEngineLaneProofPlanningInput,
+  EngineLaneAdaptationPlanningInput,
+  EngineLaneDefinition,
+  EngineLaneExtractionPlanningInput,
+  EngineLaneImprovementPlanningInput,
+  EngineLaneIntegrationPlanningInput,
+  EngineLanePlanningInput,
+  EngineLaneProofPlanningInput,
 } from "../../../../engine/lane.ts";
 import type {
-  DirectiveEngineAdaptationPlan,
-  DirectiveEngineCapabilityGap,
-  DirectiveEngineExtractionPlan,
-  DirectiveEngineImprovementPlan,
-  DirectiveEngineMissionContext,
-  DirectiveEngineProofPlan,
-  DirectiveEngineRoutingAssessment,
-  DirectiveEngineSourceItem,
+  EngineAdaptationPlan,
+  EngineCapabilityGap,
+  EngineExtractionPlan,
+  EngineImprovementPlan,
+  EngineMissionContext,
+  EngineProofPlan,
+  EngineRoutingAssessment,
+  EngineSourceItem,
 } from "../../../../engine/types.ts";
 
 const DEFAULT_RECEIVED_AT = "2024-06-01T12:00:00.000Z" as const;
 
-function buildSource(): DirectiveEngineSourceItem {
+function buildSource(): EngineSourceItem {
   return {
     sourceId: "fixture-source-1",
     sourceType: "technical-essay",
@@ -58,7 +58,7 @@ function buildSource(): DirectiveEngineSourceItem {
   };
 }
 
-function buildMission(): DirectiveEngineMissionContext {
+function buildMission(): EngineMissionContext {
   return {
     missionId: "fixture-mission-1",
     currentObjective:
@@ -73,7 +73,7 @@ function buildMission(): DirectiveEngineMissionContext {
   };
 }
 
-function buildOpenGaps(): DirectiveEngineCapabilityGap[] {
+function buildOpenGaps(): EngineCapabilityGap[] {
   return [
     {
       gapId: "fixture-gap-1",
@@ -90,7 +90,7 @@ function buildOpenGaps(): DirectiveEngineCapabilityGap[] {
   ];
 }
 
-function buildLane(): DirectiveEngineLaneDefinition {
+function buildLane(): EngineLaneDefinition {
   // Default to a discovery-shaped lane. The lane unit test (task 10.2)
   // overrides this field per iteration with the real lane definitions
   // returned from `createDirectiveWorkspaceEngineLanes`.
@@ -108,7 +108,7 @@ function buildLane(): DirectiveEngineLaneDefinition {
 
 function buildBaseRoutingAssessment(
   transformationSignal: number,
-): DirectiveEngineRoutingAssessment {
+): EngineRoutingAssessment {
   return {
     recommendedLaneId: "architecture",
     recommendedRecordShape: "split_case",
@@ -196,20 +196,20 @@ function buildBaseRoutingAssessment(
   };
 }
 
-export function buildRoutingAssessmentWithTransformationSignal(): DirectiveEngineRoutingAssessment {
+export function buildRoutingAssessmentWithTransformationSignal(): EngineRoutingAssessment {
   // `buildRuntimeProofPlan` returns `runtime_transformation_proof` when
   // `scoreBreakdown.transformationSignal > 0`. Any positive number works;
   // we pick `1` so the intent is obvious in test output.
   return buildBaseRoutingAssessment(1);
 }
 
-export function buildRoutingAssessmentWithoutTransformationSignal(): DirectiveEngineRoutingAssessment {
+export function buildRoutingAssessmentWithoutTransformationSignal(): EngineRoutingAssessment {
   // `buildRuntimeProofPlan` falls through to `runtime_proof` when
   // `scoreBreakdown.transformationSignal` is `0` (or any non-positive value).
   return buildBaseRoutingAssessment(0);
 }
 
-function buildLanePlanningInput(): DirectiveEngineLanePlanningInput {
+function buildLanePlanningInput(): EngineLanePlanningInput {
   return {
     source: buildSource(),
     mission: buildMission(),
@@ -221,7 +221,7 @@ function buildLanePlanningInput(): DirectiveEngineLanePlanningInput {
   };
 }
 
-function buildExtractionPlan(): DirectiveEngineExtractionPlan {
+function buildExtractionPlan(): EngineExtractionPlan {
   return {
     extractedValue: [
       "Fixture extracted value: a structural pattern worth carrying into the engine.",
@@ -232,7 +232,7 @@ function buildExtractionPlan(): DirectiveEngineExtractionPlan {
   };
 }
 
-function buildAdaptationPlan(): DirectiveEngineAdaptationPlan {
+function buildAdaptationPlan(): EngineAdaptationPlan {
   return {
     directiveOwnedForm:
       "Fixture directive-owned form: an engine-owned mechanism representing the adapted value.",
@@ -242,7 +242,7 @@ function buildAdaptationPlan(): DirectiveEngineAdaptationPlan {
   };
 }
 
-function buildImprovementPlan(): DirectiveEngineImprovementPlan {
+function buildImprovementPlan(): EngineImprovementPlan {
   return {
     improvementGoals: ["fixture improvement goal one", "fixture improvement goal two"],
     intendedDelta:
@@ -250,7 +250,7 @@ function buildImprovementPlan(): DirectiveEngineImprovementPlan {
   };
 }
 
-function buildProofPlan(): DirectiveEngineProofPlan {
+function buildProofPlan(): EngineProofPlan {
   return {
     proofKind: "fixture_proof",
     objective: "Fixture proof objective.",
@@ -261,18 +261,18 @@ function buildProofPlan(): DirectiveEngineProofPlan {
 }
 
 export function buildExtractionPlanningInput(
-  overrides?: Partial<DirectiveEngineLaneExtractionPlanningInput>,
-): DirectiveEngineLaneExtractionPlanningInput {
-  const defaults: DirectiveEngineLaneExtractionPlanningInput = {
+  overrides?: Partial<EngineLaneExtractionPlanningInput>,
+): EngineLaneExtractionPlanningInput {
+  const defaults: EngineLaneExtractionPlanningInput = {
     planningInput: buildLanePlanningInput(),
   };
   return { ...defaults, ...overrides };
 }
 
 export function buildAdaptationPlanningInput(
-  overrides?: Partial<DirectiveEngineLaneAdaptationPlanningInput>,
-): DirectiveEngineLaneAdaptationPlanningInput {
-  const defaults: DirectiveEngineLaneAdaptationPlanningInput = {
+  overrides?: Partial<EngineLaneAdaptationPlanningInput>,
+): EngineLaneAdaptationPlanningInput {
+  const defaults: EngineLaneAdaptationPlanningInput = {
     planningInput: buildLanePlanningInput(),
     extractionPlan: buildExtractionPlan(),
   };
@@ -280,9 +280,9 @@ export function buildAdaptationPlanningInput(
 }
 
 export function buildImprovementPlanningInput(
-  overrides?: Partial<DirectiveEngineLaneImprovementPlanningInput>,
-): DirectiveEngineLaneImprovementPlanningInput {
-  const defaults: DirectiveEngineLaneImprovementPlanningInput = {
+  overrides?: Partial<EngineLaneImprovementPlanningInput>,
+): EngineLaneImprovementPlanningInput {
+  const defaults: EngineLaneImprovementPlanningInput = {
     planningInput: buildLanePlanningInput(),
     extractionPlan: buildExtractionPlan(),
     adaptationPlan: buildAdaptationPlan(),
@@ -293,9 +293,9 @@ export function buildImprovementPlanningInput(
 }
 
 export function buildProofPlanningInput(
-  overrides?: Partial<DirectiveEngineLaneProofPlanningInput>,
-): DirectiveEngineLaneProofPlanningInput {
-  const defaults: DirectiveEngineLaneProofPlanningInput = {
+  overrides?: Partial<EngineLaneProofPlanningInput>,
+): EngineLaneProofPlanningInput {
+  const defaults: EngineLaneProofPlanningInput = {
     planningInput: buildLanePlanningInput(),
     extractionPlan: buildExtractionPlan(),
     adaptationPlan: buildAdaptationPlan(),
@@ -305,9 +305,9 @@ export function buildProofPlanningInput(
 }
 
 export function buildIntegrationPlanningInput(
-  overrides?: Partial<DirectiveEngineLaneIntegrationPlanningInput>,
-): DirectiveEngineLaneIntegrationPlanningInput {
-  const defaults: DirectiveEngineLaneIntegrationPlanningInput = {
+  overrides?: Partial<EngineLaneIntegrationPlanningInput>,
+): EngineLaneIntegrationPlanningInput {
+  const defaults: EngineLaneIntegrationPlanningInput = {
     planningInput: buildLanePlanningInput(),
     extractionPlan: buildExtractionPlan(),
     adaptationPlan: buildAdaptationPlan(),

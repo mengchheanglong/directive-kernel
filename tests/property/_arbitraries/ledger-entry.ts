@@ -1,10 +1,10 @@
-import * as fc from "fast-check";
+﻿import * as fc from "fast-check";
 
 import type { DecisionPolicyEvent } from "../../../engine/decision-policy-ledger-types.ts";
-import { DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES } from "../../../engine/types.ts";
+import { ENGINE_SUPPORTED_SOURCE_TYPES } from "../../../engine/types.ts";
 
 // Allowed values mirrored from the production sites that build
-// `DecisionPolicyEvent`s — see `discovery/lib/routing/discovery-routing-review-resolution.ts`,
+// `DecisionPolicyEvent`s — see `discovery/lib/routing/discovery-review-resolution.ts`,
 // `scripts/hardening/policy-checks.ts`, and the suggestion compiler in
 // `engine/decision-policy-ledger-suggestions.ts`. Every field on the type is
 // required, so optional-style `fc.option(..., { nil: undefined })` is not
@@ -42,7 +42,7 @@ export const ledgerEntryArb: fc.Arbitrary<DecisionPolicyEvent> = fc.record({
   recordedAt: isoTimestamp,
   source: fc.constant("discovery_routing_review" as const),
   candidateId: nonEmptyText,
-  sourceType: fc.constantFrom(...DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES),
+  sourceType: fc.constantFrom(...ENGINE_SUPPORTED_SOURCE_TYPES),
   decision: fc.constantFrom(...REVIEW_DECISIONS),
   originalLaneId: fc.constantFrom(...ORIGINAL_LANE_IDS),
   resolvedLaneId: fc.constantFrom(...RESOLVED_LANE_IDS),

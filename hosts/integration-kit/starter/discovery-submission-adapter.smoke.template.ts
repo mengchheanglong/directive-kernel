@@ -6,7 +6,7 @@ import {
   type DiscoveryHostStorageBridge,
 } from "./discovery-submission-adapter.template.ts";
 import { createFilesystemDiscoveryHostStorageBridge } from "./discovery-host-storage-bridge.filesystem.template.ts";
-import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
+import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/submission-router.ts";
 
 function assertCondition(condition: unknown, message: string): asserts condition {
   if (!condition) {

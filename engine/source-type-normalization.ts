@@ -1,17 +1,17 @@
 import {
-  DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES,
-  type DirectiveEngineSourceType,
+  ENGINE_SUPPORTED_SOURCE_TYPES,
+  type EngineSourceType,
 } from "./types.ts";
-import { normalizeText } from "./engine-source-utils.ts";
+import { normalizeText } from "./source-utils.ts";
 
-export type DirectiveEngineSourceTypeNormalization = {
+export type EngineSourceTypeNormalization = {
   submittedSourceType: string;
-  canonicalSourceType: DirectiveEngineSourceType;
+  canonicalSourceType: EngineSourceType;
   normalizedFrom: string | null;
   normalizationKind: "none" | "format" | "alias";
 };
 
-const DIRECTIVE_ENGINE_SOURCE_TYPE_ALIASES = new Map<string, DirectiveEngineSourceType>([
+const ENGINE_SOURCE_TYPE_ALIASES = new Map<string, EngineSourceType>([
   ["repo", "github-repo"],
   ["repository", "github-repo"],
   ["githubrepo", "github-repo"],
@@ -37,12 +37,12 @@ function renderAcceptedEquivalentTerms() {
   ].join(", ");
 }
 
-export function normalizeDirectiveEngineSourceTypeInput(
+export function normalizeEngineSourceTypeInput(
   value: unknown,
-): DirectiveEngineSourceTypeNormalization {
+): EngineSourceTypeNormalization {
   const submittedSourceType = normalizeText(value);
   const normalizedKey = normalizeSourceTypeKey(submittedSourceType);
-  const canonicalMatch = DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES.find(
+  const canonicalMatch = ENGINE_SUPPORTED_SOURCE_TYPES.find(
     (candidate) => candidate === normalizedKey,
   );
 
@@ -61,7 +61,7 @@ export function normalizeDirectiveEngineSourceTypeInput(
     };
   }
 
-  const aliasMatch = DIRECTIVE_ENGINE_SOURCE_TYPE_ALIASES.get(normalizedKey);
+  const aliasMatch = ENGINE_SOURCE_TYPE_ALIASES.get(normalizedKey);
   if (aliasMatch) {
     return {
       submittedSourceType,
@@ -72,10 +72,10 @@ export function normalizeDirectiveEngineSourceTypeInput(
   }
 
   throw new Error(
-    `directive_engine_invalid_source_type: ${String(value ?? "")}; supported canonical types: ${DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES.join(", ")}; accepted equivalents: ${renderAcceptedEquivalentTerms()}`,
+    `directive_engine_invalid_source_type: ${String(value ?? "")}; supported canonical types: ${ENGINE_SUPPORTED_SOURCE_TYPES.join(", ")}; accepted equivalents: ${renderAcceptedEquivalentTerms()}`,
   );
 }
 
-export function normalizeDirectiveEngineSourceType(value: unknown): DirectiveEngineSourceType {
-  return normalizeDirectiveEngineSourceTypeInput(value).canonicalSourceType;
+export function normalizeEngineSourceType(value: unknown): EngineSourceType {
+  return normalizeEngineSourceTypeInput(value).canonicalSourceType;
 }

@@ -1,4 +1,4 @@
-export const DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES = [
+export const ENGINE_SUPPORTED_SOURCE_TYPES = [
   "github-repo",
   "paper",
   "product-doc",
@@ -9,32 +9,32 @@ export const DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES = [
   "internal-signal",
 ] as const;
 
-export const DIRECTIVE_ENGINE_INTEGRATION_MODES = [
+export const ENGINE_INTEGRATION_MODES = [
   "none",
   "reimplement",
   "adapt",
   "wrap",
 ] as const;
 
-export const DIRECTIVE_ENGINE_RUN_RECORD_KIND = "directive_engine_run_record" as const;
-export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 8 as const;
-export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF =
-  "shared/schemas/directive-engine-run-record.schema.json" as const;
-export type DirectiveEngineRunRecordSchemaVersion =
-  | 7
+export const ENGINE_RUN_RECORD_KIND = "directive_engine_run_record" as const;
+export const DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION = 9 as const;
+export const ENGINE_RUN_RECORD_SCHEMA_REF =
+  "shared/schemas/run-record.schema.json" as const;
+export type EngineRunRecordSchemaVersion =
+  | 8
   | typeof DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION;
 
-export type DirectiveEngineSourceType =
-  (typeof DIRECTIVE_ENGINE_SUPPORTED_SOURCE_TYPES)[number];
+export type EngineSourceType =
+  (typeof ENGINE_SUPPORTED_SOURCE_TYPES)[number];
 
-export type DirectiveEngineIntegrationMode =
-  (typeof DIRECTIVE_ENGINE_INTEGRATION_MODES)[number];
+export type EngineIntegrationMode =
+  (typeof ENGINE_INTEGRATION_MODES)[number];
 
-export type DirectiveEngineUsefulnessLevel = "direct" | "structural" | "meta" | "hybrid";
+export type EngineUsefulnessLevel = "direct" | "structural" | "meta" | "hybrid";
 
-export type DirectiveEngineRoutingConfidence = "high" | "medium" | "low";
+export type EngineRoutingConfidence = "high" | "medium" | "low";
 
-export type DirectiveRoutingDigestConcernKind =
+export type RoutingDigestConcernKind =
   | "conflict"
   | "low_confidence"
   | "mission_weakness"
@@ -43,42 +43,42 @@ export type DirectiveRoutingDigestConcernKind =
   | "gap_pressure"
   | "none";
 
-export type DirectiveRoutingDigestConcern = {
-  kind: Exclude<DirectiveRoutingDigestConcernKind, "none">;
+export type RoutingDigestConcern = {
+  kind: Exclude<RoutingDigestConcernKind, "none">;
   summary: string;
   suggestedAction: string;
 };
 
-export type DirectiveRoutingDigest = {
+export type RoutingDigest = {
   headline: string;
   explanation: string;
-  primaryConcern: DirectiveRoutingDigestConcern | null;
+  primaryConcern: RoutingDigestConcern | null;
   secondaryConcerns: Array<{
-    kind: Exclude<DirectiveRoutingDigestConcernKind, "none">;
+    kind: Exclude<RoutingDigestConcernKind, "none">;
     summary: string;
   }>;
   threadContext: string | null;
   trustLevel: string;
 };
 
-export type DirectiveEnginePrimaryAdoptionTarget =
+export type EnginePrimaryAdoptionTarget =
   | "discovery"
   | "architecture"
   | "runtime";
 
-export type DirectiveEngineWorkflowBoundaryShape =
+export type EngineWorkflowBoundaryShape =
   | "bounded_protocol"
   | "iterative_loop";
 
-export type DirectiveEngineHostDependence =
+export type EngineHostDependence =
   | "engine_only"
   | "host_adapter_required";
 
-export type DirectiveEngineLaneId = string;
+export type EngineLaneId = string;
 
-export type DirectiveEngineCapabilityGapPriority = "high" | "medium" | "low";
+export type EngineCapabilityGapPriority = "high" | "medium" | "low";
 
-export type DirectiveEngineEventType =
+export type EngineEventType =
   | "source_ingested"
   | "source_analyzed"
   | "candidate_routed"
@@ -90,23 +90,23 @@ export type DirectiveEngineEventType =
   | "integration_proposed"
   | "report_planned";
 
-export type DirectiveEngineSourceItem = {
+export type EngineSourceItem = {
   sourceId?: string | null;
-  sourceType: DirectiveEngineSourceType;
+  sourceType: EngineSourceType;
   sourceRef: string;
   title: string;
   summary?: string | null;
   notes?: string[] | null;
   missionAlignmentHint?: string | null;
   capabilityGapId?: string | null;
-  primaryAdoptionTarget?: DirectiveEnginePrimaryAdoptionTarget | null;
+  primaryAdoptionTarget?: EnginePrimaryAdoptionTarget | null;
   containsExecutableCode?: boolean | null;
   containsWorkflowPattern?: boolean | null;
   improvesDirectiveWorkspace?: boolean | null;
-  workflowBoundaryShape?: DirectiveEngineWorkflowBoundaryShape | null;
+  workflowBoundaryShape?: EngineWorkflowBoundaryShape | null;
 };
 
-export type DirectiveEngineMissionInput = {
+export type EngineMissionInput = {
   missionId?: string | null;
   currentObjective?: string | null;
   usefulnessSignals?: string[] | null;
@@ -117,7 +117,7 @@ export type DirectiveEngineMissionInput = {
   activeMissionMarkdown?: string | null;
 };
 
-export type DirectiveEngineMissionContext = {
+export type EngineMissionContext = {
   missionId: string | null;
   currentObjective: string;
   usefulnessSignals: string[];
@@ -128,10 +128,10 @@ export type DirectiveEngineMissionContext = {
   activeMissionMarkdown: string;
 };
 
-export type DirectiveEngineCapabilityGap = {
+export type EngineCapabilityGap = {
   gapId: string;
   description: string;
-  priority: DirectiveEngineCapabilityGapPriority;
+  priority: EngineCapabilityGapPriority;
   relatedMissionObjective: string;
   currentState: string;
   desiredState: string;
@@ -140,22 +140,22 @@ export type DirectiveEngineCapabilityGap = {
   resolutionNotes?: string | null;
 };
 
-export type DirectiveEngineRoutingAssessment = {
-  recommendedLaneId: DirectiveEngineLaneId;
+export type EngineRoutingAssessment = {
+  recommendedLaneId: EngineLaneId;
   recommendedRecordShape: string;
   missionPriorityScore: number;
-  confidence: DirectiveEngineRoutingConfidence;
+  confidence: EngineRoutingConfidence;
   matchedGapId: string | null;
   matchedGapRank: number | null;
-  explicitRouteDestination: DirectiveEngineLaneId | null;
+  explicitRouteDestination: EngineLaneId | null;
   routeConflict: boolean;
   needsHumanReview: boolean;
   ambiguitySummary: {
-    topLaneId: DirectiveEngineLaneId;
-    runnerUpLaneId: DirectiveEngineLaneId | null;
+    topLaneId: EngineLaneId;
+    runnerUpLaneId: EngineLaneId | null;
     scoreDelta: number;
     conflictingSignalFamilies: Array<"keyword" | "metadata" | "gap">;
-    conflictingLaneIds: DirectiveEngineLaneId[];
+    conflictingLaneIds: EngineLaneId[];
   };
   reviewGuidance: {
     guidanceKind:
@@ -168,7 +168,7 @@ export type DirectiveEngineRoutingAssessment = {
     requiredChecks: string[];
     stopLine: string;
   } | null;
-  digest: DirectiveRoutingDigest;
+  digest: RoutingDigest;
   missionSpecificityWarning: string | null;
   missionHealth: {
     overallScore: number;
@@ -222,14 +222,14 @@ export type DirectiveEngineRoutingAssessment = {
     summary: string;
     suggestions: Array<{
       radarId: string;
-      targetLaneId: DirectiveEngineLaneId;
+      targetLaneId: EngineLaneId;
       confidence: "low" | "medium" | "high";
       evidenceCount: number;
       summary: string;
       recommendedChange: string;
       signalTokens: string[];
       relatedOpenGapId: string | null;
-      suggestedPriority: DirectiveEngineCapabilityGapPriority;
+      suggestedPriority: EngineCapabilityGapPriority;
     }>;
   } | null;
   earnedAutonomy: {
@@ -246,16 +246,16 @@ export type DirectiveEngineRoutingAssessment = {
   };
   sourceMemory: {
     summary: string;
-    biasAdjustments: Record<DirectiveEngineLaneId, number>;
+    biasAdjustments: Record<EngineLaneId, number>;
     matchingTopics: Array<{
       token: string;
       recentCount: number;
       totalCount: number;
-      dominantLaneId: DirectiveEngineLaneId;
+      dominantLaneId: EngineLaneId;
     }>;
     matchingRouteClass: {
       routeClass: string;
-      laneId: DirectiveEngineLaneId;
+      laneId: EngineLaneId;
       sourceType: string;
       recentCount: number;
       totalCount: number;
@@ -269,7 +269,7 @@ export type DirectiveEngineRoutingAssessment = {
       runId: string;
       candidateId: string;
       candidateName: string;
-      laneId: DirectiveEngineLaneId;
+      laneId: EngineLaneId;
       decisionState: string;
       receivedAt: string;
       similarityScore: number;
@@ -277,20 +277,20 @@ export type DirectiveEngineRoutingAssessment = {
       summary: string;
     }>;
   } | null;
-  narrativeContext: import("./routing/source-narrative-threading.ts").DirectiveSourceNarrativeContext;
-  laneProportions: Record<DirectiveEngineLaneId, number>;
+  narrativeContext: import("./routing/source-narrative-threading.ts").SourceNarrativeContext;
+  laneProportions: Record<EngineLaneId, number>;
   secondaryLanes: Array<{
-    laneId: DirectiveEngineLaneId;
+    laneId: EngineLaneId;
     proportion: number;
     reason: string;
   }>;
   scoreBreakdown: {
     missionFit: number;
     gapAlignment: number;
-    laneScores: Record<DirectiveEngineLaneId, number>;
-    keywordLaneScores: Record<DirectiveEngineLaneId, number>;
-    metadataLaneScores: Record<DirectiveEngineLaneId, number>;
-    gapLaneScores: Record<DirectiveEngineLaneId, number>;
+    laneScores: Record<EngineLaneId, number>;
+    keywordLaneScores: Record<EngineLaneId, number>;
+    metadataLaneScores: Record<EngineLaneId, number>;
+    gapLaneScores: Record<EngineLaneId, number>;
     metaUsefulnessSignal: number;
     patternExtractionSignal: number;
     transformationSignal: number;
@@ -307,29 +307,29 @@ export type DirectiveEngineRoutingAssessment = {
   rationale: string[];
 };
 
-export type DirectiveEngineSelectedLane = {
-  laneId: DirectiveEngineLaneId;
+export type EngineSelectedLane = {
+  laneId: EngineLaneId;
   label: string;
-  hostDependence: DirectiveEngineHostDependence;
+  hostDependence: EngineHostDependence;
   valuableWithoutHostRuntime: boolean;
 };
 
-export type DirectiveEngineCandidate = {
+export type EngineCandidate = {
   candidateId: string;
   candidateName: string;
-  recommendedLaneId: DirectiveEngineLaneId;
+  recommendedLaneId: EngineLaneId;
   recommendedLaneLabel: string | null;
   recommendedRecordShape: string;
-  usefulnessLevel: DirectiveEngineUsefulnessLevel;
+  usefulnessLevel: EngineUsefulnessLevel;
   missionPriorityScore: number;
-  confidence: DirectiveEngineRoutingConfidence;
+  confidence: EngineRoutingConfidence;
   matchedGapId: string | null;
   matchedGapRank: number | null;
   requiresHumanReview: boolean;
   rationale: string[];
 };
 
-export type DirectiveEngineAnalysis = {
+export type EngineAnalysis = {
   missionFitSummary: string;
   primaryAdoptionQuestion: string;
   matchedCapabilityGapId: string | null;
@@ -337,100 +337,100 @@ export type DirectiveEngineAnalysis = {
   rationale: string[];
 };
 
-export type DirectiveEngineExtractionPlan = {
+export type EngineExtractionPlan = {
   extractedValue: string[];
   excludedBaggage: string[];
 };
 
-export type DirectiveEnginePlanItemStatus =
+export type EnginePlanItemStatus =
   | "pending"
   | "in_progress"
   | "completed"
   | "skipped";
 
-export type DirectiveEnginePlanItem = {
+export type EnginePlanItem = {
   value: string;
-  status: DirectiveEnginePlanItemStatus;
+  status: EnginePlanItemStatus;
   completedAt: string | null;
 };
 
-export type DirectiveEnginePlanProgressUpdate =
+export type EnginePlanProgressUpdate =
   | {
       plan: "extraction";
       itemType: "extractedValue" | "excludedBaggage";
       index: number;
-      status: DirectiveEnginePlanItemStatus;
+      status: EnginePlanItemStatus;
       completedAt?: string | null;
     }
   | {
       plan: "adaptation";
       itemType: "directiveOwnedForm";
-      status: DirectiveEnginePlanItemStatus;
+      status: EnginePlanItemStatus;
       completedAt?: string | null;
     }
   | {
       plan: "adaptation";
       itemType: "adaptedValue";
       index: number;
-      status: DirectiveEnginePlanItemStatus;
+      status: EnginePlanItemStatus;
       completedAt?: string | null;
     }
   | {
       plan: "improvement";
       itemType: "intendedDelta";
-      status: DirectiveEnginePlanItemStatus;
+      status: EnginePlanItemStatus;
       completedAt?: string | null;
     }
   | {
       plan: "improvement";
       itemType: "improvementGoals";
       index: number;
-      status: DirectiveEnginePlanItemStatus;
+      status: EnginePlanItemStatus;
       completedAt?: string | null;
     }
   | {
       plan: "proof";
       itemType: "objective" | "rollbackPrompt";
-      status: DirectiveEnginePlanItemStatus;
+      status: EnginePlanItemStatus;
       completedAt?: string | null;
     }
   | {
       plan: "proof";
       itemType: "requiredEvidence" | "requiredGates";
       index: number;
-      status: DirectiveEnginePlanItemStatus;
+      status: EnginePlanItemStatus;
       completedAt?: string | null;
     };
 
-export type DirectiveEngineStructuredExtractionPlan = {
-  extractedValue: DirectiveEnginePlanItem[];
-  excludedBaggage: DirectiveEnginePlanItem[];
+export type EngineStructuredExtractionPlan = {
+  extractedValue: EnginePlanItem[];
+  excludedBaggage: EnginePlanItem[];
   completionRate: number;
 };
 
-export type DirectiveEngineAdaptationPlan = {
+export type EngineAdaptationPlan = {
   directiveOwnedForm: string;
   adaptedValue: string[];
 };
 
-export type DirectiveEngineStructuredAdaptationPlan = {
-  directiveOwnedForm: DirectiveEnginePlanItem;
-  adaptedValue: DirectiveEnginePlanItem[];
+export type EngineStructuredAdaptationPlan = {
+  directiveOwnedForm: EnginePlanItem;
+  adaptedValue: EnginePlanItem[];
   completionRate: number;
 };
 
-export type DirectiveEngineImprovementPlan = {
+export type EngineImprovementPlan = {
   improvementGoals: string[];
   intendedDelta: string;
 };
 
-export type DirectiveEngineStructuredImprovementPlan = {
-  improvementGoals: DirectiveEnginePlanItem[];
-  intendedDelta: DirectiveEnginePlanItem;
+export type EngineStructuredImprovementPlan = {
+  improvementGoals: EnginePlanItem[];
+  intendedDelta: EnginePlanItem;
   completionRate: number;
 };
 
-export type DirectiveEngineProofPlan = {
+export type EngineProofPlan = {
   proofKind: string;
   objective: string;
   requiredEvidence: string[];
@@ -438,29 +438,29 @@ export type DirectiveEngineProofPlan = {
   rollbackPrompt: string;
 };
 
-export type DirectiveEngineStructuredProofPlan = {
+export type EngineStructuredProofPlan = {
   proofKind: string;
-  objective: DirectiveEnginePlanItem;
-  requiredEvidence: DirectiveEnginePlanItem[];
-  requiredGates: DirectiveEnginePlanItem[];
-  rollbackPrompt: DirectiveEnginePlanItem;
+  objective: EnginePlanItem;
+  requiredEvidence: EnginePlanItem[];
+  requiredGates: EnginePlanItem[];
+  rollbackPrompt: EnginePlanItem;
   completionRate: number;
 };
 
-export type DirectiveEngineExecutablePlanActionOwner =
+export type EngineExecutablePlanActionOwner =
   | "engine"
   | "operator"
   | "host";
 
-export type DirectiveEngineExecutablePlanAction = {
+export type EngineExecutablePlanAction = {
   actionId: string;
   plan: "extraction" | "adaptation" | "improvement" | "proof";
   itemType: string;
   itemIndex: number | null;
   title: string;
   detail: string;
-  owner: DirectiveEngineExecutablePlanActionOwner;
-  status: DirectiveEnginePlanItemStatus;
+  owner: EngineExecutablePlanActionOwner;
+  status: EnginePlanItemStatus;
   completedAt: string | null;
   blockedByActionIds: string[];
   completionCriteria: string[];
@@ -468,7 +468,7 @@ export type DirectiveEngineExecutablePlanAction = {
   gateStatus: "not_needed" | "pending" | "reviewing" | "passed";
 };
 
-export type DirectiveEngineExecutableProofState = {
+export type EngineExecutableProofState = {
   objectiveState: "pending" | "defined";
   evidenceState: "not_needed" | "evidence_pending" | "evidence_gathering" | "evidence_gathered";
   gateState: "not_needed" | "gate_pending" | "gate_review" | "gate_passed";
@@ -477,43 +477,43 @@ export type DirectiveEngineExecutableProofState = {
   outstandingGateActionIds: string[];
 };
 
-export type DirectiveEngineExecutablePlanState = {
+export type EngineExecutablePlanState = {
   version: 1;
-  actions: DirectiveEngineExecutablePlanAction[];
+  actions: EngineExecutablePlanAction[];
   nextActionIds: string[];
   blockedActionIds: string[];
   completionRate: number;
-  proofState: DirectiveEngineExecutableProofState;
+  proofState: EngineExecutableProofState;
   rationale: string[];
 };
 
-export type DirectiveEngineDecisionState =
+export type EngineDecisionState =
   | "hold_in_discovery"
   | "accept_for_architecture"
   | "route_to_runtime_follow_up"
   | "needs_human_review";
 
-export type DirectiveEngineDecision = {
-  decisionState: DirectiveEngineDecisionState;
-  adoptionTargetLaneId: DirectiveEngineLaneId;
+export type EngineDecision = {
+  decisionState: EngineDecisionState;
+  adoptionTargetLaneId: EngineLaneId;
   adoptionTargetLaneLabel: string | null;
   requiresHumanApproval: boolean;
   summary: string;
   rationale: string[];
 };
 
-export type DirectiveEngineIntegrationProposal = {
-  targetLaneId: DirectiveEngineLaneId;
+export type EngineIntegrationProposal = {
+  targetLaneId: EngineLaneId;
   targetLaneLabel: string | null;
-  integrationMode: DirectiveEngineIntegrationMode;
-  hostDependence: DirectiveEngineHostDependence;
+  integrationMode: EngineIntegrationMode;
+  hostDependence: EngineHostDependence;
   valuableWithoutHostRuntime: boolean;
   handoffArtifactFamily: string;
   nextAction: string;
   requiresHumanReview: boolean;
 };
 
-export type DirectiveEngineReportPlan = {
+export type EngineReportPlan = {
   reportKind: string;
   summary: string;
   usefulnessRationale: string;
@@ -521,83 +521,83 @@ export type DirectiveEngineReportPlan = {
   syncRequired: boolean;
 };
 
-export type DirectiveEngineEvent = {
-  type: DirectiveEngineEventType;
+export type EngineEvent = {
+  type: EngineEventType;
   at: string;
   summary: string;
 };
 
-export type DirectiveEngineRunRecord = {
-  $schema: typeof DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF;
-  schemaVersion: DirectiveEngineRunRecordSchemaVersion;
-  recordKind: typeof DIRECTIVE_ENGINE_RUN_RECORD_KIND;
+export type EngineRunRecord = {
+  $schema: typeof ENGINE_RUN_RECORD_SCHEMA_REF;
+  schemaVersion: EngineRunRecordSchemaVersion;
+  recordKind: typeof ENGINE_RUN_RECORD_KIND;
   runId: string;
   receivedAt: string;
-  source: DirectiveEngineSourceItem;
-  mission: DirectiveEngineMissionContext;
-  openGaps: DirectiveEngineCapabilityGap[];
-  selectedLane: DirectiveEngineSelectedLane;
-  candidate: DirectiveEngineCandidate;
-  analysis: DirectiveEngineAnalysis;
-  routingAssessment: DirectiveEngineRoutingAssessment;
-  extractionPlan: DirectiveEngineExtractionPlan;
-  structuredExtractionPlan?: DirectiveEngineStructuredExtractionPlan;
-  adaptationPlan: DirectiveEngineAdaptationPlan;
-  structuredAdaptationPlan?: DirectiveEngineStructuredAdaptationPlan;
-  improvementPlan: DirectiveEngineImprovementPlan;
-  structuredImprovementPlan?: DirectiveEngineStructuredImprovementPlan;
-  proofPlan: DirectiveEngineProofPlan;
-  structuredProofPlan?: DirectiveEngineStructuredProofPlan;
-  executablePlanState?: DirectiveEngineExecutablePlanState;
-  planQualitySignal?: import("./planning/plan-quality.ts").DirectiveEnginePlanQualitySignal | null;
-  narrativeActions?: import("./routing/source-narrative-threading.ts").DirectiveNarrativeAction[] | null;
-  priorPlanContext: import("./planning/plan-consumption.ts").DirectivePriorPlanContext;
-  decision: DirectiveEngineDecision;
-  integrationProposal: DirectiveEngineIntegrationProposal;
-  reportPlan: DirectiveEngineReportPlan;
-  events: DirectiveEngineEvent[];
+  source: EngineSourceItem;
+  mission: EngineMissionContext;
+  openGaps: EngineCapabilityGap[];
+  selectedLane: EngineSelectedLane;
+  candidate: EngineCandidate;
+  analysis: EngineAnalysis;
+  routingAssessment: EngineRoutingAssessment;
+  extractionPlan: EngineExtractionPlan;
+  structuredExtractionPlan?: EngineStructuredExtractionPlan;
+  adaptationPlan: EngineAdaptationPlan;
+  structuredAdaptationPlan?: EngineStructuredAdaptationPlan;
+  improvementPlan: EngineImprovementPlan;
+  structuredImprovementPlan?: EngineStructuredImprovementPlan;
+  proofPlan: EngineProofPlan;
+  structuredProofPlan?: EngineStructuredProofPlan;
+  executablePlanState?: EngineExecutablePlanState;
+  planQualitySignal?: import("./planning/plan-quality.ts").EnginePlanQualitySignal | null;
+  narrativeActions?: import("./routing/source-narrative-threading.ts").NarrativeAction[] | null;
+  priorPlanContext: import("./planning/plan-consumption.ts").PriorPlanContext;
+  decision: EngineDecision;
+  integrationProposal: EngineIntegrationProposal;
+  reportPlan: EngineReportPlan;
+  events: EngineEvent[];
 };
 
-export type DirectiveEngineHostAdapterResult = {
+export type EngineHostAdapterResult = {
   accepted: boolean;
   note?: string | null;
 };
 
-export type DirectiveEngineHostAdapter = {
+export type EngineHostAdapter = {
   id: string;
   onRunRecorded?(
-    record: DirectiveEngineRunRecord,
+    record: EngineRunRecord,
   ):
-    | DirectiveEngineHostAdapterResult
+    | EngineHostAdapterResult
     | void
-    | Promise<DirectiveEngineHostAdapterResult | void>;
+    | Promise<EngineHostAdapterResult | void>;
 };
 
-export type DirectiveEngineProcessSourceInput = {
-  source: DirectiveEngineSourceItem;
-  mission: DirectiveEngineMissionInput;
-  gaps?: DirectiveEngineCapabilityGap[] | null;
+export type EngineProcessSourceInput = {
+  source: EngineSourceItem;
+  mission: EngineMissionInput;
+  gaps?: EngineCapabilityGap[] | null;
   receivedAt?: string | null;
   /** Past operator routing corrections to bias future lane scoring. */
-  corrections?: import("./routing/routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
+  corrections?: import("./routing/correction-ledger.ts").RoutingCorrectionEntry[] | null;
   /** Past review-resolution policy events used for gap radar and earned autonomy. */
   policyEvents?: import("./decision-policy-ledger.ts").DecisionPolicyEvent[] | null;
 };
 
-export type DirectiveEngineMinimalSourceInput = {
+export type EngineMinimalSourceInput = {
   title: string;
   url?: string | null;
   summary?: string | null;
-  mission?: DirectiveEngineMissionInput | null;
-  gaps?: DirectiveEngineCapabilityGap[] | null;
+  mission?: EngineMissionInput | null;
+  gaps?: EngineCapabilityGap[] | null;
   receivedAt?: string | null;
-  corrections?: import("./routing/routing-correction-ledger.ts").RoutingCorrectionEntry[] | null;
+  corrections?: import("./routing/correction-ledger.ts").RoutingCorrectionEntry[] | null;
   policyEvents?: import("./decision-policy-ledger.ts").DecisionPolicyEvent[] | null;
 };
 
-export type DirectiveEngineProcessSourceResult = {
+export type EngineProcessSourceResult = {
   ok: true;
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
   adapterResults: Array<{
     adapterId: string;
     accepted: boolean;
@@ -608,7 +608,7 @@ export type DirectiveEngineProcessSourceResult = {
   duplicateReason?: string | null;
 };
 
-export type DirectiveEngineMissionPreviewChange = {
+export type EngineMissionPreviewChange = {
   objective?: string | null;
   usefulnessSignals?: string[] | null;
   capabilityLanes?: string[] | null;
@@ -617,9 +617,9 @@ export type DirectiveEngineMissionPreviewChange = {
   adoptionTarget?: string | null;
 };
 
-export type DirectiveEngineRoutingDigestPreview = {
-  before: DirectiveRoutingDigest;
-  after: DirectiveRoutingDigest;
+export type EngineRoutingDigestPreview = {
+  before: RoutingDigest;
+  after: RoutingDigest;
   diff: string[];
-  assessment: DirectiveEngineRoutingAssessment;
+  assessment: EngineRoutingAssessment;
 };

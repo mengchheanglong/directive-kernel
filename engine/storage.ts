@@ -3,17 +3,19 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type { DirectiveEngineRunRecord } from "./types.ts";
+import type { EngineRunRecord } from "./types.ts";
+import { DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION } from "./types.ts";
+import { applyRunRecordMigrationChain } from "../shared/schemas/migrations/index.ts";
 
-export type DirectiveEngineStore = {
-  writeRun(record: DirectiveEngineRunRecord): void | Promise<void>;
-  updateRun(record: DirectiveEngineRunRecord): void | Promise<void>;
-  readRun(runId: string): DirectiveEngineRunRecord | null | Promise<DirectiveEngineRunRecord | null>;
-  listRuns(): DirectiveEngineRunRecord[] | Promise<DirectiveEngineRunRecord[]>;
+export type EngineStore = {
+  writeRun(record: EngineRunRecord): void | Promise<void>;
+  updateRun(record: EngineRunRecord): void | Promise<void>;
+  readRun(runId: string): EngineRunRecord | null | Promise<EngineRunRecord | null>;
+  listRuns(): EngineRunRecord[] | Promise<EngineRunRecord[]>;
 };
 
 type FilesystemRunRecordCacheEntry = {
-  record: DirectiveEngineRunRecord | null;
+  record: EngineRunRecord | null;
   mtimeMs: number;
   size: number;
 };
@@ -30,7 +32,7 @@ function normalizeEngineStoreAbsolutePath(filePath: string) {
   return path.resolve(filePath).replace(/\\/g, "/");
 }
 
-function resolveDefaultDirectiveEngineRunsRoot() {
+function resolveDefaultEngineRunsRoot() {
   return normalizeEngineStoreAbsolutePath(
     path.join(process.cwd(), "runtime", "standalone-host", "engine-runs"),
   );
@@ -49,15 +51,35 @@ function listFilesystemRunPaths(engineRunsRoot: string) {
 
 function readFilesystemRunRecord(filePath: string) {
   try {
-    return JSON.parse(fs.readFileSync(filePath, "utf8")) as DirectiveEngineRunRecord;
+    return JSON.parse(fs.readFileSync(filePath, "utf8")) as EngineRunRecord;
   } catch {
     return null;
   }
 }
 
-export function resolveDirectiveEngineStoreRecordPath(input: {
+function readThroughVersionCheck(record: unknown): EngineRunRecord {
+  if (record === null || typeof record !== "object") {
+    throw new Error("schema_version_unreadable: record is not an object");
+  }
+  const version = (record as { schemaVersion?: unknown }).schemaVersion;
+  if (typeof version !== "number" || !Number.isInteger(version)) {
+    throw new Error(
+      `schema_version_unreadable: schemaVersion is missing or non-integer (got ${typeof version})`,
+    );
+  }
+  const current = DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION;
+  if (version === current) return record as EngineRunRecord;
+  if (version > current) {
+    throw new Error(
+      `schema_version_future: record is v${version}, kernel supports up to v${current}`,
+    );
+  }
+  return applyRunRecordMigrationChain(record, version, current) as EngineRunRecord;
+}
+
+export function resolveEngineStoreRecordPath(input: {
   engineRunsRoot: string;
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
 }) {
   const engineRunsRoot = normalizeEngineStoreAbsolutePath(input.engineRunsRoot);
   const timestamp = input.record.receivedAt.replace(/[:.]/g, "-");
@@ -71,11 +93,11 @@ export function resolveDirectiveEngineStoreRecordPath(input: {
   return normalizeEngineStoreAbsolutePath(path.join(engineRunsRoot, `${baseName}.json`));
 }
 
-export function createFilesystemDirectiveEngineStore(input: {
+export function createFilesystemEngineStore(input: {
   engineRunsRoot?: string;
-} = {}): DirectiveEngineStore {
+} = {}): EngineStore {
   const engineRunsRoot = normalizeEngineStoreAbsolutePath(
-    input.engineRunsRoot || resolveDefaultDirectiveEngineRunsRoot(),
+    input.engineRunsRoot || resolveDefaultEngineRunsRoot(),
   );
   const recordCache = new Map<string, FilesystemRunRecordCacheEntry>();
   let runPathIndex = new Map<string, string>();
@@ -105,7 +127,7 @@ export function createFilesystemDirectiveEngineStore(input: {
     }
   }
 
-  function syncCacheForWrittenRecord(filePath: string, record: DirectiveEngineRunRecord) {
+  function syncCacheForWrittenRecord(filePath: string, record: EngineRunRecord) {
     const stat = fs.statSync(filePath);
     recordCache.set(filePath, {
       record,
@@ -134,7 +156,7 @@ export function createFilesystemDirectiveEngineStore(input: {
     removeMissingPathsFromCache(recordPaths);
 
     const nextRunPathIndex = new Map<string, string>();
-    const records: DirectiveEngineRunRecord[] = [];
+    const records: EngineRunRecord[] = [];
     for (const recordPath of recordPaths) {
       const record = readCachedFilesystemRunRecord(recordPath);
       if (!record) {
@@ -149,7 +171,7 @@ export function createFilesystemDirectiveEngineStore(input: {
 
   return {
     writeRun(record) {
-      const recordPath = resolveDirectiveEngineStoreRecordPath({
+      const recordPath = resolveEngineStoreRecordPath({
         engineRunsRoot,
         record,
       });
@@ -168,7 +190,7 @@ export function createFilesystemDirectiveEngineStore(input: {
           }
         }
       }
-      const recordPath = existingPath ?? resolveDirectiveEngineStoreRecordPath({
+      const recordPath = existingPath ?? resolveEngineStoreRecordPath({
         engineRunsRoot,
         record,
       });
@@ -181,7 +203,7 @@ export function createFilesystemDirectiveEngineStore(input: {
       if (indexedPath && fs.existsSync(indexedPath)) {
         const indexedRecord = readCachedFilesystemRunRecord(indexedPath);
         if (indexedRecord?.runId === runId) {
-          return indexedRecord;
+          return readThroughVersionCheck(indexedRecord);
         }
         runPathIndex.delete(runId);
       }
@@ -190,20 +212,20 @@ export function createFilesystemDirectiveEngineStore(input: {
         const record = readCachedFilesystemRunRecord(recordPath);
         if (record?.runId === runId) {
           runPathIndex.set(runId, recordPath);
-          return record;
+          return readThroughVersionCheck(record);
         }
       }
       return null;
     },
     listRuns() {
-      return listRunsFromFilesystemCache();
+      return listRunsFromFilesystemCache().map(readThroughVersionCheck);
     },
   };
 }
 
-export function createMemoryDirectiveEngineStore(
-  initialRecords: DirectiveEngineRunRecord[] = [],
-): DirectiveEngineStore {
+export function createMemoryEngineStore(
+  initialRecords: EngineRunRecord[] = [],
+): EngineStore {
   const records = [...initialRecords];
 
   return {
@@ -219,10 +241,11 @@ export function createMemoryDirectiveEngineStore(
       records.push(record);
     },
     readRun(runId) {
-      return records.find((record) => record.runId === runId) ?? null;
+      const found = records.find((record) => record.runId === runId) ?? null;
+      return found ? readThroughVersionCheck(found) : null;
     },
     listRuns() {
-      return [...records];
+      return records.map(readThroughVersionCheck);
     },
   };
 }

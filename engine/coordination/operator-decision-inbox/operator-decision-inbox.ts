@@ -8,22 +8,22 @@ import {
   buildRuntimeHostSelectionEntries,
   buildRuntimeRegistryAcceptanceEntries,
   sortInboxEntries,
-} from "./operator-decision-inbox-builders.ts";
+} from "./builders.ts";
 import {
   buildLatestPlanStateSummaryByCandidateId,
-} from "./operator-decision-inbox-plan-state.ts";
+} from "./plan-state.ts";
 
 export {
   OPERATOR_DECISION_INBOX_VERSION,
   type OperatorDecisionInboxEntry,
   type OperatorDecisionInboxLane,
   type OperatorDecisionInboxReport,
-} from "./operator-decision-inbox-types.ts";
-export { renderOperatorDecisionInboxMarkdown } from "./operator-decision-inbox-markdown.ts";
+} from "./types.ts";
+export { renderOperatorDecisionInboxMarkdown } from "./markdown.ts";
 import {
   OPERATOR_DECISION_INBOX_VERSION,
   type OperatorDecisionInboxReport,
-} from "./operator-decision-inbox-types.ts";
+} from "./types.ts";
 
 export function buildOperatorDecisionInboxReport(input?: {
   directiveRoot?: string;

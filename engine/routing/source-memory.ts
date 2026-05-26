@@ -3,60 +3,60 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
-import { deriveDirectiveEngineRouteClass } from "./earned-autonomy.ts";
-import { flattenSourceText } from "../engine-source-utils.ts";
+import { extractSourceSignalTokens } from "./correction-ledger.ts";
+import { deriveEngineRouteClass } from "./earned-autonomy.ts";
+import { flattenSourceText } from "../source-utils.ts";
 import type {
-  DirectiveEngineLaneId,
-  DirectiveEngineRunRecord,
-  DirectiveEngineSourceItem,
+  EngineLaneId,
+  EngineRunRecord,
+  EngineSourceItem,
 } from "../types.ts";
 
-export type DirectiveSourceMemoryLaneCounts = Record<"discovery" | "architecture" | "runtime", number>;
+export type SourceMemoryLaneCounts = Record<"discovery" | "architecture" | "runtime", number>;
 
-export type DirectiveSourceMemoryTopicTrend = {
+export type SourceMemoryTopicTrend = {
   token: string;
   recentCount: number;
   totalCount: number;
-  recentLaneCounts: DirectiveSourceMemoryLaneCounts;
+  recentLaneCounts: SourceMemoryLaneCounts;
 };
 
-export type DirectiveSourceMemoryRouteClassTrend = {
+export type SourceMemoryRouteClassTrend = {
   routeClass: string;
-  laneId: DirectiveEngineLaneId;
+  laneId: EngineLaneId;
   sourceType: string;
   recentCount: number;
   totalCount: number;
   lastSeenAt: string;
 };
 
-export type DirectiveSourceMemorySnapshot = {
+export type SourceMemorySnapshot = {
   schemaVersion: 1;
   generatedAt: string;
   recentWindowDays: number;
   totalRuns: number;
   recentRuns: number;
-  laneVolume: DirectiveSourceMemoryLaneCounts;
-  topics: DirectiveSourceMemoryTopicTrend[];
-  routeClasses: DirectiveSourceMemoryRouteClassTrend[];
+  laneVolume: SourceMemoryLaneCounts;
+  topics: SourceMemoryTopicTrend[];
+  routeClasses: SourceMemoryRouteClassTrend[];
 };
 
-export type DirectiveSourceMemoryAssessment = {
+export type SourceMemoryAssessment = {
   summary: string;
-  biasAdjustments: DirectiveSourceMemoryLaneCounts;
+  biasAdjustments: SourceMemoryLaneCounts;
   matchingTopics: Array<{
     token: string;
     recentCount: number;
     totalCount: number;
-    dominantLaneId: DirectiveEngineLaneId;
+    dominantLaneId: EngineLaneId;
   }>;
-  matchingRouteClass: DirectiveSourceMemoryRouteClassTrend | null;
+  matchingRouteClass: SourceMemoryRouteClassTrend | null;
   rationale: string[];
 } | null;
 
 const SOURCE_MEMORY_RELATIVE_PATH = "engine/source-memory.json";
 
-function zeroLaneCounts(): DirectiveSourceMemoryLaneCounts {
+function zeroLaneCounts(): SourceMemoryLaneCounts {
   return {
     discovery: 0,
     architecture: 0,
@@ -80,17 +80,17 @@ function isRecent(receivedAt: string, now: Date, recentWindowDays: number) {
   return parsed >= daysAgo(now, recentWindowDays);
 }
 
-function dominantLaneId(counts: DirectiveSourceMemoryLaneCounts): DirectiveEngineLaneId {
+function dominantLaneId(counts: SourceMemoryLaneCounts): EngineLaneId {
   return (Object.entries(counts).sort((left, right) => {
     if (right[1] !== left[1]) {
       return right[1] - left[1];
     }
     return left[0].localeCompare(right[0]);
-  })[0]?.[0] ?? "discovery") as DirectiveEngineLaneId;
+  })[0]?.[0] ?? "discovery") as EngineLaneId;
 }
 
-export function createDirectiveSourceMemorySnapshot(input: {
-  runs: DirectiveEngineRunRecord[];
+export function createSourceMemorySnapshot(input: {
+  runs: EngineRunRecord[];
   generatedAt?: string;
   recentWindowDays?: number;
   /** Pre-computed source signal tokens keyed by runId, avoids redundant tokenization. */
@@ -99,8 +99,8 @@ export function createDirectiveSourceMemorySnapshot(input: {
   const recentWindowDays = Math.max(7, input.recentWindowDays ?? 30);
   const now = input.generatedAt ? new Date(input.generatedAt) : new Date();
   const laneVolume = zeroLaneCounts();
-  const topicMap = new Map<string, DirectiveSourceMemoryTopicTrend>();
-  const routeClassMap = new Map<string, DirectiveSourceMemoryRouteClassTrend>();
+  const topicMap = new Map<string, SourceMemoryTopicTrend>();
+  const routeClassMap = new Map<string, SourceMemoryRouteClassTrend>();
   let recentRuns = 0;
 
   for (const run of input.runs) {
@@ -115,7 +115,7 @@ export function createDirectiveSourceMemorySnapshot(input: {
       recentRuns += 1;
     }
 
-    const routeClass = deriveDirectiveEngineRouteClass({
+    const routeClass = deriveEngineRouteClass({
       recommendedLaneId: laneId,
       source: run.source,
     });
@@ -183,20 +183,20 @@ export function createDirectiveSourceMemorySnapshot(input: {
         return left.routeClass.localeCompare(right.routeClass);
       })
       .slice(0, 20),
-  } satisfies DirectiveSourceMemorySnapshot;
+  } satisfies SourceMemorySnapshot;
 }
 
 export function resolveDirectiveSourceMemoryPath(directiveRoot: string) {
   return normalizeAbsolute(path.join(directiveRoot, SOURCE_MEMORY_RELATIVE_PATH));
 }
 
-export function writeDirectiveSourceMemorySnapshot(input: {
+export function writeSourceMemorySnapshot(input: {
   directiveRoot: string;
-  runs: DirectiveEngineRunRecord[];
+  runs: EngineRunRecord[];
   generatedAt?: string;
   recentWindowDays?: number;
 }) {
-  const snapshot = createDirectiveSourceMemorySnapshot(input);
+  const snapshot = createSourceMemorySnapshot(input);
   const snapshotPath = resolveDirectiveSourceMemoryPath(input.directiveRoot);
   fs.mkdirSync(path.dirname(snapshotPath), { recursive: true });
   fs.writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
@@ -206,11 +206,11 @@ export function writeDirectiveSourceMemorySnapshot(input: {
   };
 }
 
-export function deriveDirectiveSourceMemoryAssessment(input: {
-  snapshot: DirectiveSourceMemorySnapshot;
+export function deriveSourceMemoryAssessment(input: {
+  snapshot: SourceMemorySnapshot;
   sourceText: string;
-  recommendedLaneId: DirectiveEngineLaneId;
-  source: DirectiveEngineSourceItem;
+  recommendedLaneId: EngineLaneId;
+  source: EngineSourceItem;
 }) {
   if (input.snapshot.totalRuns === 0) {
     return null;
@@ -239,7 +239,7 @@ export function deriveDirectiveSourceMemoryAssessment(input: {
     }
   }
 
-  const routeClass = deriveDirectiveEngineRouteClass({
+  const routeClass = deriveEngineRouteClass({
     recommendedLaneId: input.recommendedLaneId,
     source: input.source,
   });

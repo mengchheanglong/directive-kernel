@@ -1,7 +1,7 @@
-import { type DirectiveIntegrationProof } from "./runtime-core-contract";
+import { type IntegrationProof } from "./contract";
 import { proofTimestampSuffix } from "./presentation-contract";
 
-export type DirectiveProofRequestInput = {
+export type ProofRequestInput = {
   capabilityId: string;
   method?: unknown;
   reference?: unknown;
@@ -9,7 +9,7 @@ export type DirectiveProofRequestInput = {
   timestamp?: string;
 };
 
-export type DirectiveProofRequest = {
+export type ProofRequest = {
   timestamp: string;
   method: string;
   reference: string;
@@ -17,8 +17,8 @@ export type DirectiveProofRequest = {
 };
 
 export function normalizeDirectiveProofRequest(
-  input: DirectiveProofRequestInput,
-): DirectiveProofRequest {
+  input: ProofRequestInput,
+): ProofRequest {
   const timestamp = input.timestamp || new Date().toISOString();
   const method = String(input.method || "").trim() || "dashboard-proof";
   const reference =
@@ -40,8 +40,8 @@ export function buildDirectiveIntegrationProof(input: {
   reportId: string;
   reportHref: string;
   artifactPath: string;
-  request: DirectiveProofRequest;
-}): DirectiveIntegrationProof {
+  request: ProofRequest;
+}): IntegrationProof {
   return {
     execution: {
       ok: true,

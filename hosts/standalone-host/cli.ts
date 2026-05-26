@@ -1,5 +1,5 @@
 import { readJson } from "../../shared/lib/file-io.ts";
-import type { DirectiveEnginePlanProgressUpdate } from "../../engine/types.ts";
+import type { EnginePlanProgressUpdate } from "../../engine/types.ts";
 import {
   approveGapFormalization,
   approveMissionFeedbackEntry,
@@ -13,16 +13,16 @@ import {
   rejectMissionFeedbackEntry,
   revertMissionEvolution,
 } from "../../engine/mission/index.ts";
-import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/discovery-gap-worklist-refresh.ts";
+import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/gap-worklist-refresh.ts";
 
-import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
-import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/runtime-follow-up-record-writer.ts";
-import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/runtime-proof-bundle-writer.ts";
-import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/runtime-promotion-record-writer.ts";
-import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
-import type { RuntimeRecordRequest } from "../../runtime/lib/writers/runtime-record-writer.ts";
-import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/runtime-transformation-proof-writer.ts";
-import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/runtime-transformation-record-writer.ts";
+import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/submission-router.ts";
+import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/follow-up-record-writer.ts";
+import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/proof-bundle-writer.ts";
+import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/promotion-record-writer.ts";
+import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/registry-entry-writer.ts";
+import type { RuntimeRecordRequest } from "../../runtime/lib/writers/record-writer.ts";
+import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/transformation-proof-writer.ts";
+import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/transformation-record-writer.ts";
 import { bootstrapStandaloneHostWorkspace } from "./bootstrap.ts";
 import {
   applyStandaloneHostConfigOverrides,
@@ -194,7 +194,7 @@ function buildPlanProgressUpdate(input: {
   itemType: string;
   status: "pending" | "in_progress" | "completed" | "skipped";
   index?: number;
-}): DirectiveEnginePlanProgressUpdate {
+}): EnginePlanProgressUpdate {
   const index = input.index;
   switch (input.plan) {
     case "extraction":

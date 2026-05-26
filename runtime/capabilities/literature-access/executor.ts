@@ -17,9 +17,9 @@ import {
   listDirectiveRuntimeScientifyLiteratureAccessTools,
 } from "./bundle.ts";
 import type {
-  DirectiveCallableCapability,
-  DirectiveCallableExecutionInput,
-  DirectiveCallableExecutionResult,
+  CallableCapability,
+  CallableExecutionInput,
+  CallableExecutionResult,
 } from "../../core/callable-contract.ts";
 
 // --- Configuration ---
@@ -43,10 +43,7 @@ export function isLiteratureAccessCapabilityEnabled(): boolean {
   return !disabled;
 }
 
-// --- Execution types ---
-
-export type CallableExecutionInput = DirectiveCallableExecutionInput;
-export type CallableExecutionResult = DirectiveCallableExecutionResult;
+export { type CallableExecutionInput, type CallableExecutionResult };
 
 // --- Input validation ---
 
@@ -121,8 +118,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 const CAPABILITY_ID = "dw-source-scientify-research-workflow-plugin-2026-03-27";
 
 export async function executeLiteratureAccessTool(
-  input: DirectiveCallableExecutionInput,
-): Promise<DirectiveCallableExecutionResult> {
+  input: CallableExecutionInput,
+): Promise<CallableExecutionResult> {
   const startedAt = new Date();
   const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
   const tool = input.tool as ScientifyLiteratureAccessToolName;
@@ -246,9 +243,9 @@ export const LITERATURE_ACCESS_CALLABLE_CAPABILITY = {
 
 /**
  * Returns the literature-access capability conforming to the shared
- * DirectiveCallableCapability contract from runtime/core/callable-contract.ts.
+ * CallableCapability contract from runtime/core/callable-contract.ts.
  */
-export function createLiteratureAccessCallableCapability(): DirectiveCallableCapability {
+export function createLiteratureAccessCallableCapability(): CallableCapability {
   return {
     descriptor: {
       capabilityId: CAPABILITY_ID,

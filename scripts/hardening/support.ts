@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type {
-  DirectiveEngineCapabilityGap,
-  DirectiveEngineMissionContext,
-  DirectiveEngineProcessSourceInput,
+  EngineCapabilityGap,
+  EngineMissionContext,
+  EngineProcessSourceInput,
 } from "../../engine/index.ts";
-import { resolveMissionContext } from "../../engine/mission/mission-context.ts";
+import { resolveMissionContext } from "../../engine/mission/context.ts";
 
 export function writeJson(filePath: string, value: unknown) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -18,7 +18,7 @@ export function writeUtf8(filePath: string, content: string) {
   fs.writeFileSync(filePath, content, "utf8");
 }
 
-export function buildArchitectureGap(): DirectiveEngineCapabilityGap {
+export function buildArchitectureGap(): EngineCapabilityGap {
   return {
     gapId: "gap-arch-routing-clarity",
     description: "Architecture routing clarity and bounded workflow ownership",
@@ -30,7 +30,7 @@ export function buildArchitectureGap(): DirectiveEngineCapabilityGap {
   };
 }
 
-export function buildArchitectureMission(): DirectiveEngineMissionContext {
+export function buildArchitectureMission(): EngineMissionContext {
   return resolveMissionContext({
     missionId: "hardening-smoke",
     currentObjective: "Improve directive workspace routing workflow architecture boundaries",
@@ -139,7 +139,7 @@ export function buildRecurringRuntimePolicyEvents() {
   ];
 }
 
-export function buildArchitectureSourceInput(): DirectiveEngineProcessSourceInput {
+export function buildArchitectureSourceInput(): EngineProcessSourceInput {
   return {
     receivedAt: "2026-04-10T00:00:00.000Z",
     mission: buildArchitectureMission(),

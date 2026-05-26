@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
@@ -6,7 +6,7 @@ import fs from "node:fs";
 import { startDirectiveFrontendServer } from "../../hosts/web-host/server.ts";
 import {
   buildRuntimeCallableExecutionHostAdapterDescriptor,
-} from "../../runtime/lib/host/runtime-host-callable-adapter-contract.ts";
+} from "../../runtime/lib/host/callable-adapter-contract.ts";
 import {
   readJsonResponse,
   writeJson,
@@ -363,7 +363,7 @@ export async function runWebHostSmoke() {
     };
     assert.ok((inboxBeforeHostSelection.summary?.runtimeHostSelectionCount ?? 0) >= 1);
 
-    const runtimeHostSelectionResponse = await fetch(`${handle.origin}/api/runtime/host-selection-resolutions`, {
+    const runtimeHostSelectionResponse = await fetch(`${handle.origin}/api/runtime/selection-resolutions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -442,7 +442,7 @@ export async function runWebHostSmoke() {
       proof: {
         primaryChecker: "pnpm run check:web-host-smoke-runtime-registry",
         supportingCheckers: [
-          "pnpm run check:runtime-host-callable-adapter-contract",
+          "pnpm run check:runtime-callable-adapter-contract",
           "pnpm run check:runtime-registry-acceptance-gate",
         ],
       },

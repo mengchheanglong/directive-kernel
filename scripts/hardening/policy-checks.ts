@@ -1,15 +1,15 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import {
-  DirectiveEngine,
+  Engine,
   createDirectiveWorkspaceEngineLanes,
-  createMemoryDirectiveEngineStore,
-  type DirectiveEngineCapabilityGap,
-  type DirectiveEngineMissionInput,
-  type DirectiveEngineProcessSourceInput,
+  createMemoryEngineStore,
+  type EngineCapabilityGap,
+  type EngineMissionInput,
+  type EngineProcessSourceInput,
 } from "../../engine/index.ts";
 import {
   appendDecisionPolicyEvent,
@@ -18,19 +18,19 @@ import {
 } from "../../engine/decision-policy-ledger.ts";
 import {
   appendRoutingCorrection,
-  assessDirectiveEngineRouting,
-  deriveDirectiveRoutingQualityAssessment,
+  assessEngineRouting,
+  deriveRoutingQualityAssessment,
   deriveRoutingCorrectionAdjustments,
   extractSourceSignalTokens,
   readRoutingCorrectionLedger,
   type RoutingCorrectionEntry,
 } from "../../engine/routing/index.ts";
-import { deriveDirectiveRoutingOutcomes } from "../../engine/outcome-tracker.ts";
+import { deriveRoutingOutcomes } from "../../engine/outcome-tracker.ts";
 import {
   readSourceSignalTokenCacheStats,
   resetSourceSignalTokenCache,
-} from "../../engine/routing/routing-correction-ledger.ts";
-import { writeDiscoveryRoutingReviewResolution } from "../../discovery/lib/routing/discovery-routing-review-resolution.ts";
+} from "../../engine/routing/correction-ledger.ts";
+import { writeDiscoveryRoutingReviewResolution } from "../../discovery/lib/routing/review-resolution.ts";
 import {
   runDiscoveryFrontDoorStarterSmoke,
 } from "../../hosts/integration-kit/starter/discovery-front-door-adapter.smoke.template.ts";
@@ -98,11 +98,11 @@ export async function runRoutingCorrectionLedgerChecks() {
   assert.equal(afterSecondStats.hits, 1);
   assert.ok(!secondTokenization.includes("mutated"));
 
-  const engine = new DirectiveEngine({
+  const engine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createMemoryDirectiveEngineStore(),
+    store: createMemoryEngineStore(),
   });
-  const correctedSource: DirectiveEngineProcessSourceInput = {
+  const correctedSource: EngineProcessSourceInput = {
     source: {
       sourceType: "workflow-writeup",
       sourceRef: "https://example.com/correction-test",
@@ -127,9 +127,9 @@ export async function runRoutingCorrectionLedgerChecks() {
 }
 
 export async function runOutcomeTrackingChecks() {
-  const engine = new DirectiveEngine({
+  const engine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createMemoryDirectiveEngineStore(),
+    store: createMemoryEngineStore(),
   });
   const baseInput = buildArchitectureSourceInput();
   const first = await engine.processSource(baseInput);
@@ -178,7 +178,7 @@ export async function runOutcomeTrackingChecks() {
     },
   ];
 
-  const outcomes = deriveDirectiveRoutingOutcomes({
+  const outcomes = deriveRoutingOutcomes({
     existingRuns: [first.record, second.record],
     policyEvents,
     corrections,
@@ -193,7 +193,7 @@ export async function runOutcomeTrackingChecks() {
     true,
   );
 
-  const quality = deriveDirectiveRoutingQualityAssessment({
+  const quality = deriveRoutingQualityAssessment({
     routeClass: first.record.routingAssessment.earnedAutonomy.routeClass,
     existingRuns: [first.record, second.record],
     policyEvents,
@@ -203,7 +203,7 @@ export async function runOutcomeTrackingChecks() {
   assert.equal(quality.resolvedOutcomeCount, 2);
   assert.ok(quality.summary.includes("recorded outcome"));
 
-  const qualityInfluencedAssessment = assessDirectiveEngineRouting({
+  const qualityInfluencedAssessment = assessEngineRouting({
     source: {
       ...baseInput.source,
       sourceId: "outcome-quality-current",
@@ -322,7 +322,7 @@ export async function runReviewResolutionPolicyCompilerIntegrationCheck() {
 
 export async function runEarnedAutonomyIntegrationCheck() {
   const policyEvents = buildRecurringRuntimePolicyEvents();
-  const mission: DirectiveEngineMissionInput = {
+  const mission: EngineMissionInput = {
     missionId: "runtime-earned-autonomy",
     currentObjective: "Improve runtime automation performance and reliability boundaries",
     usefulnessSignals: ["prefer runtime improvements"],
@@ -331,7 +331,7 @@ export async function runEarnedAutonomyIntegrationCheck() {
     successSignal: "One bounded runtime improvement is materially clearer than before.",
     adoptionTarget: "runtime",
   };
-  const runtimeGap: DirectiveEngineCapabilityGap = {
+  const runtimeGap: EngineCapabilityGap = {
     gapId: "gap-runtime-automation",
     description: "Runtime automation performance and reliability improvement",
     priority: "high",
@@ -340,9 +340,9 @@ export async function runEarnedAutonomyIntegrationCheck() {
     desiredState: "Clean runtime cases can advance without extra review churn",
     detectedAt: "2026-04-10T00:00:00.000Z",
   };
-  const engine = new DirectiveEngine({
+  const engine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createMemoryDirectiveEngineStore(),
+    store: createMemoryEngineStore(),
   });
 
   for (const [index, title] of ["Runtime automation reliability", "Automation reliability boundary"].entries()) {
@@ -367,7 +367,7 @@ export async function runEarnedAutonomyIntegrationCheck() {
     });
   }
 
-  const current = assessDirectiveEngineRouting({
+  const current = assessEngineRouting({
     source: {
       sourceType: "technical-essay",
       sourceRef: "https://example.com/current-note",

@@ -1,3 +1,3 @@
-export * from "./discovery-intake-queue-writer.ts";
-export * from "./discovery-intake-queue-transition.ts";
-export * from "./discovery-intake-lifecycle-sync.ts";
+export * from "./queue-writer.ts";
+export * from "./queue-transition.ts";
+export * from "./lifecycle-sync.ts";

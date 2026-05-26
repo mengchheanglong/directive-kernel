@@ -1,12 +1,12 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 
-import type { DiscoveryIntakeQueueEntry } from "../../discovery/lib/intake/discovery-intake-queue-writer.ts";
+import type { DiscoveryIntakeQueueEntry } from "../../discovery/lib/intake/queue-writer.ts";
 import {
-  describeDirectiveEngineGapPressure,
-  type DirectiveEngineRunArtifact,
-  type StoredDirectiveEngineRunRecord,
-} from "./engine-run-artifacts.ts";
+  describeEngineGapPressure,
+  type EngineRunArtifact,
+  type StoredEngineRunRecord,
+} from "./run-artifacts.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import { getDefaultDirectiveWorkspaceRoot } from "../../shared/lib/workspace-root.ts";
 
@@ -84,7 +84,7 @@ function readJson(filePath: string) {
   }
 }
 
-function isRecordLike(value: unknown): value is StoredDirectiveEngineRunRecord {
+function isRecordLike(value: unknown): value is StoredEngineRunRecord {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   const candidate = record.candidate as Record<string, unknown> | undefined;
@@ -138,14 +138,14 @@ function toPeriod(dateStr: string): string {
   return dateStr.slice(0, 10);
 }
 
-function readAllRunRecords(engineRunsRoot: string): DirectiveEngineRunArtifact[] {
+function readAllRunRecords(engineRunsRoot: string): EngineRunArtifact[] {
   if (!fs.existsSync(engineRunsRoot)) return [];
 
   return fs
     .readdirSync(engineRunsRoot, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
     .sort((a, b) => a.name.localeCompare(b.name))
-    .reduce<DirectiveEngineRunArtifact[]>((acc, entry) => {
+    .reduce<EngineRunArtifact[]>((acc, entry) => {
       const recordPath = normalizeAbsolutePath(path.join(engineRunsRoot, entry.name));
       const parsed = readJson(recordPath);
       if (isRecordLike(parsed)) {
@@ -153,7 +153,7 @@ function readAllRunRecords(engineRunsRoot: string): DirectiveEngineRunArtifact[]
           recordPath,
           reportPath: null,
           reportExcerpt: null,
-          gapPressure: describeDirectiveEngineGapPressure(parsed),
+          gapPressure: describeEngineGapPressure(parsed),
           record: parsed,
         });
       }

@@ -1,38 +1,38 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
+﻿import type { IncomingMessage, ServerResponse } from "node:http";
 import {
-  closeDirectiveArchitectureBoundedStart,
-  closeDirectiveArchitectureNoteHandoff,
-  continueDirectiveArchitectureFromBoundedResult,
-} from "../../architecture/lib/experiments/architecture-bounded-closeout.ts";
+  closeArchitectureBoundedStart,
+  closeArchitectureNoteHandoff,
+  continueArchitectureFromBoundedResult,
+} from "../../architecture/lib/experiments/closeout.ts";
 import {
   createDirectiveArchitectureImplementationTarget,
-} from "../../architecture/lib/materialization/architecture-implementation-target.ts";
+} from "../../architecture/lib/materialization/implementation-target.ts";
 import {
   createDirectiveArchitectureImplementationResult,
-} from "../../architecture/lib/materialization/architecture-implementation-result.ts";
+} from "../../architecture/lib/materialization/implementation-result.ts";
 import {
   confirmDirectiveArchitectureRetention,
-} from "../../architecture/lib/materialization/architecture-retention.ts";
+} from "../../architecture/lib/materialization/retention.ts";
 import {
   createDirectiveArchitectureIntegrationRecord,
-} from "../../architecture/lib/materialization/architecture-integration-record.ts";
+} from "../../architecture/lib/materialization/integration-record.ts";
 import {
   recordDirectiveArchitectureConsumption,
-} from "../../architecture/lib/materialization/architecture-consumption-record.ts";
+} from "../../architecture/lib/materialization/consumption-record.ts";
 import {
   evaluateDirectiveArchitectureConsumption,
-} from "../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
-import { ARCHITECTURE_DEEP_TAIL_STAGES } from "../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
+} from "../../architecture/lib/materialization/post-consumption-evaluation.ts";
+import { ARCHITECTURE_DEEP_TAIL_STAGES } from "../../architecture/lib/control/materialization-tail-stage-map.ts";
 import {
   reopenDirectiveArchitectureFromEvaluation,
-} from "../../architecture/lib/experiments/architecture-reopen-from-evaluation.ts";
-import { adoptDirectiveArchitectureResult } from "../../architecture/lib/adoption/architecture-result-adoption.ts";
-import { startDirectiveArchitectureFromHandoff } from "../../architecture/lib/experiments/architecture-handoff-start.ts";
+} from "../../architecture/lib/experiments/reopen-from-evaluation.ts";
+import { adoptDirectiveArchitectureResult } from "../../architecture/lib/adoption/result-adoption.ts";
+import { startDirectiveArchitectureFromHandoff } from "../../architecture/lib/experiments/handoff-start.ts";
 import {
   writeDiscoveryRoutingReviewResolution,
-} from "../../discovery/lib/routing/discovery-routing-review-resolution.ts";
-import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
-import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/discovery-gap-worklist-refresh.ts";
+} from "../../discovery/lib/routing/review-resolution.ts";
+import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/submission-router.ts";
+import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/gap-worklist-refresh.ts";
 import {
   buildOperatorDecisionInboxReport,
 } from "../../engine/coordination/operator-decision-inbox/operator-decision-inbox.ts";
@@ -132,7 +132,7 @@ export async function handleDirectiveUiApiRequest(input: {
         .replace(/\/plan-progress$/u, ""),
     );
     const payload = parseJsonBody<{
-      updates: import("../../engine/index.ts").DirectiveEnginePlanProgressUpdate[];
+      updates: import("../../engine/index.ts").EnginePlanProgressUpdate[];
       at?: string | null;
     }>(await readBody(req));
     writeJson(res, 200, {
@@ -440,7 +440,7 @@ export async function handleDirectiveUiApiRequest(input: {
     }));
     return true;
   }
-  if (method === "POST" && pathname === "/api/runtime/host-selection-resolutions") {
+  if (method === "POST" && pathname === "/api/runtime/selection-resolutions") {
     const payload = parseJsonBody<{
       promotionReadinessPath: string;
       decision:
@@ -515,7 +515,7 @@ export async function handleDirectiveUiApiRequest(input: {
       noUnresolvedBaggage?: boolean;
       productArtifactMaterialized?: boolean;
     }>(await readBody(req));
-    writeJson(res, 200, closeDirectiveArchitectureBoundedStart({
+    writeJson(res, 200, closeArchitectureBoundedStart({
       directiveRoot,
       startPath: payload.startPath,
       resultSummary: payload.resultSummary,
@@ -550,7 +550,7 @@ export async function handleDirectiveUiApiRequest(input: {
       noUnresolvedBaggage?: boolean;
       productArtifactMaterialized?: boolean;
     }>(await readBody(req));
-    writeJson(res, 200, closeDirectiveArchitectureNoteHandoff({
+    writeJson(res, 200, closeArchitectureNoteHandoff({
       directiveRoot,
       handoffPath: payload.handoffPath,
       resultSummary: payload.resultSummary,
@@ -571,7 +571,7 @@ export async function handleDirectiveUiApiRequest(input: {
   }
   if (method === "POST" && pathname === "/api/architecture/bounded-continuation") {
     const payload = parseJsonBody<{ resultPath: string }>(await readBody(req));
-    writeJson(res, 200, continueDirectiveArchitectureFromBoundedResult({
+    writeJson(res, 200, continueArchitectureFromBoundedResult({
       directiveRoot,
       resultPath: payload.resultPath,
       continuedBy: uiOperatorActor,

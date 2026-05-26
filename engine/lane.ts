@@ -1,76 +1,76 @@
 import type {
-  DirectiveEngineAdaptationPlan,
-  DirectiveEngineCapabilityGap,
-  DirectiveEngineDecisionState,
-  DirectiveEngineExtractionPlan,
-  DirectiveEngineHostDependence,
-  DirectiveEngineImprovementPlan,
-  DirectiveEngineIntegrationMode,
-  DirectiveEngineIntegrationProposal,
-  DirectiveEngineLaneId,
-  DirectiveEngineMissionContext,
-  DirectiveEngineProofPlan,
-  DirectiveEngineRoutingAssessment,
-  DirectiveEngineSourceItem,
-  DirectiveEngineUsefulnessLevel,
+  EngineAdaptationPlan,
+  EngineCapabilityGap,
+  EngineDecisionState,
+  EngineExtractionPlan,
+  EngineHostDependence,
+  EngineImprovementPlan,
+  EngineIntegrationMode,
+  EngineIntegrationProposal,
+  EngineLaneId,
+  EngineMissionContext,
+  EngineProofPlan,
+  EngineRoutingAssessment,
+  EngineSourceItem,
+  EngineUsefulnessLevel,
 } from "./types.ts";
 
-export type DirectiveEngineLaneDefinition = {
-  laneId: DirectiveEngineLaneId;
+export type EngineLaneDefinition = {
+  laneId: EngineLaneId;
   label: string;
-  hostDependence: DirectiveEngineHostDependence;
+  hostDependence: EngineHostDependence;
   valuableWithoutHostRuntime: boolean;
-  defaultIntegrationMode: DirectiveEngineIntegrationMode;
+  defaultIntegrationMode: EngineIntegrationMode;
   handoffArtifactFamily: string;
   nextAction: string;
-  defaultDecisionState?: DirectiveEngineDecisionState;
+  defaultDecisionState?: EngineDecisionState;
   planExtraction?: (
-    input: DirectiveEngineLaneExtractionPlanningInput,
-  ) => DirectiveEngineExtractionPlan;
+    input: EngineLaneExtractionPlanningInput,
+  ) => EngineExtractionPlan;
   planAdaptation?: (
-    input: DirectiveEngineLaneAdaptationPlanningInput,
-  ) => DirectiveEngineAdaptationPlan;
+    input: EngineLaneAdaptationPlanningInput,
+  ) => EngineAdaptationPlan;
   planImprovement?: (
-    input: DirectiveEngineLaneImprovementPlanningInput,
-  ) => DirectiveEngineImprovementPlan;
+    input: EngineLaneImprovementPlanningInput,
+  ) => EngineImprovementPlan;
   planProof?: (
-    input: DirectiveEngineLaneProofPlanningInput,
-  ) => DirectiveEngineProofPlan;
+    input: EngineLaneProofPlanningInput,
+  ) => EngineProofPlan;
   planIntegration?: (
-    input: DirectiveEngineLaneIntegrationPlanningInput,
-  ) => Partial<DirectiveEngineIntegrationProposal>;
+    input: EngineLaneIntegrationPlanningInput,
+  ) => Partial<EngineIntegrationProposal>;
 };
 
-export type DirectiveEngineLanePlanningInput = {
-  source: DirectiveEngineSourceItem;
-  mission: DirectiveEngineMissionContext;
-  openGaps: DirectiveEngineCapabilityGap[];
+export type EngineLanePlanningInput = {
+  source: EngineSourceItem;
+  mission: EngineMissionContext;
+  openGaps: EngineCapabilityGap[];
   candidateId: string;
   receivedAt: string;
-  routingAssessment: DirectiveEngineRoutingAssessment;
-  lane: DirectiveEngineLaneDefinition;
+  routingAssessment: EngineRoutingAssessment;
+  lane: EngineLaneDefinition;
 };
 
-export type DirectiveEngineLaneUsefulnessPlanningInput = {
-  planningInput: DirectiveEngineLanePlanningInput;
-  extractionPlan: DirectiveEngineExtractionPlan;
-  adaptationPlan: DirectiveEngineAdaptationPlan;
-  improvementPlan: DirectiveEngineImprovementPlan;
+export type EngineLaneUsefulnessPlanningInput = {
+  planningInput: EngineLanePlanningInput;
+  extractionPlan: EngineExtractionPlan;
+  adaptationPlan: EngineAdaptationPlan;
+  improvementPlan: EngineImprovementPlan;
 };
 
-export type DirectiveEngineLaneExtractionPlanningInput = {
-  planningInput: DirectiveEngineLanePlanningInput;
+export type EngineLaneExtractionPlanningInput = {
+  planningInput: EngineLanePlanningInput;
 };
 
-export type DirectiveEngineLaneAdaptationPlanningInput = {
-  planningInput: DirectiveEngineLanePlanningInput;
-  extractionPlan: DirectiveEngineExtractionPlan;
+export type EngineLaneAdaptationPlanningInput = {
+  planningInput: EngineLanePlanningInput;
+  extractionPlan: EngineExtractionPlan;
 };
 
-export type DirectiveEngineLaneImprovementPlanningInput = {
-  planningInput: DirectiveEngineLanePlanningInput;
-  extractionPlan: DirectiveEngineExtractionPlan;
-  adaptationPlan: DirectiveEngineAdaptationPlan;
+export type EngineLaneImprovementPlanningInput = {
+  planningInput: EngineLanePlanningInput;
+  extractionPlan: EngineExtractionPlan;
+  adaptationPlan: EngineAdaptationPlan;
   runtimePromotionFeedbackSignal?: {
     summary: string;
     integrationHint: string;
@@ -83,32 +83,32 @@ export type DirectiveEngineLaneImprovementPlanningInput = {
   } | null;
 };
 
-export type DirectiveEngineLaneProofPlanningInput = {
-  planningInput: DirectiveEngineLanePlanningInput;
-  extractionPlan: DirectiveEngineExtractionPlan;
-  adaptationPlan: DirectiveEngineAdaptationPlan;
-  improvementPlan: DirectiveEngineImprovementPlan;
+export type EngineLaneProofPlanningInput = {
+  planningInput: EngineLanePlanningInput;
+  extractionPlan: EngineExtractionPlan;
+  adaptationPlan: EngineAdaptationPlan;
+  improvementPlan: EngineImprovementPlan;
 };
 
-export type DirectiveEngineLaneIntegrationPlanningInput = {
-  planningInput: DirectiveEngineLanePlanningInput;
-  extractionPlan: DirectiveEngineExtractionPlan;
-  adaptationPlan: DirectiveEngineAdaptationPlan;
-  improvementPlan: DirectiveEngineImprovementPlan;
-  proofPlan: DirectiveEngineProofPlan;
+export type EngineLaneIntegrationPlanningInput = {
+  planningInput: EngineLanePlanningInput;
+  extractionPlan: EngineExtractionPlan;
+  adaptationPlan: EngineAdaptationPlan;
+  improvementPlan: EngineImprovementPlan;
+  proofPlan: EngineProofPlan;
 };
 
-export type DirectiveEngineLaneSet = {
+export type EngineLaneSet = {
   laneSetId: string;
   label: string;
-  lanes: DirectiveEngineLaneDefinition[];
-  refineUsefulness?: (input: DirectiveEngineLaneUsefulnessPlanningInput) => DirectiveEngineUsefulnessLevel;
+  lanes: EngineLaneDefinition[];
+  refineUsefulness?: (input: EngineLaneUsefulnessPlanningInput) => EngineUsefulnessLevel;
 };
 
-export function resolveDirectiveEngineLane(input: {
-  laneSet: DirectiveEngineLaneSet;
-  laneId: DirectiveEngineLaneId;
-}): DirectiveEngineLaneDefinition {
+export function resolveEngineLane(input: {
+  laneSet: EngineLaneSet;
+  laneId: EngineLaneId;
+}): EngineLaneDefinition {
   const lane = input.laneSet.lanes.find((item) => item.laneId === input.laneId);
   if (!lane) {
     throw new Error(
@@ -118,6 +118,6 @@ export function resolveDirectiveEngineLane(input: {
   return lane;
 }
 
-export function listDirectiveEngineLanes(laneSet: DirectiveEngineLaneSet) {
+export function listEngineLanes(laneSet: EngineLaneSet) {
   return [...laneSet.lanes];
 }

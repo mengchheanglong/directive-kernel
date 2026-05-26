@@ -2,9 +2,9 @@ import fs from "node:fs";
 
 import {
   resolveDirectiveGapRadarPath,
-  type DirectiveGapRadarReport,
+  type GapRadarReport,
 } from "../../../engine/routing/gap-radar.ts";
-import type { DirectiveEngineRunsOverview } from "../../../engine/execution/engine-run-artifacts.ts";
+import type { EngineRunsOverview } from "../../../engine/execution/run-artifacts.ts";
 
 export function readDirectiveGapRadarSnapshotSummary(directiveRoot: string) {
   const reportPath = resolveDirectiveGapRadarPath(directiveRoot);
@@ -17,7 +17,7 @@ export function readDirectiveGapRadarSnapshotSummary(directiveRoot: string) {
   }
 
   try {
-    const report = JSON.parse(fs.readFileSync(reportPath, "utf8")) as DirectiveGapRadarReport;
+    const report = JSON.parse(fs.readFileSync(reportPath, "utf8")) as GapRadarReport;
     return {
       generatedAt: report.generatedAt ?? null,
       suggestionCount: report.suggestions.length,
@@ -44,7 +44,7 @@ export function readDirectiveGapRadarSnapshotSummary(directiveRoot: string) {
 }
 
 export function deriveDirectiveEarnedAutonomySnapshotSummary(
-  engineRuns: DirectiveEngineRunsOverview,
+  engineRuns: EngineRunsOverview,
 ) {
   const routeClassMap = new Map<string, {
     routeClass: string;

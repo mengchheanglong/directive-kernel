@@ -2,7 +2,7 @@ import path from "node:path";
 import { readJsonLines, appendJsonLine } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 
-export type DirectiveCaseMirrorEventType =
+export type CaseMirrorEventType =
   | "source_submitted"
   | "triaged"
   | "routed"
@@ -13,14 +13,14 @@ export type DirectiveCaseMirrorEventType =
   | "runtime_promotion_readiness_opened"
   | "state_materialized";
 
-export type DirectiveCaseMirrorEvent = {
+export type CaseMirrorEvent = {
   schemaVersion: 1;
   eventId: string;
   caseId: string;
   candidateId: string;
   candidateName: string;
   sequence: number;
-  eventType: DirectiveCaseMirrorEventType;
+  eventType: CaseMirrorEventType;
   occurredAt: string;
   queueStatus: string | null;
   routeTarget: string | null;
@@ -50,28 +50,28 @@ export function resolveDirectiveCaseEventLogPath(input: {
   );
 }
 
-export function readDirectiveCaseMirrorEvents(input: {
+export function readCaseMirrorEvents(input: {
   directiveRoot: string;
   caseId: string;
 }) {
   const eventLogPath = resolveDirectiveCaseEventLogPath(input);
   return {
     eventLogPath,
-    events: readJsonLines<DirectiveCaseMirrorEvent>(eventLogPath),
+    events: readJsonLines<CaseMirrorEvent>(eventLogPath),
   };
 }
 
-export function appendDirectiveCaseMirrorEvents(input: {
+export function appendCaseMirrorEvents(input: {
   directiveRoot: string;
   caseId: string;
-  events: DirectiveCaseMirrorEvent[];
+  events: CaseMirrorEvent[];
 }) {
-  const { eventLogPath, events: existingEvents } = readDirectiveCaseMirrorEvents({
+  const { eventLogPath, events: existingEvents } = readCaseMirrorEvents({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
   const existingIds = new Set(existingEvents.map((event) => event.eventId));
-  const appendedEvents: DirectiveCaseMirrorEvent[] = [];
+  const appendedEvents: CaseMirrorEvent[] = [];
 
   for (const event of input.events) {
     if (existingIds.has(event.eventId)) {

@@ -1,36 +1,36 @@
-import path from "node:path";
+﻿import path from "node:path";
 
 import { readJson } from "../../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../../shared/lib/path-normalization.ts";
 import { getDefaultDirectiveWorkspaceRoot } from "../../../shared/lib/workspace-root.ts";
 import { resolveDirectiveWorkspaceState } from "../../state/index.ts";
 import { aggregateRunEvidence } from "../../execution/run-evidence-aggregation.ts";
-import { buildDirectiveRuntimePromotionAssistanceReport } from "../../../runtime/lib/control/runtime-promotion-assistance.ts";
-import type { DiscoveryIntakeQueueEntry } from "../../../discovery/lib/intake/discovery-intake-queue-writer.ts";
+import { buildDirectiveRuntimePromotionAssistanceReport } from "../../../runtime/lib/control/promotion-assistance.ts";
+import type { DiscoveryIntakeQueueEntry } from "../../../discovery/lib/intake/queue-writer.ts";
 import {
   classifyEntry,
   compareEntries,
   deriveCurrentLane,
   isLiveCase,
-} from "./read-only-lifecycle-coordination-classification.ts";
-import { selectTopPressure } from "./read-only-lifecycle-coordination-pressure.ts";
+} from "./classification.ts";
+import { selectTopPressure } from "./pressure.ts";
 
 export type {
-  DirectiveReadOnlyLifecycleCoordinationActionKind,
-  DirectiveReadOnlyLifecycleCoordinationBucketId,
-  DirectiveReadOnlyLifecycleCoordinationEntry,
-  DirectiveReadOnlyLifecycleCoordinationLane,
-  DirectiveReadOnlyLifecycleCoordinationOutcome,
-  DirectiveReadOnlyLifecycleCoordinationPressure,
-  DirectiveReadOnlyLifecycleCoordinationReport,
-} from "./read-only-lifecycle-coordination-types.ts";
+  ReadOnlyLifecycleCoordinationActionKind,
+  ReadOnlyLifecycleCoordinationBucketId,
+  ReadOnlyLifecycleCoordinationEntry,
+  ReadOnlyLifecycleCoordinationLane,
+  ReadOnlyLifecycleCoordinationOutcome,
+  ReadOnlyLifecycleCoordinationPressure,
+  ReadOnlyLifecycleCoordinationReport,
+} from "./types.ts";
 import {
   READ_ONLY_LIFECYCLE_COORDINATION_CHECKER_ID,
-  type DirectiveReadOnlyLifecycleCoordinationBucketId,
-  type DirectiveReadOnlyLifecycleCoordinationEntry,
-  type DirectiveReadOnlyLifecycleCoordinationLane,
-  type DirectiveReadOnlyLifecycleCoordinationReport,
-} from "./read-only-lifecycle-coordination-types.ts";
+  type ReadOnlyLifecycleCoordinationBucketId,
+  type ReadOnlyLifecycleCoordinationEntry,
+  type ReadOnlyLifecycleCoordinationLane,
+  type ReadOnlyLifecycleCoordinationReport,
+} from "./types.ts";
 
 function readQueueEntries(directiveRoot: string): DiscoveryIntakeQueueEntry[] {
   const queuePath = path.join(directiveRoot, "discovery", "intake-queue.json");
@@ -40,16 +40,16 @@ function readQueueEntries(directiveRoot: string): DiscoveryIntakeQueueEntry[] {
   return parsed.entries ?? [];
 }
 
-export function buildDirectiveReadOnlyLifecycleCoordinationReport(input?: {
+export function buildReadOnlyLifecycleCoordinationReport(input?: {
   directiveRoot?: string;
   snapshotAt?: string;
-}): DirectiveReadOnlyLifecycleCoordinationReport {
+}): ReadOnlyLifecycleCoordinationReport {
   const directiveRoot = normalizeAbsolutePath(input?.directiveRoot || getDefaultDirectiveWorkspaceRoot());
   const queueEntries = readQueueEntries(directiveRoot);
   const assistance = buildDirectiveRuntimePromotionAssistanceReport({ directiveRoot });
   const evidence = aggregateRunEvidence({ directiveRoot });
 
-  const liveCases: DirectiveReadOnlyLifecycleCoordinationEntry[] = queueEntries.flatMap((entry) => {
+  const liveCases: ReadOnlyLifecycleCoordinationEntry[] = queueEntries.flatMap((entry) => {
     if (!entry.candidate_id || !entry.routing_record_path) {
       return [];
     }
@@ -84,16 +84,16 @@ export function buildDirectiveReadOnlyLifecycleCoordinationReport(input?: {
       readOnly: true,
       mutatesWorkflowState: false,
       bypassesApproval: false,
-    } satisfies DirectiveReadOnlyLifecycleCoordinationEntry];
+    } satisfies ReadOnlyLifecycleCoordinationEntry];
   }).sort(compareEntries);
 
-  const laneCounts: Record<DirectiveReadOnlyLifecycleCoordinationLane, number> = {
+  const laneCounts: Record<ReadOnlyLifecycleCoordinationLane, number> = {
     architecture: 0,
     runtime: 0,
     discovery: 0,
     unknown: 0,
   };
-  const bucketCounts: Record<DirectiveReadOnlyLifecycleCoordinationBucketId, number> = {
+  const bucketCounts: Record<ReadOnlyLifecycleCoordinationBucketId, number> = {
     runtime_promotion_readiness_parked: 0,
     runtime_manual_promotion_stop: 0,
     architecture_retention_confirmation_due: 0,

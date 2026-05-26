@@ -4,7 +4,7 @@ import {
   parseStringListFallback,
 } from "./structured-output-fallback";
 
-export type DirectiveAnalysisEvidenceArtifact = {
+export type AnalysisEvidenceArtifact = {
   capability_id: string;
   evidence_items: Array<{
     source_ref: string;
@@ -14,7 +14,7 @@ export type DirectiveAnalysisEvidenceArtifact = {
   errors: string[];
 };
 
-export type DirectiveCitationSetArtifact = {
+export type CitationSetArtifact = {
   capability_id: string;
   citations: Array<{
     url: string;
@@ -24,7 +24,7 @@ export type DirectiveCitationSetArtifact = {
   coverage_status: "complete" | "partial" | "missing";
 };
 
-export type DirectiveEvaluationSupportArtifact = {
+export type EvaluationSupportArtifact = {
   capability_id: string;
   source_urls: string[];
   visited_urls: string[];
@@ -35,10 +35,10 @@ export type DirectiveEvaluationSupportArtifact = {
   quality_signals: Record<string, unknown>;
 };
 
-export type DirectiveLifecycleArtifacts = {
-  analysisEvidence: DirectiveAnalysisEvidenceArtifact;
-  citationSet: DirectiveCitationSetArtifact;
-  evaluationSupport: DirectiveEvaluationSupportArtifact;
+export type LifecycleArtifacts = {
+  analysisEvidence: AnalysisEvidenceArtifact;
+  citationSet: CitationSetArtifact;
+  evaluationSupport: EvaluationSupportArtifact;
 };
 
 type NormalizedCitationsResult = {
@@ -158,7 +158,7 @@ function normalizeCitations(
 
 export function isDirectiveLifecycleArtifacts(
   value: unknown,
-): value is DirectiveLifecycleArtifacts {
+): value is LifecycleArtifacts {
   const root = asRecord(value);
   if (!root) return false;
 
@@ -217,7 +217,7 @@ export function buildDirectiveLifecycleArtifacts(input: {
   sourceRef: string;
   evidenceSummary: string;
   metadata?: Record<string, unknown>;
-}): DirectiveLifecycleArtifacts {
+}): LifecycleArtifacts {
   const metadata = input.metadata || {};
   const existing = (metadata as Record<string, unknown>).lifecycleArtifacts;
   if (isDirectiveLifecycleArtifacts(existing)) {
@@ -267,7 +267,7 @@ export function buildDirectiveLifecycleArtifacts(input: {
       ]
     : [];
 
-  const analysisEvidence: DirectiveAnalysisEvidenceArtifact = {
+  const analysisEvidence: AnalysisEvidenceArtifact = {
     capability_id: input.capabilityId,
     evidence_items: evidenceItems,
     collection_status:
@@ -286,7 +286,7 @@ export function buildDirectiveLifecycleArtifacts(input: {
       ...referenceUrls.map((url) => `- [${url}](${url})`),
     ].join("\n");
 
-  const citationSet: DirectiveCitationSetArtifact = {
+  const citationSet: CitationSetArtifact = {
     capability_id: input.capabilityId,
     citations: citationResult.citations,
     reference_section_markdown: referenceSectionMarkdown,
@@ -316,7 +316,7 @@ export function buildDirectiveLifecycleArtifacts(input: {
     : undefined;
   const totalUsd = Number(researchCostsRaw?.total_usd ?? researchCostsRaw?.totalUsd ?? 0);
 
-  const evaluationSupport: DirectiveEvaluationSupportArtifact = {
+  const evaluationSupport: EvaluationSupportArtifact = {
     capability_id: input.capabilityId,
     source_urls: normalizedSourceUrls,
     visited_urls: normalizedVisitedUrls,

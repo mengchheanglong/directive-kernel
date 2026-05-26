@@ -17,9 +17,9 @@
 
 import { normalizeCode } from "./normalizer.ts";
 import type {
-  DirectiveCallableCapability,
-  DirectiveCallableExecutionInput,
-  DirectiveCallableExecutionResult,
+  CallableCapability,
+  CallableExecutionInput,
+  CallableExecutionResult,
 } from "../../core/callable-contract.ts";
 
 // --- Configuration ---
@@ -90,7 +90,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 // --- Public executor ---
 
-async function execute(input: DirectiveCallableExecutionInput): Promise<DirectiveCallableExecutionResult> {
+async function execute(input: CallableExecutionInput): Promise<CallableExecutionResult> {
   const startedAt = new Date();
   const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
   const tool = input.tool as CodeNormalizerToolName;
@@ -184,7 +184,7 @@ function listTools() {
 
 // --- Callable contract implementation ---
 
-export function createCodeNormalizerCallableCapability(): DirectiveCallableCapability {
+export function createCodeNormalizerCallableCapability(): CallableCapability {
   return {
     descriptor: {
       capabilityId: CAPABILITY_ID,

@@ -1,17 +1,17 @@
-import { normalizeText } from "./engine-source-utils.ts";
-import { resolveMissionContext } from "./mission/mission-context.ts";
-import { assessDirectiveEngineRouting } from "./routing/routing-assessment.ts";
-import { deriveDirectiveRoutingDiff } from "./routing/routing-diff.ts";
+import { normalizeText } from "./source-utils.ts";
+import { resolveMissionContext } from "./mission/context.ts";
+import { assessEngineRouting } from "./routing/assessment.ts";
+import { deriveDirectiveRoutingDiff } from "./routing/diff.ts";
 import {
   applyStructuredAnswersToRecordInput,
   buildProcessSourceInputFromRecord,
 } from "./planning/run-action-api.ts";
 import type {
-  DirectiveEngineMissionContext,
-  DirectiveEngineMissionPreviewChange,
-  DirectiveEngineProcessSourceInput,
-  DirectiveEngineRoutingDigestPreview,
-  DirectiveEngineRunRecord,
+  EngineMissionContext,
+  EngineMissionPreviewChange,
+  EngineProcessSourceInput,
+  EngineRoutingDigestPreview,
+  EngineRunRecord,
 } from "./types.ts";
 
 function normalizeOptionalMissionList(
@@ -25,12 +25,12 @@ function normalizeOptionalMissionList(
 }
 
 export function buildReRouteProcessSourceInput(input: {
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
   answers: Record<string, unknown>;
   receivedAt?: string | null;
-  corrections?: DirectiveEngineProcessSourceInput["corrections"];
-  policyEvents?: DirectiveEngineProcessSourceInput["policyEvents"];
-}): DirectiveEngineProcessSourceInput {
+  corrections?: EngineProcessSourceInput["corrections"];
+  policyEvents?: EngineProcessSourceInput["policyEvents"];
+}): EngineProcessSourceInput {
   const rerouteInput = applyStructuredAnswersToRecordInput({
     recordInput: buildProcessSourceInputFromRecord(input.record),
     answers: input.answers,
@@ -45,9 +45,9 @@ export function buildReRouteProcessSourceInput(input: {
 }
 
 function applyMissionPreviewChange(input: {
-  mission: DirectiveEngineMissionContext;
-  change: DirectiveEngineMissionPreviewChange;
-}): DirectiveEngineMissionContext {
+  mission: EngineMissionContext;
+  change: EngineMissionPreviewChange;
+}): EngineMissionContext {
   return {
     ...input.mission,
     currentObjective:
@@ -78,19 +78,19 @@ function applyMissionPreviewChange(input: {
 }
 
 export function buildMissionPreviewDigest(input: {
-  record: DirectiveEngineRunRecord;
-  change: DirectiveEngineMissionPreviewChange;
-  existingRuns: DirectiveEngineRunRecord[];
-  corrections?: DirectiveEngineProcessSourceInput["corrections"];
-  policyEvents?: DirectiveEngineProcessSourceInput["policyEvents"];
+  record: EngineRunRecord;
+  change: EngineMissionPreviewChange;
+  existingRuns: EngineRunRecord[];
+  corrections?: EngineProcessSourceInput["corrections"];
+  policyEvents?: EngineProcessSourceInput["policyEvents"];
   receivedAt?: string | null;
-}): DirectiveEngineRoutingDigestPreview {
+}): EngineRoutingDigestPreview {
   const recordInput = buildProcessSourceInputFromRecord(input.record);
   const mission = applyMissionPreviewChange({
     mission: recordInput.mission,
     change: input.change,
   });
-  const assessment = assessDirectiveEngineRouting({
+  const assessment = assessEngineRouting({
     source: input.record.source,
     mission: resolveMissionContext(mission),
     openGaps: [...input.record.openGaps],

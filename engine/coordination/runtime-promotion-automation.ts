@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 
 import { readJson } from "../../shared/lib/file-io.ts";
@@ -8,37 +8,37 @@ import { resolveDirectiveWorkspaceState } from "../state/index.ts";
 import {
   RUNTIME_REGISTRY_ACCEPTANCE_GATE_VERSION,
   assertRuntimeRegistryAcceptanceGate,
-} from "../../runtime/lib/control/runtime-registry-acceptance-gate.ts";
+} from "../../runtime/lib/control/registry-acceptance-gate.ts";
 import {
   classifyRuntimeAutomationEligibility,
   RUNTIME_AUTOMATION_ELIGIBILITY_POLICY_VERSION,
   type RuntimeAutomationEligibilityClass,
-} from "../../runtime/lib/control/runtime-automation-eligibility-policy.ts";
-import type { RuntimeHostCallableAdapterDescriptor } from "../../runtime/lib/host/runtime-host-callable-adapter-contract.ts";
+} from "../../runtime/lib/control/automation-eligibility-policy.ts";
+import type { RuntimeHostCallableAdapterDescriptor } from "../../runtime/lib/host/callable-adapter-contract.ts";
 import {
   renderRuntimeRegistryEntry,
   type RuntimeRegistryEntryRequest,
-} from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
+} from "../../runtime/lib/writers/registry-entry-writer.ts";
 
-export type DirectiveAutonomousRuntimePromotionAutomationPolicy = {
+export type AutonomousRuntimePromotionAutomationPolicy = {
   autoHostAdapterDescriptor: boolean;
   autoHostCallableExecution: boolean;
   autoWriteRegistryEntry: boolean;
 };
 
-export type DirectiveRuntimePromotionAutomationGateStatus =
+export type RuntimePromotionAutomationGateStatus =
   | "pass"
   | "blocked"
   | "disabled"
   | "not_applicable";
 
-export type DirectiveRuntimePromotionAutomationGate = {
+export type RuntimePromotionAutomationGate = {
   id: string;
-  status: DirectiveRuntimePromotionAutomationGateStatus;
+  status: RuntimePromotionAutomationGateStatus;
   reason: string;
 };
 
-export type DirectiveRuntimePromotionAutomationDryRunReport = {
+export type RuntimePromotionAutomationDryRunReport = {
   ok: true;
   candidateId: string | null;
   candidateName: string | null;
@@ -52,11 +52,11 @@ export type DirectiveRuntimePromotionAutomationDryRunReport = {
   evidenceEligible: boolean;
   automationEligible: boolean;
   wouldWriteRegistryEntry: boolean;
-  policy: DirectiveAutonomousRuntimePromotionAutomationPolicy;
+  policy: AutonomousRuntimePromotionAutomationPolicy;
   hostCallableAdapterReportPath: string | null;
   callableExecutionEvidencePath: string | null;
   registryRequest: RuntimeRegistryEntryRequest | null;
-  gates: DirectiveRuntimePromotionAutomationGate[];
+  gates: RuntimePromotionAutomationGate[];
   stopReason: string;
 };
 
@@ -191,7 +191,7 @@ function summarizeStopReason(input: {
   evidenceEligible: boolean;
   automationEligible: boolean;
   existingRegistryEntryPath: string | null;
-  gates: DirectiveRuntimePromotionAutomationGate[];
+  gates: RuntimePromotionAutomationGate[];
 }) {
   if (input.existingRegistryEntryPath) {
     return `Runtime registry automation is not needed; accepted registry entry already exists at ${input.existingRegistryEntryPath}.`;
@@ -215,20 +215,20 @@ function summarizeStopReason(input: {
     : "Runtime registry automation is not evidence-eligible.";
 }
 
-export function buildDirectiveRuntimePromotionAutomationDryRunReport(input: {
+export function buildRuntimePromotionAutomationDryRunReport(input: {
   directiveRoot: string;
   promotionRecordPath: string;
-  policy: DirectiveAutonomousRuntimePromotionAutomationPolicy;
+  policy: AutonomousRuntimePromotionAutomationPolicy;
   approvedBy: string;
   acceptedAt?: string;
-}): DirectiveRuntimePromotionAutomationDryRunReport {
+}): RuntimePromotionAutomationDryRunReport {
   const promotionRecordPath = normalizeRelativePath(input.promotionRecordPath);
   const focus = resolveDirectiveWorkspaceState({
     directiveRoot: input.directiveRoot,
     artifactPath: promotionRecordPath,
     includeAnchors: false,
   }).focus;
-  const gates: DirectiveRuntimePromotionAutomationGate[] = [];
+  const gates: RuntimePromotionAutomationGate[] = [];
   const candidateId = focus?.candidateId ?? null;
   const candidateName = focus?.candidateName ?? null;
   const existingRegistryEntryPath = focus?.linkedArtifacts.runtimeRegistryEntryPath ?? null;
@@ -421,7 +421,7 @@ export function buildDirectiveRuntimePromotionAutomationDryRunReport(input: {
 
 export function writeDirectiveRuntimeRegistryEntryFromAutomationReport(input: {
   directiveRoot: string;
-  report: DirectiveRuntimePromotionAutomationDryRunReport;
+  report: RuntimePromotionAutomationDryRunReport;
 }) {
   if (!input.report.automationEligible || !input.report.registryRequest) {
     throw new Error(`runtime_registry_automation_not_eligible:${input.report.stopReason}`);

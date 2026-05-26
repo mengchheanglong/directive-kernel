@@ -1,10 +1,10 @@
-import path from "node:path";
+﻿import path from "node:path";
 import type {
   DiscoveryIntakeQueueDocument,
   DiscoveryIntakeQueueEntry,
   DiscoveryQueueStatus,
   DiscoveryRoutingTarget,
-} from "../../../discovery/lib/intake/discovery-intake-queue-writer.ts";
+} from "../../../discovery/lib/intake/queue-writer.ts";
 
 export type DiscoveryOverviewHostStorageBridge = {
   directiveRoot: string;

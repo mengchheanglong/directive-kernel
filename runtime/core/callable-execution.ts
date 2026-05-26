@@ -12,8 +12,8 @@ import {
   createResearchVaultSourcePackCallableCapability,
 } from "../capabilities/research-vault-source-pack/index.ts";
 import type {
-  DirectiveCallableCapability,
-  DirectiveCallableExecutionResult,
+  CallableCapability,
+  CallableExecutionResult,
 } from "./callable-contract.ts";
 
 export const DIRECTIVE_RUNTIME_CALLABLE_EXECUTION_RECORD_VERSION =
@@ -32,19 +32,19 @@ const KNOWN_CALLABLE_CAPABILITIES = {
     createCodeNormalizerCallableCapability,
   [RESEARCH_VAULT_SOURCE_PACK_CAPABILITY_ID]:
     createResearchVaultSourcePackCallableCapability,
-} satisfies Record<string, () => DirectiveCallableCapability>;
+} satisfies Record<string, () => CallableCapability>;
 
-export type DirectiveRuntimeCallableCapabilityId =
+export type RuntimeCallableCapabilityId =
   keyof typeof KNOWN_CALLABLE_CAPABILITIES;
 
-export type DirectiveRuntimeCallableExecutionSummary = {
+export type RuntimeCallableExecutionSummary = {
   kind: "object" | "array" | "primitive" | "nullish";
   topLevelCount: number | null;
   keys: string[];
   preview: string | null;
 };
 
-export type DirectiveRuntimeCallableExecutionRecord = {
+export type RuntimeCallableExecutionRecord = {
   version: typeof DIRECTIVE_RUNTIME_CALLABLE_EXECUTION_RECORD_VERSION;
   executionId: string;
   executionAt: string;
@@ -58,37 +58,37 @@ export type DirectiveRuntimeCallableExecutionRecord = {
   invocation: {
     tool: string;
     timeoutMs: number;
-    status: DirectiveCallableExecutionResult["status"];
+    status: CallableExecutionResult["status"];
     ok: boolean;
   };
-  metadata: DirectiveCallableExecutionResult["metadata"];
+  metadata: CallableExecutionResult["metadata"];
   boundary: {
     executionSurface: "shared_runtime_callable_executor";
     hostIntegrated: false;
     promotionAutomation: false;
     automaticWorkflowAdvancement: false;
   };
-  inputSummary: DirectiveRuntimeCallableExecutionSummary & {
+  inputSummary: RuntimeCallableExecutionSummary & {
     sizeBytes: number;
   };
-  resultSummary: DirectiveRuntimeCallableExecutionSummary;
+  resultSummary: RuntimeCallableExecutionSummary;
   artifacts: {
     recordPath: string;
     reportPath: string;
   };
 };
 
-export type DirectiveRuntimeCallableExecutionRunResult = {
+export type RuntimeCallableExecutionRunResult = {
   ok: true;
-  record: DirectiveRuntimeCallableExecutionRecord;
-  rawResult: DirectiveCallableExecutionResult;
+  record: RuntimeCallableExecutionRecord;
+  rawResult: CallableExecutionResult;
   absolutePaths: {
     recordPath: string;
     reportPath: string;
   } | null;
 };
 
-export type DirectiveRuntimeCallableExecutionInput = {
+export type RuntimeCallableExecutionInput = {
   directiveRoot: string;
   capabilityId: string;
   tool: string;
@@ -99,9 +99,9 @@ export type DirectiveRuntimeCallableExecutionInput = {
   persistArtifacts?: boolean;
 };
 
-export type DirectiveRuntimeCallableDirectExecutionInput = {
+export type RuntimeCallableDirectExecutionInput = {
   directiveRoot: string;
-  capability: DirectiveCallableCapability;
+  capability: CallableCapability;
   tool: string;
   input: Record<string, unknown>;
   timeoutMs?: number;
@@ -130,7 +130,7 @@ function truncatePreview(value: string, maxLength = 240) {
   return `${value.slice(0, maxLength - 3)}...`;
 }
 
-function summarizeUnknown(value: unknown): DirectiveRuntimeCallableExecutionSummary {
+function summarizeUnknown(value: unknown): RuntimeCallableExecutionSummary {
   if (value === null || value === undefined) {
     return {
       kind: "nullish",
@@ -196,7 +196,7 @@ function resolveExecutionArtifactPaths(input: {
   };
 }
 
-function renderExecutionReport(record: DirectiveRuntimeCallableExecutionRecord) {
+function renderExecutionReport(record: RuntimeCallableExecutionRecord) {
   return [
     "# Directive Runtime Callable Execution",
     "",
@@ -257,12 +257,12 @@ function withOuterTimeout<T>(promise: Promise<T>, timeoutMs: number) {
 }
 
 function buildTimeoutResult(input: {
-  capability: DirectiveCallableCapability;
+  capability: CallableCapability;
   tool: string;
   timeoutMs: number;
   startedAt: Date;
   error: unknown;
-}): DirectiveCallableExecutionResult {
+}): CallableExecutionResult {
   const completedAt = new Date();
   const message = input.error instanceof Error ? input.error.message : String(input.error);
 
@@ -282,7 +282,7 @@ function buildTimeoutResult(input: {
 }
 
 async function executeWithSharedBoundary(input: {
-  capability: DirectiveCallableCapability;
+  capability: CallableCapability;
   tool: string;
   invocationInput: Record<string, unknown>;
   timeoutMs: number;
@@ -313,7 +313,7 @@ async function executeWithSharedBoundary(input: {
 
 function writeExecutionArtifacts(input: {
   directiveRoot: string;
-  record: DirectiveRuntimeCallableExecutionRecord;
+  record: RuntimeCallableExecutionRecord;
 }) {
   const absoluteRecordPath = normalizeAbsolutePath(
     path.resolve(input.directiveRoot, input.record.artifacts.recordPath),
@@ -341,13 +341,13 @@ export function listDirectiveRuntimeCallableCapabilities() {
 
 export function getDirectiveRuntimeCallableCapability(capabilityId: string) {
   const createCapability =
-    KNOWN_CALLABLE_CAPABILITIES[capabilityId as DirectiveRuntimeCallableCapabilityId];
+    KNOWN_CALLABLE_CAPABILITIES[capabilityId as RuntimeCallableCapabilityId];
   return createCapability ? createCapability() : null;
 }
 
 export async function runDirectiveCallableCapabilityWithExecutionSurface(
-  input: DirectiveRuntimeCallableDirectExecutionInput,
-): Promise<DirectiveRuntimeCallableExecutionRunResult> {
+  input: RuntimeCallableDirectExecutionInput,
+): Promise<RuntimeCallableExecutionRunResult> {
   const executionAt = input.executionAt ?? new Date().toISOString();
   const capability = input.capability;
   const timeoutMs = Math.min(
@@ -368,7 +368,7 @@ export async function runDirectiveCallableCapabilityWithExecutionSurface(
     allowExternalFetches: input.allowExternalFetches,
   });
   const inputSummary = summarizeUnknown(input.input);
-  const record: DirectiveRuntimeCallableExecutionRecord = {
+  const record: RuntimeCallableExecutionRecord = {
     version: DIRECTIVE_RUNTIME_CALLABLE_EXECUTION_RECORD_VERSION,
     executionId: resolvedPaths.executionId,
     executionAt,
@@ -417,8 +417,8 @@ export async function runDirectiveCallableCapabilityWithExecutionSurface(
 }
 
 export async function runDirectiveRuntimeCallableExecution(
-  input: DirectiveRuntimeCallableExecutionInput,
-): Promise<DirectiveRuntimeCallableExecutionRunResult> {
+  input: RuntimeCallableExecutionInput,
+): Promise<RuntimeCallableExecutionRunResult> {
   const capability = getDirectiveRuntimeCallableCapability(input.capabilityId);
   if (!capability) {
     throw new Error(`invalid_input: unknown callable capability "${input.capabilityId}"`);

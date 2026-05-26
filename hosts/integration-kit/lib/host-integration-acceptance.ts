@@ -2,14 +2,14 @@ import os from "node:os";
 import path from "node:path";
 
 import {
-  DirectiveEngine,
+  Engine,
   createDirectiveWorkspaceEngineLanes,
-  createMemoryDirectiveEngineStore,
-  type DirectiveEngineProcessSourceInput,
+  createMemoryEngineStore,
+  type EngineProcessSourceInput,
 } from "../../../engine/index.ts";
 import {
   appendRoutingCorrection,
-  assessDirectiveEngineRouting,
+  assessEngineRouting,
   deriveRoutingCorrectionAdjustments,
   extractSourceSignalTokens,
   readRoutingCorrectionLedger,
@@ -75,13 +75,13 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
   }
 
   try {
-    check("DirectiveEngine export is constructable", typeof DirectiveEngine === "function");
+    check("Engine export is constructable", typeof Engine === "function");
     check(
-      "assessDirectiveEngineRouting export is callable",
-      typeof assessDirectiveEngineRouting === "function",
+      "assessEngineRouting export is callable",
+      typeof assessEngineRouting === "function",
     );
 
-    const vagueRoute = assessDirectiveEngineRouting({
+    const vagueRoute = assessEngineRouting({
       source: {
         sourceType: "paper",
         sourceRef: "https://example.com/acceptance-contract-vague",
@@ -179,7 +179,7 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
         rationale: "Repeated architecture workflow routing case without a clean open-gap match.",
       },
     ];
-    const radarRoute = assessDirectiveEngineRouting({
+    const radarRoute = assessEngineRouting({
       source: {
         sourceType: "workflow-writeup",
         sourceRef: "https://example.com/acceptance-gap-radar",
@@ -246,11 +246,11 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
         && (correctionAdjustments.runtime ?? 0) < 0,
     );
 
-    const engine = new DirectiveEngine({
+    const engine = new Engine({
       laneSet: createDirectiveWorkspaceEngineLanes(),
-      store: createMemoryDirectiveEngineStore(),
+      store: createMemoryEngineStore(),
     });
-    const processInput: DirectiveEngineProcessSourceInput = {
+    const processInput: EngineProcessSourceInput = {
       receivedAt: "2026-04-10T00:00:00.000Z",
       mission: {
         missionId: "acceptance-engine",
@@ -300,17 +300,17 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
     const first = await engine.processSource(processInput);
     const second = await engine.processSource(processInput);
     check(
-      "DirectiveEngine processSource exposes deduplication fields",
+      "Engine processSource exposes deduplication fields",
       second.deduplicated === true && second.duplicateOfRunId === first.record.runId,
     );
     check(
-      "DirectiveEngine processSource accepts correction-ledger input",
+      "Engine processSource accepts correction-ledger input",
       first.record.routingAssessment.rationale.some((line) =>
         line.includes("Routing correction ledger applied adjustments:")
       ),
     );
     check(
-      "DirectiveEngine processSource preserves Earned Autonomy and Gap Radar surfaces",
+      "Engine processSource preserves Earned Autonomy and Gap Radar surfaces",
       typeof first.record.routingAssessment.earnedAutonomy.overallScore === "number"
         && (
           first.record.routingAssessment.gapRadar === null
@@ -328,7 +328,7 @@ async function runEngineContractSurfaceCheck(): Promise<HostIntegrationAcceptanc
       },
     });
     check(
-      "DirectiveEngine processSource preserves source-memory, source-similarity, narrative-threading, and prior-plan-context surfaces",
+      "Engine processSource preserves source-memory, source-similarity, narrative-threading, and prior-plan-context surfaces",
       related.record.routingAssessment.sourceMemory !== null
         && related.record.routingAssessment.sourceSimilarity !== null
         && related.record.routingAssessment.narrativeContext !== null

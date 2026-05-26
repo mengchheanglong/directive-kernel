@@ -3,25 +3,25 @@ import path from "node:path";
 
 import { normalizeRelativePath } from "../../../shared/lib/path-normalization.ts";
 import {
-  readDirectiveArchitectureImplementationTargetDetail,
+  readArchitectureImplementationTargetDetail,
   readDirectiveArchitectureImplementationTargetPathForAdoption,
-} from "../../../architecture/lib/materialization/architecture-implementation-target.ts";
+} from "../../../architecture/lib/materialization/implementation-target.ts";
 import {
-  readDirectiveArchitectureImplementationResultDetail,
+  readArchitectureImplementationResultDetail,
   readDirectiveArchitectureImplementationResultPathForTarget,
-} from "../../../architecture/lib/materialization/architecture-implementation-result.ts";
+} from "../../../architecture/lib/materialization/implementation-result.ts";
 import {
-  readDirectiveArchitectureRetentionDetail,
-} from "../../../architecture/lib/materialization/architecture-retention.ts";
+  readArchitectureRetentionDetail,
+} from "../../../architecture/lib/materialization/retention.ts";
 import {
-  readDirectiveArchitectureIntegrationRecordDetail,
-} from "../../../architecture/lib/materialization/architecture-integration-record.ts";
+  readArchitectureIntegrationRecordDetail,
+} from "../../../architecture/lib/materialization/integration-record.ts";
 import {
-  readDirectiveArchitectureConsumptionRecordDetail,
-} from "../../../architecture/lib/materialization/architecture-consumption-record.ts";
+  readArchitectureConsumptionRecordDetail,
+} from "../../../architecture/lib/materialization/consumption-record.ts";
 import {
-  readDirectiveArchitecturePostConsumptionEvaluationDetail,
-} from "../../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
+  readArchitecturePostConsumptionEvaluationDetail,
+} from "../../../architecture/lib/materialization/post-consumption-evaluation.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import {
   resolveDirectiveWorkspaceArtifactAbsolutePath,
@@ -30,15 +30,15 @@ import {
   ARCHITECTURE_DEEP_TAIL_STAGE,
   matchesArchitectureDeepTailStagePath,
   type ArchitectureDeepTailStageId,
-} from "../../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
+} from "../../../architecture/lib/control/materialization-tail-stage-map.ts";
 import { buildDirectiveFrontendCurrentHead } from "./shared.ts";
 import type {
-  DirectiveFrontendArchitectureConsumptionRecordDetail,
-  DirectiveFrontendArchitectureImplementationResultDetail,
-  DirectiveFrontendArchitectureImplementationTargetDetail,
-  DirectiveFrontendArchitectureIntegrationRecordDetail,
-  DirectiveFrontendArchitecturePostConsumptionEvaluationDetail,
-  DirectiveFrontendArchitectureRetentionDetail,
+  FrontendArchitectureConsumptionRecordDetail,
+  FrontendArchitectureImplementationResultDetail,
+  FrontendArchitectureImplementationTargetDetail,
+  FrontendArchitectureIntegrationRecordDetail,
+  FrontendArchitecturePostConsumptionEvaluationDetail,
+  FrontendArchitectureRetentionDetail,
 } from "./snapshot.ts";
 
 type ArtifactText = {
@@ -204,14 +204,14 @@ export function readDirectiveFrontendArchitectureImplementationTargetDetail(
     directiveRoot: string;
     relativePath: string;
   },
-): DirectiveFrontendArchitectureImplementationTargetDetail {
-  return readDirectiveFrontendArchitectureDeepTailDetail<DirectiveFrontendArchitectureImplementationTargetDetail>({
+): FrontendArchitectureImplementationTargetDetail {
+  return readDirectiveFrontendArchitectureDeepTailDetail<FrontendArchitectureImplementationTargetDetail>({
     directiveRoot: input.directiveRoot,
     relativePath: input.relativePath,
     stage: "implementation_target",
     invalidPathError: "invalid_implementation_target_path",
     focusError: "architecture_implementation_target_focus_not_resolved",
-    readDetail: (relativePath) => readDirectiveArchitectureImplementationTargetDetail({
+    readDetail: (relativePath) => readArchitectureImplementationTargetDetail({
       directiveRoot: input.directiveRoot,
       targetPath: relativePath,
     }),
@@ -255,14 +255,14 @@ export function readDirectiveFrontendArchitectureImplementationResultDetail(
     directiveRoot: string;
     relativePath: string;
   },
-): DirectiveFrontendArchitectureImplementationResultDetail {
-  return readDirectiveFrontendArchitectureDeepTailDetail<DirectiveFrontendArchitectureImplementationResultDetail>({
+): FrontendArchitectureImplementationResultDetail {
+  return readDirectiveFrontendArchitectureDeepTailDetail<FrontendArchitectureImplementationResultDetail>({
     directiveRoot: input.directiveRoot,
     relativePath: input.relativePath,
     stage: "implementation_result",
     invalidPathError: "invalid_implementation_result_path",
     focusError: "architecture_implementation_result_focus_not_resolved",
-    readDetail: (relativePath) => readDirectiveArchitectureImplementationResultDetail({
+    readDetail: (relativePath) => readArchitectureImplementationResultDetail({
       directiveRoot: input.directiveRoot,
       resultPath: relativePath,
     }),
@@ -306,14 +306,14 @@ export function readDirectiveFrontendArchitectureImplementationResultDetail(
 export function readDirectiveFrontendArchitectureRetentionDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureRetentionDetail {
-  return readDirectiveFrontendArchitectureDeepTailDetail<DirectiveFrontendArchitectureRetentionDetail>({
+}): FrontendArchitectureRetentionDetail {
+  return readDirectiveFrontendArchitectureDeepTailDetail<FrontendArchitectureRetentionDetail>({
     directiveRoot: input.directiveRoot,
     relativePath: input.relativePath,
     stage: "retained",
     invalidPathError: "invalid_retained_path",
     focusError: "architecture_retention_focus_not_resolved",
-    readDetail: (relativePath) => readDirectiveArchitectureRetentionDetail({
+    readDetail: (relativePath) => readArchitectureRetentionDetail({
       directiveRoot: input.directiveRoot,
       retainedPath: relativePath,
     }),
@@ -345,14 +345,14 @@ export function readDirectiveFrontendArchitectureRetentionDetail(input: {
 export function readDirectiveFrontendArchitectureIntegrationRecordDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureIntegrationRecordDetail {
-  return readDirectiveFrontendArchitectureDeepTailDetail<DirectiveFrontendArchitectureIntegrationRecordDetail>({
+}): FrontendArchitectureIntegrationRecordDetail {
+  return readDirectiveFrontendArchitectureDeepTailDetail<FrontendArchitectureIntegrationRecordDetail>({
     directiveRoot: input.directiveRoot,
     relativePath: input.relativePath,
     stage: "integration_record",
     invalidPathError: "invalid_integration_record_path",
     focusError: "architecture_integration_record_focus_not_resolved",
-    readDetail: (relativePath) => readDirectiveArchitectureIntegrationRecordDetail({
+    readDetail: (relativePath) => readArchitectureIntegrationRecordDetail({
       directiveRoot: input.directiveRoot,
       integrationPath: relativePath,
     }),
@@ -388,14 +388,14 @@ export function readDirectiveFrontendArchitectureIntegrationRecordDetail(input: 
 export function readDirectiveFrontendArchitectureConsumptionRecordDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureConsumptionRecordDetail {
-  return readDirectiveFrontendArchitectureDeepTailDetail<DirectiveFrontendArchitectureConsumptionRecordDetail>({
+}): FrontendArchitectureConsumptionRecordDetail {
+  return readDirectiveFrontendArchitectureDeepTailDetail<FrontendArchitectureConsumptionRecordDetail>({
     directiveRoot: input.directiveRoot,
     relativePath: input.relativePath,
     stage: "consumption_record",
     invalidPathError: "invalid_consumption_record_path",
     focusError: "architecture_consumption_record_focus_not_resolved",
-    readDetail: (relativePath) => readDirectiveArchitectureConsumptionRecordDetail({
+    readDetail: (relativePath) => readArchitectureConsumptionRecordDetail({
       directiveRoot: input.directiveRoot,
       consumptionPath: relativePath,
     }),
@@ -432,14 +432,14 @@ export function readDirectiveFrontendArchitectureConsumptionRecordDetail(input: 
 export function readDirectiveFrontendArchitecturePostConsumptionEvaluationDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitecturePostConsumptionEvaluationDetail {
-  return readDirectiveFrontendArchitectureDeepTailDetail<DirectiveFrontendArchitecturePostConsumptionEvaluationDetail>({
+}): FrontendArchitecturePostConsumptionEvaluationDetail {
+  return readDirectiveFrontendArchitectureDeepTailDetail<FrontendArchitecturePostConsumptionEvaluationDetail>({
     directiveRoot: input.directiveRoot,
     relativePath: input.relativePath,
     stage: "post_consumption_evaluation",
     invalidPathError: "invalid_post_consumption_evaluation_path",
     focusError: "architecture_post_consumption_evaluation_focus_not_resolved",
-    readDetail: (relativePath) => readDirectiveArchitecturePostConsumptionEvaluationDetail({
+    readDetail: (relativePath) => readArchitecturePostConsumptionEvaluationDetail({
       directiveRoot: input.directiveRoot,
       evaluationPath: relativePath,
     }),

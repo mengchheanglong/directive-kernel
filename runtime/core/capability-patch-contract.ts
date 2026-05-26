@@ -2,32 +2,32 @@ import {
   resolveStatusAfterDecision,
 } from "./decision-policy";
 import type {
-  DirectiveCapabilityStatus,
-  DirectiveDecision,
-  DirectiveFrameworkStatus,
-  DirectiveIntegrationProof,
-  DirectiveRuntimeStatus,
-} from "./runtime-core-contract";
+  CapabilityStatus,
+  Decision,
+  FrameworkStatus,
+  IntegrationProof,
+  RuntimeStatus,
+} from "./contract";
 import type {
-  DirectiveAnalysisContract,
+  AnalysisContract,
 } from "./workflow-contract";
 
-export type DirectiveCapabilityPatch = {
-  status?: DirectiveCapabilityStatus;
-  frameworkStatus?: DirectiveFrameworkStatus;
-  runtimeStatus?: DirectiveRuntimeStatus;
+export type CapabilityPatch = {
+  status?: CapabilityStatus;
+  frameworkStatus?: FrameworkStatus;
+  runtimeStatus?: RuntimeStatus;
   analysisSummary?: string;
   category?: string | null;
   problemFit?: string | null;
   overlapNotes?: string | null;
   riskNotes?: string | null;
-  recommendation?: DirectiveAnalysisContract["recommendation"];
+  recommendation?: AnalysisContract["recommendation"];
   metadata?: Record<string, unknown>;
 };
 
 export function buildDirectiveAnalysisCapabilityPatch(
-  analysis: DirectiveAnalysisContract,
-): DirectiveCapabilityPatch {
+  analysis: AnalysisContract,
+): CapabilityPatch {
   return {
     status: "analyzed",
     frameworkStatus: "analyzed",
@@ -41,14 +41,14 @@ export function buildDirectiveAnalysisCapabilityPatch(
   };
 }
 
-export function buildDirectiveExperimentCapabilityPatch(): DirectiveCapabilityPatch {
+export function buildDirectiveExperimentCapabilityPatch(): CapabilityPatch {
   return {
     status: "experimenting",
     frameworkStatus: "experimenting",
   };
 }
 
-export function buildDirectiveEvaluationCapabilityPatch(): DirectiveCapabilityPatch {
+export function buildDirectiveEvaluationCapabilityPatch(): CapabilityPatch {
   return {
     status: "evaluated",
     frameworkStatus: "evaluated",
@@ -56,9 +56,9 @@ export function buildDirectiveEvaluationCapabilityPatch(): DirectiveCapabilityPa
 }
 
 export function buildDirectiveDecisionCapabilityPatch(input: {
-  decision: DirectiveDecision;
-  runtimeStatus: DirectiveRuntimeStatus;
-}): DirectiveCapabilityPatch {
+  decision: Decision;
+  runtimeStatus: RuntimeStatus;
+}): CapabilityPatch {
   return {
     status: resolveStatusAfterDecision(
       input.decision,
@@ -71,7 +71,7 @@ export function buildDirectiveDecisionCapabilityPatch(input: {
 
 export function buildDirectiveProofMetadata(input: {
   capabilityMetadata: Record<string, unknown>;
-  integrationProof: DirectiveIntegrationProof;
+  integrationProof: IntegrationProof;
   timestamp: string;
 }): Record<string, unknown> {
   return {

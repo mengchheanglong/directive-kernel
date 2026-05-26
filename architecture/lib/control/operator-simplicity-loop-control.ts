@@ -5,7 +5,7 @@ import {
   getDefaultDirectiveWorkspaceRoot,
   normalizePath,
   resolveDirectiveRelativePath,
-} from "./architecture-deep-tail-artifact-helpers.ts";
+} from "./materialization-tail-artifact-helpers.ts";
 
 export const OPERATOR_SIMPLICITY_SLICE_KINDS = [
   "clarity",

@@ -8,77 +8,77 @@ import {
 import { resolveDirectiveWorkspaceState } from "../../state/index.ts";
 import {
   submitDirectiveDiscoveryFrontDoor,
-} from "../../../discovery/lib/front-door/discovery-front-door.ts";
-import { openDirectiveDiscoveryRoute } from "../../../discovery/lib/routing/discovery-route-opener.ts";
-import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
-import { startDirectiveArchitectureFromHandoff } from "../../../architecture/lib/experiments/architecture-handoff-start.ts";
+} from "../../../discovery/lib/front-door/front-door.ts";
+import { openDirectiveDiscoveryRoute } from "../../../discovery/lib/routing/route-opener.ts";
+import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/submission-router.ts";
+import { startDirectiveArchitectureFromHandoff } from "../../../architecture/lib/experiments/handoff-start.ts";
 import {
-  closeDirectiveArchitectureBoundedStart,
-} from "../../../architecture/lib/experiments/architecture-bounded-closeout.ts";
-import { adoptDirectiveArchitectureResult } from "../../../architecture/lib/adoption/architecture-result-adoption.ts";
+  closeArchitectureBoundedStart,
+} from "../../../architecture/lib/experiments/closeout.ts";
+import { adoptDirectiveArchitectureResult } from "../../../architecture/lib/adoption/result-adoption.ts";
 import {
   createDirectiveArchitectureImplementationTarget,
-} from "../../../architecture/lib/materialization/architecture-implementation-target.ts";
+} from "../../../architecture/lib/materialization/implementation-target.ts";
 import {
   createDirectiveArchitectureImplementationResult,
-} from "../../../architecture/lib/materialization/architecture-implementation-result.ts";
-import { confirmDirectiveArchitectureRetention } from "../../../architecture/lib/materialization/architecture-retention.ts";
-import { createDirectiveArchitectureIntegrationRecord } from "../../../architecture/lib/materialization/architecture-integration-record.ts";
-import { recordDirectiveArchitectureConsumption } from "../../../architecture/lib/materialization/architecture-consumption-record.ts";
-import { evaluateDirectiveArchitectureConsumption } from "../../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
-import { openDirectiveRuntimeFollowUp } from "../../../runtime/lib/openers/runtime-follow-up-opener.ts";
-import { openDirectiveRuntimeRecordProof } from "../../../runtime/lib/openers/runtime-record-proof-opener.ts";
-import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../../runtime/lib/openers/runtime-proof-runtime-capability-boundary-opener.ts";
-import { openDirectiveRuntimePromotionReadiness } from "../../../runtime/lib/openers/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
+} from "../../../architecture/lib/materialization/implementation-result.ts";
+import { confirmDirectiveArchitectureRetention } from "../../../architecture/lib/materialization/retention.ts";
+import { createDirectiveArchitectureIntegrationRecord } from "../../../architecture/lib/materialization/integration-record.ts";
+import { recordDirectiveArchitectureConsumption } from "../../../architecture/lib/materialization/consumption-record.ts";
+import { evaluateDirectiveArchitectureConsumption } from "../../../architecture/lib/materialization/post-consumption-evaluation.ts";
+import { openDirectiveRuntimeFollowUp } from "../../../runtime/lib/openers/follow-up.ts";
+import { openDirectiveRuntimeRecordProof } from "../../../runtime/lib/openers/record-proof-opener.ts";
+import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../../runtime/lib/openers/proof-runtime-capability-boundary-opener.ts";
+import { openDirectiveRuntimePromotionReadiness } from "../../../runtime/lib/openers/promotion-readiness.ts";
 import {
   resolveDirectiveRuntimePromotionSpecificationPath,
-} from "../../../runtime/lib/host/runtime-promotion-specification.ts";
+} from "../../../runtime/lib/host/promotion-specification.ts";
 import {
-  buildDirectiveRuntimePromotionAutomationDryRunReport,
+  buildRuntimePromotionAutomationDryRunReport,
   writeDirectiveRuntimeRegistryEntryFromAutomationReport,
 } from "../runtime-promotion-automation.ts";
 import {
   buildAutonomousArchitectureBoundedCloseoutRequest,
   buildAutonomousArchitectureImplementationResultSummary,
-} from "./autonomous-lane-loop-architecture.ts";
+} from "./architecture.ts";
 import {
   buildAction,
-  buildDirectiveAutonomousLaneLoopPhaseReports,
+  buildAutonomousLaneLoopPhaseReports,
   classifyDirectiveAutonomousFocusDisposition,
   resolveFocusOrThrow,
-} from "./autonomous-lane-loop-phase.ts";
+} from "./phase.ts";
 import {
-  loadDirectiveAutonomousLaneLoopPolicy,
+  loadAutonomousLaneLoopPolicy,
   routingPassesAutonomyGate,
-} from "./autonomous-lane-loop-policy.ts";
+} from "./policy.ts";
 import {
   writeAutonomousRuntimePromotionRecord,
   writeAutonomousRuntimePromotionSpecification,
-} from "./autonomous-lane-loop-runtime.ts";
+} from "./runtime.ts";
 
 export type {
-  DirectiveAutonomousLaneLoopAction,
-  DirectiveAutonomousLaneLoopActionKind,
-  DirectiveAutonomousLaneLoopConfidence,
-  DirectiveAutonomousLaneLoopDisposition,
-  DirectiveAutonomousLaneLoopPhaseReport,
-  DirectiveAutonomousLaneLoopPolicy,
-  DirectiveAutonomousLaneLoopResult,
-  DirectiveAutonomousLaneLoopSupervisedResult,
+  AutonomousLaneLoopAction,
+  AutonomousLaneLoopActionKind,
+  AutonomousLaneLoopConfidence,
+  AutonomousLaneLoopDisposition,
+  AutonomousLaneLoopPhaseReport,
+  AutonomousLaneLoopPolicy,
+  AutonomousLaneLoopResult,
+  AutonomousLaneLoopSupervisedResult,
   RunDirectiveAutonomousLaneLoopInput,
-} from "./autonomous-lane-loop-types.ts";
+} from "./types.ts";
 import type {
-  DirectiveAutonomousLaneLoopPolicy,
-  DirectiveAutonomousLaneLoopResult,
-  DirectiveAutonomousLaneLoopSupervisedResult,
+  AutonomousLaneLoopPolicy,
+  AutonomousLaneLoopResult,
+  AutonomousLaneLoopSupervisedResult,
   RunDirectiveAutonomousLaneLoopInput,
-} from "./autonomous-lane-loop-types.ts";
+} from "./types.ts";
 
 async function maybeAdvanceAutonomousLaneLoop(input: {
   directiveRoot: string;
   currentArtifactPath: string;
   currentStage: string;
-  policy: DirectiveAutonomousLaneLoopPolicy;
+  policy: AutonomousLaneLoopPolicy;
   actionIndex: number;
 }) {
   const sourcePath = input.currentArtifactPath;
@@ -156,7 +156,7 @@ async function maybeAdvanceAutonomousLaneLoop(input: {
       };
     }
 
-    const closeout = closeDirectiveArchitectureBoundedStart(
+    const closeout = closeArchitectureBoundedStart(
       buildAutonomousArchitectureBoundedCloseoutRequest({
         directiveRoot: input.directiveRoot,
         startPath: sourcePath,
@@ -560,7 +560,7 @@ async function maybeAdvanceAutonomousLaneLoop(input: {
   }
 
   if (input.currentStage === "runtime.promotion_record.opened") {
-    const automationReport = buildDirectiveRuntimePromotionAutomationDryRunReport({
+    const automationReport = buildRuntimePromotionAutomationDryRunReport({
       directiveRoot: input.directiveRoot,
       promotionRecordPath: sourcePath,
       policy: input.policy.runtime,
@@ -653,15 +653,15 @@ async function startDirectiveAutonomousLaneLoop(input: {
 
 export async function runDirectiveAutonomousLaneLoop(
   input: RunDirectiveAutonomousLaneLoopInput,
-): Promise<DirectiveAutonomousLaneLoopResult> {
+): Promise<AutonomousLaneLoopResult> {
   const directiveRoot = normalizeDirectiveWorkspaceRoot(input.directiveRoot);
-  const { policyPath, policy } = loadDirectiveAutonomousLaneLoopPolicy(directiveRoot);
+  const { policyPath, policy } = loadAutonomousLaneLoopPolicy(directiveRoot);
 
   if (!policy.enabled) {
     throw new Error(`invalid_state: autonomous lane loop is disabled by policy at ${policyPath}`);
   }
 
-  const actions: DirectiveAutonomousLaneLoopResult["actions"] = [];
+  const actions: AutonomousLaneLoopResult["actions"] = [];
   const started = await startDirectiveAutonomousLaneLoop({
     directiveRoot,
     artifactPath: "artifactPath" in input ? input.artifactPath : undefined,
@@ -721,9 +721,9 @@ export async function runDirectiveAutonomousLaneLoop(
 
 export async function runDirectiveAutonomousLaneLoopSupervised(
   input: RunDirectiveAutonomousLaneLoopInput,
-): Promise<DirectiveAutonomousLaneLoopSupervisedResult> {
+): Promise<AutonomousLaneLoopSupervisedResult> {
   const result = await runDirectiveAutonomousLaneLoop(input);
-  const phaseReports = buildDirectiveAutonomousLaneLoopPhaseReports({
+  const phaseReports = buildAutonomousLaneLoopPhaseReports({
     directiveRoot: result.directiveRoot,
     actions: result.actions,
   });

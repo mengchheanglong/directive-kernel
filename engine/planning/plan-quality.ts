@@ -1,10 +1,10 @@
-import { clampInt, countTokenOverlap } from "../engine-source-utils.ts";
-import { extractSourceSignalTokens } from "../routing/routing-correction-ledger.ts";
-import type { DirectiveEnginePlanItem, DirectiveEngineRunRecord } from "../types.ts";
+import { clampInt, countTokenOverlap } from "../source-utils.ts";
+import { extractSourceSignalTokens } from "../routing/correction-ledger.ts";
+import type { EnginePlanItem, EngineRunRecord } from "../types.ts";
 import type { DecisionPolicyEvent } from "../decision-policy-ledger.ts";
-import type { RoutingCorrectionEntry } from "../routing/routing-correction-ledger.ts";
+import type { RoutingCorrectionEntry } from "../routing/correction-ledger.ts";
 
-export type DirectiveEnginePlanQualitySignal = {
+export type EnginePlanQualitySignal = {
   extractionRelevance: "high" | "medium" | "low" | "unknown";
   adaptationFollowThrough: "completed" | "partial" | "none" | "unknown";
   improvementGoalProgress: number;
@@ -21,7 +21,7 @@ function uniqueTokensFromText(values: string[]) {
   );
 }
 
-function buildRunDownstreamTokens(run: DirectiveEngineRunRecord) {
+function buildRunDownstreamTokens(run: EngineRunRecord) {
   return uniqueTokensFromText([
     run.adaptationPlan.directiveOwnedForm,
     ...run.adaptationPlan.adaptedValue,
@@ -33,12 +33,12 @@ function buildRunDownstreamTokens(run: DirectiveEngineRunRecord) {
   ]);
 }
 
-function completedCount(items: DirectiveEnginePlanItem[]) {
+function completedCount(items: EnginePlanItem[]) {
   return items.filter((item) => item.status === "completed").length;
 }
 
 function completionRateForPlanActions(input: {
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
   plan: "extraction" | "adaptation" | "improvement" | "proof";
 }) {
   const planActions = input.record.executablePlanState?.actions.filter((action) =>
@@ -54,8 +54,8 @@ function completionRateForPlanActions(input: {
 }
 
 function deriveExtractionRelevance(input: {
-  record: DirectiveEngineRunRecord;
-  relatedRuns: DirectiveEngineRunRecord[];
+  record: EngineRunRecord;
+  relatedRuns: EngineRunRecord[];
   rationale: string[];
 }) {
   const extractedTokens = uniqueTokensFromText(input.record.extractionPlan.extractedValue);
@@ -89,7 +89,7 @@ function deriveExtractionRelevance(input: {
 }
 
 function deriveAdaptationFollowThrough(input: {
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
   rationale: string[];
 }) {
   const actualCompletionRate =
@@ -155,7 +155,7 @@ function deriveAdaptationFollowThrough(input: {
 }
 
 function deriveImprovementGoalProgress(input: {
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
   rationale: string[];
 }) {
   const actualCompletionRate =
@@ -205,7 +205,7 @@ function deriveImprovementGoalProgress(input: {
 }
 
 function deriveProofGateCompletion(input: {
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
   rationale: string[];
 }) {
   const proofState = input.record.executablePlanState?.proofState ?? null;
@@ -283,11 +283,11 @@ function deriveProofGateCompletion(input: {
 }
 
 export function deriveDirectivePlanQualitySignal(input: {
-  record: DirectiveEngineRunRecord;
-  existingRuns: DirectiveEngineRunRecord[];
+  record: EngineRunRecord;
+  existingRuns: EngineRunRecord[];
   policyEvents?: DecisionPolicyEvent[];
   corrections?: RoutingCorrectionEntry[];
-}): DirectiveEnginePlanQualitySignal {
+}): EnginePlanQualitySignal {
   void input.policyEvents;
   void input.corrections;
 

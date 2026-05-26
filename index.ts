@@ -10,11 +10,11 @@ export * as discovery from "./discovery/lib/index.ts";
 export * as architecture from "./architecture/lib/index.ts";
 export * as runtime from "./runtime/lib/index.ts";
 export * as state from "./engine/state/index.ts";
-export * as directiveGoal from "./shared/lib/directive-goal.ts";
+export * as directiveGoal from "./shared/lib/goal.ts";
 export {
   DIRECTIVE_SOURCE_FLOW,
   DIRECTIVE_SUPPORTED_SOURCE_TYPES,
   DIRECTIVE_USEFULNESS_LEVELS,
   DIRECTIVE_WORKSPACE_V0,
-  type DirectiveCapabilitySourceType,
-} from "./runtime/core/runtime-core-contract.ts";
+  type CapabilitySourceType,
+} from "./runtime/core/contract.ts";

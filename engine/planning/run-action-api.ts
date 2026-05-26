@@ -1,17 +1,17 @@
-import { normalizeText } from "../engine-source-utils.ts";
+import { normalizeText } from "../source-utils.ts";
 import type {
-  DirectiveEngineExecutablePlanAction,
-  DirectiveEngineExecutablePlanActionOwner,
-  DirectiveEngineExecutablePlanState,
-  DirectiveEnginePlanItem,
-  DirectiveEnginePlanProgressUpdate,
-  DirectiveEnginePrimaryAdoptionTarget,
-  DirectiveEngineRunRecord,
-  DirectiveEngineStructuredAdaptationPlan,
-  DirectiveEngineStructuredExtractionPlan,
-  DirectiveEngineStructuredImprovementPlan,
-  DirectiveEngineStructuredProofPlan,
-  DirectiveEngineWorkflowBoundaryShape,
+  EngineExecutablePlanAction,
+  EngineExecutablePlanActionOwner,
+  EngineExecutablePlanState,
+  EnginePlanItem,
+  EnginePlanProgressUpdate,
+  EnginePrimaryAdoptionTarget,
+  EngineRunRecord,
+  EngineStructuredAdaptationPlan,
+  EngineStructuredExtractionPlan,
+  EngineStructuredImprovementPlan,
+  EngineStructuredProofPlan,
+  EngineWorkflowBoundaryShape,
 } from "../types.ts";
 
 function normalizeOptionalBoolean(value: unknown) {
@@ -23,7 +23,7 @@ function normalizeOptionalBoolean(value: unknown) {
 
 function normalizePrimaryAdoptionTarget(
   value: unknown,
-): DirectiveEnginePrimaryAdoptionTarget | null {
+): EnginePrimaryAdoptionTarget | null {
   if (value === "discovery" || value === "architecture" || value === "runtime") {
     return value;
   }
@@ -32,14 +32,14 @@ function normalizePrimaryAdoptionTarget(
 
 function normalizeWorkflowBoundaryShape(
   value: unknown,
-): DirectiveEngineWorkflowBoundaryShape | null {
+): EngineWorkflowBoundaryShape | null {
   if (value === "bounded_protocol" || value === "iterative_loop") {
     return value;
   }
   return null;
 }
 
-function toPlanItem(value: string): DirectiveEnginePlanItem {
+function toPlanItem(value: string): EnginePlanItem {
   return {
     value,
     status: "pending",
@@ -47,7 +47,7 @@ function toPlanItem(value: string): DirectiveEnginePlanItem {
   };
 }
 
-function completionRate(items: DirectiveEnginePlanItem[]) {
+function completionRate(items: EnginePlanItem[]) {
   if (items.length === 0) {
     return 0;
   }
@@ -56,7 +56,7 @@ function completionRate(items: DirectiveEnginePlanItem[]) {
 }
 
 function completionRateFromStatuses(
-  statuses: Array<DirectiveEnginePlanItem["status"]>,
+  statuses: Array<EnginePlanItem["status"]>,
 ) {
   if (statuses.length === 0) {
     return 0;
@@ -66,8 +66,8 @@ function completionRateFromStatuses(
 }
 
 function buildStructuredExtractionPlan(
-  extractionPlan: DirectiveEngineRunRecord["extractionPlan"],
-): DirectiveEngineStructuredExtractionPlan {
+  extractionPlan: EngineRunRecord["extractionPlan"],
+): EngineStructuredExtractionPlan {
   const extractedValue = extractionPlan.extractedValue.map(toPlanItem);
   const excludedBaggage = extractionPlan.excludedBaggage.map(toPlanItem);
   return {
@@ -78,8 +78,8 @@ function buildStructuredExtractionPlan(
 }
 
 function buildStructuredAdaptationPlan(
-  adaptationPlan: DirectiveEngineRunRecord["adaptationPlan"],
-): DirectiveEngineStructuredAdaptationPlan {
+  adaptationPlan: EngineRunRecord["adaptationPlan"],
+): EngineStructuredAdaptationPlan {
   const directiveOwnedForm = toPlanItem(adaptationPlan.directiveOwnedForm);
   const adaptedValue = adaptationPlan.adaptedValue.map(toPlanItem);
   return {
@@ -90,8 +90,8 @@ function buildStructuredAdaptationPlan(
 }
 
 function buildStructuredImprovementPlan(
-  improvementPlan: DirectiveEngineRunRecord["improvementPlan"],
-): DirectiveEngineStructuredImprovementPlan {
+  improvementPlan: EngineRunRecord["improvementPlan"],
+): EngineStructuredImprovementPlan {
   const intendedDelta = toPlanItem(improvementPlan.intendedDelta);
   const improvementGoals = improvementPlan.improvementGoals.map(toPlanItem);
   return {
@@ -102,8 +102,8 @@ function buildStructuredImprovementPlan(
 }
 
 function buildStructuredProofPlan(
-  proofPlan: DirectiveEngineRunRecord["proofPlan"],
-): DirectiveEngineStructuredProofPlan {
+  proofPlan: EngineRunRecord["proofPlan"],
+): EngineStructuredProofPlan {
   const objective = toPlanItem(proofPlan.objective);
   const requiredEvidence = proofPlan.requiredEvidence.map(toPlanItem);
   const requiredGates = proofPlan.requiredGates.map(toPlanItem);
@@ -124,7 +124,7 @@ function buildStructuredProofPlan(
 }
 
 function buildActionId(input: {
-  plan: DirectiveEngineExecutablePlanAction["plan"];
+  plan: EngineExecutablePlanAction["plan"];
   itemType: string;
   index?: number | null;
 }) {
@@ -134,9 +134,9 @@ function buildActionId(input: {
 }
 
 function mapActionOwner(input: {
-  plan: DirectiveEngineExecutablePlanAction["plan"];
+  plan: EngineExecutablePlanAction["plan"];
   itemType: string;
-}): DirectiveEngineExecutablePlanActionOwner {
+}): EngineExecutablePlanActionOwner {
   if (input.plan === "proof" && (
     input.itemType === "requiredEvidence"
     || input.itemType === "requiredGates"
@@ -147,10 +147,10 @@ function mapActionOwner(input: {
 }
 
 function mapEvidenceStatus(input: {
-  plan: DirectiveEngineExecutablePlanAction["plan"];
+  plan: EngineExecutablePlanAction["plan"];
   itemType: string;
-  status: DirectiveEnginePlanItem["status"];
-}): DirectiveEngineExecutablePlanAction["evidenceStatus"] {
+  status: EnginePlanItem["status"];
+}): EngineExecutablePlanAction["evidenceStatus"] {
   if (input.plan !== "proof" || input.itemType !== "requiredEvidence") {
     return "not_needed";
   }
@@ -164,10 +164,10 @@ function mapEvidenceStatus(input: {
 }
 
 function mapGateStatus(input: {
-  plan: DirectiveEngineExecutablePlanAction["plan"];
+  plan: EngineExecutablePlanAction["plan"];
   itemType: string;
-  status: DirectiveEnginePlanItem["status"];
-}): DirectiveEngineExecutablePlanAction["gateStatus"] {
+  status: EnginePlanItem["status"];
+}): EngineExecutablePlanAction["gateStatus"] {
   if (input.plan !== "proof" || input.itemType !== "requiredGates") {
     return "not_needed";
   }
@@ -181,7 +181,7 @@ function mapGateStatus(input: {
 }
 
 function buildActionDetail(input: {
-  plan: DirectiveEngineExecutablePlanAction["plan"];
+  plan: EngineExecutablePlanAction["plan"];
   itemType: string;
   value: string;
 }) {
@@ -213,7 +213,7 @@ function buildActionDetail(input: {
 }
 
 function buildCompletionCriteria(input: {
-  plan: DirectiveEngineExecutablePlanAction["plan"];
+  plan: EngineExecutablePlanAction["plan"];
   itemType: string;
   value: string;
 }) {
@@ -254,12 +254,12 @@ function buildCompletionCriteria(input: {
 }
 
 function buildPlanAction(input: {
-  plan: DirectiveEngineExecutablePlanAction["plan"];
+  plan: EngineExecutablePlanAction["plan"];
   itemType: string;
   itemIndex?: number | null;
-  item: DirectiveEnginePlanItem;
+  item: EnginePlanItem;
   blockedByActionIds: string[];
-}): DirectiveEngineExecutablePlanAction {
+}): EngineExecutablePlanAction {
   return {
     actionId: buildActionId({
       plan: input.plan,
@@ -300,7 +300,7 @@ function buildPlanAction(input: {
   };
 }
 
-function deriveNextActionIds(actions: DirectiveEngineExecutablePlanAction[]) {
+function deriveNextActionIds(actions: EngineExecutablePlanAction[]) {
   const completedIds = new Set(
     actions
       .filter((action) => action.status === "completed" || action.status === "skipped")
@@ -312,7 +312,7 @@ function deriveNextActionIds(actions: DirectiveEngineExecutablePlanAction[]) {
     .map((action) => action.actionId);
 }
 
-function deriveBlockedActionIds(actions: DirectiveEngineExecutablePlanAction[]) {
+function deriveBlockedActionIds(actions: EngineExecutablePlanAction[]) {
   const completedIds = new Set(
     actions
       .filter((action) => action.status === "completed" || action.status === "skipped")
@@ -324,7 +324,7 @@ function deriveBlockedActionIds(actions: DirectiveEngineExecutablePlanAction[]) 
     .map((action) => action.actionId);
 }
 
-function deriveProofState(actions: DirectiveEngineExecutablePlanAction[]) {
+function deriveProofState(actions: EngineExecutablePlanAction[]) {
   const proofActions = actions.filter((action) => action.plan === "proof");
   const objective = proofActions.find((action) => action.itemType === "objective") ?? null;
   const evidenceActions = proofActions.filter((action) => action.itemType === "requiredEvidence");
@@ -374,15 +374,15 @@ function deriveProofState(actions: DirectiveEngineExecutablePlanAction[]) {
     finalState,
     outstandingEvidenceActionIds,
     outstandingGateActionIds,
-  } satisfies DirectiveEngineExecutablePlanState["proofState"];
+  } satisfies EngineExecutablePlanState["proofState"];
 }
 
 function buildExecutablePlanState(input: {
-  structuredExtractionPlan: DirectiveEngineStructuredExtractionPlan;
-  structuredAdaptationPlan: DirectiveEngineStructuredAdaptationPlan;
-  structuredImprovementPlan: DirectiveEngineStructuredImprovementPlan;
-  structuredProofPlan: DirectiveEngineStructuredProofPlan;
-}): DirectiveEngineExecutablePlanState {
+  structuredExtractionPlan: EngineStructuredExtractionPlan;
+  structuredAdaptationPlan: EngineStructuredAdaptationPlan;
+  structuredImprovementPlan: EngineStructuredImprovementPlan;
+  structuredProofPlan: EngineStructuredProofPlan;
+}): EngineExecutablePlanState {
   const extractionActionIds = [
     ...input.structuredExtractionPlan.extractedValue.map((_, index) =>
       buildActionId({ plan: "extraction", itemType: "extractedValue", index })),
@@ -412,7 +412,7 @@ function buildExecutablePlanState(input: {
     itemType: "objective",
   });
 
-  const actions: DirectiveEngineExecutablePlanAction[] = [
+  const actions: EngineExecutablePlanAction[] = [
     ...input.structuredExtractionPlan.extractedValue.map((item, index) =>
       buildPlanAction({
         plan: "extraction",
@@ -506,7 +506,7 @@ function buildExecutablePlanState(input: {
 }
 
 function normalizeCompletedAtForStatus(input: {
-  status: DirectiveEnginePlanItem["status"];
+  status: EnginePlanItem["status"];
   completedAt?: string | null;
   fallbackAt: string;
 }) {
@@ -517,8 +517,8 @@ function normalizeCompletedAtForStatus(input: {
 }
 
 function applyPlanItemStatusUpdate(input: {
-  item: DirectiveEnginePlanItem;
-  status: DirectiveEnginePlanItem["status"];
+  item: EnginePlanItem;
+  status: EnginePlanItem["status"];
   completedAt?: string | null;
   fallbackAt: string;
 }) {
@@ -530,13 +530,13 @@ function applyPlanItemStatusUpdate(input: {
       completedAt: input.completedAt,
       fallbackAt: input.fallbackAt,
     }),
-  } satisfies DirectiveEnginePlanItem;
+  } satisfies EnginePlanItem;
 }
 
 function updateIndexedPlanItems(input: {
-  items: DirectiveEnginePlanItem[];
+  items: EnginePlanItem[];
   index: number;
-  status: DirectiveEnginePlanItem["status"];
+  status: EnginePlanItem["status"];
   completedAt?: string | null;
   fallbackAt: string;
   label: string;
@@ -556,7 +556,7 @@ function updateIndexedPlanItems(input: {
   );
 }
 
-function normalizeStructuredPlans(record: DirectiveEngineRunRecord) {
+function normalizeStructuredPlans(record: EngineRunRecord) {
   return {
     structuredExtractionPlan:
       record.structuredExtractionPlan ?? buildStructuredExtractionPlan(record.extractionPlan),
@@ -570,8 +570,8 @@ function normalizeStructuredPlans(record: DirectiveEngineRunRecord) {
 }
 
 function applyPlanProgressUpdates(input: {
-  record: DirectiveEngineRunRecord;
-  updates: DirectiveEnginePlanProgressUpdate[];
+  record: EngineRunRecord;
+  updates: EnginePlanProgressUpdate[];
   at: string;
 }) {
   let {
@@ -720,7 +720,7 @@ function applyPlanProgressUpdates(input: {
   };
 }
 
-function buildProcessSourceInputFromRecord(record: DirectiveEngineRunRecord) {
+function buildProcessSourceInputFromRecord(record: EngineRunRecord) {
   return {
     source: { ...record.source },
     mission: {

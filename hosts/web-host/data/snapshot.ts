@@ -3,61 +3,61 @@ import path from "node:path";
 import { normalizeAbsolutePath, normalizeRelativePath } from "../../../shared/lib/path-normalization.ts";
 
 import {
-  type DirectiveArchitectureBoundedCloseoutAssist,
-  type DirectiveArchitectureResultEvidenceSlot,
-  type DirectiveArchitectureBoundedResultArtifact,
-  type DirectiveArchitectureBoundedStartArtifact,
-} from "../../../architecture/lib/experiments/architecture-bounded-closeout.ts";
+  type ArchitectureBoundedCloseoutAssist,
+  type ArchitectureResultEvidenceSlot,
+  type ArchitectureBoundedResultArtifact,
+  type ArchitectureBoundedStartArtifact,
+} from "../../../architecture/lib/experiments/closeout.ts";
 import {
-  type DirectiveArchitectureImplementationResultDetail,
-} from "../../../architecture/lib/materialization/architecture-implementation-result.ts";
+  type ArchitectureImplementationResultDetail,
+} from "../../../architecture/lib/materialization/implementation-result.ts";
 import {
-  type DirectiveArchitectureRetentionDetail,
-} from "../../../architecture/lib/materialization/architecture-retention.ts";
+  type ArchitectureRetentionDetail,
+} from "../../../architecture/lib/materialization/retention.ts";
 import {
-  type DirectiveArchitectureIntegrationRecordDetail,
-} from "../../../architecture/lib/materialization/architecture-integration-record.ts";
+  type ArchitectureIntegrationRecordDetail,
+} from "../../../architecture/lib/materialization/integration-record.ts";
 import {
-  type DirectiveArchitectureConsumptionRecordDetail,
-} from "../../../architecture/lib/materialization/architecture-consumption-record.ts";
+  type ArchitectureConsumptionRecordDetail,
+} from "../../../architecture/lib/materialization/consumption-record.ts";
 import {
-  type DirectiveArchitecturePostConsumptionEvaluationDetail,
-} from "../../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
+  type ArchitecturePostConsumptionEvaluationDetail,
+} from "../../../architecture/lib/materialization/post-consumption-evaluation.ts";
 import {
-  readDirectiveArchitectureHandoffArtifact,
-  type DirectiveArchitectureHandoffArtifact,
-} from "../../../architecture/lib/experiments/architecture-handoff-start.ts";
+  readArchitectureHandoffArtifact,
+  type ArchitectureHandoffArtifact,
+} from "../../../architecture/lib/experiments/handoff-start.ts";
 import {
   readDirectiveDiscoveryRoutingArtifact,
-  type DirectiveDiscoveryRoutingArtifact,
-} from "../../../discovery/lib/routing/discovery-route-opener.ts";
+  type DiscoveryRoutingArtifact,
+} from "../../../discovery/lib/routing/route-opener.ts";
 import {
-  readDirectiveRuntimeFollowUpArtifact,
-  type DirectiveRuntimeFollowUpArtifact,
-} from "../../../runtime/lib/openers/runtime-follow-up-opener.ts";
+  readRuntimeFollowUpArtifact,
+  type RuntimeFollowUpArtifact,
+} from "../../../runtime/lib/openers/follow-up.ts";
 import {
-  type DirectiveRuntimeRecordArtifact,
-} from "../../../runtime/lib/openers/runtime-record-proof-opener.ts";
+  type RuntimeRecordArtifact,
+} from "../../../runtime/lib/openers/record-proof-opener.ts";
 import {
-  type DirectiveRuntimeProofArtifact,
-} from "../../../runtime/lib/openers/runtime-proof-runtime-capability-boundary-opener.ts";
+  type RuntimeProofArtifact,
+} from "../../../runtime/lib/openers/proof-runtime-capability-boundary-opener.ts";
 import {
-  type DirectiveRuntimeRuntimeCapabilityBoundaryArtifact,
-} from "../../../runtime/lib/openers/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
+  type RuntimeRuntimeCapabilityBoundaryArtifact,
+} from "../../../runtime/lib/openers/promotion-readiness.ts";
 import {
-  readDirectiveEngineRunDetail,
-  readDirectiveEngineRunsOverview,
-  type DirectiveEngineRunDetail,
-  type DirectiveEngineRunsOverview,
-} from "../../../engine/execution/engine-run-artifacts.ts";
+  readEngineRunDetail,
+  readEngineRunsOverview,
+  type EngineRunDetail,
+  type EngineRunsOverview,
+} from "../../../engine/execution/run-artifacts.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import {
   ARCHITECTURE_DEEP_TAIL_STAGE,
-} from "../../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
+} from "../../../architecture/lib/control/materialization-tail-stage-map.ts";
 import {
   resolveDirectiveWorkspaceArtifactAbsolutePath,
 } from "../../../engine/state/artifact-storage.ts";
-import { isDirectiveAbsolutePathWithinRoot } from "../../../shared/lib/directive-relative-path.ts";
+import { isDirectiveAbsolutePathWithinRoot } from "../../../shared/lib/relative-path.ts";
 import {
   readDirectiveFrontendQueueEntry,
   readFrontendQueueOverview,
@@ -110,8 +110,8 @@ export type { FrontendCurrentHead } from "./shared.ts";
 export type { FrontendHandoffStub } from "./snapshot-handoffs.ts";
 export { readDirectiveFrontendQueueEntry, readFrontendQueueOverview };
 
-export type DirectiveFrontendSnapshot = {
-  engineRuns: DirectiveEngineRunsOverview;
+export type FrontendSnapshot = {
+  engineRuns: EngineRunsOverview;
   queue: FrontendQueueOverview;
   learningSummary: {
     gapRadar: {
@@ -185,18 +185,18 @@ export type DirectiveFrontendSnapshot = {
       candidateName: string | null;
     }>;
   };
-  architectureHandoffs: DirectiveArchitectureHandoffArtifact[];
+  architectureHandoffs: ArchitectureHandoffArtifact[];
   handoffStubs: FrontendHandoffStub[];
   handoffWarnings: string[];
 };
 
-export type DirectiveFrontendHandoffDetail =
+export type FrontendHandoffDetail =
   | {
       ok: true;
       kind: "architecture_handoff";
       relativePath: string;
       content: string;
-      artifact: DirectiveArchitectureHandoffArtifact;
+      artifact: ArchitectureHandoffArtifact;
     }
   | {
       ok: true;
@@ -215,7 +215,7 @@ export type DirectiveFrontendHandoffDetail =
       runtimeRecordRelativePath: string;
       runtimeRecordExists: boolean;
       approvalAllowed: boolean;
-      artifact: DirectiveRuntimeFollowUpArtifact;
+      artifact: RuntimeFollowUpArtifact;
     }
   | {
       ok: true;
@@ -263,7 +263,7 @@ export type DirectiveFrontendHandoffDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendDiscoveryRoutingDetail =
+export type FrontendDiscoveryRoutingDetail =
   | {
       ok: true;
       relativePath: string;
@@ -318,7 +318,7 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
         trustLevel: string;
       } | null;
       missionSpecificityWarning: string | null;
-      missionHealth: DirectiveDiscoveryRoutingArtifact["missionHealth"] | null;
+      missionHealth: DiscoveryRoutingArtifact["missionHealth"] | null;
       explanationBreakdown: {
         keywordSignals: string[];
         metadataSignals: string[];
@@ -362,7 +362,7 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
           exampleAnswer: string | null;
         }>;
       } | null;
-      followUpQuestions: DirectiveDiscoveryRoutingArtifact["followUpQuestions"] | null;
+      followUpQuestions: DiscoveryRoutingArtifact["followUpQuestions"] | null;
       gapRadar: {
         summary: string;
         suggestions: Array<{
@@ -389,15 +389,15 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
         summary: string;
         rationale: string[];
       } | null;
-      sourceMemory: DirectiveDiscoveryRoutingArtifact["sourceMemory"] | null;
-      sourceSimilarity: DirectiveDiscoveryRoutingArtifact["sourceSimilarity"] | null;
-      narrativeContext: DirectiveDiscoveryRoutingArtifact["narrativeContext"] | null;
-      laneProportions: DirectiveDiscoveryRoutingArtifact["laneProportions"] | null;
-      secondaryLanes: DirectiveDiscoveryRoutingArtifact["secondaryLanes"] | null;
+      sourceMemory: DiscoveryRoutingArtifact["sourceMemory"] | null;
+      sourceSimilarity: DiscoveryRoutingArtifact["sourceSimilarity"] | null;
+      narrativeContext: DiscoveryRoutingArtifact["narrativeContext"] | null;
+      laneProportions: DiscoveryRoutingArtifact["laneProportions"] | null;
+      secondaryLanes: DiscoveryRoutingArtifact["secondaryLanes"] | null;
       downstreamStubRelativePath: string | null;
       approvalAllowed: boolean;
       content: string;
-      artifact: DirectiveDiscoveryRoutingArtifact;
+      artifact: DiscoveryRoutingArtifact;
     }
   | {
       ok: false;
@@ -405,7 +405,7 @@ export type DirectiveFrontendDiscoveryRoutingDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitectureStartDetail =
+export type FrontendArchitectureStartDetail =
   | {
       ok: true;
       relativePath: string;
@@ -419,8 +419,8 @@ export type DirectiveFrontendArchitectureStartDetail =
       handoffStubPath: string;
       resultRelativePath: string | null;
       decisionRelativePath: string | null;
-      closeoutAssist: DirectiveArchitectureBoundedCloseoutAssist;
-      resultEvidence: DirectiveArchitectureResultEvidenceSlot;
+      closeoutAssist: ArchitectureBoundedCloseoutAssist;
+      resultEvidence: ArchitectureResultEvidenceSlot;
       content: string;
     }
   | {
@@ -429,7 +429,7 @@ export type DirectiveFrontendArchitectureStartDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendRuntimeRecordDetail =
+export type FrontendRuntimeRecordDetail =
   | {
       ok: true;
       relativePath: string;
@@ -448,7 +448,7 @@ export type DirectiveFrontendRuntimeRecordDetail =
       proofExists: boolean;
       approvalAllowed: boolean;
       content: string;
-      artifact: DirectiveRuntimeRecordArtifact;
+      artifact: RuntimeRecordArtifact;
     }
   | {
       ok: false;
@@ -456,7 +456,7 @@ export type DirectiveFrontendRuntimeRecordDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendRuntimeProofDetail =
+export type FrontendRuntimeProofDetail =
   | {
       ok: true;
       relativePath: string;
@@ -475,7 +475,7 @@ export type DirectiveFrontendRuntimeProofDetail =
       runtimeCapabilityBoundaryExists: boolean;
       approvalAllowed: boolean;
       content: string;
-      artifact: DirectiveRuntimeProofArtifact;
+      artifact: RuntimeProofArtifact;
     }
   | {
       ok: false;
@@ -483,7 +483,7 @@ export type DirectiveFrontendRuntimeProofDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail =
+export type FrontendRuntimeRuntimeCapabilityBoundaryDetail =
   | {
       ok: true;
       relativePath: string;
@@ -503,7 +503,7 @@ export type DirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail =
       promotionReadinessExists: boolean;
       approvalAllowed: boolean;
       content: string;
-      artifact: DirectiveRuntimeRuntimeCapabilityBoundaryArtifact;
+      artifact: RuntimeRuntimeCapabilityBoundaryArtifact;
     }
   | {
       ok: false;
@@ -511,7 +511,7 @@ export type DirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendRuntimePromotionReadinessDetail =
+export type FrontendRuntimePromotionReadinessDetail =
   | {
       ok: true;
       relativePath: string;
@@ -551,7 +551,7 @@ export type DirectiveFrontendRuntimePromotionReadinessDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitectureResultDetail =
+export type FrontendArchitectureResultDetail =
   | {
       ok: true;
       relativePath: string;
@@ -575,7 +575,7 @@ export type DirectiveFrontendArchitectureResultDetail =
       currentStage: string;
       nextLegalStep: string;
       currentHead: FrontendCurrentHead;
-      resultEvidence: DirectiveArchitectureResultEvidenceSlot;
+      resultEvidence: ArchitectureResultEvidenceSlot;
       content: string;
     }
   | {
@@ -584,7 +584,7 @@ export type DirectiveFrontendArchitectureResultDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitectureAdoptionDetail =
+export type FrontendArchitectureAdoptionDetail =
   | {
       ok: true;
       relativePath: string;
@@ -610,7 +610,7 @@ export type DirectiveFrontendArchitectureAdoptionDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitectureImplementationTargetDetail =
+export type FrontendArchitectureImplementationTargetDetail =
   | {
       ok: true;
       relativePath: string;
@@ -653,7 +653,7 @@ export type DirectiveFrontendArchitectureImplementationTargetDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitectureImplementationResultDetail =
+export type FrontendArchitectureImplementationResultDetail =
   | {
       ok: true;
       relativePath: string;
@@ -696,7 +696,7 @@ export type DirectiveFrontendArchitectureImplementationResultDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitectureRetentionDetail =
+export type FrontendArchitectureRetentionDetail =
   | {
       ok: true;
       relativePath: string;
@@ -727,7 +727,7 @@ export type DirectiveFrontendArchitectureRetentionDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitectureIntegrationRecordDetail =
+export type FrontendArchitectureIntegrationRecordDetail =
   | {
       ok: true;
       relativePath: string;
@@ -761,7 +761,7 @@ export type DirectiveFrontendArchitectureIntegrationRecordDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitectureConsumptionRecordDetail =
+export type FrontendArchitectureConsumptionRecordDetail =
   | {
       ok: true;
       relativePath: string;
@@ -796,7 +796,7 @@ export type DirectiveFrontendArchitectureConsumptionRecordDetail =
       relativePath: string;
     };
 
-export type DirectiveFrontendArchitecturePostConsumptionEvaluationDetail =
+export type FrontendArchitecturePostConsumptionEvaluationDetail =
   | {
       ok: true;
       relativePath: string;
@@ -981,7 +981,7 @@ export function readDirectiveFrontendSnapshot(input: {
   maxRuns?: number;
   maxQueueEntries?: number;
   maxHandoffs?: number;
-}): DirectiveFrontendSnapshot {
+}): FrontendSnapshot {
   const architecture = readArchitectureHandoffStubs({
     directiveRoot: input.directiveRoot,
     maxEntries: input.maxHandoffs ?? 20,
@@ -1057,7 +1057,7 @@ export function readDirectiveFrontendSnapshot(input: {
       current_case_next_legal_step: entry.current_case_next_legal_step,
       current_head: entry.current_head,
     }));
-  const engineRuns = readDirectiveEngineRunsOverview({
+  const engineRuns = readEngineRunsOverview({
     directiveRoot: input.directiveRoot,
     maxRuns: input.maxRuns ?? 8,
   });
@@ -1100,8 +1100,8 @@ export function readDirectiveFrontendSnapshot(input: {
 export function readDirectiveFrontendRunDetail(input: {
   directiveRoot: string;
   runId: string;
-}): DirectiveEngineRunDetail {
-  return readDirectiveEngineRunDetail({
+}): EngineRunDetail {
+  return readEngineRunDetail({
     directiveRoot: input.directiveRoot,
     runId: input.runId,
   });
@@ -1142,7 +1142,7 @@ export function readDirectiveFrontendArtifactText(input: {
 export function readDirectiveFrontendDiscoveryRoutingDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendDiscoveryRoutingDetail {
+}): FrontendDiscoveryRoutingDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {
@@ -1234,7 +1234,7 @@ export function readDirectiveFrontendDiscoveryRoutingDetail(input: {
 export function readDirectiveFrontendHandoffDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendHandoffDetail {
+}): FrontendHandoffDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {
@@ -1259,7 +1259,7 @@ export function readDirectiveFrontendHandoffDetail(input: {
         kind: "architecture_handoff",
         relativePath,
         content: artifactText.content,
-        artifact: readDirectiveArchitectureHandoffArtifact({
+        artifact: readArchitectureHandoffArtifact({
           directiveRoot: input.directiveRoot,
           handoffPath: relativePath,
         }),
@@ -1325,7 +1325,7 @@ export function readDirectiveFrontendHandoffDetail(input: {
 
     if (isLegacyRuntimeFollowUpRelativePath(relativePath)) {
       try {
-        const artifact = readDirectiveRuntimeFollowUpArtifact({
+        const artifact = readRuntimeFollowUpArtifact({
           directiveRoot: input.directiveRoot,
           followUpPath: relativePath,
         });
@@ -1430,7 +1430,7 @@ export function readDirectiveFrontendHandoffDetail(input: {
 export function readDirectiveFrontendArchitectureStartDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureStartDetail {
+}): FrontendArchitectureStartDetail {
   return readDirectiveFrontendArchitectureStartDetailImpl(input, {
     readDirectiveFrontendArtifactText,
     extractMarkdownTitle,
@@ -1441,28 +1441,28 @@ export function readDirectiveFrontendArchitectureStartDetail(input: {
 export function readDirectiveFrontendRuntimeRecordDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendRuntimeRecordDetail {
+}): FrontendRuntimeRecordDetail {
   return readDirectiveFrontendRuntimeRecordDetailImpl(input);
 }
 
 export function readDirectiveFrontendRuntimeProofDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendRuntimeProofDetail {
+}): FrontendRuntimeProofDetail {
   return readDirectiveFrontendRuntimeProofDetailImpl(input);
 }
 
 export function readDirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail {
+}): FrontendRuntimeRuntimeCapabilityBoundaryDetail {
   return readDirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetailImpl(input);
 }
 
 export function readDirectiveFrontendRuntimePromotionReadinessDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendRuntimePromotionReadinessDetail {
+}): FrontendRuntimePromotionReadinessDetail {
   return readDirectiveFrontendRuntimePromotionReadinessDetailImpl(input, {
     readDirectiveFrontendArtifactText,
     extractMarkdownTitle,
@@ -1473,7 +1473,7 @@ export function readDirectiveFrontendRuntimePromotionReadinessDetail(input: {
 export function readDirectiveFrontendArchitectureResultDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureResultDetail {
+}): FrontendArchitectureResultDetail {
   return readDirectiveFrontendArchitectureResultDetailImpl(input, {
     readDirectiveFrontendArtifactText,
     extractMarkdownTitle,
@@ -1484,80 +1484,80 @@ export function readDirectiveFrontendArchitectureResultDetail(input: {
 export function readDirectiveFrontendArchitectureAdoptionDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureAdoptionDetail {
+}): FrontendArchitectureAdoptionDetail {
   return readDirectiveFrontendArchitectureAdoptionDetailImpl(input);
 }
 
 export function readDirectiveFrontendArchitectureImplementationTargetDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureImplementationTargetDetail {
+}): FrontendArchitectureImplementationTargetDetail {
   return readDirectiveFrontendArchitectureImplementationTargetDetailImpl(input);
 }
 
 export function readDirectiveFrontendArchitectureImplementationResultDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureImplementationResultDetail {
+}): FrontendArchitectureImplementationResultDetail {
   return readDirectiveFrontendArchitectureImplementationResultDetailImpl(input);
 }
 
 export function readDirectiveFrontendArchitectureRetentionDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureRetentionDetail {
+}): FrontendArchitectureRetentionDetail {
   return readDirectiveFrontendArchitectureRetentionDetailImpl(input);
 }
 
 export function readDirectiveFrontendArchitectureIntegrationRecordDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureIntegrationRecordDetail {
+}): FrontendArchitectureIntegrationRecordDetail {
   return readDirectiveFrontendArchitectureIntegrationRecordDetailImpl(input);
 }
 
 export function readDirectiveFrontendArchitectureConsumptionRecordDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitectureConsumptionRecordDetail {
+}): FrontendArchitectureConsumptionRecordDetail {
   return readDirectiveFrontendArchitectureConsumptionRecordDetailImpl(input);
 }
 
 export function readDirectiveFrontendArchitecturePostConsumptionEvaluationDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendArchitecturePostConsumptionEvaluationDetail {
+}): FrontendArchitecturePostConsumptionEvaluationDetail {
   return readDirectiveFrontendArchitecturePostConsumptionEvaluationDetailImpl(input);
 }
 
 export type WorkbenchQueueEntry = FrontendQueueEntry;
 export type WorkbenchQueueOverview = FrontendQueueOverview;
 export type WorkbenchHandoffStub = FrontendHandoffStub;
-export type DirectiveWorkbenchSnapshot = DirectiveFrontendSnapshot;
-export type DirectiveWorkbenchDiscoveryRoutingDetail =
-  DirectiveFrontendDiscoveryRoutingDetail;
-export type DirectiveWorkbenchHandoffDetail = DirectiveFrontendHandoffDetail;
-export type DirectiveWorkbenchRuntimeRecordDetail = DirectiveFrontendRuntimeRecordDetail;
-export type DirectiveWorkbenchRuntimeProofDetail = DirectiveFrontendRuntimeProofDetail;
-export type DirectiveWorkbenchRuntimeRuntimeCapabilityBoundaryDetail =
-  DirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail;
-export type DirectiveWorkbenchRuntimePromotionReadinessDetail =
-  DirectiveFrontendRuntimePromotionReadinessDetail;
-export type DirectiveWorkbenchArchitectureStartDetail = DirectiveFrontendArchitectureStartDetail;
-export type DirectiveWorkbenchArchitectureResultDetail = DirectiveFrontendArchitectureResultDetail;
-export type DirectiveWorkbenchArchitectureAdoptionDetail = DirectiveFrontendArchitectureAdoptionDetail;
-export type DirectiveWorkbenchArchitectureImplementationTargetDetail =
-  DirectiveFrontendArchitectureImplementationTargetDetail;
-export type DirectiveWorkbenchArchitectureImplementationResultDetail =
-  DirectiveFrontendArchitectureImplementationResultDetail;
-export type DirectiveWorkbenchArchitectureRetentionDetail =
-  DirectiveFrontendArchitectureRetentionDetail;
-export type DirectiveWorkbenchArchitectureIntegrationRecordDetail =
-  DirectiveFrontendArchitectureIntegrationRecordDetail;
-export type DirectiveWorkbenchArchitectureConsumptionRecordDetail =
-  DirectiveFrontendArchitectureConsumptionRecordDetail;
-export type DirectiveWorkbenchArchitecturePostConsumptionEvaluationDetail =
-  DirectiveFrontendArchitecturePostConsumptionEvaluationDetail;
+export type WorkbenchSnapshot = FrontendSnapshot;
+export type WorkbenchDiscoveryRoutingDetail =
+  FrontendDiscoveryRoutingDetail;
+export type WorkbenchHandoffDetail = FrontendHandoffDetail;
+export type WorkbenchRuntimeRecordDetail = FrontendRuntimeRecordDetail;
+export type WorkbenchRuntimeProofDetail = FrontendRuntimeProofDetail;
+export type WorkbenchRuntimeRuntimeCapabilityBoundaryDetail =
+  FrontendRuntimeRuntimeCapabilityBoundaryDetail;
+export type WorkbenchRuntimePromotionReadinessDetail =
+  FrontendRuntimePromotionReadinessDetail;
+export type WorkbenchArchitectureStartDetail = FrontendArchitectureStartDetail;
+export type WorkbenchArchitectureResultDetail = FrontendArchitectureResultDetail;
+export type WorkbenchArchitectureAdoptionDetail = FrontendArchitectureAdoptionDetail;
+export type WorkbenchArchitectureImplementationTargetDetail =
+  FrontendArchitectureImplementationTargetDetail;
+export type WorkbenchArchitectureImplementationResultDetail =
+  FrontendArchitectureImplementationResultDetail;
+export type WorkbenchArchitectureRetentionDetail =
+  FrontendArchitectureRetentionDetail;
+export type WorkbenchArchitectureIntegrationRecordDetail =
+  FrontendArchitectureIntegrationRecordDetail;
+export type WorkbenchArchitectureConsumptionRecordDetail =
+  FrontendArchitectureConsumptionRecordDetail;
+export type WorkbenchArchitecturePostConsumptionEvaluationDetail =
+  FrontendArchitecturePostConsumptionEvaluationDetail;
 
 export const readWorkbenchQueueOverview = readFrontendQueueOverview;
 export const readDirectiveWorkbenchSnapshot = readDirectiveFrontendSnapshot;

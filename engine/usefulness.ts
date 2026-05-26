@@ -1,7 +1,7 @@
-import type { DirectiveEngineLaneUsefulnessPlanningInput } from "./lane.ts";
-import type { DirectiveEngineUsefulnessLevel } from "./types.ts";
+import type { EngineLaneUsefulnessPlanningInput } from "./lane.ts";
+import type { EngineUsefulnessLevel } from "./types.ts";
 
-function collectPlanText(input: DirectiveEngineLaneUsefulnessPlanningInput) {
+function collectPlanText(input: EngineLaneUsefulnessPlanningInput) {
   const values = [
     input.adaptationPlan.directiveOwnedForm,
     input.improvementPlan.intendedDelta,
@@ -11,7 +11,7 @@ function collectPlanText(input: DirectiveEngineLaneUsefulnessPlanningInput) {
   return values.join(" ").toLowerCase();
 }
 
-function hasRuntimeUsefulnessSignal(input: DirectiveEngineLaneUsefulnessPlanningInput) {
+function hasRuntimeUsefulnessSignal(input: EngineLaneUsefulnessPlanningInput) {
   const planText = collectPlanText(input);
   return (
     input.planningInput.source.primaryAdoptionTarget === "runtime"
@@ -21,7 +21,7 @@ function hasRuntimeUsefulnessSignal(input: DirectiveEngineLaneUsefulnessPlanning
   );
 }
 
-function hasMetaUsefulnessSignal(input: DirectiveEngineLaneUsefulnessPlanningInput) {
+function hasMetaUsefulnessSignal(input: EngineLaneUsefulnessPlanningInput) {
   const planText = collectPlanText(input);
   return (
     input.planningInput.source.improvesDirectiveWorkspace === true
@@ -33,9 +33,9 @@ function hasMetaUsefulnessSignal(input: DirectiveEngineLaneUsefulnessPlanningInp
   );
 }
 
-export function classifyDirectiveEngineUsefulness(
-  input: DirectiveEngineLaneUsefulnessPlanningInput,
-): DirectiveEngineUsefulnessLevel {
+export function classifyEngineUsefulness(
+  input: EngineLaneUsefulnessPlanningInput,
+): EngineUsefulnessLevel {
   const hasRuntimeSignal = hasRuntimeUsefulnessSignal(input);
   const hasMetaSignal = hasMetaUsefulnessSignal(input)
     || input.planningInput.routingAssessment.scoreBreakdown.metaUsefulnessSignal > 0;
@@ -55,9 +55,9 @@ export function classifyDirectiveEngineUsefulness(
   return "structural";
 }
 
-export function explainDirectiveEngineUsefulness(
-  input: DirectiveEngineLaneUsefulnessPlanningInput,
-  usefulnessLevel: DirectiveEngineUsefulnessLevel,
+export function explainEngineUsefulness(
+  input: EngineLaneUsefulnessPlanningInput,
+  usefulnessLevel: EngineUsefulnessLevel,
 ) {
   if (usefulnessLevel === "hybrid") {
     return "Hybrid usefulness: the source carries reusable runtime value and meaningful Directive Workspace improvement value at the same time, so the system should preserve both signals instead of flattening it into only direct or only meta usefulness.";

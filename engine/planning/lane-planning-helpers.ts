@@ -1,10 +1,10 @@
 import type {
-  DirectiveEngineAdaptationPlan,
-  DirectiveEngineExtractionPlan,
-  DirectiveEngineSourceItem,
+  EngineAdaptationPlan,
+  EngineExtractionPlan,
+  EngineSourceItem,
 } from "../types.ts";
 
-export function flattenSourceSignals(source: DirectiveEngineSourceItem) {
+export function flattenSourceSignals(source: EngineSourceItem) {
   return [
     source.title,
     source.summary ?? "",
@@ -20,7 +20,7 @@ export function flattenSourceSignals(source: DirectiveEngineSourceItem) {
     .join(" ");
 }
 
-export function resolveStructuralProcessStages(source: DirectiveEngineSourceItem) {
+export function resolveStructuralProcessStages(source: EngineSourceItem) {
   if (
     source.sourceType !== "paper"
     && source.sourceType !== "product-doc"
@@ -58,7 +58,7 @@ export function resolveStructuralProcessStages(source: DirectiveEngineSourceItem
   return stages;
 }
 
-export function resolveControlSignalProfile(source: DirectiveEngineSourceItem) {
+export function resolveControlSignalProfile(source: EngineSourceItem) {
   if (
     source.sourceType !== "paper"
     && source.sourceType !== "product-doc"
@@ -124,7 +124,7 @@ export function formatIterativeControlSignals(signals: string[]) {
 }
 
 export function readExtractionPlanSummary(
-  extractionPlan: DirectiveEngineExtractionPlan,
+  extractionPlan: EngineExtractionPlan,
   prefix: string,
 ) {
   return extractionPlan.extractedValue
@@ -135,7 +135,7 @@ export function readExtractionPlanSummary(
 }
 
 export function adaptationPlanIncludes(
-  adaptationPlan: DirectiveEngineAdaptationPlan,
+  adaptationPlan: EngineAdaptationPlan,
   pattern: string,
 ) {
   const loweredPattern = pattern.toLowerCase();

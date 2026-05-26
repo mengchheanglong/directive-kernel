@@ -1,7 +1,7 @@
 import type {
-  DirectiveCallableCapability,
-  DirectiveCallableExecutionInput,
-  DirectiveCallableExecutionResult,
+  CallableCapability,
+  CallableExecutionInput,
+  CallableExecutionResult,
 } from "../../core/callable-contract.ts";
 import {
   RESEARCH_VAULT_SOURCE_PACK_CAPABILITY_ID,
@@ -46,8 +46,8 @@ function validateInput(tool: string, input: Record<string, unknown>) {
 }
 
 export async function executeResearchVaultSourcePackTool(
-  input: DirectiveCallableExecutionInput,
-): Promise<DirectiveCallableExecutionResult> {
+  input: CallableExecutionInput,
+): Promise<CallableExecutionResult> {
   const startedAt = new Date();
   const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
   const tool = input.tool as ResearchVaultSourcePackToolName;
@@ -120,7 +120,7 @@ export function listResearchVaultSourcePackTools() {
   }];
 }
 
-export function createResearchVaultSourcePackCallableCapability(): DirectiveCallableCapability {
+export function createResearchVaultSourcePackCallableCapability(): CallableCapability {
   return {
     descriptor: {
       capabilityId: RESEARCH_VAULT_SOURCE_PACK_CAPABILITY_ID,

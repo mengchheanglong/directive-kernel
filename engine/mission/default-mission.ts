@@ -1,6 +1,6 @@
-import type { DirectiveEngineMissionInput } from "../types.ts";
+import type { EngineMissionInput } from "../types.ts";
 
-export function createDefaultDirectiveMission(): DirectiveEngineMissionInput {
+export function createDefaultDirectiveMission(): EngineMissionInput {
   return {
     missionId: "default-directive-mission",
     currentObjective:

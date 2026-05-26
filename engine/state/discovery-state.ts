@@ -1,5 +1,5 @@
-import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/routing/discovery-route-opener.ts";
-import { readDiscoveryRoutingReviewResolution } from "../../discovery/lib/routing/discovery-routing-review-resolution.ts";
+﻿import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/routing/route-opener.ts";
+import { readDiscoveryRoutingReviewResolution } from "../../discovery/lib/routing/review-resolution.ts";
 import {
   fileExistsInDirectiveWorkspace,
   isDirectiveWorkspaceArtifactReference,
@@ -8,7 +8,7 @@ import {
   recordInconsistentLink,
   recordMissingLinkedArtifactIfAbsent,
 } from "../artifact-link-validation.ts";
-import type { DirectiveWorkspaceResolvedFocus } from "./resolve-directive-workspace-state.ts";
+import type { WorkspaceResolvedFocus } from "./resolve-workspace-state.ts";
 import {
   finalizeResolvedFocus,
   findLatestEngineRunByCandidateId,
@@ -45,7 +45,7 @@ function isNoteArchitectureRouteProgressedPastHandoff(input: {
 export function resolveDiscoveryFocus(input: {
   directiveRoot: string;
   artifactPath: string;
-  readWorkspaceFocus: (artifactPath: string) => DirectiveWorkspaceResolvedFocus | null;
+  readWorkspaceFocus: (artifactPath: string) => WorkspaceResolvedFocus | null;
 }) {
   const relativePath = resolveDirectiveRelativePath(input.directiveRoot, input.artifactPath, "artifactPath");
   const routing = readDirectiveDiscoveryRoutingArtifact({
@@ -110,7 +110,7 @@ export function resolveDiscoveryFocus(input: {
     engineRun?.record.selectedLane?.laneId === "discovery"
     && isDiscoveryHeldRouteDestination(effectiveRouteDestination);
 
-  let downstream: DirectiveWorkspaceResolvedFocus | null = null;
+  let downstream: WorkspaceResolvedFocus | null = null;
   const discoveryHeldDownstreamPath =
     !routing.downstreamStubRelativePath
       && effectiveRouteDestination === "monitor"
@@ -241,7 +241,7 @@ export function resolveDiscoveryFocus(input: {
         ? effectiveRequiredNextArtifact
         : engineRun?.record.integrationProposal?.nextAction ?? null,
     },
-  } satisfies Omit<DirectiveWorkspaceResolvedFocus, "integrityState" | "currentHead">);
+  } satisfies Omit<WorkspaceResolvedFocus, "integrityState" | "currentHead">);
 }
 
 export function resolveDiscoveryMonitorFocus(input: {
@@ -367,5 +367,5 @@ export function resolveDiscoveryMonitorFocus(input: {
       proofKind: engineRun?.record.proofPlan?.proofKind ?? null,
       nextAction: engineRun?.record.integrationProposal?.nextAction ?? null,
     },
-  } satisfies Omit<DirectiveWorkspaceResolvedFocus, "integrityState" | "currentHead">);
+  } satisfies Omit<WorkspaceResolvedFocus, "integrityState" | "currentHead">);
 }

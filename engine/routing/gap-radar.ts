@@ -5,35 +5,35 @@ import path from "node:path";
 
 import type { DecisionPolicyEvent } from "../decision-policy-ledger.ts";
 import type {
-  DirectiveEngineCapabilityGap,
-  DirectiveEngineCapabilityGapPriority,
-  DirectiveEngineLaneId,
+  EngineCapabilityGap,
+  EngineCapabilityGapPriority,
+  EngineLaneId,
 } from "../types.ts";
-import { countTokenOverlap, uniqueStrings } from "../engine-source-utils.ts";
-import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
+import { countTokenOverlap, uniqueStrings } from "../source-utils.ts";
+import { extractSourceSignalTokens } from "./correction-ledger.ts";
 
-export type DirectiveGapRadarSuggestion = {
+export type GapRadarSuggestion = {
   radarId: string;
-  targetLaneId: DirectiveEngineLaneId;
+  targetLaneId: EngineLaneId;
   confidence: "low" | "medium" | "high";
   evidenceCount: number;
   summary: string;
   recommendedChange: string;
   signalTokens: string[];
   relatedOpenGapId: string | null;
-  suggestedPriority: DirectiveEngineCapabilityGapPriority;
+  suggestedPriority: EngineCapabilityGapPriority;
   candidateExamples: string[];
 };
 
-export type DirectiveGapRadarAssessment = {
+export type GapRadarAssessment = {
   summary: string;
-  suggestions: DirectiveGapRadarSuggestion[];
+  suggestions: GapRadarSuggestion[];
 } | null;
 
-export type DirectiveGapRadarReport = {
+export type GapRadarReport = {
   schemaVersion: 1;
   generatedAt: string;
-  suggestions: DirectiveGapRadarSuggestion[];
+  suggestions: GapRadarSuggestion[];
 };
 
 const GAP_RADAR_RELATIVE_PATH = "engine/gap-radar.json";
@@ -48,7 +48,7 @@ function toConfidence(count: number): "low" | "medium" | "high" {
   return "low";
 }
 
-function toPriority(count: number): DirectiveEngineCapabilityGapPriority {
+function toPriority(count: number): EngineCapabilityGapPriority {
   if (count >= 4) {
     return "high";
   }
@@ -58,7 +58,7 @@ function toPriority(count: number): DirectiveEngineCapabilityGapPriority {
   return "low";
 }
 
-function tokenizeGap(gap: DirectiveEngineCapabilityGap) {
+function tokenizeGap(gap: EngineCapabilityGap) {
   return extractSourceSignalTokens([
     gap.gapId,
     gap.description,
@@ -70,7 +70,7 @@ function tokenizeGap(gap: DirectiveEngineCapabilityGap) {
 }
 
 type Cluster = {
-  laneId: DirectiveEngineLaneId;
+  laneId: EngineLaneId;
   events: DecisionPolicyEvent[];
   tokenCounts: Map<string, number>;
 };
@@ -92,9 +92,9 @@ function buildRadarId(input: {
     .slice(0, 96);
 }
 
-export function compileDirectiveGapRadarSuggestions(input: {
+export function compileGapRadarSuggestions(input: {
   events: DecisionPolicyEvent[];
-  openGaps: DirectiveEngineCapabilityGap[];
+  openGaps: EngineCapabilityGap[];
 }) {
   const relevantEvents = input.events.filter((event) =>
     (event.resolvedLaneId === "architecture" || event.resolvedLaneId === "runtime")
@@ -192,7 +192,7 @@ export function compileDirectiveGapRadarSuggestions(input: {
           cluster.events.map((event) => event.candidateId),
           (value) => value.trim().toLowerCase(),
         ).slice(0, 5),
-      } satisfies DirectiveGapRadarSuggestion;
+      } satisfies GapRadarSuggestion;
     })
     .sort((left, right) => {
       if (right.evidenceCount !== left.evidenceCount) {
@@ -202,12 +202,12 @@ export function compileDirectiveGapRadarSuggestions(input: {
     });
 }
 
-export function deriveDirectiveGapRadarAssessment(input: {
+export function deriveGapRadarAssessment(input: {
   sourceText: string;
-  recommendedLaneId: DirectiveEngineLaneId;
+  recommendedLaneId: EngineLaneId;
   matchedGapId: string | null;
-  suggestions: DirectiveGapRadarSuggestion[];
-}): DirectiveGapRadarAssessment {
+  suggestions: GapRadarSuggestion[];
+}): GapRadarAssessment {
   const sourceTokens = extractSourceSignalTokens(input.sourceText);
   const matches = input.suggestions
     .map((suggestion) => ({
@@ -242,32 +242,32 @@ export function deriveDirectiveGapRadarAssessment(input: {
   };
 }
 
-export function createDirectiveGapRadarReport(input: {
+export function createGapRadarReport(input: {
   generatedAt?: string;
   events: DecisionPolicyEvent[];
-  openGaps: DirectiveEngineCapabilityGap[];
+  openGaps: EngineCapabilityGap[];
 }) {
   return {
     schemaVersion: 1,
     generatedAt: input.generatedAt ?? new Date().toISOString(),
-    suggestions: compileDirectiveGapRadarSuggestions({
+    suggestions: compileGapRadarSuggestions({
       events: input.events,
       openGaps: input.openGaps,
     }),
-  } satisfies DirectiveGapRadarReport;
+  } satisfies GapRadarReport;
 }
 
 export function resolveDirectiveGapRadarPath(directiveRoot: string) {
   return path.resolve(directiveRoot, GAP_RADAR_RELATIVE_PATH).replace(/\\/g, "/");
 }
 
-export function writeDirectiveGapRadarReport(input: {
+export function writeGapRadarReport(input: {
   directiveRoot: string;
   generatedAt?: string;
   events: DecisionPolicyEvent[];
-  openGaps: DirectiveEngineCapabilityGap[];
+  openGaps: EngineCapabilityGap[];
 }) {
-  const report = createDirectiveGapRadarReport(input);
+  const report = createGapRadarReport(input);
   const reportPath = resolveDirectiveGapRadarPath(input.directiveRoot);
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");

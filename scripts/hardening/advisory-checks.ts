@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 
 import {
-  DirectiveEngine,
+  Engine,
   createDirectiveWorkspaceEngineLanes,
-  createMemoryDirectiveEngineStore,
+  createMemoryEngineStore,
 } from "../../engine/index.ts";
-import { buildDirectiveRunSourceTokenMap, flattenSourceText } from "../../engine/engine-source-utils.ts";
-import { deriveDirectivePriorPlanContext } from "../../engine/planning/index.ts";
+import { buildDirectiveRunSourceTokenMap, flattenSourceText } from "../../engine/source-utils.ts";
+import { derivePriorPlanContext } from "../../engine/planning/index.ts";
 import {
-  assessDirectiveEngineRouting,
-  buildDirectiveSourceNarrativeThreads,
-  createDirectiveSourceMemorySnapshot,
-  deriveDirectiveSourceNarrativeContext,
-  deriveDirectiveSourceSimilarityAssessment,
+  assessEngineRouting,
+  buildSourceNarrativeThreads,
+  createSourceMemorySnapshot,
+  deriveSourceNarrativeContext,
+  deriveSourceSimilarityAssessment,
 } from "../../engine/routing/index.ts";
 import {
   buildArchitectureGap,
@@ -21,9 +21,9 @@ import {
 } from "./support.ts";
 
 export async function runAdvisoryIntelligenceChecks() {
-  const engine = new DirectiveEngine({
+  const engine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createMemoryDirectiveEngineStore(),
+    store: createMemoryEngineStore(),
   });
   const first = await engine.processSource(buildArchitectureSourceInput());
   const second = await engine.processSource({
@@ -55,11 +55,11 @@ export async function runAdvisoryIntelligenceChecks() {
   assert.ok(second.record.routingAssessment.sourceSimilarity !== null);
   assert.ok(second.record.routingAssessment.narrativeContext !== null);
   const precomputedSourceTokens = buildDirectiveRunSourceTokenMap([first.record]);
-  const sourceMemoryWithPrecomputedTokens = createDirectiveSourceMemorySnapshot({
+  const sourceMemoryWithPrecomputedTokens = createSourceMemorySnapshot({
     runs: [first.record],
     precomputedSourceTokens,
   });
-  const sourceMemoryWithoutPrecomputedTokens = createDirectiveSourceMemorySnapshot({
+  const sourceMemoryWithoutPrecomputedTokens = createSourceMemorySnapshot({
     runs: [first.record],
   });
   assert.deepEqual(
@@ -70,14 +70,14 @@ export async function runAdvisoryIntelligenceChecks() {
     sourceMemoryWithoutPrecomputedTokens,
   );
   assert.deepEqual(
-    deriveDirectiveSourceSimilarityAssessment({
+    deriveSourceSimilarityAssessment({
       source: second.record.source,
       sourceText: flattenSourceText(second.record.source),
       existingRuns: [first.record],
       recommendedLaneId: second.record.selectedLane.laneId,
       precomputedSourceTokens,
     }),
-    deriveDirectiveSourceSimilarityAssessment({
+    deriveSourceSimilarityAssessment({
       source: second.record.source,
       sourceText: flattenSourceText(second.record.source),
       existingRuns: [first.record],
@@ -85,23 +85,23 @@ export async function runAdvisoryIntelligenceChecks() {
     }),
   );
   assert.deepEqual(
-    deriveDirectivePriorPlanContext({
+    derivePriorPlanContext({
       source: second.record.source,
       recommendedLaneId: second.record.selectedLane.laneId,
       existingRuns: [first.record],
       precomputedSourceTokens,
     }),
-    deriveDirectivePriorPlanContext({
+    derivePriorPlanContext({
       source: second.record.source,
       recommendedLaneId: second.record.selectedLane.laneId,
       existingRuns: [first.record],
     }),
   );
-  const prebuiltNarrativeThreads = buildDirectiveSourceNarrativeThreads({
+  const prebuiltNarrativeThreads = buildSourceNarrativeThreads({
     runs: [first.record],
     mission: second.record.mission,
   });
-  const prebuiltNarrativeContext = deriveDirectiveSourceNarrativeContext({
+  const prebuiltNarrativeContext = deriveSourceNarrativeContext({
     source: second.record.source,
     sourceText: [
       second.record.source.title,
@@ -124,7 +124,7 @@ export async function runAdvisoryIntelligenceChecks() {
       ?? null,
     receivedAt: second.record.receivedAt,
   });
-  const directNarrativeContext = deriveDirectiveSourceNarrativeContext({
+  const directNarrativeContext = deriveSourceNarrativeContext({
     source: second.record.source,
     sourceText: [
       second.record.source.title,
@@ -171,9 +171,9 @@ export async function runAdvisoryIntelligenceChecks() {
   );
   assert.ok(third.record.planQualitySignal?.rationale.length);
 
-  const tieBreakEngine = new DirectiveEngine({
+  const tieBreakEngine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createMemoryDirectiveEngineStore(),
+    store: createMemoryEngineStore(),
   });
   const tieBreakMission = buildArchitectureMission();
   await tieBreakEngine.processSource({
@@ -208,7 +208,7 @@ export async function runAdvisoryIntelligenceChecks() {
       workflowBoundaryShape: "bounded_protocol",
     },
   });
-  const tieBreakAssessment = assessDirectiveEngineRouting({
+  const tieBreakAssessment = assessEngineRouting({
     source: {
       sourceType: "workflow-writeup",
       sourceRef: "https://example.com/thread-tie-current",
@@ -254,7 +254,7 @@ export async function runAdvisoryIntelligenceChecks() {
   assert.ok((progressedThread.planQualitySignal?.proofGateCompletion ?? 0) > 0);
   assert.equal(progressedThread.executablePlanState?.proofState.objectiveState, "defined");
 
-  const historicalReplayAssessment = assessDirectiveEngineRouting({
+  const historicalReplayAssessment = assessEngineRouting({
     source: {
       ...buildArchitectureSourceInput().source,
       sourceId: "architecture-replay-check",
@@ -270,9 +270,9 @@ export async function runAdvisoryIntelligenceChecks() {
   });
   assert.equal(historicalReplayAssessment.narrativeContext, null);
 
-  const missionIsolationEngine = new DirectiveEngine({
+  const missionIsolationEngine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createMemoryDirectiveEngineStore(),
+    store: createMemoryEngineStore(),
   });
   const overlappingRuntimeRun = await missionIsolationEngine.processSource({
     receivedAt: "2026-04-10T00:00:00.000Z",
@@ -297,7 +297,7 @@ export async function runAdvisoryIntelligenceChecks() {
       improvesDirectiveWorkspace: false,
     },
   });
-  const missionIsolatedAssessment = assessDirectiveEngineRouting({
+  const missionIsolatedAssessment = assessEngineRouting({
     source: {
       sourceType: "workflow-writeup",
       sourceRef: "https://example.com/mission-isolation-architecture",
@@ -323,7 +323,7 @@ export async function runAdvisoryIntelligenceChecks() {
   });
   assert.equal(missionIsolatedAssessment.narrativeContext, null);
 
-  const threadAwareQuestion = assessDirectiveEngineRouting({
+  const threadAwareQuestion = assessEngineRouting({
     source: {
       ...buildArchitectureSourceInput().source,
       sourceId: "architecture-thread-aware-question",
@@ -345,9 +345,9 @@ export async function runAdvisoryIntelligenceChecks() {
     ),
   );
 
-  const gapProjectionEngine = new DirectiveEngine({
+  const gapProjectionEngine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createMemoryDirectiveEngineStore(),
+    store: createMemoryEngineStore(),
   });
   const priorGapless = await gapProjectionEngine.processSource({
     receivedAt: "2026-04-10T00:00:00.000Z",
@@ -360,7 +360,7 @@ export async function runAdvisoryIntelligenceChecks() {
       capabilityGapId: null,
     },
   });
-  const projectedGapAssessment = assessDirectiveEngineRouting({
+  const projectedGapAssessment = assessEngineRouting({
     source: {
       ...buildArchitectureSourceInput().source,
       sourceId: "gap-projection-current",

@@ -1,0 +1,211 @@
+﻿import path from "node:path";
+import { isDirectiveAbsolutePathWithinRoot } from "../../../shared/lib/relative-path.ts";
+import {
+  optionalString,
+  requiredString,
+} from "../control/materialization-tail-artifact-helpers.ts";
+import {
+  buildDirectiveArchitectureAdoptionDecisionArtifact,
+  type ArchitectureAdoptionDecisionArtifact,
+  type ArchitectureAdoptionDecisionArtifactInput,
+} from "../adoption/artifacts.ts";
+import {
+  resolveArchitectureAdoption,
+  type ArchitectureAdoptionResolution,
+  type ArchitectureAdoptionVerdict,
+} from "../adoption/resolution.ts";
+import {
+  resolveArchitectureReview,
+  type ArchitectureReviewResolution,
+  type ArchitectureReviewResolutionInput,
+} from "../adoption/review-resolution.ts";
+
+export type ArchitectureCloseoutRecordState = "experiment" | "adopted";
+export type ArchitectureCloseoutState =
+  | "stay_experimental"
+  | "adopted"
+  | "runtime_handoff";
+
+export type ArchitectureCloseoutWriteRequest =
+  Omit<
+    ArchitectureAdoptionDecisionArtifactInput,
+    "reviewResolution" | "adoptionResolution"
+  > & {
+    recordRelativePath: string;
+    outputRelativePath?: string | null;
+    reviewInput?: ArchitectureReviewResolutionInput;
+    reviewResolution?: ArchitectureReviewResolution;
+    adoptionResolution?: ArchitectureAdoptionResolution;
+  };
+
+export function resolveDirectiveArchitectureCloseoutRecordState(
+  recordRelativePath: string,
+): ArchitectureCloseoutRecordState {
+  const normalizedRelativePath = requiredString(
+    recordRelativePath,
+    "recordRelativePath",
+  ).replace(/\\/g, "/");
+
+  if (!normalizedRelativePath.endsWith(".md")) {
+    throw new Error("recordRelativePath must end with .md");
+  }
+
+  if (
+    normalizedRelativePath.startsWith("architecture/01-experiments/")
+  ) {
+    return "experiment";
+  }
+  if (normalizedRelativePath.startsWith("architecture/02-adopted/")) {
+    return "adopted";
+  }
+
+  throw new Error(
+    "recordRelativePath must point to architecture/01-experiments/ or architecture/02-adopted/",
+  );
+}
+
+function resolveDirectiveArchitectureCloseoutFilename(recordRelativePath: string) {
+  const recordFilename = path.posix.basename(recordRelativePath.replace(/\\/g, "/"));
+  return recordFilename
+    .replace(/-adopted\.md$/u, "-adoption-decision.json")
+    .replace(/\.md$/u, "-adoption-decision.json");
+}
+
+export function resolveDirectiveArchitectureCloseoutPathForRecord(
+  recordRelativePath: string,
+) {
+  const normalizedRecordRelativePath = requiredString(
+    recordRelativePath,
+    "recordRelativePath",
+  ).replace(/\\/g, "/");
+  resolveDirectiveArchitectureCloseoutRecordState(normalizedRecordRelativePath);
+
+  return path.posix.join(
+    path.posix.dirname(normalizedRecordRelativePath),
+    resolveDirectiveArchitectureCloseoutFilename(normalizedRecordRelativePath),
+  );
+}
+
+function resolveDirectiveArchitectureCloseoutState(
+  verdict: ArchitectureAdoptionVerdict,
+): ArchitectureCloseoutState {
+  if (verdict === "adopt") {
+    return "adopted";
+  }
+  if (verdict === "hand_off_to_runtime") {
+    return "runtime_handoff";
+  }
+  return "stay_experimental";
+}
+
+function assertDirectiveArchitectureCloseoutStateMatchesRecord(input: {
+  recordState: ArchitectureCloseoutRecordState;
+  closeoutState: ArchitectureCloseoutState;
+}) {
+  if (input.closeoutState === "stay_experimental" && input.recordState !== "experiment") {
+    throw new Error(
+      "stay-experimental Architecture closeout must target an experiment record under architecture/01-experiments/",
+    );
+  }
+
+  if (input.closeoutState === "adopted") {
+    return;
+  }
+
+  if (input.closeoutState === "runtime_handoff" && input.recordState !== "adopted") {
+    throw new Error(
+      "Runtime-handoff Architecture closeout must target a record under architecture/02-adopted/",
+    );
+  }
+}
+
+export function resolveDirectiveArchitectureCloseoutPath(
+  request: ArchitectureCloseoutWriteRequest,
+) {
+  const explicit = optionalString(request.outputRelativePath);
+  if (explicit) {
+    return explicit.replace(/\\/g, "/");
+  }
+
+  const recordRelativePath = requiredString(
+    request.recordRelativePath,
+    "recordRelativePath",
+  ).replace(/\\/g, "/");
+  return resolveDirectiveArchitectureCloseoutPathForRecord(recordRelativePath);
+}
+
+export function resolveDirectiveArchitectureCloseoutAbsolutePath(input: {
+  directiveRoot: string;
+  relativePath: string;
+}) {
+  const normalizedRelativePath = input.relativePath.replace(/\\/g, "/");
+  const absolutePath = path.resolve(input.directiveRoot, normalizedRelativePath);
+  if (!isDirectiveAbsolutePathWithinRoot(input.directiveRoot, absolutePath)) {
+    throw new Error("architecture closeout path must stay within directive-workspace");
+  }
+  return absolutePath;
+}
+
+export function buildDirectiveArchitectureCloseoutFile(
+  request: ArchitectureCloseoutWriteRequest,
+): {
+  relativePath: string;
+  recordState: ArchitectureCloseoutRecordState;
+  closeoutState: ArchitectureCloseoutState;
+  reviewResolution: ArchitectureReviewResolution | null;
+  adoptionResolution: ArchitectureAdoptionResolution;
+  artifact: ArchitectureAdoptionDecisionArtifact;
+} {
+  const recordState = resolveDirectiveArchitectureCloseoutRecordState(
+    request.recordRelativePath,
+  );
+  const relativePath = resolveDirectiveArchitectureCloseoutPath(request);
+  const {
+    recordRelativePath: _recordRelativePath,
+    outputRelativePath: _outputRelativePath,
+    reviewInput,
+    reviewResolution: requestReviewResolution,
+    adoptionResolution: requestAdoptionResolution,
+    ...artifactInput
+  } = request;
+
+  const reviewResolution =
+    requestReviewResolution ?? (reviewInput ? resolveArchitectureReview(reviewInput) : null);
+  const adoptionResolution =
+    requestAdoptionResolution
+    ?? resolveArchitectureAdoption({
+      ...artifactInput,
+      reviewResolution: reviewResolution ?? undefined,
+    });
+  const closeoutState = resolveDirectiveArchitectureCloseoutState(
+    adoptionResolution.verdict,
+  );
+
+  assertDirectiveArchitectureCloseoutStateMatchesRecord({
+    recordState,
+    closeoutState,
+  });
+
+  const artifact = buildDirectiveArchitectureAdoptionDecisionArtifact({
+    ...artifactInput,
+    reviewResolution: reviewResolution ?? undefined,
+    adoptionResolution,
+  });
+
+  return {
+    relativePath,
+    recordState,
+    closeoutState,
+    reviewResolution,
+    adoptionResolution,
+    artifact,
+  };
+}
+
+export function renderDirectiveArchitectureCloseoutFile(
+  request: ArchitectureCloseoutWriteRequest,
+) {
+  const file = buildDirectiveArchitectureCloseoutFile(request);
+  return `${JSON.stringify(file.artifact, null, 2)}\n`;
+}
+

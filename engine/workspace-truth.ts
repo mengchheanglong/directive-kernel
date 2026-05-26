@@ -1,7 +1,7 @@
-export const DIRECTIVE_WORKSPACE_BLOCKED_ADVANCEMENT_MESSAGE =
+export const WORKSPACE_BLOCKED_ADVANCEMENT_MESSAGE =
   "No workflow advancement is legal until the broken or inconsistent artifact state is repaired and the anchor is rerun.";
 
-export const DIRECTIVE_WORKSPACE_FIELD_INTERPRETATION = {
+export const WORKSPACE_FIELD_INTERPRETATION = {
   artifactStage:
     "The stage represented by the inspected artifact itself. Use this to understand the local boundary and what that artifact directly authorizes next.",
   currentStage:
@@ -16,7 +16,7 @@ export const DIRECTIVE_WORKSPACE_FIELD_INTERPRETATION = {
     "When present, this is the original Discovery routing target for the case, not a claim that the currently inspected artifact belongs to that lane.",
 } as const;
 
-export const DIRECTIVE_WORKSPACE_LEGAL_NEXT_SEAMS = {
+export const WORKSPACE_LEGAL_NEXT_SEAMS = {
   discovery: [
     "Use the existing Discovery front door on real sources and keep route approval explicit.",
     "Keep Research Engine handoff limited to source intelligence, Discovery notes, and queue truth; do not grant it route or adoption authority.",
@@ -46,7 +46,7 @@ export const DIRECTIVE_WORKSPACE_LEGAL_NEXT_SEAMS = {
   ],
 } as const;
 
-export const DIRECTIVE_WORKSPACE_PRODUCT_TRUTH = {
+export const WORKSPACE_PRODUCT_TRUTH = {
   hierarchy: [
     "Directive Workspace",
     "Engine",
@@ -114,31 +114,31 @@ export const DIRECTIVE_WORKSPACE_PRODUCT_TRUTH = {
     "dashboard expansion",
     "reconstruction of state through lane-local custom readers when the shared resolver already covers it",
   ],
-  legalNextSeams: DIRECTIVE_WORKSPACE_LEGAL_NEXT_SEAMS,
-  fieldInterpretation: DIRECTIVE_WORKSPACE_FIELD_INTERPRETATION,
+  legalNextSeams: WORKSPACE_LEGAL_NEXT_SEAMS,
+  fieldInterpretation: WORKSPACE_FIELD_INTERPRETATION,
 } as const;
 
-export type DirectiveWorkspaceProductTruth = typeof DIRECTIVE_WORKSPACE_PRODUCT_TRUTH;
+export type WorkspaceProductTruth = typeof WORKSPACE_PRODUCT_TRUTH;
 
-export function buildDirectiveWorkspaceProductTruth() {
+export function buildWorkspaceProductTruth() {
   return {
-    hierarchy: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.hierarchy],
-    workflow: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.workflow],
-    proven: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.proven],
-    partiallyBuilt: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.partiallyBuilt],
-    intentionallyMinimal: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.intentionallyMinimal],
-    notBuilt: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.notBuilt],
-    forbiddenScopeExpansion: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.forbiddenScopeExpansion],
+    hierarchy: [...WORKSPACE_PRODUCT_TRUTH.hierarchy],
+    workflow: [...WORKSPACE_PRODUCT_TRUTH.workflow],
+    proven: [...WORKSPACE_PRODUCT_TRUTH.proven],
+    partiallyBuilt: [...WORKSPACE_PRODUCT_TRUTH.partiallyBuilt],
+    intentionallyMinimal: [...WORKSPACE_PRODUCT_TRUTH.intentionallyMinimal],
+    notBuilt: [...WORKSPACE_PRODUCT_TRUTH.notBuilt],
+    forbiddenScopeExpansion: [...WORKSPACE_PRODUCT_TRUTH.forbiddenScopeExpansion],
     legalNextSeams: {
-      discovery: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.legalNextSeams.discovery],
-      runtime: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.legalNextSeams.runtime],
-      architecture: [...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.legalNextSeams.architecture],
+      discovery: [...WORKSPACE_PRODUCT_TRUTH.legalNextSeams.discovery],
+      runtime: [...WORKSPACE_PRODUCT_TRUTH.legalNextSeams.runtime],
+      architecture: [...WORKSPACE_PRODUCT_TRUTH.legalNextSeams.architecture],
       sharedEngineWholeProduct: [
-        ...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.legalNextSeams.sharedEngineWholeProduct,
+        ...WORKSPACE_PRODUCT_TRUTH.legalNextSeams.sharedEngineWholeProduct,
       ],
     },
     fieldInterpretation: {
-      ...DIRECTIVE_WORKSPACE_PRODUCT_TRUTH.fieldInterpretation,
+      ...WORKSPACE_PRODUCT_TRUTH.fieldInterpretation,
     },
   };
 }
@@ -160,7 +160,7 @@ export function applyDirectiveWorkspaceIntegrityGate<
   return {
     ...focus,
     integrityState: "broken",
-    artifactNextLegalStep: DIRECTIVE_WORKSPACE_BLOCKED_ADVANCEMENT_MESSAGE,
-    nextLegalStep: DIRECTIVE_WORKSPACE_BLOCKED_ADVANCEMENT_MESSAGE,
+    artifactNextLegalStep: WORKSPACE_BLOCKED_ADVANCEMENT_MESSAGE,
+    nextLegalStep: WORKSPACE_BLOCKED_ADVANCEMENT_MESSAGE,
   };
 }

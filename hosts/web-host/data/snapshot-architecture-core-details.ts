@@ -3,24 +3,24 @@ import path from "node:path";
 
 import { normalizeRelativePath } from "../../../shared/lib/path-normalization.ts";
 import {
-  readDirectiveArchitectureBoundedCloseoutAssist,
-  readDirectiveArchitectureResultEvidenceForResult,
-  readDirectiveArchitectureResultEvidenceForStart,
-  readDirectiveArchitectureBoundedResultArtifact,
-  readDirectiveArchitectureBoundedStartArtifact,
-} from "../../../architecture/lib/experiments/architecture-bounded-closeout.ts";
+  readArchitectureBoundedCloseoutAssist,
+  readArchitectureResultEvidenceForResult,
+  readArchitectureResultEvidenceForStart,
+  readArchitectureBoundedResultArtifact,
+  readArchitectureBoundedStartArtifact,
+} from "../../../architecture/lib/experiments/closeout.ts";
 import {
-  readDirectiveArchitectureAdoptionDetail,
-} from "../../../architecture/lib/adoption/architecture-result-adoption.ts";
+  readArchitectureAdoptionDetail,
+} from "../../../architecture/lib/adoption/result-adoption.ts";
 import {
   readDirectiveArchitectureImplementationTargetPathForAdoption,
-} from "../../../architecture/lib/materialization/architecture-implementation-target.ts";
+} from "../../../architecture/lib/materialization/implementation-target.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import { buildDirectiveFrontendCurrentHead } from "./shared.ts";
 import type {
-  DirectiveFrontendArchitectureAdoptionDetail,
-  DirectiveFrontendArchitectureResultDetail,
-  DirectiveFrontendArchitectureStartDetail,
+  FrontendArchitectureAdoptionDetail,
+  FrontendArchitectureResultDetail,
+  FrontendArchitectureStartDetail,
 } from "./snapshot.ts";
 
 type ArtifactText = {
@@ -68,7 +68,7 @@ export function readDirectiveFrontendArchitectureStartDetail(
     relativePath: string;
   },
   helpers: SnapshotArchitectureCoreHelpers,
-): DirectiveFrontendArchitectureStartDetail {
+): FrontendArchitectureStartDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {
@@ -94,15 +94,15 @@ export function readDirectiveFrontendArchitectureStartDetail(
       directiveRoot: input.directiveRoot,
       relativePath,
     });
-    const parsed = readDirectiveArchitectureBoundedStartArtifact({
+    const parsed = readArchitectureBoundedStartArtifact({
       directiveRoot: input.directiveRoot,
       startPath: relativePath,
     });
-    const closeoutAssist = readDirectiveArchitectureBoundedCloseoutAssist({
+    const closeoutAssist = readArchitectureBoundedCloseoutAssist({
       directiveRoot: input.directiveRoot,
       startPath: relativePath,
     });
-    const resultEvidence = readDirectiveArchitectureResultEvidenceForStart({
+    const resultEvidence = readArchitectureResultEvidenceForStart({
       directiveRoot: input.directiveRoot,
       startPath: relativePath,
     });
@@ -139,7 +139,7 @@ export function readDirectiveFrontendArchitectureResultDetail(
     relativePath: string;
   },
   helpers: SnapshotArchitectureCoreHelpers,
-): DirectiveFrontendArchitectureResultDetail {
+): FrontendArchitectureResultDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {
@@ -170,11 +170,11 @@ export function readDirectiveFrontendArchitectureResultDetail(
       artifactPath: relativePath,
       includeAnchors: false,
     }).focus;
-    const parsed = readDirectiveArchitectureBoundedResultArtifact({
+    const parsed = readArchitectureBoundedResultArtifact({
       directiveRoot: input.directiveRoot,
       resultPath: relativePath,
     });
-    const resultEvidence = readDirectiveArchitectureResultEvidenceForResult({
+    const resultEvidence = readArchitectureResultEvidenceForResult({
       directiveRoot: input.directiveRoot,
       resultPath: relativePath,
     });
@@ -228,7 +228,7 @@ export function readDirectiveFrontendArchitectureAdoptionDetail(
     directiveRoot: string;
     relativePath: string;
   },
-): DirectiveFrontendArchitectureAdoptionDetail {
+): FrontendArchitectureAdoptionDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {
@@ -255,7 +255,7 @@ export function readDirectiveFrontendArchitectureAdoptionDetail(
       artifactPath: relativePath,
       includeAnchors: false,
     }).focus;
-    const detail = readDirectiveArchitectureAdoptionDetail({
+    const detail = readArchitectureAdoptionDetail({
       directiveRoot: input.directiveRoot,
       adoptionPath: relativePath,
     });

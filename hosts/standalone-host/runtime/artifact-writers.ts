@@ -2,41 +2,41 @@ import {
   renderRuntimeFollowUpRecord,
   resolveRuntimeFollowUpRecordPath,
   type RuntimeFollowUpRecordRequest,
-} from "../../../runtime/lib/writers/runtime-follow-up-record-writer.ts";
+} from "../../../runtime/lib/writers/follow-up-record-writer.ts";
 import {
   renderRuntimeProofChecklist,
   resolveRuntimeProofChecklistPath,
   resolveRuntimeProofGateSnapshotPath,
   type RuntimeProofBundleRequest,
-} from "../../../runtime/lib/writers/runtime-proof-bundle-writer.ts";
+} from "../../../runtime/lib/writers/proof-bundle-writer.ts";
 import {
   renderRuntimePromotionRecord,
   resolveRuntimePromotionRecordPath,
   type RuntimePromotionRecordRequest,
-} from "../../../runtime/lib/writers/runtime-promotion-record-writer.ts";
+} from "../../../runtime/lib/writers/promotion-record-writer.ts";
 import {
   assertRuntimeRegistryAcceptanceGate,
-} from "../../../runtime/lib/control/runtime-registry-acceptance-gate.ts";
+} from "../../../runtime/lib/control/registry-acceptance-gate.ts";
 import {
   renderRuntimeRecord,
   resolveRuntimeRecordPath,
   type RuntimeRecordRequest,
-} from "../../../runtime/lib/writers/runtime-record-writer.ts";
+} from "../../../runtime/lib/writers/record-writer.ts";
 import {
   renderRuntimeRegistryEntry,
   resolveRuntimeRegistryEntryPath,
   type RuntimeRegistryEntryRequest,
-} from "../../../runtime/lib/writers/runtime-registry-entry-writer.ts";
+} from "../../../runtime/lib/writers/registry-entry-writer.ts";
 import {
   renderRuntimeTransformationProof,
   resolveRuntimeTransformationProofPath,
   type RuntimeTransformationProofRequest,
-} from "../../../runtime/lib/writers/runtime-transformation-proof-writer.ts";
+} from "../../../runtime/lib/writers/transformation-proof-writer.ts";
 import {
   renderRuntimeTransformationRecord,
   resolveRuntimeTransformationRecordPath,
   type RuntimeTransformationRecordRequest,
-} from "../../../runtime/lib/writers/runtime-transformation-record-writer.ts";
+} from "../../../runtime/lib/writers/transformation-record-writer.ts";
 
 import type { DiscoveryHostStorageBridge } from "../../integration-kit/lib/discovery-submission-adapter.ts";
 import {

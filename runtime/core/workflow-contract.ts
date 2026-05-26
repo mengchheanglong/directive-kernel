@@ -8,13 +8,13 @@ import {
   normalizeDirectiveNotes,
   normalizeDirectiveRecommendation,
   normalizeDirectiveSourceType,
-  type DirectiveCapabilitySourceType,
-  type DirectiveCapabilityRecommendation,
-  type DirectiveExperimentStatus,
-  type DirectiveEvaluationOutcome,
-} from "./runtime-core-contract.js";
+  type CapabilitySourceType,
+  type CapabilityRecommendation,
+  type ExperimentStatus,
+  type EvaluationOutcome,
+} from "./contract.js";
 
-export type DirectiveCandidateContractInput = {
+export type CandidateContractInput = {
   sourceType?: unknown;
   sourceRef: unknown;
   title?: unknown;
@@ -23,8 +23,8 @@ export type DirectiveCandidateContractInput = {
   metadata?: Record<string, unknown>;
 };
 
-export type DirectiveCandidateContract = {
-  sourceType: DirectiveCapabilitySourceType;
+export type CandidateContract = {
+  sourceType: CapabilitySourceType;
   sourceRef: string;
   title: string;
   userIntent: string | null;
@@ -32,7 +32,7 @@ export type DirectiveCandidateContract = {
   metadata: Record<string, unknown>;
 };
 
-export type DirectiveAnalysisContractInput = {
+export type AnalysisContractInput = {
   analysisSummary: unknown;
   category?: unknown;
   problemFit?: unknown;
@@ -42,17 +42,17 @@ export type DirectiveAnalysisContractInput = {
   metadata?: Record<string, unknown>;
 };
 
-export type DirectiveAnalysisContract = {
+export type AnalysisContract = {
   analysisSummary: string;
   category: string | null;
   problemFit: string | null;
   overlapNotes: string | null;
   riskNotes: string | null;
-  recommendation: DirectiveCapabilityRecommendation;
+  recommendation: CapabilityRecommendation;
   metadata: Record<string, unknown>;
 };
 
-export type DirectiveExperimentContractInput = {
+export type ExperimentContractInput = {
   hypothesis: unknown;
   plan: unknown;
   successCriteria?: unknown;
@@ -62,17 +62,17 @@ export type DirectiveExperimentContractInput = {
   metadata?: Record<string, unknown>;
 };
 
-export type DirectiveExperimentContract = {
+export type ExperimentContract = {
   hypothesis: string;
   plan: string;
   successCriteria: string[];
   runId: string | null;
   artifactPath: string | null;
-  status: DirectiveExperimentStatus;
+  status: ExperimentStatus;
   metadata: Record<string, unknown>;
 };
 
-export type DirectiveEvaluationContractInput = {
+export type EvaluationContractInput = {
   outcome: unknown;
   usefulness?: unknown;
   friction?: unknown;
@@ -81,8 +81,8 @@ export type DirectiveEvaluationContractInput = {
   metadata?: Record<string, unknown>;
 };
 
-export type DirectiveEvaluationContract = {
-  outcome: DirectiveEvaluationOutcome;
+export type EvaluationContract = {
+  outcome: EvaluationOutcome;
   usefulness: string | null;
   friction: string | null;
   workflowImpact: string | null;
@@ -91,8 +91,8 @@ export type DirectiveEvaluationContract = {
 };
 
 export function normalizeDirectiveCandidateContract(
-  input: DirectiveCandidateContractInput,
-): DirectiveCandidateContract {
+  input: CandidateContractInput,
+): CandidateContract {
   const sourceType = normalizeDirectiveSourceType(
     input.sourceType || "internal-signal",
   );
@@ -127,8 +127,8 @@ export function normalizeDirectiveCandidateContract(
 }
 
 export function normalizeDirectiveAnalysisContract(
-  input: DirectiveAnalysisContractInput,
-): DirectiveAnalysisContract {
+  input: AnalysisContractInput,
+): AnalysisContract {
   const analysisSummary = String(input.analysisSummary || "").trim();
   if (!analysisSummary) {
     throw new Error("invalid_input: analysisSummary is required");
@@ -146,8 +146,8 @@ export function normalizeDirectiveAnalysisContract(
 }
 
 export function normalizeDirectiveExperimentContract(
-  input: DirectiveExperimentContractInput,
-): DirectiveExperimentContract {
+  input: ExperimentContractInput,
+): ExperimentContract {
   const hypothesis = String(input.hypothesis || "").trim();
   const plan = String(input.plan || "").trim();
   if (!hypothesis) {
@@ -169,8 +169,8 @@ export function normalizeDirectiveExperimentContract(
 }
 
 export function normalizeDirectiveEvaluationContract(
-  input: DirectiveEvaluationContractInput,
-): DirectiveEvaluationContract {
+  input: EvaluationContractInput,
+): EvaluationContract {
   const evidenceSummary = String(input.evidenceSummary || "").trim();
   if (!evidenceSummary) {
     throw new Error("invalid_input: evidenceSummary is required");

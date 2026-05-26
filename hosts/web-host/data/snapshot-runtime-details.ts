@@ -1,20 +1,20 @@
 import { normalizeRelativePath } from "../../../shared/lib/path-normalization.ts";
 import {
   readDirectiveRuntimeRecordArtifact,
-} from "../../../runtime/lib/openers/runtime-record-proof-opener.ts";
+} from "../../../runtime/lib/openers/record-proof-opener.ts";
 import {
   readDirectiveRuntimeProofArtifact,
-} from "../../../runtime/lib/openers/runtime-proof-runtime-capability-boundary-opener.ts";
+} from "../../../runtime/lib/openers/proof-runtime-capability-boundary-opener.ts";
 import {
   readDirectiveRuntimeRuntimeCapabilityBoundaryArtifact,
-} from "../../../runtime/lib/openers/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
+} from "../../../runtime/lib/openers/promotion-readiness.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import { readRuntimeApprovalAllowedFromCurrentHead } from "./shared.ts";
 import type {
-  DirectiveFrontendRuntimePromotionReadinessDetail,
-  DirectiveFrontendRuntimeProofDetail,
-  DirectiveFrontendRuntimeRecordDetail,
-  DirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail,
+  FrontendRuntimePromotionReadinessDetail,
+  FrontendRuntimeProofDetail,
+  FrontendRuntimeRecordDetail,
+  FrontendRuntimeRuntimeCapabilityBoundaryDetail,
 } from "./snapshot.ts";
 
 type ArtifactText = {
@@ -37,7 +37,7 @@ export function readDirectiveFrontendRuntimeRecordDetail(
     directiveRoot: string;
     relativePath: string;
   },
-): DirectiveFrontendRuntimeRecordDetail {
+): FrontendRuntimeRecordDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {
@@ -102,7 +102,7 @@ export function readDirectiveFrontendRuntimeRecordDetail(
 export function readDirectiveFrontendRuntimeProofDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendRuntimeProofDetail {
+}): FrontendRuntimeProofDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {
@@ -167,7 +167,7 @@ export function readDirectiveFrontendRuntimeProofDetail(input: {
 export function readDirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail(input: {
   directiveRoot: string;
   relativePath: string;
-}): DirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail {
+}): FrontendRuntimeRuntimeCapabilityBoundaryDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {
@@ -236,7 +236,7 @@ export function readDirectiveFrontendRuntimePromotionReadinessDetail(
     relativePath: string;
   },
   helpers: RuntimeDetailHelpers,
-): DirectiveFrontendRuntimePromotionReadinessDetail {
+): FrontendRuntimePromotionReadinessDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
     return {

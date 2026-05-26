@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveDirectiveWorkspaceState } from "./state/index.ts";
-import { isDirectiveAbsolutePathWithinRoot } from "../shared/lib/directive-relative-path.ts";
+import { isDirectiveAbsolutePathWithinRoot } from "../shared/lib/relative-path.ts";
 
 export function normalizeDirectiveWorkspaceRoot(directiveRoot?: string) {
   const root = directiveRoot

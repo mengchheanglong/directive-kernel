@@ -1,9 +1,9 @@
 import type { DecisionPolicyEvent } from "./decision-policy-ledger.ts";
-import { clampInt, parseTimestamp } from "./engine-source-utils.ts";
-import type { RoutingCorrectionEntry } from "./routing/routing-correction-ledger.ts";
-import type { DirectiveEngineRunRecord } from "./types.ts";
+import { clampInt, parseTimestamp } from "./source-utils.ts";
+import type { RoutingCorrectionEntry } from "./routing/correction-ledger.ts";
+import type { EngineRunRecord } from "./types.ts";
 
-export type DirectiveRoutingOutcome = {
+export type RoutingOutcome = {
   runId: string;
   routeClass: string;
   outcomeRecordedAt: string;
@@ -12,12 +12,12 @@ export type DirectiveRoutingOutcome = {
   operatorAgreed: boolean;
   operatorCorrected: boolean;
   timeToResolutionHours: number | null;
-  planQuality: import("./planning/plan-quality.ts").DirectiveEnginePlanQualitySignal["overallPlanQuality"] | null;
+  planQuality: import("./planning/plan-quality.ts").EnginePlanQualitySignal["overallPlanQuality"] | null;
   outcomeQuality: "strong" | "adequate" | "weak" | "failed";
   notes: string[];
 };
 
-function deriveRouteClass(record: DirectiveEngineRunRecord) {
+function deriveRouteClass(record: EngineRunRecord) {
   return [
     record.selectedLane.laneId,
     record.source.sourceType,
@@ -36,7 +36,7 @@ function hoursBetween(start: string, end: string) {
   return clampInt((endMs - startMs) / (1000 * 60 * 60), 0, 24 * 365 * 10);
 }
 
-function inferProofCompletion(record: DirectiveEngineRunRecord) {
+function inferProofCompletion(record: EngineRunRecord) {
   if (record.executablePlanState?.proofState.finalState === "proved") {
     return true;
   }
@@ -49,11 +49,11 @@ function inferProofCompletion(record: DirectiveEngineRunRecord) {
   );
 }
 
-export function deriveDirectiveRoutingOutcome(input: {
-  record: DirectiveEngineRunRecord;
+export function deriveRoutingOutcome(input: {
+  record: EngineRunRecord;
   policyEvents: DecisionPolicyEvent[];
   corrections: RoutingCorrectionEntry[];
-}): DirectiveRoutingOutcome {
+}): RoutingOutcome {
   const candidateId = input.record.candidate.candidateId;
   const relatedPolicyEvents = input.policyEvents.filter((event) => event.candidateId === candidateId);
   const relatedCorrections = input.corrections.filter((entry) => entry.candidateId === candidateId);
@@ -136,13 +136,13 @@ export function deriveDirectiveRoutingOutcome(input: {
   };
 }
 
-export function deriveDirectiveRoutingOutcomes(input: {
-  existingRuns: DirectiveEngineRunRecord[];
+export function deriveRoutingOutcomes(input: {
+  existingRuns: EngineRunRecord[];
   policyEvents: DecisionPolicyEvent[];
   corrections: RoutingCorrectionEntry[];
 }) {
   return input.existingRuns.map((record) =>
-    deriveDirectiveRoutingOutcome({
+    deriveRoutingOutcome({
       record,
       policyEvents: input.policyEvents,
       corrections: input.corrections,

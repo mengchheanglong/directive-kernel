@@ -1,18 +1,18 @@
 import type {
-  DirectiveEngineCandidate,
-  DirectiveEngineDecision,
-  DirectiveEngineIntegrationProposal,
-  DirectiveEngineSelectedLane,
+  EngineCandidate,
+  EngineDecision,
+  EngineIntegrationProposal,
+  EngineSelectedLane,
 } from "../types.ts";
-import type { DirectiveEngineLaneDefinition } from "../lane.ts";
+import type { EngineLaneDefinition } from "../lane.ts";
 
 function buildDecision(input: {
-  laneDefinition: DirectiveEngineLaneDefinition;
-  lane: DirectiveEngineSelectedLane;
-  candidate: DirectiveEngineCandidate;
-  integrationProposal: DirectiveEngineIntegrationProposal;
-}): DirectiveEngineDecision {
-  let decisionState: DirectiveEngineDecision["decisionState"];
+  laneDefinition: EngineLaneDefinition;
+  lane: EngineSelectedLane;
+  candidate: EngineCandidate;
+  integrationProposal: EngineIntegrationProposal;
+}): EngineDecision {
+  let decisionState: EngineDecision["decisionState"];
   if (input.candidate.requiresHumanReview) {
     decisionState = "needs_human_review";
   } else {

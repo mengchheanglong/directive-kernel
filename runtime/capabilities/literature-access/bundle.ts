@@ -20,7 +20,7 @@ export type LiteratureAccessExecutionOptions = {
   allowExternalFetches?: boolean;
 };
 
-export type DirectiveRuntimeCallableBundleTool = {
+export type RuntimeCallableBundleTool = {
   tool: ScientifyLiteratureAccessToolName;
   functionName: string;
   modulePath: string;
@@ -34,7 +34,7 @@ export type DirectiveRuntimeCallableBundleTool = {
 
 type ScientifyBundleToolRecord = Record<
   ScientifyLiteratureAccessToolName,
-  DirectiveRuntimeCallableBundleTool
+  RuntimeCallableBundleTool
 >;
 
 const SCIENTIFY_LITERATURE_ACCESS_TOOL_RECORD: ScientifyBundleToolRecord = {

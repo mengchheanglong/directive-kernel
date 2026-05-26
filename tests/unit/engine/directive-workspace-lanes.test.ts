@@ -1,4 +1,4 @@
-// Unit tests for `engine/directive-workspace-lanes.ts` (task 10.2).
+// Unit tests for `engine/workspace-lanes.ts` (task 10.2).
 //
 // Covers the three lane definitions returned by
 // `createDirectiveWorkspaceEngineLanes`:
@@ -23,8 +23,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { createDirectiveWorkspaceEngineLanes } from "../../../engine/directive-workspace-lanes.ts";
-import type { DirectiveEngineLaneDefinition } from "../../../engine/lane.ts";
+import { createDirectiveWorkspaceEngineLanes } from "../../../engine/workspace-lanes.ts";
+import type { EngineLaneDefinition } from "../../../engine/lane.ts";
 import {
   buildAdaptationPlanningInput,
   buildExtractionPlanningInput,
@@ -41,7 +41,7 @@ type ExpectedLaneId = (typeof EXPECTED_LANE_IDS)[number];
 function findLane(
   set: ReturnType<typeof createDirectiveWorkspaceEngineLanes>,
   laneId: string,
-): DirectiveEngineLaneDefinition {
+): EngineLaneDefinition {
   const lane = set.lanes.find((candidate) => candidate.laneId === laneId);
   if (!lane) {
     throw new Error(`expected lane "${laneId}" to be present in the lane set`);

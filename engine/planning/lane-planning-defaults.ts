@@ -1,13 +1,13 @@
-import { uniqueStrings } from "../engine-source-utils.ts";
+import { uniqueStrings } from "../source-utils.ts";
 import type {
-  DirectiveEngineLaneAdaptationPlanningInput,
-  DirectiveEngineLaneExtractionPlanningInput,
-  DirectiveEngineLaneImprovementPlanningInput,
+  EngineLaneAdaptationPlanningInput,
+  EngineLaneExtractionPlanningInput,
+  EngineLaneImprovementPlanningInput,
 } from "../lane.ts";
 import type {
-  DirectiveEngineAdaptationPlan,
-  DirectiveEngineExtractionPlan,
-  DirectiveEngineImprovementPlan,
+  EngineAdaptationPlan,
+  EngineExtractionPlan,
+  EngineImprovementPlan,
 } from "../types.ts";
 import {
   adaptationPlanIncludes,
@@ -19,8 +19,8 @@ import {
 } from "./lane-planning-helpers.ts";
 
 export function buildDefaultExtractionPlan(
-  input: DirectiveEngineLaneExtractionPlanningInput,
-): DirectiveEngineExtractionPlan {
+  input: EngineLaneExtractionPlanningInput,
+): EngineExtractionPlan {
   const { planningInput } = input;
   const structuralProcessStages = resolveStructuralProcessStages(planningInput.source);
   const controlSignalProfile = resolveControlSignalProfile(planningInput.source);
@@ -64,8 +64,8 @@ export function buildDefaultExtractionPlan(
 }
 
 export function buildDefaultAdaptationPlan(
-  input: DirectiveEngineLaneAdaptationPlanningInput,
-): DirectiveEngineAdaptationPlan {
+  input: EngineLaneAdaptationPlanningInput,
+): EngineAdaptationPlan {
   const { planningInput, extractionPlan } = input;
   const extractedStagePattern = readExtractionPlanSummary(
     extractionPlan,
@@ -150,8 +150,8 @@ export function buildDefaultAdaptationPlan(
 }
 
 export function buildDefaultImprovementPlan(
-  input: DirectiveEngineLaneImprovementPlanningInput,
-): DirectiveEngineImprovementPlan {
+  input: EngineLaneImprovementPlanningInput,
+): EngineImprovementPlan {
   const { planningInput, extractionPlan, adaptationPlan } = input;
   const structuralProcessStages = resolveStructuralProcessStages(planningInput.source);
   const controlSignalProfile = resolveControlSignalProfile(planningInput.source);

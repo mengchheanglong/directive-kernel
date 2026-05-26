@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { uniqueStrings } from "./engine-source-utils.ts";
+import { uniqueStrings } from "./source-utils.ts";
 import type {
   DecisionPolicyEvent,
   DecisionPolicySuggestion,

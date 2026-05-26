@@ -1,39 +1,39 @@
-import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
+import { extractSourceSignalTokens } from "./correction-ledger.ts";
 import {
   flattenSourceText,
   countTokenOverlap,
   isSuccessfulRun,
   isStalledRun,
-} from "../engine-source-utils.ts";
+} from "../source-utils.ts";
 import type {
-  DirectiveEngineCapabilityGap,
-  DirectiveEngineLaneId,
-  DirectiveEngineMissionContext,
-  DirectiveEngineRunRecord,
-  DirectiveEngineSourceItem,
+  EngineCapabilityGap,
+  EngineLaneId,
+  EngineMissionContext,
+  EngineRunRecord,
+  EngineSourceItem,
 } from "../types.ts";
 
-type DirectiveNarrativeLaneCounts = Record<"discovery" | "architecture" | "runtime", number>;
-type DirectiveNarrativeKnownLaneId = keyof DirectiveNarrativeLaneCounts;
+type NarrativeLaneCounts = Record<"discovery" | "architecture" | "runtime", number>;
+type NarrativeKnownLaneId = keyof NarrativeLaneCounts;
 
-export type DirectiveNarrativeThreadState =
+export type NarrativeThreadState =
   | "nascent"
   | "developing"
   | "mature"
   | "stalled"
   | "completed";
 
-export type DirectiveNarrativeDemandSignal = {
+export type NarrativeDemandSignal = {
   kind: "lane_validation" | "proof_follow_through" | "gap_closure" | "fresh_evidence";
   priority: "low" | "medium" | "high";
   summary: string;
-  requestedLaneId: DirectiveEngineLaneId | null;
+  requestedLaneId: EngineLaneId | null;
 };
 
-export type DirectiveSourceNarrativeThread = {
+export type SourceNarrativeThread = {
   threadId: string;
   name: string;
-  state: DirectiveNarrativeThreadState;
+  state: NarrativeThreadState;
   summary: string;
   sourceCount: number;
   firstSeenAt: string;
@@ -42,9 +42,9 @@ export type DirectiveSourceNarrativeThread = {
   currentSourceOverlap: number;
   topTokens: string[];
   laneTendency: {
-    dominantLaneId: DirectiveEngineLaneId;
+    dominantLaneId: EngineLaneId;
     dominancePercent: number;
-    laneCounts: DirectiveNarrativeLaneCounts;
+    laneCounts: NarrativeLaneCounts;
     biasAdjustment: number;
   };
   gapCoverage: {
@@ -57,50 +57,50 @@ export type DirectiveSourceNarrativeThread = {
     stalledProofCount: number;
     followThroughRate: number;
   };
-  demandSignals: DirectiveNarrativeDemandSignal[];
+  demandSignals: NarrativeDemandSignal[];
   relatedRunIds: string[];
 };
 
-export type DirectiveSourceNarrativeContext = {
+export type SourceNarrativeContext = {
   summary: string;
-  primaryThread: DirectiveSourceNarrativeThread | null;
-  relatedThreads: DirectiveSourceNarrativeThread[];
-  biasAdjustments: DirectiveNarrativeLaneCounts;
-  demandSignals: DirectiveNarrativeDemandSignal[];
+  primaryThread: SourceNarrativeThread | null;
+  relatedThreads: SourceNarrativeThread[];
+  biasAdjustments: NarrativeLaneCounts;
+  demandSignals: NarrativeDemandSignal[];
   rationale: string[];
 } | null;
 
-export type DirectiveNarrativeActionKind =
+export type NarrativeActionKind =
   | "re_engagement_prompt"
   | "gap_creation_request"
   | "proof_follow_up_request"
   | "lane_validation_request";
 
-export type DirectiveNarrativeAction = {
-  actionKind: DirectiveNarrativeActionKind;
+export type NarrativeAction = {
+  actionKind: NarrativeActionKind;
   threadId: string;
   threadName: string;
   priority: "low" | "medium" | "high";
   summary: string;
   suggestedNextStep: string;
-  targetLaneId: DirectiveEngineLaneId | null;
+  targetLaneId: EngineLaneId | null;
   relatedGapId: string | null;
 };
 
 type InternalThread = {
   threadId: string;
   threadOrder: number;
-  runs: DirectiveEngineRunRecord[];
+  runs: EngineRunRecord[];
   tokenCounts: Map<string, number>;
-  laneCounts: DirectiveNarrativeLaneCounts;
+  laneCounts: NarrativeLaneCounts;
   firstSeenAt: string;
   lastSeenAt: string;
 };
 
 type ThreadTokenIndex = Map<string, Set<InternalThread>>;
-type DirectiveNarrativeGapCoverage = DirectiveSourceNarrativeThread["gapCoverage"];
+type NarrativeGapCoverage = SourceNarrativeThread["gapCoverage"];
 
-export type DirectiveSourceNarrativeThreadBuild = {
+export type SourceNarrativeThreadBuild = {
   threads: InternalThread[];
 };
 
@@ -132,7 +132,7 @@ const MISSION_COMPARISON_GENERIC_TOKENS = new Set([
   "runtime",
 ]);
 
-function zeroLaneCounts(): DirectiveNarrativeLaneCounts {
+function zeroLaneCounts(): NarrativeLaneCounts {
   return {
     discovery: 0,
     architecture: 0,
@@ -140,7 +140,7 @@ function zeroLaneCounts(): DirectiveNarrativeLaneCounts {
   };
 }
 
-function flattenRunNarrativeText(run: DirectiveEngineRunRecord) {
+function flattenRunNarrativeText(run: EngineRunRecord) {
   return [
     flattenSourceText(run.source),
     run.analysis.missionFitSummary,
@@ -180,7 +180,7 @@ function normalizeComparableText(value: string | null | undefined) {
     .replace(/\s+/g, " ");
 }
 
-function missionTopicTokens(mission: DirectiveEngineMissionContext) {
+function missionTopicTokens(mission: EngineMissionContext) {
   return uniqueTokens(
     extractSourceSignalTokens([
       mission.currentObjective,
@@ -191,8 +191,8 @@ function missionTopicTokens(mission: DirectiveEngineMissionContext) {
   );
 }
 
-function dominantLane(counts: DirectiveNarrativeLaneCounts) {
-  const ranked = (Object.entries(counts) as Array<[DirectiveNarrativeKnownLaneId, number]>)
+function dominantLane(counts: NarrativeLaneCounts) {
+  const ranked = (Object.entries(counts) as Array<[NarrativeKnownLaneId, number]>)
     .sort((left, right) => {
       if (right[1] !== left[1]) {
         return right[1] - left[1];
@@ -209,8 +209,8 @@ function dominantLane(counts: DirectiveNarrativeLaneCounts) {
 }
 
 function preservesLaneTendency(
-  counts: DirectiveNarrativeLaneCounts,
-  laneId: DirectiveEngineLaneId,
+  counts: NarrativeLaneCounts,
+  laneId: EngineLaneId,
 ) {
   const next = {
     discovery: counts.discovery,
@@ -223,7 +223,7 @@ function preservesLaneTendency(
   return dominantLane(next).count / Math.max(1, next.discovery + next.architecture + next.runtime) >= 0.6;
 }
 
-function isSameMission(run: DirectiveEngineRunRecord, mission: DirectiveEngineMissionContext) {
+function isSameMission(run: EngineRunRecord, mission: EngineMissionContext) {
   if (mission.missionId && run.mission.missionId) {
     return mission.missionId === run.mission.missionId;
   }
@@ -286,8 +286,8 @@ function inferThreadName(thread: InternalThread) {
 
 function inferGapCoverage(
   thread: InternalThread,
-  _mission: DirectiveEngineMissionContext,
-): DirectiveNarrativeGapCoverage {
+  _mission: EngineMissionContext,
+): NarrativeGapCoverage {
   const matchedGapIds = thread.runs
     .map((run) => run.routingAssessment.matchedGapId)
     .filter((gapId): gapId is string => Boolean(gapId));
@@ -324,7 +324,7 @@ function inferGapCoverage(
 
 function inferThreadState(input: {
   thread: InternalThread;
-  mission: DirectiveEngineMissionContext;
+  mission: EngineMissionContext;
   generatedAt: string;
   projectedSourceCount?: number;
   projectedGapCoverage?: ReturnType<typeof inferGapCoverage>;
@@ -351,14 +351,14 @@ function inferThreadState(input: {
 
 function inferDemandSignals(input: {
   thread: InternalThread;
-  mission: DirectiveEngineMissionContext;
-  state: DirectiveNarrativeThreadState;
+  mission: EngineMissionContext;
+  state: NarrativeThreadState;
   gapCoverage: ReturnType<typeof inferGapCoverage>;
   generatedAt: string;
   projectedSourceCount?: number;
-  projectedLaneCounts?: DirectiveNarrativeLaneCounts;
+  projectedLaneCounts?: NarrativeLaneCounts;
 }) {
-  const signals: DirectiveNarrativeDemandSignal[] = [];
+  const signals: NarrativeDemandSignal[] = [];
   const laneCounts = input.projectedLaneCounts ?? input.thread.laneCounts;
   const laneTendency = dominantLane(laneCounts);
   const sourceCount = input.projectedSourceCount ?? input.thread.runs.length;
@@ -429,8 +429,8 @@ function inferDemandSignals(input: {
 
 function deriveBiasAdjustment(input: {
   thread: InternalThread;
-  state: DirectiveNarrativeThreadState;
-  provisionalLaneId: DirectiveEngineLaneId;
+  state: NarrativeThreadState;
+  provisionalLaneId: EngineLaneId;
   currentSourceOverlap: number;
 }) {
   const laneTendency = dominantLane(input.thread.laneCounts);
@@ -463,9 +463,9 @@ function deriveBiasAdjustment(input: {
 
 function projectGapCoverage(input: {
   thread: InternalThread;
-  mission: DirectiveEngineMissionContext;
+  mission: EngineMissionContext;
   currentMatchedGapId: string | null;
-}): DirectiveNarrativeGapCoverage {
+}): NarrativeGapCoverage {
   const base = inferGapCoverage(input.thread, input.mission);
   if (!input.currentMatchedGapId) {
     return base;
@@ -518,9 +518,9 @@ function collectThreadCandidates(input: {
   return [...candidates];
 }
 
-export function buildDirectiveSourceNarrativeThreads(input: {
-  runs: DirectiveEngineRunRecord[];
-  mission: DirectiveEngineMissionContext;
+export function buildSourceNarrativeThreads(input: {
+  runs: EngineRunRecord[];
+  mission: EngineMissionContext;
 }) {
   const threads: InternalThread[] = [];
   const tokenIndex: ThreadTokenIndex = new Map();
@@ -597,13 +597,13 @@ export function buildDirectiveSourceNarrativeThreads(input: {
 
   return {
     threads,
-  } satisfies DirectiveSourceNarrativeThreadBuild;
+  } satisfies SourceNarrativeThreadBuild;
 }
 
 function summarizeThread(input: {
   thread: InternalThread;
   name: string;
-  state: DirectiveNarrativeThreadState;
+  state: NarrativeThreadState;
   laneTendency: ReturnType<typeof dominantLane>;
   gapCoverage: ReturnType<typeof inferGapCoverage>;
   followThroughRate: number;
@@ -618,22 +618,22 @@ function summarizeThread(input: {
   return `${input.name} is ${input.state} with ${sourceCount} sources over ${daySpan(input.thread.firstSeenAt, lastSeenAt)} days; ${input.laneTendency.dominantLaneId} leads ${input.laneTendency.dominancePercent}% of the thread and follow-through is ${input.followThroughRate}%. ${gapLine}.`;
 }
 
-export function deriveDirectiveSourceNarrativeContext(input: {
-  source: DirectiveEngineSourceItem;
+export function deriveSourceNarrativeContext(input: {
+  source: EngineSourceItem;
   sourceText: string;
-  mission: DirectiveEngineMissionContext;
-  existingRuns: DirectiveEngineRunRecord[];
-  provisionalLaneId: DirectiveEngineLaneId;
+  mission: EngineMissionContext;
+  existingRuns: EngineRunRecord[];
+  provisionalLaneId: EngineLaneId;
   currentMatchedGapId?: string | null;
   receivedAt?: string | null;
-  prebuiltThreads?: DirectiveSourceNarrativeThreadBuild | null;
+  prebuiltThreads?: SourceNarrativeThreadBuild | null;
 }) {
   if ((input.existingRuns ?? []).length === 0) {
     return null;
   }
 
   const generatedAt = String(input.receivedAt ?? new Date().toISOString());
-  const threads = input.prebuiltThreads ?? buildDirectiveSourceNarrativeThreads({
+  const threads = input.prebuiltThreads ?? buildSourceNarrativeThreads({
     runs: input.existingRuns,
     mission: input.mission,
   });
@@ -739,7 +739,7 @@ export function deriveDirectiveSourceNarrativeContext(input: {
         },
         demandSignals,
         relatedRunIds: thread.runs.map((run) => run.runId).slice(-5),
-      } satisfies DirectiveSourceNarrativeThread];
+      } satisfies SourceNarrativeThread];
     })
     .sort((left, right) => {
       if (right.currentSourceOverlap !== left.currentSourceOverlap) {
@@ -788,13 +788,13 @@ export function deriveDirectiveSourceNarrativeContext(input: {
         : "Narrative Threading found no primary thread.",
       ...demandSignals.map((signal) => `Thread demand (${signal.priority}): ${signal.summary}`),
     ],
-  } satisfies DirectiveSourceNarrativeContext;
+  } satisfies SourceNarrativeContext;
 }
 
-export function deriveDirectiveNarrativeActions(input: {
-  narrativeContext: DirectiveSourceNarrativeContext;
-  openGaps: DirectiveEngineCapabilityGap[];
-  currentRecord?: DirectiveEngineRunRecord | null;
+export function deriveNarrativeActions(input: {
+  narrativeContext: SourceNarrativeContext;
+  openGaps: EngineCapabilityGap[];
+  currentRecord?: EngineRunRecord | null;
 }) {
   if (!input.narrativeContext) {
     return null;
@@ -824,7 +824,7 @@ export function deriveDirectiveNarrativeActions(input: {
                 `Bring one new ${signal.requestedLaneId ?? thread.laneTendency.dominantLaneId} source into "${thread.name}" so the thread does not stall without fresh evidence.`,
               targetLaneId: signal.requestedLaneId ?? thread.laneTendency.dominantLaneId,
               relatedGapId: thread.gapCoverage.dominantGapId,
-            } satisfies DirectiveNarrativeAction;
+            } satisfies NarrativeAction;
           case "gap_closure": {
             const gapStillOpen = thread.gapCoverage.dominantGapId
               ? input.openGaps.some((gap) => gap.gapId === thread.gapCoverage.dominantGapId)
@@ -844,7 +844,7 @@ export function deriveDirectiveNarrativeActions(input: {
                 : `Open a capability gap for "${thread.name}" so repeated thread pressure stops depending on operator memory.`,
               targetLaneId: signal.requestedLaneId ?? thread.laneTendency.dominantLaneId,
               relatedGapId: thread.gapCoverage.dominantGapId,
-            } satisfies DirectiveNarrativeAction;
+            } satisfies NarrativeAction;
           }
           case "proof_follow_through":
             return {
@@ -859,7 +859,7 @@ export function deriveDirectiveNarrativeActions(input: {
                   : `Push one bounded proof step through "${thread.name}" so the thread gains real follow-through instead of collecting more similar sources.`,
               targetLaneId: signal.requestedLaneId ?? thread.laneTendency.dominantLaneId,
               relatedGapId: thread.gapCoverage.dominantGapId,
-            } satisfies DirectiveNarrativeAction;
+            } satisfies NarrativeAction;
           case "lane_validation":
             return {
               actionKind: "lane_validation_request",
@@ -871,7 +871,7 @@ export function deriveDirectiveNarrativeActions(input: {
                 `Find one bounded ${signal.requestedLaneId ?? "cross-lane"} source that validates the missing ownership evidence for "${thread.name}".`,
               targetLaneId: signal.requestedLaneId,
               relatedGapId: thread.gapCoverage.dominantGapId,
-            } satisfies DirectiveNarrativeAction;
+            } satisfies NarrativeAction;
         }
       })
     )

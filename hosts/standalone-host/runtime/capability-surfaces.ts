@@ -1,16 +1,16 @@
-import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
+﻿import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import { runDirectiveRuntimeCallableExecution } from "../../../runtime/core/callable-execution.ts";
 import {
   buildDescriptorOnlyHostCallableAdapterDescriptor,
   buildRuntimeCallableExecutionHostAdapterDescriptor,
-} from "../../../runtime/lib/host/runtime-host-callable-adapter-contract.ts";
+} from "../../../runtime/lib/host/callable-adapter-contract.ts";
 import {
   readRuntimeHostSelectionResolution,
-} from "../../../runtime/lib/host/runtime-host-selection-resolution.ts";
+} from "../../../runtime/lib/host/selection-resolution.ts";
 import {
   DIRECTIVE_RUNTIME_TO_HOST_CONTRACT_PATH,
   readDirectiveRuntimePromotionSpecification,
-} from "../../../runtime/lib/host/runtime-promotion-specification.ts";
+} from "../../../runtime/lib/host/promotion-specification.ts";
 
 import type {
   StandaloneBlisspixelDeeprDescriptor,
@@ -476,7 +476,7 @@ export async function invokeStandaloneResearchVaultSourcePackTool(input: {
         primaryChecker: "pnpm run check:standalone-research-vault-source-pack-execution",
         supportingCheckers: [
           "pnpm run check:standalone-research-vault-host-callable",
-          "pnpm run check:runtime-host-callable-adapter-contract",
+          "pnpm run check:runtime-callable-adapter-contract",
         ],
       },
       stopLine:
@@ -630,7 +630,7 @@ export function invokeStandaloneBlisspixelDeeprDescriptorCallable(input: {
       proof: {
         primaryChecker: "pnpm run check:standalone-blisspixel-deepr-host-callable",
         supportingCheckers: [
-          "pnpm run check:runtime-host-callable-adapter-contract",
+          "pnpm run check:runtime-callable-adapter-contract",
         ],
       },
       stopLine:

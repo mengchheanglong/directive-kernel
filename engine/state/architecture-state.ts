@@ -1,50 +1,50 @@
 import {
-  readDirectiveArchitectureHandoffArtifact,
-  type DirectiveArchitectureHandoffArtifact,
-} from "../../architecture/lib/experiments/architecture-handoff-start.ts";
+  readArchitectureHandoffArtifact,
+  type ArchitectureHandoffArtifact,
+} from "../../architecture/lib/experiments/handoff-start.ts";
 import {
-  readDirectiveArchitectureBoundedResultArtifact,
-  readDirectiveArchitectureBoundedStartArtifact,
-  type DirectiveArchitectureBoundedResultArtifact,
-  type DirectiveArchitectureBoundedStartArtifact,
-} from "../../architecture/lib/experiments/architecture-bounded-closeout.ts";
+  readArchitectureBoundedResultArtifact,
+  readArchitectureBoundedStartArtifact,
+  type ArchitectureBoundedResultArtifact,
+  type ArchitectureBoundedStartArtifact,
+} from "../../architecture/lib/experiments/closeout.ts";
 import {
-  readDirectiveArchitectureAdoptionDetail,
-  type DirectiveArchitectureAdoptionDetail,
-} from "../../architecture/lib/adoption/architecture-result-adoption.ts";
+  readArchitectureAdoptionDetail,
+  type ArchitectureAdoptionDetail,
+} from "../../architecture/lib/adoption/result-adoption.ts";
 import {
-  readDirectiveArchitectureImplementationTargetDetail,
-  type DirectiveArchitectureImplementationTargetDetail,
-} from "../../architecture/lib/materialization/architecture-implementation-target.ts";
+  readArchitectureImplementationTargetDetail,
+  type ArchitectureImplementationTargetDetail,
+} from "../../architecture/lib/materialization/implementation-target.ts";
 import {
-  readDirectiveArchitectureImplementationResultDetail,
-  type DirectiveArchitectureImplementationResultDetail,
-} from "../../architecture/lib/materialization/architecture-implementation-result.ts";
+  readArchitectureImplementationResultDetail,
+  type ArchitectureImplementationResultDetail,
+} from "../../architecture/lib/materialization/implementation-result.ts";
 import {
-  readDirectiveArchitectureRetentionDetail,
-  type DirectiveArchitectureRetentionDetail,
-} from "../../architecture/lib/materialization/architecture-retention.ts";
+  readArchitectureRetentionDetail,
+  type ArchitectureRetentionDetail,
+} from "../../architecture/lib/materialization/retention.ts";
 import {
-  readDirectiveArchitectureIntegrationRecordDetail,
-  type DirectiveArchitectureIntegrationRecordDetail,
-} from "../../architecture/lib/materialization/architecture-integration-record.ts";
+  readArchitectureIntegrationRecordDetail,
+  type ArchitectureIntegrationRecordDetail,
+} from "../../architecture/lib/materialization/integration-record.ts";
 import {
-  readDirectiveArchitectureConsumptionRecordDetail,
-  type DirectiveArchitectureConsumptionRecordDetail,
-} from "../../architecture/lib/materialization/architecture-consumption-record.ts";
+  readArchitectureConsumptionRecordDetail,
+  type ArchitectureConsumptionRecordDetail,
+} from "../../architecture/lib/materialization/consumption-record.ts";
 import {
-  readDirectiveArchitecturePostConsumptionEvaluationDetail,
-  type DirectiveArchitecturePostConsumptionEvaluationDetail,
-} from "../../architecture/lib/materialization/architecture-post-consumption-evaluation.ts";
+  readArchitecturePostConsumptionEvaluationDetail,
+  type ArchitecturePostConsumptionEvaluationDetail,
+} from "../../architecture/lib/materialization/post-consumption-evaluation.ts";
 import {
   lookupArchitectureDeepTailLinkedArtifactPath,
   recordArchitectureDeepTailLinkedArtifactPath,
-} from "../../architecture/lib/control/architecture-deep-tail-linkage-index.ts";
+} from "../../architecture/lib/control/materialization-tail-linkage-index.ts";
 import {
   ARCHITECTURE_DEEP_TAIL_STAGE,
   matchesArchitectureDeepTailStagePath,
-} from "../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
-import type { ArchitectureDeepTailStageId } from "../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
+} from "../../architecture/lib/control/materialization-tail-stage-map.ts";
+import type { ArchitectureDeepTailStageId } from "../../architecture/lib/control/materialization-tail-stage-map.ts";
 import {
   readLinkedArtifactIfPresent,
   recordInconsistentLink,
@@ -58,9 +58,9 @@ import {
   zeroLinkedArtifacts,
 } from "./shared-state-helpers.ts";
 import type {
-  DirectiveWorkspaceArtifactKind,
-  DirectiveWorkspaceLinkedArtifacts,
-} from "./resolve-directive-workspace-state.ts";
+  WorkspaceArtifactKind,
+  WorkspaceLinkedArtifacts,
+} from "./resolve-workspace-state.ts";
 
 function findLinkedArchitectureArtifact<Detail>(input: {
   directiveRoot: string;
@@ -129,7 +129,7 @@ export function findArchitectureAdoptionForResult(directiveRoot: string, resultP
   return findLinkedArchitectureArtifact({
     directiveRoot,
     relativeDir: "architecture/02-adopted",
-    readDetail: (adoptionPath) => readDirectiveArchitectureAdoptionDetail({
+    readDetail: (adoptionPath) => readArchitectureAdoptionDetail({
       directiveRoot,
       adoptionPath,
     }),
@@ -140,7 +140,7 @@ export function findArchitectureAdoptionForResult(directiveRoot: string, resultP
 
 export function readArchitectureUpstreamChainFromAdoption(input: {
   directiveRoot: string;
-  adoptionDetail: DirectiveArchitectureAdoptionDetail;
+  adoptionDetail: ArchitectureAdoptionDetail;
 }) {
   if (!input.adoptionDetail.sourceResultRelativePath) {
     return {
@@ -150,12 +150,12 @@ export function readArchitectureUpstreamChainFromAdoption(input: {
     };
   }
 
-  const result = readDirectiveArchitectureBoundedResultArtifact({
+  const result = readArchitectureBoundedResultArtifact({
     directiveRoot: input.directiveRoot,
     resultPath: input.adoptionDetail.sourceResultRelativePath,
   });
   const start = result.startRelativePath
-    ? readDirectiveArchitectureBoundedStartArtifact({
+    ? readArchitectureBoundedStartArtifact({
       directiveRoot: input.directiveRoot,
       startPath: result.startRelativePath,
     })
@@ -163,7 +163,7 @@ export function readArchitectureUpstreamChainFromAdoption(input: {
   const handoff = readLinkedArtifactIfPresent({
     directiveRoot: input.directiveRoot,
     relativePath: result.handoffStubPath,
-    read: (handoffPath) => readDirectiveArchitectureHandoffArtifact({
+    read: (handoffPath) => readArchitectureHandoffArtifact({
       directiveRoot: input.directiveRoot,
       handoffPath,
     }),
@@ -181,7 +181,7 @@ export function findArchitectureImplementationTargetForAdoption(directiveRoot: s
     directiveRoot,
     relativeDir: ARCHITECTURE_DEEP_TAIL_STAGE.implementation_target.relativeDir,
     stageId: "implementation_target",
-    readDetail: (targetPath) => readDirectiveArchitectureImplementationTargetDetail({
+    readDetail: (targetPath) => readArchitectureImplementationTargetDetail({
       directiveRoot,
       targetPath,
     }),
@@ -195,7 +195,7 @@ export function findArchitectureImplementationResultForTarget(directiveRoot: str
     directiveRoot,
     relativeDir: ARCHITECTURE_DEEP_TAIL_STAGE.implementation_result.relativeDir,
     stageId: "implementation_result",
-    readDetail: (resultPath) => readDirectiveArchitectureImplementationResultDetail({
+    readDetail: (resultPath) => readArchitectureImplementationResultDetail({
       directiveRoot,
       resultPath,
     }),
@@ -209,7 +209,7 @@ export function findArchitectureRetentionForResult(directiveRoot: string, implem
     directiveRoot,
     relativeDir: ARCHITECTURE_DEEP_TAIL_STAGE.retained.relativeDir,
     stageId: "retained",
-    readDetail: (retainedPath) => readDirectiveArchitectureRetentionDetail({
+    readDetail: (retainedPath) => readArchitectureRetentionDetail({
       directiveRoot,
       retainedPath,
     }),
@@ -223,7 +223,7 @@ export function findArchitectureIntegrationForRetention(directiveRoot: string, r
     directiveRoot,
     relativeDir: ARCHITECTURE_DEEP_TAIL_STAGE.integration_record.relativeDir,
     stageId: "integration_record",
-    readDetail: (integrationPath) => readDirectiveArchitectureIntegrationRecordDetail({
+    readDetail: (integrationPath) => readArchitectureIntegrationRecordDetail({
       directiveRoot,
       integrationPath,
     }),
@@ -237,7 +237,7 @@ export function findArchitectureConsumptionForIntegration(directiveRoot: string,
     directiveRoot,
     relativeDir: ARCHITECTURE_DEEP_TAIL_STAGE.consumption_record.relativeDir,
     stageId: "consumption_record",
-    readDetail: (consumptionPath) => readDirectiveArchitectureConsumptionRecordDetail({
+    readDetail: (consumptionPath) => readArchitectureConsumptionRecordDetail({
       directiveRoot,
       consumptionPath,
     }),
@@ -251,7 +251,7 @@ export function findArchitectureEvaluationForConsumption(directiveRoot: string, 
     directiveRoot,
     relativeDir: ARCHITECTURE_DEEP_TAIL_STAGE.post_consumption_evaluation.relativeDir,
     stageId: "post_consumption_evaluation",
-    readDetail: (evaluationPath) => readDirectiveArchitecturePostConsumptionEvaluationDetail({
+    readDetail: (evaluationPath) => readArchitecturePostConsumptionEvaluationDetail({
       directiveRoot,
       evaluationPath,
     }),
@@ -265,7 +265,7 @@ export function findArchitectureReopenedStartForEvaluation(directiveRoot: string
     directiveRoot,
     relativeDir: "architecture/01-experiments",
     suffix: "-bounded-start.md",
-    readDetail: (startPath) => readDirectiveArchitectureBoundedStartArtifact({
+    readDetail: (startPath) => readArchitectureBoundedStartArtifact({
       directiveRoot,
       startPath,
     }),
@@ -293,13 +293,13 @@ function getArchitectureHandoffNextLegalStep(operatingMode: string | null | unde
 
 export function isNoteDirectArchitectureBoundedResult(input: {
   operatingMode: string | null | undefined;
-  result?: DirectiveArchitectureBoundedResultArtifact | null;
+  result?: ArchitectureBoundedResultArtifact | null;
 }) {
   return isNoteOperatingMode(input.operatingMode) && !input.result?.startRelativePath;
 }
 
 function getNoteDirectArchitectureBoundedResultNextLegalStep(input: {
-  result?: DirectiveArchitectureBoundedResultArtifact | null;
+  result?: ArchitectureBoundedResultArtifact | null;
 }) {
   if (input.result?.verdict === "adopt") {
     return "No automatic Architecture step is open; this NOTE-mode bounded result is an explicit stop unless a new bounded pressure justifies deeper materialization.";
@@ -310,19 +310,19 @@ function getNoteDirectArchitectureBoundedResultNextLegalStep(input: {
 export function buildArchitectureState(input: {
   directiveRoot: string;
   operatingMode?: string | null;
-  handoff?: DirectiveArchitectureHandoffArtifact | null;
-  start?: DirectiveArchitectureBoundedStartArtifact | null;
-  result?: DirectiveArchitectureBoundedResultArtifact | null;
-  adoption?: { path: string; detail: DirectiveArchitectureAdoptionDetail } | null;
-  implementationTarget?: { path: string; detail: DirectiveArchitectureImplementationTargetDetail } | null;
-  implementationResult?: { path: string; detail: DirectiveArchitectureImplementationResultDetail } | null;
-  retained?: { path: string; detail: DirectiveArchitectureRetentionDetail } | null;
-  integration?: { path: string; detail: DirectiveArchitectureIntegrationRecordDetail } | null;
-  consumption?: { path: string; detail: DirectiveArchitectureConsumptionRecordDetail } | null;
-  evaluation?: { path: string; detail: DirectiveArchitecturePostConsumptionEvaluationDetail } | null;
-  reopenedStart?: { path: string; artifact: DirectiveArchitectureBoundedStartArtifact } | null;
+  handoff?: ArchitectureHandoffArtifact | null;
+  start?: ArchitectureBoundedStartArtifact | null;
+  result?: ArchitectureBoundedResultArtifact | null;
+  adoption?: { path: string; detail: ArchitectureAdoptionDetail } | null;
+  implementationTarget?: { path: string; detail: ArchitectureImplementationTargetDetail } | null;
+  implementationResult?: { path: string; detail: ArchitectureImplementationResultDetail } | null;
+  retained?: { path: string; detail: ArchitectureRetentionDetail } | null;
+  integration?: { path: string; detail: ArchitectureIntegrationRecordDetail } | null;
+  consumption?: { path: string; detail: ArchitectureConsumptionRecordDetail } | null;
+  evaluation?: { path: string; detail: ArchitecturePostConsumptionEvaluationDetail } | null;
+  reopenedStart?: { path: string; artifact: ArchitectureBoundedStartArtifact } | null;
 }) {
-  const linked: DirectiveWorkspaceLinkedArtifacts = zeroLinkedArtifacts();
+  const linked: WorkspaceLinkedArtifacts = zeroLinkedArtifacts();
   const missingExpectedArtifacts: string[] = [];
   const inconsistentLinks: string[] = [];
 
@@ -492,13 +492,13 @@ export function buildArchitectureState(input: {
 }
 
 export function buildArchitectureArtifactStage(input: {
-  artifactKind: DirectiveWorkspaceArtifactKind;
+  artifactKind: WorkspaceArtifactKind;
   operatingMode?: string | null;
-  result?: DirectiveArchitectureBoundedResultArtifact | null;
-  adoption?: { path: string; detail: DirectiveArchitectureAdoptionDetail } | null;
-  implementationResult?: { path: string; detail: DirectiveArchitectureImplementationResultDetail } | null;
-  consumption?: { path: string; detail: DirectiveArchitectureConsumptionRecordDetail } | null;
-  evaluation?: { path: string; detail: DirectiveArchitecturePostConsumptionEvaluationDetail } | null;
+  result?: ArchitectureBoundedResultArtifact | null;
+  adoption?: { path: string; detail: ArchitectureAdoptionDetail } | null;
+  implementationResult?: { path: string; detail: ArchitectureImplementationResultDetail } | null;
+  consumption?: { path: string; detail: ArchitectureConsumptionRecordDetail } | null;
+  evaluation?: { path: string; detail: ArchitecturePostConsumptionEvaluationDetail } | null;
 }) {
   switch (input.artifactKind) {
     case "architecture_handoff":
@@ -576,39 +576,39 @@ export function resolveArchitectureFocusFromAnyPath(input: {
 }) {
   const relativePath = resolveDirectiveRelativePath(input.directiveRoot, input.artifactPath, "artifactPath");
 
-  let handoff: DirectiveArchitectureHandoffArtifact | null = null;
-  let start: DirectiveArchitectureBoundedStartArtifact | null = null;
-  let result: DirectiveArchitectureBoundedResultArtifact | null = null;
-  let adoption: { path: string; detail: DirectiveArchitectureAdoptionDetail } | null = null;
-  let implementationTarget: { path: string; detail: DirectiveArchitectureImplementationTargetDetail } | null = null;
-  let implementationResult: { path: string; detail: DirectiveArchitectureImplementationResultDetail } | null = null;
-  let retained: { path: string; detail: DirectiveArchitectureRetentionDetail } | null = null;
-  let integration: { path: string; detail: DirectiveArchitectureIntegrationRecordDetail } | null = null;
-  let consumption: { path: string; detail: DirectiveArchitectureConsumptionRecordDetail } | null = null;
-  let evaluation: { path: string; detail: DirectiveArchitecturePostConsumptionEvaluationDetail } | null = null;
-  let reopenedStart: { path: string; artifact: DirectiveArchitectureBoundedStartArtifact } | null = null;
-  let artifactKind: DirectiveWorkspaceArtifactKind = "unknown";
+  let handoff: ArchitectureHandoffArtifact | null = null;
+  let start: ArchitectureBoundedStartArtifact | null = null;
+  let result: ArchitectureBoundedResultArtifact | null = null;
+  let adoption: { path: string; detail: ArchitectureAdoptionDetail } | null = null;
+  let implementationTarget: { path: string; detail: ArchitectureImplementationTargetDetail } | null = null;
+  let implementationResult: { path: string; detail: ArchitectureImplementationResultDetail } | null = null;
+  let retained: { path: string; detail: ArchitectureRetentionDetail } | null = null;
+  let integration: { path: string; detail: ArchitectureIntegrationRecordDetail } | null = null;
+  let consumption: { path: string; detail: ArchitectureConsumptionRecordDetail } | null = null;
+  let evaluation: { path: string; detail: ArchitecturePostConsumptionEvaluationDetail } | null = null;
+  let reopenedStart: { path: string; artifact: ArchitectureBoundedStartArtifact } | null = null;
+  let artifactKind: WorkspaceArtifactKind = "unknown";
 
   if (relativePath.endsWith("-engine-handoff.md")) {
-    handoff = readDirectiveArchitectureHandoffArtifact({
+    handoff = readArchitectureHandoffArtifact({
       directiveRoot: input.directiveRoot,
       handoffPath: relativePath,
     });
     artifactKind = "architecture_handoff";
     if (handoff.startExists) {
-      start = readDirectiveArchitectureBoundedStartArtifact({
+      start = readArchitectureBoundedStartArtifact({
         directiveRoot: input.directiveRoot,
         startPath: handoff.startRelativePath as string,
       });
     }
     if (handoff.resultExists) {
-      result = readDirectiveArchitectureBoundedResultArtifact({
+      result = readArchitectureBoundedResultArtifact({
         directiveRoot: input.directiveRoot,
         resultPath: handoff.resultRelativePath,
       });
     }
   } else if (relativePath.endsWith("-bounded-start.md")) {
-    start = readDirectiveArchitectureBoundedStartArtifact({
+    start = readArchitectureBoundedStartArtifact({
       directiveRoot: input.directiveRoot,
       startPath: relativePath,
     });
@@ -616,19 +616,19 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     handoff = readLinkedArtifactIfPresent({
       directiveRoot: input.directiveRoot,
       relativePath: start.handoffStubPath,
-      read: (handoffPath) => readDirectiveArchitectureHandoffArtifact({
+      read: (handoffPath) => readArchitectureHandoffArtifact({
         directiveRoot: input.directiveRoot,
         handoffPath,
       }),
     });
   } else if (relativePath.endsWith("-bounded-result.md")) {
-    result = readDirectiveArchitectureBoundedResultArtifact({
+    result = readArchitectureBoundedResultArtifact({
       directiveRoot: input.directiveRoot,
       resultPath: relativePath,
     });
     artifactKind = "architecture_bounded_result";
     if (result.startRelativePath) {
-      start = readDirectiveArchitectureBoundedStartArtifact({
+      start = readArchitectureBoundedStartArtifact({
         directiveRoot: input.directiveRoot,
         startPath: result.startRelativePath,
       });
@@ -636,7 +636,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     handoff = readLinkedArtifactIfPresent({
       directiveRoot: input.directiveRoot,
       relativePath: result.handoffStubPath,
-      read: (handoffPath) => readDirectiveArchitectureHandoffArtifact({
+      read: (handoffPath) => readArchitectureHandoffArtifact({
         directiveRoot: input.directiveRoot,
         handoffPath,
       }),
@@ -644,7 +644,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
   } else if (relativePath.startsWith("architecture/02-adopted/")) {
     adoption = {
       path: relativePath,
-      detail: readDirectiveArchitectureAdoptionDetail({
+      detail: readArchitectureAdoptionDetail({
         directiveRoot: input.directiveRoot,
         adoptionPath: relativePath,
       }),
@@ -657,7 +657,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
   } else if (matchesArchitectureDeepTailStagePath(ARCHITECTURE_DEEP_TAIL_STAGE.implementation_target, relativePath)) {
     implementationTarget = {
       path: relativePath,
-      detail: readDirectiveArchitectureImplementationTargetDetail({
+      detail: readArchitectureImplementationTargetDetail({
         directiveRoot: input.directiveRoot,
         targetPath: relativePath,
       }),
@@ -666,7 +666,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     adoption = implementationTarget.detail.adoptionRelativePath
       ? {
         path: implementationTarget.detail.adoptionRelativePath,
-        detail: readDirectiveArchitectureAdoptionDetail({
+        detail: readArchitectureAdoptionDetail({
           directiveRoot: input.directiveRoot,
           adoptionPath: implementationTarget.detail.adoptionRelativePath,
         }),
@@ -681,7 +681,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
   } else if (matchesArchitectureDeepTailStagePath(ARCHITECTURE_DEEP_TAIL_STAGE.implementation_result, relativePath)) {
     implementationResult = {
       path: relativePath,
-      detail: readDirectiveArchitectureImplementationResultDetail({
+      detail: readArchitectureImplementationResultDetail({
         directiveRoot: input.directiveRoot,
         resultPath: relativePath,
       }),
@@ -694,7 +694,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     adoption = implementationResult.detail.adoptionRelativePath
       ? {
         path: implementationResult.detail.adoptionRelativePath,
-        detail: readDirectiveArchitectureAdoptionDetail({
+        detail: readArchitectureAdoptionDetail({
           directiveRoot: input.directiveRoot,
           adoptionPath: implementationResult.detail.adoptionRelativePath,
         }),
@@ -709,7 +709,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
   } else if (matchesArchitectureDeepTailStagePath(ARCHITECTURE_DEEP_TAIL_STAGE.retained, relativePath)) {
     retained = {
       path: relativePath,
-      detail: readDirectiveArchitectureRetentionDetail({
+      detail: readArchitectureRetentionDetail({
         directiveRoot: input.directiveRoot,
         retainedPath: relativePath,
       }),
@@ -728,7 +728,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     adoption = retained.detail.adoptionRelativePath
       ? {
         path: retained.detail.adoptionRelativePath,
-        detail: readDirectiveArchitectureAdoptionDetail({
+        detail: readArchitectureAdoptionDetail({
           directiveRoot: input.directiveRoot,
           adoptionPath: retained.detail.adoptionRelativePath,
         }),
@@ -743,7 +743,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
   } else if (matchesArchitectureDeepTailStagePath(ARCHITECTURE_DEEP_TAIL_STAGE.integration_record, relativePath)) {
     integration = {
       path: relativePath,
-      detail: readDirectiveArchitectureIntegrationRecordDetail({
+      detail: readArchitectureIntegrationRecordDetail({
         directiveRoot: input.directiveRoot,
         integrationPath: relativePath,
       }),
@@ -756,7 +756,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     adoption = integration.detail.adoptionRelativePath
       ? {
         path: integration.detail.adoptionRelativePath,
-        detail: readDirectiveArchitectureAdoptionDetail({
+        detail: readArchitectureAdoptionDetail({
           directiveRoot: input.directiveRoot,
           adoptionPath: integration.detail.adoptionRelativePath,
         }),
@@ -778,7 +778,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
   } else if (matchesArchitectureDeepTailStagePath(ARCHITECTURE_DEEP_TAIL_STAGE.consumption_record, relativePath)) {
     consumption = {
       path: relativePath,
-      detail: readDirectiveArchitectureConsumptionRecordDetail({
+      detail: readArchitectureConsumptionRecordDetail({
         directiveRoot: input.directiveRoot,
         consumptionPath: relativePath,
       }),
@@ -791,7 +791,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     retained = consumption.detail.retainedRelativePath
       ? {
         path: consumption.detail.retainedRelativePath,
-        detail: readDirectiveArchitectureRetentionDetail({
+        detail: readArchitectureRetentionDetail({
           directiveRoot: input.directiveRoot,
           retainedPath: consumption.detail.retainedRelativePath,
         }),
@@ -800,7 +800,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     adoption = consumption.detail.adoptionRelativePath
       ? {
         path: consumption.detail.adoptionRelativePath,
-        detail: readDirectiveArchitectureAdoptionDetail({
+        detail: readArchitectureAdoptionDetail({
           directiveRoot: input.directiveRoot,
           adoptionPath: consumption.detail.adoptionRelativePath,
         }),
@@ -822,7 +822,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
   } else if (matchesArchitectureDeepTailStagePath(ARCHITECTURE_DEEP_TAIL_STAGE.post_consumption_evaluation, relativePath)) {
     evaluation = {
       path: relativePath,
-      detail: readDirectiveArchitecturePostConsumptionEvaluationDetail({
+      detail: readArchitecturePostConsumptionEvaluationDetail({
         directiveRoot: input.directiveRoot,
         evaluationPath: relativePath,
       }),
@@ -831,7 +831,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     consumption = evaluation.detail.consumptionRelativePath
       ? {
         path: evaluation.detail.consumptionRelativePath,
-        detail: readDirectiveArchitectureConsumptionRecordDetail({
+        detail: readArchitectureConsumptionRecordDetail({
           directiveRoot: input.directiveRoot,
           consumptionPath: evaluation.detail.consumptionRelativePath,
         }),
@@ -840,7 +840,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     integration = evaluation.detail.integrationRelativePath
       ? {
         path: evaluation.detail.integrationRelativePath,
-        detail: readDirectiveArchitectureIntegrationRecordDetail({
+        detail: readArchitectureIntegrationRecordDetail({
           directiveRoot: input.directiveRoot,
           integrationPath: evaluation.detail.integrationRelativePath,
         }),
@@ -849,7 +849,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     retained = evaluation.detail.retainedRelativePath
       ? {
         path: evaluation.detail.retainedRelativePath,
-        detail: readDirectiveArchitectureRetentionDetail({
+        detail: readArchitectureRetentionDetail({
           directiveRoot: input.directiveRoot,
           retainedPath: evaluation.detail.retainedRelativePath,
         }),
@@ -858,7 +858,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
     adoption = evaluation.detail.adoptionRelativePath
       ? {
         path: evaluation.detail.adoptionRelativePath,
-        detail: readDirectiveArchitectureAdoptionDetail({
+        detail: readArchitectureAdoptionDetail({
           directiveRoot: input.directiveRoot,
           adoptionPath: evaluation.detail.adoptionRelativePath,
         }),
@@ -885,7 +885,7 @@ export function resolveArchitectureFocusFromAnyPath(input: {
   }
 
   if (start && start.resultExists && !result) {
-    result = readDirectiveArchitectureBoundedResultArtifact({
+    result = readArchitectureBoundedResultArtifact({
       directiveRoot: input.directiveRoot,
       resultPath: start.resultRelativePath,
     });

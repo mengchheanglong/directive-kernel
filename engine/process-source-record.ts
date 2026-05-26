@@ -3,38 +3,38 @@ import crypto from "node:crypto";
 import {
   buildDirectiveRunSourceTokenMap,
   normalizeText,
-} from "./engine-source-utils.ts";
-import { resolveMissionContext } from "./mission/mission-context.ts";
+} from "./source-utils.ts";
+import { resolveMissionContext } from "./mission/context.ts";
 import {
-  classifyDirectiveEngineUsefulness,
-  explainDirectiveEngineUsefulness,
+  classifyEngineUsefulness,
+  explainEngineUsefulness,
 } from "./usefulness.ts";
 import {
-  resolveDirectiveEngineLane,
-  type DirectiveEngineLanePlanningInput,
-  type DirectiveEngineLaneSet,
-  type DirectiveEngineLaneUsefulnessPlanningInput,
+  resolveEngineLane,
+  type EngineLanePlanningInput,
+  type EngineLaneSet,
+  type EngineLaneUsefulnessPlanningInput,
 } from "./lane.ts";
-import { normalizeDirectiveEngineSourceType } from "./source-type-normalization.ts";
+import { normalizeEngineSourceType } from "./source-type-normalization.ts";
 import {
   normalizeOptionalBoolean,
   normalizePrimaryAdoptionTarget,
   normalizeWorkflowBoundaryShape,
-  validateDirectiveEngineSource,
+  validateEngineSource,
 } from "./source-input-normalization.ts";
 import {
-  DIRECTIVE_ENGINE_RUN_RECORD_KIND,
-  DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF,
+  ENGINE_RUN_RECORD_KIND,
+  ENGINE_RUN_RECORD_SCHEMA_REF,
   DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION,
-  type DirectiveEngineMissionContext,
-  type DirectiveEngineProcessSourceInput,
-  type DirectiveEngineRunRecord,
-  type DirectiveEngineSelectedLane,
-  type DirectiveEngineSourceItem,
+  type EngineMissionContext,
+  type EngineProcessSourceInput,
+  type EngineRunRecord,
+  type EngineSelectedLane,
+  type EngineSourceItem,
 } from "./types.ts";
-import { deriveDirectivePriorPlanContext } from "./planning/plan-consumption.ts";
+import { derivePriorPlanContext } from "./planning/plan-consumption.ts";
 import { deriveDirectivePlanQualitySignal } from "./planning/plan-quality.ts";
-import { deriveDirectiveNarrativeActions } from "./routing/source-narrative-threading.ts";
+import { deriveNarrativeActions } from "./routing/source-narrative-threading.ts";
 import {
   buildExecutablePlanState,
   buildStructuredAdaptationPlan,
@@ -78,7 +78,7 @@ export function deriveMinimalSourceRef(input: {
   return `inline://minimal/${stableSlug}`;
 }
 
-export function deriveCandidateId(source: DirectiveEngineSourceItem) {
+export function deriveCandidateId(source: EngineSourceItem) {
   return (
     sanitizeIdSegment(normalizeText(source.sourceId))
     || sanitizeIdSegment(normalizeText(source.title))
@@ -88,19 +88,19 @@ export function deriveCandidateId(source: DirectiveEngineSourceItem) {
 }
 
 export function prepareProcessSourceInput(
-  input: DirectiveEngineProcessSourceInput,
+  input: EngineProcessSourceInput,
 ): {
   receivedAt: string;
-  mission: DirectiveEngineMissionContext;
-  source: DirectiveEngineSourceItem;
+  mission: EngineMissionContext;
+  source: EngineSourceItem;
 } {
   const receivedAt =
     normalizeText(input.receivedAt) || new Date().toISOString();
   const mission = resolveMissionContext(input.mission);
-  const source: DirectiveEngineSourceItem = {
+  const source: EngineSourceItem = {
     ...input.source,
     sourceId: normalizeText(input.source.sourceId) || null,
-    sourceType: normalizeDirectiveEngineSourceType(input.source.sourceType),
+    sourceType: normalizeEngineSourceType(input.source.sourceType),
     sourceRef: normalizeText(input.source.sourceRef),
     title:
       normalizeText(input.source.title)
@@ -116,7 +116,7 @@ export function prepareProcessSourceInput(
     workflowBoundaryShape: normalizeWorkflowBoundaryShape(input.source.workflowBoundaryShape),
     notes: normalizeNotes(input.source.notes),
   };
-  validateDirectiveEngineSource(source);
+  validateEngineSource(source);
   return {
     receivedAt,
     mission,
@@ -125,22 +125,22 @@ export function prepareProcessSourceInput(
 }
 
 export function buildDirectiveRunRecord(input: {
-  laneSet: DirectiveEngineLaneSet;
-  source: DirectiveEngineSourceItem;
-  mission: DirectiveEngineMissionContext;
-  openGaps: NonNullable<DirectiveEngineProcessSourceInput["gaps"]>;
-  corrections: NonNullable<DirectiveEngineProcessSourceInput["corrections"]>;
-  policyEvents: NonNullable<DirectiveEngineProcessSourceInput["policyEvents"]>;
-  existingRuns: DirectiveEngineRunRecord[];
+  laneSet: EngineLaneSet;
+  source: EngineSourceItem;
+  mission: EngineMissionContext;
+  openGaps: NonNullable<EngineProcessSourceInput["gaps"]>;
+  corrections: NonNullable<EngineProcessSourceInput["corrections"]>;
+  policyEvents: NonNullable<EngineProcessSourceInput["policyEvents"]>;
+  existingRuns: EngineRunRecord[];
   receivedAt: string;
   candidateId: string;
-  routingAssessment: DirectiveEngineRunRecord["routingAssessment"];
-}): DirectiveEngineRunRecord {
-  const lane = resolveDirectiveEngineLane({
+  routingAssessment: EngineRunRecord["routingAssessment"];
+}): EngineRunRecord {
+  const lane = resolveEngineLane({
     laneSet: input.laneSet,
     laneId: input.routingAssessment.recommendedLaneId,
   });
-  const planningInput: DirectiveEngineLanePlanningInput = {
+  const planningInput: EngineLanePlanningInput = {
     source: input.source,
     mission: input.mission,
     openGaps: input.openGaps,
@@ -150,7 +150,7 @@ export function buildDirectiveRunRecord(input: {
     lane,
   };
   const extractionPlan = buildExtractionPlan(planningInput);
-  const selectedLane: DirectiveEngineSelectedLane = {
+  const selectedLane: EngineSelectedLane = {
     laneId: lane.laneId,
     label: lane.label,
     hostDependence: lane.hostDependence,
@@ -175,7 +175,7 @@ export function buildDirectiveRunRecord(input: {
     runtimePromotionFeedbackSignal,
     runtimeExecutionEvidenceSignal,
   });
-  const usefulnessPlanningInput: DirectiveEngineLaneUsefulnessPlanningInput = {
+  const usefulnessPlanningInput: EngineLaneUsefulnessPlanningInput = {
     planningInput,
     extractionPlan,
     adaptationPlan,
@@ -183,8 +183,8 @@ export function buildDirectiveRunRecord(input: {
   };
   const usefulnessLevel = input.laneSet.refineUsefulness
     ? input.laneSet.refineUsefulness(usefulnessPlanningInput)
-    : classifyDirectiveEngineUsefulness(usefulnessPlanningInput);
-  const usefulnessRationale = explainDirectiveEngineUsefulness(
+    : classifyEngineUsefulness(usefulnessPlanningInput);
+  const usefulnessRationale = explainEngineUsefulness(
     usefulnessPlanningInput,
     usefulnessLevel,
   );
@@ -230,7 +230,7 @@ export function buildDirectiveRunRecord(input: {
     structuredProofPlan,
   });
   const precomputedSourceTokens = buildDirectiveRunSourceTokenMap(input.existingRuns);
-  const priorPlanContext = deriveDirectivePriorPlanContext({
+  const priorPlanContext = derivePriorPlanContext({
     source: input.source,
     recommendedLaneId: selectedLane.laneId,
     existingRuns: input.existingRuns,
@@ -255,10 +255,10 @@ export function buildDirectiveRunRecord(input: {
     integrationProposal,
     usefulnessRationale,
   });
-  const preliminaryRunRecord: DirectiveEngineRunRecord = {
-    $schema: DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_REF,
+  const preliminaryRunRecord: EngineRunRecord = {
+    $schema: ENGINE_RUN_RECORD_SCHEMA_REF,
     schemaVersion: DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION,
-    recordKind: DIRECTIVE_ENGINE_RUN_RECORD_KIND,
+    recordKind: ENGINE_RUN_RECORD_KIND,
     runId: crypto.randomUUID(),
     receivedAt: input.receivedAt,
     source: input.source,
@@ -305,7 +305,7 @@ export function buildDirectiveRunRecord(input: {
       policyEvents: input.policyEvents,
       corrections: input.corrections,
     }),
-    narrativeActions: deriveDirectiveNarrativeActions({
+    narrativeActions: deriveNarrativeActions({
       narrativeContext: preliminaryRunRecord.routingAssessment.narrativeContext,
       openGaps: input.openGaps,
       currentRecord: preliminaryRunRecord,

@@ -7,9 +7,9 @@ import {
 } from "../../../engine/coordination/index.ts";
 import {
   resolveDirectiveWorkspaceState,
-  type DirectiveWorkspaceStateReport,
+  type WorkspaceStateReport,
 } from "../../../engine/state/index.ts";
-import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
+import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/submission-router.ts";
 import {
   readDiscoveryOverviewWithHostBridge,
   type DiscoveryOverviewSummary,
@@ -17,9 +17,9 @@ import {
 import {
   readDirectiveGoalEnvelope,
   renderDirectiveGoalTemplate,
-  type DirectiveGoalEnvelope,
+  type GoalEnvelope,
   type ResolvedDirectiveGoalEnvelope,
-} from "../../../shared/lib/directive-goal.ts";
+} from "../../../shared/lib/goal.ts";
 import { readJson, writeJson, writeUtf8 } from "../../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../../shared/lib/path-normalization.ts";
 import {
@@ -28,7 +28,7 @@ import {
 } from "./discovery-front-door-adapter.ts";
 
 export type FirstHostGoalEnvelopeInput = Omit<
-  DirectiveGoalEnvelope,
+  GoalEnvelope,
   "sourcePath" | "rawMarkdown"
 >;
 
@@ -53,13 +53,13 @@ export type FirstHostResolvedGoalEnvelope =
       ok: true;
       source: "provided_goal_envelope";
       path: string;
-      goal: DirectiveGoalEnvelope;
+      goal: GoalEnvelope;
     }
   | ResolvedDirectiveGoalEnvelope;
 
 export type FirstHostKernelSnapshot = {
   discoveryOverview: DiscoveryOverviewSummary;
-  workspaceState: DirectiveWorkspaceStateReport;
+  workspaceState: WorkspaceStateReport;
   operatorInbox: OperatorDecisionInboxReport;
 };
 
@@ -78,8 +78,8 @@ function normalizeDirectiveRoot(directiveRoot: string) {
 
 function normalizeGoalEnvelopeInput(
   directiveRoot: string,
-  goal: FirstHostGoalEnvelopeInput | DirectiveGoalEnvelope,
-): DirectiveGoalEnvelope {
+  goal: FirstHostGoalEnvelopeInput | GoalEnvelope,
+): GoalEnvelope {
   const goalPath = normalizeAbsolutePath(path.join(directiveRoot, "DIRECTIVE_GOAL.md"));
   const rawMarkdown = renderDirectiveGoalTemplate({
     goalId: goal.goalId,
@@ -102,7 +102,7 @@ function normalizeGoalEnvelopeInput(
   };
 }
 
-function renderActiveMissionMarkdown(goal: DirectiveGoalEnvelope) {
+function renderActiveMissionMarkdown(goal: GoalEnvelope) {
   const normalizedAdoptionTarget = String(goal.adoptionTarget || "").trim().toLowerCase();
   const orderedLanes = normalizedAdoptionTarget === "architecture"
     ? ["Architecture", "Discovery", "Runtime"]
@@ -136,7 +136,7 @@ function renderActiveMissionMarkdown(goal: DirectiveGoalEnvelope) {
 }
 
 function resolvePrimaryAdoptionTarget(
-  goal: DirectiveGoalEnvelope,
+  goal: GoalEnvelope,
   source: FirstHostSourceInput,
 ): DiscoverySubmissionRequest["primary_adoption_target"] {
   if (source.primaryAdoptionTarget) {
@@ -154,7 +154,7 @@ function resolvePrimaryAdoptionTarget(
   return null;
 }
 
-function buildMissionAlignment(goal: DirectiveGoalEnvelope, source: FirstHostSourceInput) {
+function buildMissionAlignment(goal: GoalEnvelope, source: FirstHostSourceInput) {
   if (source.missionAlignment && source.missionAlignment.trim()) {
     return source.missionAlignment.trim();
   }
@@ -188,7 +188,7 @@ function readJsonFile<T>(filePath: string) {
 
 export function resolveFirstHostGoalEnvelope(input: {
   directiveRoot: string;
-  goal?: FirstHostGoalEnvelopeInput | DirectiveGoalEnvelope | null;
+  goal?: FirstHostGoalEnvelopeInput | GoalEnvelope | null;
 }): FirstHostResolvedGoalEnvelope {
   const directiveRoot = normalizeDirectiveRoot(input.directiveRoot);
   if (input.goal) {
@@ -205,7 +205,7 @@ export function resolveFirstHostGoalEnvelope(input: {
 
 export function prepareDirectiveKernelFirstHostRoot(input: {
   directiveRoot: string;
-  goal: FirstHostGoalEnvelopeInput | DirectiveGoalEnvelope;
+  goal: FirstHostGoalEnvelopeInput | GoalEnvelope;
   syncGoalFiles?: boolean;
   receivedAt?: string;
 }) {
@@ -248,7 +248,7 @@ export function prepareDirectiveKernelFirstHostRoot(input: {
 }
 
 export function buildDiscoverySubmissionFromGoalEnvelope(input: {
-  goal: FirstHostGoalEnvelopeInput | DirectiveGoalEnvelope;
+  goal: FirstHostGoalEnvelopeInput | GoalEnvelope;
   source: FirstHostSourceInput;
 }): DiscoverySubmissionRequest {
   const goal = "rawMarkdown" in input.goal && "sourcePath" in input.goal
@@ -296,7 +296,7 @@ export function readFirstHostKernelSnapshot(input: {
 
 export async function runFirstHostIntegrationFlow(input: {
   directiveRoot: string;
-  goal?: FirstHostGoalEnvelopeInput | DirectiveGoalEnvelope | null;
+  goal?: FirstHostGoalEnvelopeInput | GoalEnvelope | null;
   source: FirstHostSourceInput;
   runtimeArtifactsRoot?: string;
   receivedAt?: string;

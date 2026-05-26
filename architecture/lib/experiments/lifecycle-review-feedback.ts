@@ -1,4 +1,4 @@
-export type DirectiveLifecycleState =
+export type LifecycleState =
   | "intake"
   | "analyzed"
   | "experimenting"
@@ -7,7 +7,7 @@ export type DirectiveLifecycleState =
   | "integrated"
   | "blocked";
 
-export type DirectiveLifecycleRole =
+export type LifecycleRole =
   | "operator"
   | "reviewer"
   | "evaluator"
@@ -16,71 +16,71 @@ export type DirectiveLifecycleRole =
   | "recovery_patrol"
   | "planner";
 
-export type DirectiveReviewResult = "approved" | "rejected";
-export type DirectiveReviewScore = 1 | 2 | 3 | 4 | 5;
-export type DirectiveReviewQualityBand =
+export type ReviewResult = "approved" | "rejected";
+export type ReviewScore = 1 | 2 | 3 | 4 | 5;
+export type ReviewQualityBand =
   | "strong_pass"
   | "acceptable"
   | "mixed"
   | "weak"
   | "fail";
-export type DirectiveReviewOutcome =
+export type ReviewOutcome =
   | "promote_to_decision"
   | "accept_with_follow_up"
   | "resume_experiment"
   | "blocked_recovery";
-export type DirectiveRecoveryStep = "detect" | "reassign" | "resume";
+export type RecoveryStep = "detect" | "reassign" | "resume";
 
-export type DirectiveLifecycleTransitionRequest = {
-  from: DirectiveLifecycleState;
-  to: DirectiveLifecycleState;
-  role: DirectiveLifecycleRole;
+export type LifecycleTransitionRequest = {
+  from: LifecycleState;
+  to: LifecycleState;
+  role: LifecycleRole;
 };
 
-export type DirectiveLifecycleTransitionGate = {
-  from: DirectiveLifecycleState;
-  to: DirectiveLifecycleState;
-  allowedRoles: DirectiveLifecycleRole[];
+export type LifecycleTransitionGate = {
+  from: LifecycleState;
+  to: LifecycleState;
+  allowedRoles: LifecycleRole[];
 };
 
-export type DirectiveBlockedRecoveryPlan = {
+export type BlockedRecoveryPlan = {
   blockedReason: string;
-  resumeTarget: Extract<DirectiveLifecycleState, "analyzed" | "experimenting">;
+  resumeTarget: Extract<LifecycleState, "analyzed" | "experimenting">;
   steps: Array<{
-    step: DirectiveRecoveryStep;
-    owner: Extract<DirectiveLifecycleRole, "recovery_patrol" | "planner">;
+    step: RecoveryStep;
+    owner: Extract<LifecycleRole, "recovery_patrol" | "planner">;
     description: string;
   }>;
 };
 
-export type DirectiveReviewFeedbackInput = {
-  reviewResult: DirectiveReviewResult;
-  reviewScore: DirectiveReviewScore;
+export type ReviewFeedbackInput = {
+  reviewResult: ReviewResult;
+  reviewScore: ReviewScore;
   recoveryOwnerAssigned?: boolean;
   blockedReason?: string;
-  resumeTarget?: Extract<DirectiveLifecycleState, "analyzed" | "experimenting">;
+  resumeTarget?: Extract<LifecycleState, "analyzed" | "experimenting">;
 };
 
-export type DirectiveReviewFeedbackPlan = {
+export type ReviewFeedbackPlan = {
   scoreDelta: number;
-  qualityBand: DirectiveReviewQualityBand;
+  qualityBand: ReviewQualityBand;
   degradedQuality: boolean;
   shouldRecordRecoveryFollowUp: boolean;
-  outcome: DirectiveReviewOutcome;
+  outcome: ReviewOutcome;
   recommendedNextState: Extract<
-    DirectiveLifecycleState,
+    LifecycleState,
     "decided" | "experimenting" | "blocked"
   >;
   requiredRole: Extract<
-    DirectiveLifecycleRole,
+    LifecycleRole,
     "decision_owner" | "planner" | "recovery_patrol"
   >;
-  recoveryPlan?: DirectiveBlockedRecoveryPlan;
+  recoveryPlan?: BlockedRecoveryPlan;
 };
 
 export const DIRECTIVE_LIFECYCLE_TRANSITIONS: Record<
-  DirectiveLifecycleState,
-  DirectiveLifecycleState[]
+  LifecycleState,
+  LifecycleState[]
 > = {
   intake: ["analyzed"],
   analyzed: ["experimenting"],
@@ -91,7 +91,7 @@ export const DIRECTIVE_LIFECYCLE_TRANSITIONS: Record<
   blocked: ["analyzed", "experimenting"],
 };
 
-export const DIRECTIVE_LIFECYCLE_ROLE_GATES: DirectiveLifecycleTransitionGate[] = [
+export const DIRECTIVE_LIFECYCLE_ROLE_GATES: LifecycleTransitionGate[] = [
   { from: "intake", to: "analyzed", allowedRoles: ["operator"] },
   { from: "analyzed", to: "experimenting", allowedRoles: ["operator"] },
   { from: "experimenting", to: "evaluated", allowedRoles: ["reviewer", "evaluator"] },
@@ -105,7 +105,7 @@ export const DIRECTIVE_LIFECYCLE_ROLE_GATES: DirectiveLifecycleTransitionGate[] 
   { from: "evaluated", to: "experimenting", allowedRoles: ["planner"] },
 ];
 
-export const DIRECTIVE_REVIEW_SCORE_DELTAS: Record<DirectiveReviewScore, number> = {
+export const DIRECTIVE_REVIEW_SCORE_DELTAS: Record<ReviewScore, number> = {
   1: -2,
   2: -1,
   3: 0,
@@ -113,7 +113,7 @@ export const DIRECTIVE_REVIEW_SCORE_DELTAS: Record<DirectiveReviewScore, number>
   5: 2,
 };
 
-function toQualityBand(score: DirectiveReviewScore): DirectiveReviewQualityBand {
+function toQualityBand(score: ReviewScore): ReviewQualityBand {
   if (score === 5) {
     return "strong_pass";
   }
@@ -135,13 +135,13 @@ function normalizeBlockedReason(value: string | undefined) {
 }
 
 export function getDirectiveAllowedLifecycleTargets(
-  state: DirectiveLifecycleState,
+  state: LifecycleState,
 ) {
   return [...DIRECTIVE_LIFECYCLE_TRANSITIONS[state]];
 }
 
 export function isDirectiveLifecycleTransitionAllowed(
-  request: DirectiveLifecycleTransitionRequest,
+  request: LifecycleTransitionRequest,
 ) {
   const allowedTargets = DIRECTIVE_LIFECYCLE_TRANSITIONS[request.from];
   if (!allowedTargets.includes(request.to)) {
@@ -159,7 +159,7 @@ export function isDirectiveLifecycleTransitionAllowed(
 }
 
 export function assertDirectiveLifecycleTransitionAllowed(
-  request: DirectiveLifecycleTransitionRequest,
+  request: LifecycleTransitionRequest,
 ) {
   if (isDirectiveLifecycleTransitionAllowed(request)) {
     return;
@@ -170,14 +170,14 @@ export function assertDirectiveLifecycleTransitionAllowed(
   );
 }
 
-export function getDirectiveReviewScoreDelta(score: DirectiveReviewScore) {
+export function getDirectiveReviewScoreDelta(score: ReviewScore) {
   return DIRECTIVE_REVIEW_SCORE_DELTAS[score];
 }
 
 export function buildDirectiveBlockedRecoveryPlan(input?: {
   blockedReason?: string;
-  resumeTarget?: Extract<DirectiveLifecycleState, "analyzed" | "experimenting">;
-}): DirectiveBlockedRecoveryPlan {
+  resumeTarget?: Extract<LifecycleState, "analyzed" | "experimenting">;
+}): BlockedRecoveryPlan {
   const resumeTarget = input?.resumeTarget || "experimenting";
   const blockedReason = normalizeBlockedReason(input?.blockedReason);
 
@@ -206,8 +206,8 @@ export function buildDirectiveBlockedRecoveryPlan(input?: {
 }
 
 export function resolveDirectiveReviewFeedback(
-  input: DirectiveReviewFeedbackInput,
-): DirectiveReviewFeedbackPlan {
+  input: ReviewFeedbackInput,
+): ReviewFeedbackPlan {
   const qualityBand = toQualityBand(input.reviewScore);
   const scoreDelta = getDirectiveReviewScoreDelta(input.reviewScore);
   const degradedQuality = input.reviewScore <= 3;

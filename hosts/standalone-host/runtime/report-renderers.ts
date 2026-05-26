@@ -1,6 +1,6 @@
-import {
+﻿import {
   buildDescriptorOnlyHostCallableAdapterDescriptor,
-} from "../../../runtime/lib/host/runtime-host-callable-adapter-contract.ts";
+} from "../../../runtime/lib/host/callable-adapter-contract.ts";
 
 import type {
   StandaloneBlisspixelDeeprDescriptor,
@@ -306,7 +306,7 @@ export function renderStandaloneResearchVaultSourcePackExecutionReport(input: {
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
         "pnpm run check:standalone-research-vault-host-callable",
-        "pnpm run check:runtime-host-callable-adapter-contract",
+        "pnpm run check:runtime-callable-adapter-contract",
         ...(input.supportingCheckers ?? []),
       ],
     },
@@ -350,7 +350,7 @@ export function renderStandaloneBlisspixelDeeprHostConsumptionReport(input: {
       proof: {
         primaryChecker: "pnpm run check:standalone-blisspixel-deepr-host-callable",
         supportingCheckers: [
-          "pnpm run check:runtime-host-callable-adapter-contract",
+          "pnpm run check:runtime-callable-adapter-contract",
         ],
       },
       stopLine:
@@ -381,7 +381,7 @@ export function renderStandaloneBlisspixelDeeprHostConsumptionReport(input: {
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
         "pnpm run check:standalone-blisspixel-deepr-host-callable",
-        "pnpm run check:runtime-host-callable-adapter-contract",
+        "pnpm run check:runtime-callable-adapter-contract",
         ...(input.supportingCheckers ?? []),
       ],
     },
@@ -442,7 +442,7 @@ export function renderStandaloneBlisspixelDeeprHostCallableExecutionReport(input
       primaryChecker: input.primaryChecker,
       supportingCheckers: [
         "pnpm run check:standalone-blisspixel-deepr-host-callable",
-        "pnpm run check:runtime-host-callable-adapter-contract",
+        "pnpm run check:runtime-callable-adapter-contract",
         ...(input.supportingCheckers ?? []),
       ],
     },

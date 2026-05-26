@@ -2,7 +2,7 @@ import { describe, it } from "vitest";
 import * as fc from "fast-check";
 
 import { deriveProcessFingerprint } from "../../engine/process-fingerprint.ts";
-import type { DirectiveEngineMissionContext } from "../../engine/types.ts";
+import type { EngineMissionContext } from "../../engine/types.ts";
 import { sourceInputArb } from "./_arbitraries/source-input.ts";
 
 // Mission contexts are only consumed by this property test, so the
@@ -13,7 +13,7 @@ import { sourceInputArb } from "./_arbitraries/source-input.ts";
 // surface area rather than collapsing to empty strings.
 const nonEmptyText = fc.string({ minLength: 1, maxLength: 64 });
 
-const missionContextArb: fc.Arbitrary<DirectiveEngineMissionContext> = fc.record({
+const missionContextArb: fc.Arbitrary<EngineMissionContext> = fc.record({
   missionId: fc.option(nonEmptyText, { nil: null }),
   currentObjective: nonEmptyText,
   usefulnessSignals: fc.array(nonEmptyText, { maxLength: 5 }),

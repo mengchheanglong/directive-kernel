@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { normalizePath } from "../control/architecture-deep-tail-artifact-helpers.ts";
+import { normalizePath } from "../control/materialization-tail-artifact-helpers.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
-import { buildRuntimeCallableExecutionEvidenceReport } from "../../../runtime/lib/control/runtime-callable-execution-evidence.ts";
+import { buildRuntimeCallableExecutionEvidenceReport } from "../../../runtime/lib/control/callable-execution-evidence.ts";
 
 export const OPERATIONAL_ARCHITECTURE_IMPROVEMENT_CHECKER_ID =
   "operational_architecture_improvement_candidates";

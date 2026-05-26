@@ -1,15 +1,15 @@
-import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
+import { extractSourceSignalTokens } from "./correction-ledger.ts";
 import type { DecisionPolicyEvent } from "../decision-policy-ledger.ts";
-import type { RoutingCorrectionEntry } from "./routing-correction-ledger.ts";
-import { deriveDirectiveRoutingQualityAssessment } from "./routing-quality.ts";
-import { clampInt, countTokenOverlap, flattenSourceText } from "../engine-source-utils.ts";
+import type { RoutingCorrectionEntry } from "./correction-ledger.ts";
+import { deriveRoutingQualityAssessment } from "./quality.ts";
+import { clampInt, countTokenOverlap, flattenSourceText } from "../source-utils.ts";
 import type {
-  DirectiveEngineRoutingConfidence,
-  DirectiveEngineRunRecord,
-  DirectiveEngineSourceItem,
+  EngineRoutingConfidence,
+  EngineRunRecord,
+  EngineSourceItem,
 } from "../types.ts";
 
-export type DirectiveEngineEarnedAutonomyAssessment = {
+export type EngineEarnedAutonomyAssessment = {
   routeClass: string;
   overallScore: number;
   evidenceCount: number;
@@ -22,9 +22,9 @@ export type DirectiveEngineEarnedAutonomyAssessment = {
   rationale: string[];
 };
 
-export function deriveDirectiveEngineRouteClass(input: {
+export function deriveEngineRouteClass(input: {
   recommendedLaneId: string;
-  source: DirectiveEngineSourceItem;
+  source: EngineSourceItem;
 }) {
   return [
     input.recommendedLaneId,
@@ -35,25 +35,25 @@ export function deriveDirectiveEngineRouteClass(input: {
   ].join(":");
 }
 
-export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
-  source: DirectiveEngineSourceItem;
+export function deriveEngineEarnedAutonomyAssessment(input: {
+  source: EngineSourceItem;
   recommendedLaneId: string;
   recommendedRecordShape: string;
-  confidence: DirectiveEngineRoutingConfidence;
+  confidence: EngineRoutingConfidence;
   routeConflict: boolean;
   baseNeedsHumanReview: boolean;
-  existingRuns: DirectiveEngineRunRecord[];
+  existingRuns: EngineRunRecord[];
   policyEvents: DecisionPolicyEvent[];
   corrections: RoutingCorrectionEntry[];
 }) {
-  const routeClass = deriveDirectiveEngineRouteClass({
+  const routeClass = deriveEngineRouteClass({
     recommendedLaneId: input.recommendedLaneId,
     source: input.source,
   });
   const sourceTokens = extractSourceSignalTokens(flattenSourceText(input.source));
 
   const similarRuns = input.existingRuns.filter((record) =>
-    deriveDirectiveEngineRouteClass({
+    deriveEngineRouteClass({
       recommendedLaneId: record.selectedLane.laneId,
       source: record.source,
     }) === routeClass
@@ -97,7 +97,7 @@ export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
     contraryEvents.length
     + matchingEvents.filter((event) => event.originalLaneId !== event.resolvedLaneId).length;
   const evidenceCount = similarRuns.length + matchingEvents.length;
-  const routingQuality = deriveDirectiveRoutingQualityAssessment({
+  const routingQuality = deriveRoutingQualityAssessment({
     routeClass,
     existingRuns: input.existingRuns,
     policyEvents: input.policyEvents,
@@ -162,5 +162,5 @@ export function deriveDirectiveEngineEarnedAutonomyAssessment(input: {
       ? "Earned Autonomy found enough clean history to waive this run's extra manual review gate."
       : "Earned Autonomy did not find enough clean history to relax the current review boundary.",
     rationale,
-  } satisfies DirectiveEngineEarnedAutonomyAssessment;
+  } satisfies EngineEarnedAutonomyAssessment;
 }

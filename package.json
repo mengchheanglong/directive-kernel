@@ -1,7 +1,7 @@
 {
   "name": "@directive/kernel",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packageManager": "pnpm@10.32.1",
   "type": "module",
   "scripts": {
@@ -15,6 +15,7 @@
     "check:first-integration": "vitest run tests/integration/first-integration.test.ts",
     "check:hardening": "vitest run tests/integration/hardening",
     "check:build": "pnpm run build && node ./scripts/run-with-check-build.mjs",
+    "check:naming": "tsx scripts/check-naming.ts",
     "dev": "tsx ./scripts/run-ui-dev.ts",
     "start": "pnpm run build && pnpm --filter @directive/kernel-ui build && node ./dist/hosts/web-host/cli.js serve --directive-root .",
     "standalone:cli": "node ./dist/hosts/standalone-host/cli.js",

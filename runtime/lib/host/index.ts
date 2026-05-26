@@ -1,3 +1,3 @@
-export * from "./runtime-host-callable-adapter-contract.ts";
-export * from "./runtime-host-selection-resolution.ts";
-export * from "./runtime-promotion-specification.ts";
+export * from "./callable-adapter-contract.ts";
+export * from "./selection-resolution.ts";
+export * from "./promotion-specification.ts";

@@ -1,13 +1,13 @@
 import type {
-  DirectiveEngineCapabilityGap,
-  DirectiveEngineMissionContext,
-  DirectiveEngineRoutingConfidence,
-  DirectiveEngineSourceItem,
+  EngineCapabilityGap,
+  EngineMissionContext,
+  EngineRoutingConfidence,
+  EngineSourceItem,
 } from "../types.ts";
-import type { DirectiveMissionHealthAssessment } from "../mission/mission-health.ts";
-import type { DirectiveSourceNarrativeContext } from "./source-narrative-threading.ts";
+import type { MissionHealthAssessment } from "../mission/health.ts";
+import type { SourceNarrativeContext } from "./source-narrative-threading.ts";
 
-export type DirectiveEngineFollowUpQuestion = {
+export type EngineFollowUpQuestion = {
   field: string;
   question: string;
   whyItMatters: string;
@@ -15,14 +15,14 @@ export type DirectiveEngineFollowUpQuestion = {
   predictedEffect: string;
 };
 
-export type DirectiveEngineFollowUpQuestionSet = {
+export type EngineFollowUpQuestionSet = {
   summary: string;
-  questions: DirectiveEngineFollowUpQuestion[];
+  questions: EngineFollowUpQuestion[];
 } | null;
 
 function uniqueByField(
-  questions: DirectiveEngineFollowUpQuestion[],
-  question: DirectiveEngineFollowUpQuestion,
+  questions: EngineFollowUpQuestion[],
+  question: EngineFollowUpQuestion,
   strategy: "keep" | "replace" = "keep",
 ) {
   const existingIndex = questions.findIndex((entry) => entry.field === question.field);
@@ -36,24 +36,24 @@ function uniqueByField(
 }
 
 export function deriveDirectiveFollowUpQuestionSet(input: {
-  source: DirectiveEngineSourceItem;
-  mission: DirectiveEngineMissionContext;
-  missionHealth: DirectiveMissionHealthAssessment | null;
+  source: EngineSourceItem;
+  mission: EngineMissionContext;
+  missionHealth: MissionHealthAssessment | null;
   goalCopilot: {
     suggestedObjective: string | null;
     suggestedConstraints: string[];
     suggestedUsefulnessSignals: string[];
     suggestedCapabilityLanes: string[];
   };
-  narrativeContext: DirectiveSourceNarrativeContext;
+  narrativeContext: SourceNarrativeContext;
   recommendedLaneId: "discovery" | "architecture" | "runtime";
   laneProportions: Record<"discovery" | "architecture" | "runtime", number>;
-  confidence: DirectiveEngineRoutingConfidence;
+  confidence: EngineRoutingConfidence;
   routeConflict: boolean;
-  matchedGap: DirectiveEngineCapabilityGap | null;
-  openGaps: DirectiveEngineCapabilityGap[];
+  matchedGap: EngineCapabilityGap | null;
+  openGaps: EngineCapabilityGap[];
 }) {
-  const questions: DirectiveEngineFollowUpQuestion[] = [];
+  const questions: EngineFollowUpQuestion[] = [];
   const architectureInPlay = input.laneProportions.architecture >= 25;
   const runtimeInPlay = input.laneProportions.runtime >= 25;
   const goalWeak =
@@ -191,5 +191,5 @@ export function deriveDirectiveFollowUpQuestionSet(input: {
       ? "Answer one discriminating question to break the current lane disagreement."
       : "Add one or two explicit structured answers to raise routing confidence.",
     questions: questions.slice(0, 4),
-  } satisfies DirectiveEngineFollowUpQuestionSet;
+  } satisfies EngineFollowUpQuestionSet;
 }

@@ -7,38 +7,38 @@ import {
   buildDefaultImprovementPlan,
 } from "./lane-planning-defaults.ts";
 import type {
-  DirectiveEngineAdaptationPlan,
-  DirectiveEngineDecision,
-  DirectiveEngineIntegrationMode,
-  DirectiveEngineIntegrationProposal,
-  DirectiveEngineImprovementPlan,
-  DirectiveEngineProofPlan,
-  DirectiveEngineReportPlan,
-  DirectiveEngineSelectedLane,
+  EngineAdaptationPlan,
+  EngineDecision,
+  EngineIntegrationMode,
+  EngineIntegrationProposal,
+  EngineImprovementPlan,
+  EngineProofPlan,
+  EngineReportPlan,
+  EngineSelectedLane,
 } from "../types.ts";
 import type {
-  DirectiveEngineLaneAdaptationPlanningInput,
-  DirectiveEngineLaneExtractionPlanningInput,
-  DirectiveEngineLaneImprovementPlanningInput,
-  DirectiveEngineLaneIntegrationPlanningInput,
-  DirectiveEngineLaneProofPlanningInput,
+  EngineLaneAdaptationPlanningInput,
+  EngineLaneExtractionPlanningInput,
+  EngineLaneImprovementPlanningInput,
+  EngineLaneIntegrationPlanningInput,
+  EngineLaneProofPlanningInput,
 } from "../lane.ts";
-import { buildDirectiveRuntimePromotionAssistanceReport } from "../../runtime/lib/control/runtime-promotion-assistance.ts";
-import { buildRuntimeCallableExecutionEvidenceReport } from "../../runtime/lib/control/runtime-callable-execution-evidence.ts";
+import { buildDirectiveRuntimePromotionAssistanceReport } from "../../runtime/lib/control/promotion-assistance.ts";
+import { buildRuntimeCallableExecutionEvidenceReport } from "../../runtime/lib/control/callable-execution-evidence.ts";
 
 const DIRECTIVE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
-type DirectiveEngineRuntimePromotionFeedbackSignal =
-  NonNullable<DirectiveEngineLaneImprovementPlanningInput["runtimePromotionFeedbackSignal"]>;
+type EngineRuntimePromotionFeedbackSignal =
+  NonNullable<EngineLaneImprovementPlanningInput["runtimePromotionFeedbackSignal"]>;
 
-type DirectiveEngineRuntimeExecutionEvidenceSignal =
-  NonNullable<DirectiveEngineLaneImprovementPlanningInput["runtimeExecutionEvidenceSignal"]>;
+type EngineRuntimeExecutionEvidenceSignal =
+  NonNullable<EngineLaneImprovementPlanningInput["runtimeExecutionEvidenceSignal"]>;
 
 function deriveIntegrationMode(input: {
-  source: DirectiveEngineLaneIntegrationPlanningInput["planningInput"]["source"];
-  defaultIntegrationMode: DirectiveEngineIntegrationMode;
+  source: EngineLaneIntegrationPlanningInput["planningInput"]["source"];
+  defaultIntegrationMode: EngineIntegrationMode;
   valuableWithoutHostRuntime: boolean;
-}): DirectiveEngineIntegrationMode {
+}): EngineIntegrationMode {
   if (input.defaultIntegrationMode === "none") {
     return "none";
   }
@@ -56,8 +56,8 @@ function deriveIntegrationMode(input: {
 }
 
 function buildDefaultProofPlan(
-  input: DirectiveEngineLaneProofPlanningInput,
-): DirectiveEngineProofPlan {
+  input: EngineLaneProofPlanningInput,
+): EngineProofPlan {
   const primaryImprovementGoal =
     input.improvementPlan.improvementGoals[0]
     ?? "bounded improvement delta recorded";
@@ -83,21 +83,21 @@ function buildDefaultProofPlan(
 }
 
 function buildExtractionPlan(
-  input: DirectiveEngineLaneExtractionPlanningInput["planningInput"],
+  input: EngineLaneExtractionPlanningInput["planningInput"],
 ) {
   return input.lane.planExtraction?.({ planningInput: input })
     ?? buildDefaultExtractionPlan({ planningInput: input });
 }
 
 function buildAdaptationPlan(
-  input: DirectiveEngineLaneAdaptationPlanningInput,
-): DirectiveEngineAdaptationPlan {
+  input: EngineLaneAdaptationPlanningInput,
+): EngineAdaptationPlan {
   return input.planningInput.lane.planAdaptation?.(input)
     ?? buildDefaultAdaptationPlan(input);
 }
 
 function readRuntimePromotionFeedbackSignal():
-  | DirectiveEngineRuntimePromotionFeedbackSignal
+  | EngineRuntimePromotionFeedbackSignal
   | null {
   try {
     const assistance = buildDirectiveRuntimePromotionAssistanceReport();
@@ -155,7 +155,7 @@ function readRuntimePromotionFeedbackSignal():
 }
 
 function readRuntimeExecutionEvidenceSignal():
-  | DirectiveEngineRuntimeExecutionEvidenceSignal
+  | EngineRuntimeExecutionEvidenceSignal
   | null {
   try {
     const evidence = buildRuntimeCallableExecutionEvidenceReport({
@@ -188,24 +188,24 @@ function readRuntimeExecutionEvidenceSignal():
 }
 
 function buildImprovementPlan(
-  input: DirectiveEngineLaneImprovementPlanningInput,
-): DirectiveEngineImprovementPlan {
+  input: EngineLaneImprovementPlanningInput,
+): EngineImprovementPlan {
   return input.planningInput.lane.planImprovement?.(input)
     ?? buildDefaultImprovementPlan(input);
 }
 
 function buildIntegrationProposal(
-  input: DirectiveEngineLaneIntegrationPlanningInput,
-  runtimePromotionFeedbackSignal?: DirectiveEngineRuntimePromotionFeedbackSignal | null,
-  runtimeExecutionEvidenceSignal?: DirectiveEngineRuntimeExecutionEvidenceSignal | null,
-): DirectiveEngineIntegrationProposal {
+  input: EngineLaneIntegrationPlanningInput,
+  runtimePromotionFeedbackSignal?: EngineRuntimePromotionFeedbackSignal | null,
+  runtimeExecutionEvidenceSignal?: EngineRuntimeExecutionEvidenceSignal | null,
+): EngineIntegrationProposal {
   const integrationMode = deriveIntegrationMode({
     source: input.planningInput.source,
     defaultIntegrationMode: input.planningInput.lane.defaultIntegrationMode,
     valuableWithoutHostRuntime: input.planningInput.lane.valuableWithoutHostRuntime,
   });
 
-  const base: DirectiveEngineIntegrationProposal = {
+  const base: EngineIntegrationProposal = {
     targetLaneId: input.planningInput.lane.laneId,
     targetLaneLabel: input.planningInput.lane.label,
     integrationMode,
@@ -233,11 +233,11 @@ function buildIntegrationProposal(
 }
 
 function buildReportPlan(input: {
-  lane: DirectiveEngineSelectedLane;
-  decision: DirectiveEngineDecision;
-  integrationProposal: DirectiveEngineIntegrationProposal;
+  lane: EngineSelectedLane;
+  decision: EngineDecision;
+  integrationProposal: EngineIntegrationProposal;
   usefulnessRationale: string;
-}): DirectiveEngineReportPlan {
+}): EngineReportPlan {
   const reportKind =
     input.lane.laneId === "discovery"
       ? "discovery_routing_report"

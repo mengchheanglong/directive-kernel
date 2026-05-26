@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { normalizeText } from "../engine-source-utils.ts";
-import type { DirectiveGapRadarReport, DirectiveGapRadarSuggestion } from "../routing/gap-radar.ts";
+import { normalizeText } from "../source-utils.ts";
+import type { GapRadarReport, GapRadarSuggestion } from "../routing/gap-radar.ts";
 import { readJsonOptional, writeJsonAtomic } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import { resolveDirectiveWorkspaceRoot } from "../../shared/lib/workspace-root.ts";
@@ -84,7 +84,7 @@ function sanitizeGapSegment(value: string) {
     .slice(0, 64);
 }
 
-function buildFormalizationId(suggestion: DirectiveGapRadarSuggestion) {
+function buildFormalizationId(suggestion: GapRadarSuggestion) {
   return `gap-formalization-${sanitizeGapSegment(suggestion.radarId || suggestion.summary)}`;
 }
 
@@ -125,7 +125,7 @@ function writeCapabilityGaps(input: {
 }
 
 function readGapRadarReport(directiveRoot?: string) {
-  return readJsonOptional<DirectiveGapRadarReport>(resolveGapRadarPath(directiveRoot));
+  return readJsonOptional<GapRadarReport>(resolveGapRadarPath(directiveRoot));
 }
 
 function writeGapFormalizationRecordInternal(input: {
@@ -155,7 +155,7 @@ export function writeGapFormalizationRecord(input: {
 
 export function generateGapFormalizationCandidates(input: {
   directiveRoot?: string;
-  radarReport?: DirectiveGapRadarReport | null;
+  radarReport?: GapRadarReport | null;
   existingGaps?: FormalizedCapabilityGapRecord[];
 }) {
   const radarReport = input.radarReport ?? readGapRadarReport(input.directiveRoot);

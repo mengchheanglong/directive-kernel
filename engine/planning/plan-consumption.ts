@@ -1,18 +1,18 @@
-import { extractSourceSignalTokens } from "../routing/routing-correction-ledger.ts";
-import { deriveDirectiveEngineRouteClass } from "../routing/earned-autonomy.ts";
+import { extractSourceSignalTokens } from "../routing/correction-ledger.ts";
+import { deriveEngineRouteClass } from "../routing/earned-autonomy.ts";
 import {
   flattenSourceText,
   countTokenOverlap,
   isSuccessfulRun,
   isStalledRun,
-} from "../engine-source-utils.ts";
+} from "../source-utils.ts";
 import type {
-  DirectiveEngineLaneId,
-  DirectiveEngineRunRecord,
-  DirectiveEngineSourceItem,
+  EngineLaneId,
+  EngineRunRecord,
+  EngineSourceItem,
 } from "../types.ts";
 
-export type DirectivePriorPlanContext = {
+export type PriorPlanContext = {
   routeClass: string;
   summary: string;
   matchingRunCount: number;
@@ -41,22 +41,22 @@ function countBy<T extends string>(values: T[]) {
   return counts;
 }
 
-export function deriveDirectivePriorPlanContext(input: {
-  source: DirectiveEngineSourceItem;
-  recommendedLaneId: DirectiveEngineLaneId;
-  existingRuns: DirectiveEngineRunRecord[];
+export function derivePriorPlanContext(input: {
+  source: EngineSourceItem;
+  recommendedLaneId: EngineLaneId;
+  existingRuns: EngineRunRecord[];
   /** Pre-computed source signal tokens keyed by runId, avoids redundant tokenization. */
   precomputedSourceTokens?: Map<string, string[]> | null;
 }) {
   const sourceTokens = extractSourceSignalTokens(flattenSourceText(input.source));
-  const routeClass = deriveDirectiveEngineRouteClass({
+  const routeClass = deriveEngineRouteClass({
     recommendedLaneId: input.recommendedLaneId,
     source: input.source,
   });
   const matchingRuns = input.existingRuns
     .filter((run) =>
       run.selectedLane.laneId === input.recommendedLaneId
-      || deriveDirectiveEngineRouteClass({
+      || deriveEngineRouteClass({
         recommendedLaneId: run.selectedLane.laneId,
         source: run.source,
       }) === routeClass
@@ -132,5 +132,5 @@ export function deriveDirectivePriorPlanContext(input: {
     recurringProofKinds,
     adaptationPatterns,
     relatedRunIds: matchingRuns.map((run) => run.runId).slice(-5),
-  } satisfies DirectivePriorPlanContext;
+  } satisfies PriorPlanContext;
 }

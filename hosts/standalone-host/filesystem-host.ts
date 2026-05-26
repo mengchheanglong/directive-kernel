@@ -1,28 +1,28 @@
-import path from "node:path";
+﻿import path from "node:path";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 
-import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
-import { submitDirectiveDiscoveryFrontDoor } from "../../discovery/lib/front-door/discovery-front-door.ts";
-import { openDirectiveDiscoveryRoute } from "../../discovery/lib/routing/discovery-route-opener.ts";
-import { openDirectiveRuntimeFollowUp } from "../../runtime/lib/openers/runtime-follow-up-opener.ts";
-import { openDirectiveRuntimeRecordProof } from "../../runtime/lib/openers/runtime-record-proof-opener.ts";
-import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../runtime/lib/openers/runtime-proof-runtime-capability-boundary-opener.ts";
-import { openDirectiveRuntimePromotionReadiness } from "../../runtime/lib/openers/runtime-runtime-capability-boundary-promotion-readiness-opener.ts";
+import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/submission-router.ts";
+import { submitDirectiveDiscoveryFrontDoor } from "../../discovery/lib/front-door/front-door.ts";
+import { openDirectiveDiscoveryRoute } from "../../discovery/lib/routing/route-opener.ts";
+import { openDirectiveRuntimeFollowUp } from "../../runtime/lib/openers/follow-up.ts";
+import { openDirectiveRuntimeRecordProof } from "../../runtime/lib/openers/record-proof-opener.ts";
+import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../runtime/lib/openers/proof-runtime-capability-boundary-opener.ts";
+import { openDirectiveRuntimePromotionReadiness } from "../../runtime/lib/openers/promotion-readiness.ts";
 import {
   type RuntimeHostSelectionResolutionInput,
   writeRuntimeHostSelectionResolution as writeRuntimeHostSelectionResolutionArtifact,
-} from "../../runtime/lib/host/runtime-host-selection-resolution.ts";
+} from "../../runtime/lib/host/selection-resolution.ts";
 import {
-  createFilesystemDirectiveEngineStore,
-  DirectiveEngine,
+  createFilesystemEngineStore,
+  Engine,
   createDirectiveWorkspaceEngineLanes,
-  type DirectiveEngineMissionInput,
-  type DirectiveEnginePlanProgressUpdate,
-  type DirectiveEngineRunRecord,
-  type DirectiveEngineSourceItem,
+  type EngineMissionInput,
+  type EnginePlanProgressUpdate,
+  type EngineRunRecord,
+  type EngineSourceItem,
 } from "../../engine/index.ts";
-import { normalizeDirectiveEngineSourceTypeInput } from "../../engine/source-type-normalization.ts";
-import { resolveDirectiveEngineStoreRecordPath } from "../../engine/storage.ts";
+import { normalizeEngineSourceTypeInput } from "../../engine/source-type-normalization.ts";
+import { resolveEngineStoreRecordPath } from "../../engine/storage.ts";
 import {
   buildManualRuntimePromotionRecordRequest,
   buildManualRuntimeRegistryAcceptanceRequest,
@@ -42,14 +42,14 @@ import {
   submitDiscoveryEntryWithHostBridge,
 } from "../integration-kit/lib/discovery-submission-adapter.ts";
 import { createStandaloneHostPersistenceLedger } from "./persistence.ts";
-import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/runtime-follow-up-record-writer.ts";
-import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/runtime-proof-bundle-writer.ts";
-import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/runtime-promotion-record-writer.ts";
-import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
-import type { RuntimeRecordRequest } from "../../runtime/lib/writers/runtime-record-writer.ts";
-import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/runtime-transformation-proof-writer.ts";
-import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/runtime-transformation-record-writer.ts";
-import { describeDirectiveEngineGapPressure } from "../../engine/execution/engine-run-artifacts.ts";
+import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/follow-up-record-writer.ts";
+import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/proof-bundle-writer.ts";
+import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/promotion-record-writer.ts";
+import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/registry-entry-writer.ts";
+import type { RuntimeRecordRequest } from "../../runtime/lib/writers/record-writer.ts";
+import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/transformation-proof-writer.ts";
+import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/transformation-record-writer.ts";
+import { describeEngineGapPressure } from "../../engine/execution/run-artifacts.ts";
 
 type JsonValue = Record<string, unknown>;
 
@@ -84,10 +84,10 @@ function normalizeStandaloneHostReceivedAt(value: string | undefined) {
   return normalized;
 }
 
-function buildDirectiveEngineSourceFromDiscoverySubmission(
+function buildEngineSourceFromDiscoverySubmission(
   request: DiscoverySubmissionRequest,
-): DirectiveEngineSourceItem {
-  const sourceTypeNormalization = normalizeDirectiveEngineSourceTypeInput(
+): EngineSourceItem {
+  const sourceTypeNormalization = normalizeEngineSourceTypeInput(
     request.source_type ?? "internal-signal",
   );
   const notes = [
@@ -115,9 +115,9 @@ function buildDirectiveEngineSourceFromDiscoverySubmission(
   };
 }
 
-function buildDirectiveEngineMissionFromDiscoverySubmission(
+function buildEngineMissionFromDiscoverySubmission(
   request: DiscoverySubmissionRequest,
-): DirectiveEngineMissionInput {
+): EngineMissionInput {
   const currentObjective =
     request.mission_alignment?.trim()
     || `Assess ${request.candidate_name} for Directive Kernel usefulness.`;
@@ -140,11 +140,11 @@ function buildDirectiveEngineMissionFromDiscoverySubmission(
 function resolveStandaloneHostEngineArtifactPaths(input: {
   directiveRoot: string;
   runtimeArtifactsRoot: string;
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
 }) {
   const runtimeArtifactsRoot = normalizeAbsolutePath(input.runtimeArtifactsRoot);
   const engineRunsRoot = normalizeAbsolutePath(path.resolve(runtimeArtifactsRoot, "engine-runs"));
-  const recordPath = normalizeAbsolutePath(resolveDirectiveEngineStoreRecordPath({
+  const recordPath = normalizeAbsolutePath(resolveEngineStoreRecordPath({
     engineRunsRoot,
     record: input.record,
   }));
@@ -159,13 +159,13 @@ function resolveStandaloneHostEngineArtifactPaths(input: {
 }
 
 function renderStandaloneHostEngineRunReport(input: {
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
   artifactPaths: {
     recordRelativePath: string;
   };
 }) {
   const { record } = input;
-  const gapPressure = describeDirectiveEngineGapPressure(record);
+  const gapPressure = describeEngineGapPressure(record);
 
   return [
     "# Directive Engine Run",
@@ -294,9 +294,9 @@ export function createStandaloneFilesystemHost(
       persistenceLedger.recordTextArtifact(filePath, content, "text_artifact");
     },
   };
-  const createDirectiveEngine = () => new DirectiveEngine({
+  const createEngine = () => new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
-    store: createFilesystemDirectiveEngineStore({
+    store: createFilesystemEngineStore({
       engineRunsRoot: path.resolve(runtimeArtifactsRoot, "engine-runs"),
     }),
   });
@@ -454,10 +454,10 @@ export function createStandaloneFilesystemHost(
       }
 
       try {
-        const engine = createDirectiveEngine();
+        const engine = createEngine();
         const engineResult = await engine.processSource({
-          source: buildDirectiveEngineSourceFromDiscoverySubmission(request),
-          mission: buildDirectiveEngineMissionFromDiscoverySubmission(request),
+          source: buildEngineSourceFromDiscoverySubmission(request),
+          mission: buildEngineMissionFromDiscoverySubmission(request),
           receivedAt: normalizeStandaloneHostReceivedAt(
             options.receivedAt ?? harness.bridge.receivedAt,
           ),
@@ -502,10 +502,10 @@ export function createStandaloneFilesystemHost(
     },
     async updateEnginePlanProgress(input: {
       runId: string;
-      updates: DirectiveEnginePlanProgressUpdate[];
+      updates: EnginePlanProgressUpdate[];
       at?: string | null;
     }) {
-      const engine = createDirectiveEngine();
+      const engine = createEngine();
       return engine.updatePlanProgress(input);
     },
     async reRouteEngineRunWithAnswers(input: {
@@ -513,7 +513,7 @@ export function createStandaloneFilesystemHost(
       answers: Record<string, unknown>;
       receivedAt?: string | null;
     }) {
-      const engine = createDirectiveEngine();
+      const engine = createEngine();
       return engine.reRouteWithAnswers(input);
     },
     readDiscoveryOverview(maxEntries?: number): DiscoveryOverviewSummary {

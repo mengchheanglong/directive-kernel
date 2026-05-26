@@ -2,45 +2,45 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { readJson } from "../../shared/lib/file-io.ts";
-import { resolveDirectiveRelativePath } from "../../shared/lib/directive-relative-path.ts";
+import { resolveDirectiveRelativePath } from "../../shared/lib/relative-path.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import { getDefaultDirectiveWorkspaceRoot } from "../../shared/lib/workspace-root.ts";
 
-export const DIRECTIVE_COMPLETION_SLICE_KINDS = [
+export const COMPLETION_SLICE_KINDS = [
   "decision",
   "implementation",
   "proof",
 ] as const;
 
-export const DIRECTIVE_COMPLETION_SLICE_STATES = [
+export const COMPLETION_SLICE_STATES = [
   "completed",
   "pending",
 ] as const;
 
-export const DIRECTIVE_COMPLETION_SLICE_OWNING_LANES = [
+export const COMPLETION_SLICE_OWNING_LANES = [
   "architecture",
   "runtime",
   "discovery",
   "shared_engine",
 ] as const;
 
-export const DIRECTIVE_COMPLETION_SELECTION_STATES = [
+export const COMPLETION_SELECTION_STATES = [
   "selected",
   "complete",
   "needs_decision",
   "blocked",
 ] as const;
 
-export type DirectiveCompletionSliceKind =
-  (typeof DIRECTIVE_COMPLETION_SLICE_KINDS)[number];
-export type DirectiveCompletionSliceState =
-  (typeof DIRECTIVE_COMPLETION_SLICE_STATES)[number];
-export type DirectiveCompletionSliceOwningLane =
-  (typeof DIRECTIVE_COMPLETION_SLICE_OWNING_LANES)[number];
-export type DirectiveCompletionSelectionState =
-  (typeof DIRECTIVE_COMPLETION_SELECTION_STATES)[number];
+export type CompletionSliceKind =
+  (typeof COMPLETION_SLICE_KINDS)[number];
+export type CompletionSliceState =
+  (typeof COMPLETION_SLICE_STATES)[number];
+export type CompletionSliceOwningLane =
+  (typeof COMPLETION_SLICE_OWNING_LANES)[number];
+export type CompletionSelectionState =
+  (typeof COMPLETION_SELECTION_STATES)[number];
 
-export type DirectiveCompletionStatus = {
+export type CompletionStatus = {
   version: number;
   updatedAt: string;
   anchorPath: string;
@@ -52,14 +52,14 @@ export type DirectiveCompletionStatus = {
   lastContextArtifactPath: string | null;
 };
 
-export type DirectiveCompletionSlice = {
+export type CompletionSlice = {
   sliceId: string;
   title: string;
   phase: string;
-  kind: DirectiveCompletionSliceKind;
-  owningLane: DirectiveCompletionSliceOwningLane;
+  kind: CompletionSliceKind;
+  owningLane: CompletionSliceOwningLane;
   priorityRank: number;
-  state: DirectiveCompletionSliceState;
+  state: CompletionSliceState;
   dependsOn: string[];
   blockedByClosedSeam: string[];
   proofCommands: string[];
@@ -67,21 +67,21 @@ export type DirectiveCompletionSlice = {
   selectionHint: string;
 };
 
-export type DirectiveCompletionSliceRegistry = {
+export type CompletionSliceRegistry = {
   version: number;
   updatedAt: string;
   policy: {
     selectionRule: string;
     syncRule: string;
   };
-  items: DirectiveCompletionSlice[];
+  items: CompletionSlice[];
 };
 
-export type DirectiveCompletionSliceSelection = {
+export type CompletionSliceSelection = {
   directiveRoot: string;
   statusRelativePath: string;
   slicesRelativePath: string;
-  selectionState: DirectiveCompletionSelectionState;
+  selectionState: CompletionSelectionState;
   currentTarget: {
     id: string;
     description: string;
@@ -101,16 +101,16 @@ export type DirectiveCompletionSliceSelection = {
     sliceId: string;
     priorityRank: number;
     phase: string;
-    kind: DirectiveCompletionSliceKind;
-    owningLane: DirectiveCompletionSliceOwningLane;
+    kind: CompletionSliceKind;
+    owningLane: CompletionSliceOwningLane;
     blockingClosedSeams: string[];
   }>;
   selectedSlice: null | {
     sliceId: string;
     title: string;
     phase: string;
-    kind: DirectiveCompletionSliceKind;
-    owningLane: DirectiveCompletionSliceOwningLane;
+    kind: CompletionSliceKind;
+    owningLane: CompletionSliceOwningLane;
     priorityRank: number;
     selectionHint: string;
     proofCommands: string[];
@@ -132,26 +132,26 @@ function assertStringArray(value: unknown, label: string): asserts value is stri
   }
 }
 
-function isCompletionSliceKind(value: unknown): value is DirectiveCompletionSliceKind {
+function isCompletionSliceKind(value: unknown): value is CompletionSliceKind {
   return typeof value === "string"
-    && DIRECTIVE_COMPLETION_SLICE_KINDS.includes(value as DirectiveCompletionSliceKind);
+    && COMPLETION_SLICE_KINDS.includes(value as CompletionSliceKind);
 }
 
-function isCompletionSliceState(value: unknown): value is DirectiveCompletionSliceState {
+function isCompletionSliceState(value: unknown): value is CompletionSliceState {
   return typeof value === "string"
-    && DIRECTIVE_COMPLETION_SLICE_STATES.includes(value as DirectiveCompletionSliceState);
+    && COMPLETION_SLICE_STATES.includes(value as CompletionSliceState);
 }
 
 function isCompletionSliceOwningLane(
   value: unknown,
-): value is DirectiveCompletionSliceOwningLane {
+): value is CompletionSliceOwningLane {
   return typeof value === "string"
-    && DIRECTIVE_COMPLETION_SLICE_OWNING_LANES.includes(value as DirectiveCompletionSliceOwningLane);
+    && COMPLETION_SLICE_OWNING_LANES.includes(value as CompletionSliceOwningLane);
 }
 
 function assertCompletionStatusShape(
   value: unknown,
-): asserts value is DirectiveCompletionStatus {
+): asserts value is CompletionStatus {
   const record = asObject(value);
   if (!record) {
     throw new Error("invalid_status: status must be an object");
@@ -188,7 +188,7 @@ function assertCompletionStatusShape(
 function assertCompletionSliceShape(
   value: unknown,
   index: number,
-): asserts value is DirectiveCompletionSlice {
+): asserts value is CompletionSlice {
   const record = asObject(value);
   if (!record) {
     throw new Error(`invalid_registry: item ${index} must be an object`);
@@ -230,8 +230,8 @@ function readCompletionControlSurface(input: {
     path.join(input.directiveRoot, input.slicesRelativePath),
   );
 
-  const status = readJson<DirectiveCompletionStatus>(statusAbsolutePath);
-  const registry = readJson<DirectiveCompletionSliceRegistry>(slicesAbsolutePath);
+  const status = readJson<CompletionStatus>(statusAbsolutePath);
+  const registry = readJson<CompletionSliceRegistry>(slicesAbsolutePath);
 
   assertCompletionStatusShape(status);
   const registryRecord = asObject(registry);
@@ -288,11 +288,11 @@ function readCompletionControlSurface(input: {
   };
 }
 
-export function selectNextDirectiveCompletionSlice(input?: {
+export function selectNextCompletionSlice(input?: {
   directiveRoot?: string;
   statusPath?: string;
   slicesPath?: string;
-}): DirectiveCompletionSliceSelection {
+}): CompletionSliceSelection {
   const directiveRoot = normalizeAbsolutePath(
     input?.directiveRoot || getDefaultDirectiveWorkspaceRoot(),
   );

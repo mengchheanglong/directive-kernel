@@ -2,11 +2,11 @@ import {
   normalizeDirectiveDecision,
   normalizeDirectiveIntegrationMode,
   normalizeDirectiveIntegrationStatus,
-  type DirectiveDecision,
-  type DirectiveIntegrationMode,
-  type DirectiveIntegrationProof,
-  type DirectiveIntegrationStatus,
-} from "./runtime-core-contract.js";
+  type Decision,
+  type IntegrationMode,
+  type IntegrationProof,
+  type IntegrationStatus,
+} from "./contract.js";
 import {
   normalizeDirectiveAdoptDueAt,
   normalizeDirectiveRequiredGates,
@@ -14,7 +14,7 @@ import {
   requireDirectiveIntegrationProof,
 } from "./decision-policy.js";
 
-export type DirectiveDecisionContractInput = {
+export type DecisionContractInput = {
   decision: unknown;
   integrationSurface?: unknown;
   targetRuntimeSurface?: unknown;
@@ -28,26 +28,26 @@ export type DirectiveDecisionContractInput = {
   integrationProof?: unknown;
 };
 
-export type DirectiveAdoptContract = {
+export type AdoptContract = {
   integrationSurface: string;
   targetRuntimeSurface: string;
-  integrationMode: DirectiveIntegrationMode;
+  integrationMode: IntegrationMode;
   owner: string;
   dueAt: string;
   requiredGates: string[];
-  integrationStatus: DirectiveIntegrationStatus;
+  integrationStatus: IntegrationStatus;
   rollbackPlan: string;
-  integrationProof: DirectiveIntegrationProof;
+  integrationProof: IntegrationProof;
 };
 
-export type DirectiveDecisionContract = {
-  decision: DirectiveDecision;
-  adopt: DirectiveAdoptContract | null;
+export type DecisionContract = {
+  decision: Decision;
+  adopt: AdoptContract | null;
 };
 
 export function normalizeDirectiveDecisionContract(
-  input: DirectiveDecisionContractInput,
-): DirectiveDecisionContract {
+  input: DecisionContractInput,
+): DecisionContract {
   const decision = normalizeDirectiveDecision(input.decision);
   if (decision !== "adopt") {
     return { decision, adopt: null };

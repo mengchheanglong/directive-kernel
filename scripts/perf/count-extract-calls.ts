@@ -4,11 +4,11 @@
  * using the built-in cache stats (hits + misses = total calls).
  */
 
-import { DirectiveEngine } from "../../engine/directive-engine.ts";
-import { createMemoryDirectiveEngineStore } from "../../engine/storage.ts";
-import { createDirectiveWorkspaceEngineLanes } from "../../engine/directive-workspace-lanes.ts";
-import { readSourceSignalTokenCacheStats, resetSourceSignalTokenCache } from "../../engine/routing/routing-correction-ledger.ts";
-import type { DirectiveEngineSourceItem } from "../../engine/types.ts";
+import { Engine } from "../../engine/engine.ts";
+import { createMemoryEngineStore } from "../../engine/storage.ts";
+import { createDirectiveWorkspaceEngineLanes } from "../../engine/workspace-lanes.ts";
+import { readSourceSignalTokenCacheStats, resetSourceSignalTokenCache } from "../../engine/routing/correction-ledger.ts";
+import type { EngineSourceItem } from "../../engine/types.ts";
 
 const ROUNDS = 30;
 
@@ -22,7 +22,7 @@ const MISSION = {
   context: "Production system",
 };
 
-const types: DirectiveEngineSourceItem["sourceType"][] = ["paper", "github-repo", "product-doc", "theory", "technical-essay"];
+const types: EngineSourceItem["sourceType"][] = ["paper", "github-repo", "product-doc", "theory", "technical-essay"];
 const targets = ["runtime", "architecture", "discovery", null] as const;
 const topics = [
   "OpenTelemetry collector pipeline configuration",
@@ -57,8 +57,8 @@ function makeSource(i: number) {
 }
 
 async function main() {
-  const store = createMemoryDirectiveEngineStore();
-  const engine = new DirectiveEngine({
+  const store = createMemoryEngineStore();
+  const engine = new Engine({
     store,
     laneSet: createDirectiveWorkspaceEngineLanes(),
   });

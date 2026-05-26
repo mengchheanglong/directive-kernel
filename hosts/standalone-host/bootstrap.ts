@@ -3,7 +3,7 @@ import path from "node:path";
 import {
   DIRECTIVE_GOAL_FILENAME,
   renderDirectiveGoalTemplate,
-} from "../../shared/lib/directive-goal.ts";
+} from "../../shared/lib/goal.ts";
 import { writeJson, writeUtf8 } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 

@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  buildDirectiveReadOnlyLifecycleCoordinationReport,
-  type DirectiveReadOnlyLifecycleCoordinationBucketId,
-  type DirectiveReadOnlyLifecycleCoordinationReport,
+  buildReadOnlyLifecycleCoordinationReport,
+  type ReadOnlyLifecycleCoordinationBucketId,
+  type ReadOnlyLifecycleCoordinationReport,
 } from "./read-only-lifecycle-coordination/read-only-lifecycle-coordination.ts";
 import { readJson } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
@@ -12,52 +12,52 @@ import { getDefaultDirectiveWorkspaceRoot } from "../../shared/lib/workspace-roo
 
 // --- Ledger types ---
 
-export type DirectiveCoordinationLedgerCaseState = {
+export type CoordinationLedgerCaseState = {
   candidateId: string;
-  bucketId: DirectiveReadOnlyLifecycleCoordinationBucketId;
+  bucketId: ReadOnlyLifecycleCoordinationBucketId;
   currentStage: string | null;
 };
 
-export type DirectiveCoordinationLedgerEntry = {
+export type CoordinationLedgerEntry = {
   snapshotAt: string;
   totalLiveCases: number;
-  topPressureBucket: DirectiveReadOnlyLifecycleCoordinationBucketId | null;
-  bucketCounts: Partial<Record<DirectiveReadOnlyLifecycleCoordinationBucketId, number>>;
-  caseStates: DirectiveCoordinationLedgerCaseState[];
+  topPressureBucket: ReadOnlyLifecycleCoordinationBucketId | null;
+  bucketCounts: Partial<Record<ReadOnlyLifecycleCoordinationBucketId, number>>;
+  caseStates: CoordinationLedgerCaseState[];
 };
 
-export type DirectiveCoordinationLedger = {
+export type CoordinationLedger = {
   version: 1;
   maxEntries: number;
-  entries: DirectiveCoordinationLedgerEntry[];
+  entries: CoordinationLedgerEntry[];
 };
 
 // --- Persistence signal types ---
 
-export type DirectiveStaleCaseSignal = {
+export type StaleCaseSignal = {
   candidateId: string;
-  bucketId: DirectiveReadOnlyLifecycleCoordinationBucketId;
+  bucketId: ReadOnlyLifecycleCoordinationBucketId;
   consecutiveChecks: number;
   firstSeenAt: string;
   lastSeenAt: string;
 };
 
-export type DirectiveCadenceDriftSignal = {
+export type CadenceDriftSignal = {
   lastCheckAt: string | null;
   currentCheckAt: string;
   hoursSinceLastCheck: number | null;
   cadenceDriftDetected: boolean;
 };
 
-export type DirectivePersistenceSignals = {
-  staleCases: DirectiveStaleCaseSignal[];
-  cadenceDrift: DirectiveCadenceDriftSignal;
+export type PersistenceSignals = {
+  staleCases: StaleCaseSignal[];
+  cadenceDrift: CadenceDriftSignal;
   newCases: string[];
   resolvedCases: string[];
   totalPreviousChecks: number;
 };
 
-export type DirectiveBoundedPersistentCoordinationReport = {
+export type BoundedPersistentCoordinationReport = {
   ok: boolean;
   checkerId: "bounded_persistent_coordination";
   snapshotAt: string;
@@ -71,13 +71,13 @@ export type DirectiveBoundedPersistentCoordinationReport = {
     impliesPromotionAutomation: false;
     onlyWritesOwnLedger: true;
   };
-  persistenceSignals: DirectivePersistenceSignals;
+  persistenceSignals: PersistenceSignals;
   upstreamReport: {
     totalLiveCases: number;
     recommendTaskCount: number;
     parkedCount: number;
     stopCount: number;
-    topPressureBucket: DirectiveReadOnlyLifecycleCoordinationBucketId | null;
+    topPressureBucket: ReadOnlyLifecycleCoordinationBucketId | null;
   };
   ledgerPath: string;
   ledgerEntryCount: number;
@@ -96,17 +96,17 @@ function getLedgerPath(directiveRoot: string) {
   return path.join(directiveRoot, "control", "state", "coordination-ledger.json");
 }
 
-function readLedger(ledgerPath: string): DirectiveCoordinationLedger {
+function readLedger(ledgerPath: string): CoordinationLedger {
   if (!fs.existsSync(ledgerPath)) {
     return { version: 1, maxEntries: MAX_LEDGER_ENTRIES, entries: [] };
   }
-  return readJson<DirectiveCoordinationLedger>(ledgerPath);
+  return readJson<CoordinationLedger>(ledgerPath);
 }
 
 function buildLedgerEntry(
-  report: DirectiveReadOnlyLifecycleCoordinationReport,
+  report: ReadOnlyLifecycleCoordinationReport,
   snapshotAt: string,
-): DirectiveCoordinationLedgerEntry {
+): CoordinationLedgerEntry {
   return {
     snapshotAt,
     totalLiveCases: report.summary.totalLiveCases,
@@ -121,12 +121,12 @@ function buildLedgerEntry(
 }
 
 function computeStaleCases(
-  currentEntry: DirectiveCoordinationLedgerEntry,
-  previousEntries: DirectiveCoordinationLedgerEntry[],
-): DirectiveStaleCaseSignal[] {
+  currentEntry: CoordinationLedgerEntry,
+  previousEntries: CoordinationLedgerEntry[],
+): StaleCaseSignal[] {
   if (previousEntries.length === 0) return [];
 
-  const staleSignals: DirectiveStaleCaseSignal[] = [];
+  const staleSignals: StaleCaseSignal[] = [];
 
   for (const currentCase of currentEntry.caseStates) {
     let consecutiveCount = 1;
@@ -161,8 +161,8 @@ function computeStaleCases(
 
 function computeCadenceDrift(
   currentSnapshotAt: string,
-  previousEntries: DirectiveCoordinationLedgerEntry[],
-): DirectiveCadenceDriftSignal {
+  previousEntries: CoordinationLedgerEntry[],
+): CadenceDriftSignal {
   if (previousEntries.length === 0) {
     return {
       lastCheckAt: null,
@@ -186,8 +186,8 @@ function computeCadenceDrift(
 }
 
 function computeCaseDiff(
-  currentEntry: DirectiveCoordinationLedgerEntry,
-  previousEntries: DirectiveCoordinationLedgerEntry[],
+  currentEntry: CoordinationLedgerEntry,
+  previousEntries: CoordinationLedgerEntry[],
 ): { newCases: string[]; resolvedCases: string[] } {
   if (previousEntries.length === 0) {
     return {
@@ -212,17 +212,17 @@ function computeCaseDiff(
 
 // --- Main functions ---
 
-export function buildDirectiveBoundedPersistentCoordinationReport(input?: {
+export function buildBoundedPersistentCoordinationReport(input?: {
   directiveRoot?: string;
   snapshotAt?: string;
   dryRun?: boolean;
-}): DirectiveBoundedPersistentCoordinationReport {
+}): BoundedPersistentCoordinationReport {
   const directiveRoot = normalizeAbsolutePath(input?.directiveRoot || getDefaultDirectiveWorkspaceRoot());
   const snapshotAt = input?.snapshotAt ?? new Date().toISOString();
   const ledgerPath = getLedgerPath(directiveRoot);
   const ledger = readLedger(ledgerPath);
 
-  const lifecycleReport = buildDirectiveReadOnlyLifecycleCoordinationReport({
+  const lifecycleReport = buildReadOnlyLifecycleCoordinationReport({
     directiveRoot,
     snapshotAt,
   });
@@ -277,9 +277,9 @@ export function buildDirectiveBoundedPersistentCoordinationReport(input?: {
   };
 }
 
-export function readDirectiveCoordinationLedger(input?: {
+export function readCoordinationLedger(input?: {
   directiveRoot?: string;
-}): DirectiveCoordinationLedger {
+}): CoordinationLedger {
   const directiveRoot = normalizeAbsolutePath(input?.directiveRoot || getDefaultDirectiveWorkspaceRoot());
   return readLedger(getLedgerPath(directiveRoot));
 }

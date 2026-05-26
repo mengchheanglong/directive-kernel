@@ -3,7 +3,7 @@ import path from "node:path";
 import { normalizeAbsolutePath } from "../../../shared/lib/path-normalization.ts";
 import {
   readDirectiveDiscoveryRoutingArtifact,
-} from "../../../discovery/lib/routing/discovery-route-opener.ts";
+} from "../../../discovery/lib/routing/route-opener.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import { createStandaloneFilesystemHost } from "../../standalone-host/filesystem-host.ts";
 import {

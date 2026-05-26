@@ -1,8 +1,8 @@
 import {
   submitDirectiveDiscoveryFrontDoor,
-  type DirectiveDiscoveryFrontDoorResult,
-} from "../../../discovery/lib/front-door/discovery-front-door.ts";
-import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/discovery-submission-router.ts";
+  type DiscoveryFrontDoorResult,
+} from "../../../discovery/lib/front-door/front-door.ts";
+import type { DiscoverySubmissionRequest } from "../../../discovery/lib/front-door/submission-router.ts";
 
 export type DiscoveryFrontDoorStarterOptions = {
   directiveRoot: string;
@@ -13,7 +13,7 @@ export type DiscoveryFrontDoorStarterOptions = {
 
 export async function submitDiscoveryEntryThroughFrontDoor(
   input: DiscoveryFrontDoorStarterOptions,
-): Promise<DirectiveDiscoveryFrontDoorResult> {
+): Promise<DiscoveryFrontDoorResult> {
   return submitDirectiveDiscoveryFrontDoor({
     directiveRoot: input.directiveRoot,
     request: input.request,

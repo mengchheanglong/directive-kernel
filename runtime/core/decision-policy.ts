@@ -2,23 +2,23 @@ import {
   normalizeDirectiveIntegrationStatus,
   normalizeDirectiveNotes,
   parseDirectiveIntegrationProof,
-  type DirectiveCapabilityStatus,
-  type DirectiveIntegrationProof,
-  type DirectiveIntegrationStatus,
-  type DirectiveRuntimeStatus,
-} from "./runtime-core-contract.js";
+  type CapabilityStatus,
+  type IntegrationProof,
+  type IntegrationStatus,
+  type RuntimeStatus,
+} from "./contract.js";
 
 export function resolveStatusAfterDecision(
   decision: string,
-  runtimeStatus: DirectiveRuntimeStatus,
-): DirectiveCapabilityStatus {
+  runtimeStatus: RuntimeStatus,
+): CapabilityStatus {
   if (decision !== "adopt") return "decided";
   return runtimeStatus === "callable" ? "integrated" : "decided";
 }
 
 export function runtimeStatusFromIntegrationStatus(
-  status: DirectiveIntegrationStatus,
-): DirectiveRuntimeStatus {
+  status: IntegrationStatus,
+): RuntimeStatus {
   const normalizedStatus = normalizeDirectiveIntegrationStatus(status);
   if (normalizedStatus === "planned") return "planned";
   if (normalizedStatus === "active") return "callable";
@@ -48,7 +48,7 @@ export function normalizeDirectiveRequiredGates(value: unknown) {
   return gates;
 }
 
-export function requireDirectiveIntegrationProof(input: unknown): DirectiveIntegrationProof {
+export function requireDirectiveIntegrationProof(input: unknown): IntegrationProof {
   const parsed = parseDirectiveIntegrationProof(input);
   if (!parsed) {
     throw new Error(

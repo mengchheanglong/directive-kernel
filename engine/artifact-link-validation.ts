@@ -3,12 +3,12 @@
 import fs from "node:fs";
 import { resolveDirectiveWorkspaceArtifactAbsolutePath } from "./state/artifact-storage.ts";
 
-export type DirectiveArtifactLinkValidationState = {
+export type ArtifactLinkValidationState = {
   missingExpectedArtifacts: string[];
   inconsistentLinks: string[];
 };
 
-const DIRECTIVE_WORKSPACE_ARTIFACT_REFERENCE_PATTERN =
+const WORKSPACE_ARTIFACT_REFERENCE_PATTERN =
   /^(architecture|discovery|engine|frontend|ui|hosts|runtime|scripts|shared|sources)\//u;
 
 function normalizeRelativeArtifactPath(relativePath: string | null | undefined) {
@@ -44,7 +44,7 @@ export function isDirectiveWorkspaceArtifactReference(relativePath: string | nul
   if (!normalized) {
     return false;
   }
-  return DIRECTIVE_WORKSPACE_ARTIFACT_REFERENCE_PATTERN.test(normalized);
+  return WORKSPACE_ARTIFACT_REFERENCE_PATTERN.test(normalized);
 }
 
 export function readLinkedArtifactIfPresent<T>(input: {
@@ -59,7 +59,7 @@ export function readLinkedArtifactIfPresent<T>(input: {
 }
 
 export function recordMissingExpectedArtifact(
-  state: DirectiveArtifactLinkValidationState,
+  state: ArtifactLinkValidationState,
   relativePath: string | null | undefined,
 ) {
   if (!relativePath) {
@@ -69,7 +69,7 @@ export function recordMissingExpectedArtifact(
 }
 
 export function recordInconsistentLink(
-  state: DirectiveArtifactLinkValidationState,
+  state: ArtifactLinkValidationState,
   message: string | null | undefined,
 ) {
   if (!message) {
@@ -80,7 +80,7 @@ export function recordInconsistentLink(
 
 export function recordMissingLinkedArtifactIfAbsent(input: {
   directiveRoot: string;
-  state: DirectiveArtifactLinkValidationState;
+  state: ArtifactLinkValidationState;
   relativePath: string | null | undefined;
   label: string;
 }) {
@@ -94,7 +94,7 @@ export function recordMissingLinkedArtifactIfAbsent(input: {
 
 export function recordExpectedArtifactIfMissing(input: {
   directiveRoot: string;
-  state: DirectiveArtifactLinkValidationState;
+  state: ArtifactLinkValidationState;
   relativePath: string | null | undefined;
 }) {
   if (!input.relativePath) {

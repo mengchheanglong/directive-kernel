@@ -1,13 +1,13 @@
 import {
-  readDirectiveCaseMirrorEvents,
-  type DirectiveCaseMirrorEvent,
+  readCaseMirrorEvents,
+  type CaseMirrorEvent,
 } from "./case-event-log.ts";
 import {
-  readDirectiveMirroredDiscoveryCaseRecord,
-  type DirectiveMirroredDiscoveryCaseRecord,
+  readMirroredDiscoveryCaseRecord,
+  type MirroredDiscoveryCaseRecord,
 } from "./case-store.ts";
 
-export type DirectiveMirroredCaseSnapshot = {
+export type MirroredCaseSnapshot = {
   ok: true;
   caseId: string;
   candidateId: string;
@@ -19,20 +19,20 @@ export type DirectiveMirroredCaseSnapshot = {
   currentHeadPath: string | null;
   currentStage: string | null;
   nextLegalStep: string | null;
-  latestEventType: DirectiveCaseMirrorEvent["eventType"] | null;
+  latestEventType: CaseMirrorEvent["eventType"] | null;
   materializedFromEventId: string | null;
-  linkedArtifacts: DirectiveMirroredDiscoveryCaseRecord["linkedArtifacts"];
+  linkedArtifacts: MirroredDiscoveryCaseRecord["linkedArtifacts"];
 };
 
-export type DirectiveMirroredCaseSnapshotResult =
-  | DirectiveMirroredCaseSnapshot
+export type MirroredCaseSnapshotResult =
+  | MirroredCaseSnapshot
   | {
       ok: false;
       caseId: string;
       reason: "missing_case_record";
     };
 
-function sortEvents(events: DirectiveCaseMirrorEvent[]) {
+function sortEvents(events: CaseMirrorEvent[]) {
   return [...events].sort((left, right) => {
     if (left.sequence !== right.sequence) {
       return left.sequence - right.sequence;
@@ -41,18 +41,18 @@ function sortEvents(events: DirectiveCaseMirrorEvent[]) {
   });
 }
 
-function findLatestStateMaterializedEvent(events: DirectiveCaseMirrorEvent[]) {
+function findLatestStateMaterializedEvent(events: CaseMirrorEvent[]) {
   return [...events]
     .reverse()
     .find((event) => event.eventType === "state_materialized")
     ?? null;
 }
 
-export function materializeDirectiveMirroredCaseSnapshot(input: {
+export function materializeMirroredCaseSnapshot(input: {
   directiveRoot: string;
   caseId: string;
-}): DirectiveMirroredCaseSnapshotResult {
-  const mirrored = readDirectiveMirroredDiscoveryCaseRecord(input);
+}): MirroredCaseSnapshotResult {
+  const mirrored = readMirroredDiscoveryCaseRecord(input);
   if (!mirrored.record) {
     return {
       ok: false,
@@ -61,7 +61,7 @@ export function materializeDirectiveMirroredCaseSnapshot(input: {
     };
   }
 
-  const eventLog = readDirectiveCaseMirrorEvents(input);
+  const eventLog = readCaseMirrorEvents(input);
   const orderedEvents = sortEvents(eventLog.events);
   const latestEvent = orderedEvents.at(-1) ?? null;
   const stateMaterializedEvent = findLatestStateMaterializedEvent(orderedEvents);

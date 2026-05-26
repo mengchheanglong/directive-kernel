@@ -1,4 +1,4 @@
-export * from "./resolve-directive-workspace-state.ts";
+export * from "./resolve-workspace-state.ts";
 export * from "./focus-builders.ts";
 export * from "./architecture-state.ts";
 export * from "./discovery-state.ts";

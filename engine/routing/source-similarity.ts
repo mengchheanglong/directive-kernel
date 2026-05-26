@@ -1,16 +1,16 @@
-import { extractSourceSignalTokens } from "./routing-correction-ledger.ts";
-import { flattenSourceText, findSharedTokens } from "../engine-source-utils.ts";
+import { extractSourceSignalTokens } from "./correction-ledger.ts";
+import { flattenSourceText, findSharedTokens } from "../source-utils.ts";
 import type {
-  DirectiveEngineLaneId,
-  DirectiveEngineRunRecord,
-  DirectiveEngineSourceItem,
+  EngineLaneId,
+  EngineRunRecord,
+  EngineSourceItem,
 } from "../types.ts";
 
-export type DirectiveSourceSimilarityMatch = {
+export type SourceSimilarityMatch = {
   runId: string;
   candidateId: string;
   candidateName: string;
-  laneId: DirectiveEngineLaneId;
+  laneId: EngineLaneId;
   decisionState: string;
   receivedAt: string;
   similarityScore: number;
@@ -18,16 +18,16 @@ export type DirectiveSourceSimilarityMatch = {
   summary: string;
 };
 
-export type DirectiveSourceSimilarityAssessment = {
+export type SourceSimilarityAssessment = {
   summary: string;
-  relatedSources: DirectiveSourceSimilarityMatch[];
+  relatedSources: SourceSimilarityMatch[];
 } | null;
 
-export function deriveDirectiveSourceSimilarityAssessment(input: {
-  source: DirectiveEngineSourceItem;
+export function deriveSourceSimilarityAssessment(input: {
+  source: EngineSourceItem;
   sourceText: string;
-  existingRuns: DirectiveEngineRunRecord[];
-  recommendedLaneId?: DirectiveEngineLaneId | null;
+  existingRuns: EngineRunRecord[];
+  recommendedLaneId?: EngineLaneId | null;
   /** Pre-computed source signal tokens keyed by runId, avoids redundant tokenization. */
   precomputedSourceTokens?: Map<string, string[]> | null;
 }) {
@@ -50,7 +50,7 @@ export function deriveDirectiveSourceSimilarityAssessment(input: {
         sharedTokens: sharedTokens.slice(0, 6),
         summary:
           `${run.candidate.candidateName} routed to ${run.selectedLane.laneId} (${run.decision.decisionState}) with ${sharedTokens.length} shared signal tokens.`,
-      } satisfies DirectiveSourceSimilarityMatch;
+      } satisfies SourceSimilarityMatch;
     })
     .filter((entry) => entry.sharedTokens.length >= 2)
     .sort((left, right) => {

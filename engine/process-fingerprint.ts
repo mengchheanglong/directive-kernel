@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import type {
-  DirectiveEngineMissionContext,
-  DirectiveEngineRunRecord,
-  DirectiveEngineSourceItem,
+  EngineMissionContext,
+  EngineRunRecord,
+  EngineSourceItem,
 } from "./types.ts";
 
 function normalizeFingerprintText(value: string | null | undefined) {
@@ -12,32 +12,32 @@ function normalizeFingerprintText(value: string | null | undefined) {
     .replace(/\s+/g, " ");
 }
 
-let processFingerprintCache = new WeakMap<DirectiveEngineRunRecord, string>();
+let processFingerprintCache = new WeakMap<EngineRunRecord, string>();
 const processFingerprintCacheStats = {
   hits: 0,
   misses: 0,
 };
 
-export function readDirectiveEngineProcessFingerprintCacheStats() {
+export function readEngineProcessFingerprintCacheStats() {
   return {
     hits: processFingerprintCacheStats.hits,
     misses: processFingerprintCacheStats.misses,
   };
 }
 
-export function resetDirectiveEngineProcessFingerprintCache(input?: {
+export function resetEngineProcessFingerprintCache(input?: {
   clearCache?: boolean;
 }) {
   processFingerprintCacheStats.hits = 0;
   processFingerprintCacheStats.misses = 0;
   if (input?.clearCache) {
-    processFingerprintCache = new WeakMap<DirectiveEngineRunRecord, string>();
+    processFingerprintCache = new WeakMap<EngineRunRecord, string>();
   }
 }
 
 export function deriveProcessFingerprint(input: {
-  source: DirectiveEngineSourceItem;
-  mission: DirectiveEngineMissionContext;
+  source: EngineSourceItem;
+  mission: EngineMissionContext;
 }) {
   return crypto.createHash("sha256").update(JSON.stringify({
     sourceType: input.source.sourceType,
@@ -61,7 +61,7 @@ export function deriveProcessFingerprint(input: {
 }
 
 export function recordMatchesProcessFingerprint(input: {
-  record: DirectiveEngineRunRecord;
+  record: EngineRunRecord;
   fingerprint: string;
 }) {
   const cachedFingerprint = processFingerprintCache.get(input.record);

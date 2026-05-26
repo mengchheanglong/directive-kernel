@@ -1,4 +1,4 @@
-import http, {
+﻿import http, {
   type IncomingMessage,
   type Server as NodeHttpServer,
   type ServerResponse,
@@ -12,15 +12,15 @@ import {
   TEXT_FIELD_LIMITS,
 } from "../../shared/lib/text-sanitizer.ts";
 
-import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/discovery-submission-router.ts";
-import type { DirectiveEnginePlanProgressUpdate } from "../../engine/types.ts";
-import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/runtime-follow-up-record-writer.ts";
-import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/runtime-proof-bundle-writer.ts";
-import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/runtime-promotion-record-writer.ts";
-import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
-import type { RuntimeRecordRequest } from "../../runtime/lib/writers/runtime-record-writer.ts";
-import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/runtime-transformation-proof-writer.ts";
-import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/runtime-transformation-record-writer.ts";
+import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/submission-router.ts";
+import type { EnginePlanProgressUpdate } from "../../engine/types.ts";
+import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/follow-up-record-writer.ts";
+import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/proof-bundle-writer.ts";
+import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/promotion-record-writer.ts";
+import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/registry-entry-writer.ts";
+import type { RuntimeRecordRequest } from "../../runtime/lib/writers/record-writer.ts";
+import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/transformation-proof-writer.ts";
+import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/transformation-record-writer.ts";
 import {
   DEFAULT_STANDALONE_HOST_RATE_LIMIT_BURST,
   DEFAULT_STANDALONE_HOST_RATE_LIMIT_REQUESTS_PER_MINUTE,
@@ -561,7 +561,7 @@ export function startStandaloneHostServer(
           const rawBody = await readBody(req);
           const request = parseSanitizedJsonBody(rawBody) as {
             runId: string;
-          updates: DirectiveEnginePlanProgressUpdate[];
+          updates: EnginePlanProgressUpdate[];
           at?: string | null;
         };
         const result = await standaloneHost.updateEnginePlanProgress({
@@ -644,7 +644,7 @@ export function startStandaloneHostServer(
         return;
       }
 
-      if (method === "POST" && pathname === "/api/runtime/host-selection-resolutions") {
+      if (method === "POST" && pathname === "/api/runtime/selection-resolutions") {
         routeId = "runtime_host_selection_resolution_write";
         const rawBody = await readBody(req);
         const request = parseSanitizedJsonBody(rawBody) as {

@@ -1,5 +1,5 @@
-import type { DirectiveRuntimeCallableExecutionRunResult } from "../../../runtime/core/callable-execution.ts";
-import type { RuntimeHostCallableAdapterDescriptor } from "../../../runtime/lib/host/runtime-host-callable-adapter-contract.ts";
+﻿import type { RuntimeCallableExecutionRunResult } from "../../../runtime/core/callable-execution.ts";
+import type { RuntimeHostCallableAdapterDescriptor } from "../../../runtime/lib/host/callable-adapter-contract.ts";
 
 export type StandaloneRuntimeOverviewEntry = {
   kind:
@@ -108,7 +108,7 @@ export type StandaloneScientifyHostInvocationResult = {
     automaticWorkflowAdvancement: false;
   };
   hostCallableAdapter: RuntimeHostCallableAdapterDescriptor;
-  execution: DirectiveRuntimeCallableExecutionRunResult;
+  execution: RuntimeCallableExecutionRunResult;
 };
 
 export type StandaloneScientifyHostConsumptionReport = {
@@ -363,7 +363,7 @@ export type StandaloneResearchVaultSourcePackInvocationResult = {
     automaticWorkflowAdvancement: false;
   };
   hostCallableAdapter: RuntimeHostCallableAdapterDescriptor;
-  execution: DirectiveRuntimeCallableExecutionRunResult;
+  execution: RuntimeCallableExecutionRunResult;
 };
 
 export type StandaloneResearchVaultSourcePackExecutionReport = {

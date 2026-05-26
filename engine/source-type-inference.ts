@@ -1,5 +1,5 @@
-import type { DirectiveEngineSourceType } from "./types.ts";
-import { normalizeText } from "./engine-source-utils.ts";
+import type { EngineSourceType } from "./types.ts";
+import { normalizeText } from "./source-utils.ts";
 
 function normalizeUrl(value: string) {
   try {
@@ -16,11 +16,11 @@ function sourceText(input: {
   return `${normalizeText(input.title)} ${normalizeText(input.summary)}`.toLowerCase();
 }
 
-export function inferDirectiveEngineSourceType(input: {
+export function inferEngineSourceType(input: {
   title: string;
   url?: string | null;
   summary?: string | null;
-}): DirectiveEngineSourceType {
+}): EngineSourceType {
   const url = normalizeUrl(normalizeText(input.url));
   const host = url?.hostname.toLowerCase() ?? "";
   const path = url?.pathname.toLowerCase() ?? "";

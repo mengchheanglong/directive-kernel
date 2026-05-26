@@ -4,8 +4,8 @@ import path from "node:path";
 import {
   ARCHITECTURE_DEEP_TAIL_STAGES,
   resolveArchitectureDeepTailStage,
-} from "../../architecture/lib/control/architecture-deep-tail-stage-map.ts";
-import { isDirectiveAbsolutePathWithinRoot } from "../../shared/lib/directive-relative-path.ts";
+} from "../../architecture/lib/control/materialization-tail-stage-map.ts";
+import { isDirectiveAbsolutePathWithinRoot } from "../../shared/lib/relative-path.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 
 function normalizeRelativePath(relativePath: string) {

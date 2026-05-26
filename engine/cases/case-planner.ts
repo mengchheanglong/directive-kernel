@@ -1,6 +1,6 @@
-import type { DirectiveMirroredCaseSnapshotResult } from "./case-snapshot.ts";
+import type { MirroredCaseSnapshotResult } from "./case-snapshot.ts";
 
-export type DirectiveCasePlannerRecommendation =
+export type CasePlannerRecommendation =
   | {
       outcome: "stop";
       reason: string;
@@ -47,8 +47,8 @@ function containsAny(haystack: string, needles: string[]) {
 }
 
 export function planDirectiveMirroredCaseNextStep(input: {
-  snapshot: DirectiveMirroredCaseSnapshotResult;
-}): DirectiveCasePlannerRecommendation {
+  snapshot: MirroredCaseSnapshotResult;
+}): CasePlannerRecommendation {
   if (!input.snapshot.ok) {
     return {
       outcome: "blocked",

@@ -7,18 +7,18 @@ import {
 import {
   normalizeDirectiveRelativePath as normalizeRelativePath,
   resolveDirectiveRelativePath,
-} from "../../shared/lib/directive-relative-path.ts";
+} from "../../shared/lib/relative-path.ts";
 
 import type {
-  DirectiveWorkspaceArtifactKind,
-  DirectiveWorkspaceCurrentHead,
-  DirectiveWorkspaceLinkedArtifacts,
-  DirectiveWorkspaceResolvedFocus,
+  WorkspaceArtifactKind,
+  WorkspaceCurrentHead,
+  WorkspaceLinkedArtifacts,
+  WorkspaceResolvedFocus,
 } from "./index.ts";
 import {
-  readDirectiveEngineRunsOverview,
-  type StoredDirectiveEngineRunRecord,
-} from "../execution/engine-run-artifacts.ts";
+  readEngineRunsOverview,
+  type StoredEngineRunRecord,
+} from "../execution/run-artifacts.ts";
 import { applyDirectiveWorkspaceIntegrityGate } from "../workspace-truth.ts";
 import {
   fileExistsInDirectiveWorkspace,
@@ -522,7 +522,7 @@ export function extractMarkdownSectionSummary(markdown: string, heading: string)
   return optionalString(values.join(" "));
 }
 
-export function zeroLinkedArtifacts(): DirectiveWorkspaceLinkedArtifacts {
+export function zeroLinkedArtifacts(): WorkspaceLinkedArtifacts {
   return {
     discoveryIntakePath: null,
     discoveryTriagePath: null,
@@ -562,12 +562,12 @@ function matchStagePrefix(currentStage: string, prefix: string, fallback: string
   return currentStage.startsWith(prefix) ? currentStage : fallback;
 }
 
-function deriveDirectiveWorkspaceCurrentHead(
-  focus: Omit<DirectiveWorkspaceResolvedFocus, "integrityState" | "currentHead">,
-): DirectiveWorkspaceCurrentHead {
+function deriveWorkspaceCurrentHead(
+  focus: Omit<WorkspaceResolvedFocus, "integrityState" | "currentHead">,
+): WorkspaceCurrentHead {
   const linked = focus.linkedArtifacts;
   const currentStage = focus.currentStage;
-  const candidates: DirectiveWorkspaceCurrentHead[] = [];
+  const candidates: WorkspaceCurrentHead[] = [];
 
   if (linked.architectureReopenedStartPath) {
     candidates.push({
@@ -927,9 +927,9 @@ function deriveDirectiveWorkspaceCurrentHead(
 }
 
 function shouldDowngradeStaleArtifactNextStep(input: {
-  artifactKind: DirectiveWorkspaceArtifactKind;
+  artifactKind: WorkspaceArtifactKind;
   artifactPath: string;
-  currentHead: DirectiveWorkspaceCurrentHead;
+  currentHead: WorkspaceCurrentHead;
 }) {
   if (input.currentHead.artifactPath === input.artifactPath) {
     return false;
@@ -952,14 +952,14 @@ function shouldDowngradeStaleArtifactNextStep(input: {
     || input.artifactKind === "architecture_post_consumption_evaluation";
 }
 
-function buildStaleCurrentHeadArtifactNextStepMessage(currentHead: DirectiveWorkspaceCurrentHead) {
+function buildStaleCurrentHeadArtifactNextStepMessage(currentHead: WorkspaceCurrentHead) {
   return `This artifact is no longer the live continuation point; continue from currentHead "${currentHead.artifactPath}" instead.`;
 }
 
 export function finalizeResolvedFocus(
-  focus: Omit<DirectiveWorkspaceResolvedFocus, "integrityState" | "currentHead">,
-): DirectiveWorkspaceResolvedFocus {
-  const currentHead = deriveDirectiveWorkspaceCurrentHead(focus);
+  focus: Omit<WorkspaceResolvedFocus, "integrityState" | "currentHead">,
+): WorkspaceResolvedFocus {
+  const currentHead = deriveWorkspaceCurrentHead(focus);
   const artifactNextLegalStep = shouldDowngradeStaleArtifactNextStep({
     artifactKind: focus.artifactKind,
     artifactPath: focus.artifactPath,
@@ -976,8 +976,8 @@ export function finalizeResolvedFocus(
 }
 
 export function mergeNonNullLinkedArtifacts(
-  target: DirectiveWorkspaceLinkedArtifacts,
-  source: DirectiveWorkspaceLinkedArtifacts | null | undefined,
+  target: WorkspaceLinkedArtifacts,
+  source: WorkspaceLinkedArtifacts | null | undefined,
 ) {
   if (!source) {
     return;
@@ -1042,7 +1042,7 @@ export function findLatestEngineRunByCandidateId(directiveRoot: string, candidat
     .map((entry) => path.join(engineRunsRoot, entry.name))
     .map((recordPath) => {
       try {
-        const parsed = JSON.parse(readUtf8(recordPath)) as StoredDirectiveEngineRunRecord;
+        const parsed = JSON.parse(readUtf8(recordPath)) as StoredEngineRunRecord;
         if (parsed.candidate?.candidateId !== candidateId) {
           return null;
         }

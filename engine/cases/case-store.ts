@@ -3,19 +3,19 @@ import path from "node:path";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 
 import {
-  appendDirectiveCaseMirrorEvents,
-  readDirectiveCaseMirrorEvents,
-  type DirectiveCaseMirrorEvent,
+  appendCaseMirrorEvents,
+  readCaseMirrorEvents,
+  type CaseMirrorEvent,
 } from "./case-event-log.ts";
-import type { DirectiveMirroredNoteArchitectureCloseoutProjectionInput } from "../../architecture/lib/control/architecture-note-closeout-projections.ts";
-import type { DirectiveMirroredDiscoveryFrontDoorProjectionInput } from "../../discovery/lib/front-door/discovery-front-door-projections.ts";
-import type { DirectiveMirroredRuntimeFollowUpOpenProjectionInput } from "../../runtime/lib/projections/runtime-follow-up-projections.ts";
-import type { DirectiveMirroredRuntimeProofOpenProjectionInput } from "../../runtime/lib/projections/runtime-proof-open-projections.ts";
-import type { DirectiveMirroredRuntimeCapabilityBoundaryOpenProjectionInput } from "../../runtime/lib/projections/runtime-capability-boundary-projections.ts";
-import type { DirectiveMirroredRuntimePromotionReadinessOpenProjectionInput } from "../../runtime/lib/projections/runtime-promotion-readiness-projections.ts";
+import type { MirroredNoteArchitectureCloseoutProjectionInput } from "../../architecture/lib/control/note-closeout-projections.ts";
+import type { MirroredDiscoveryFrontDoorProjectionInput } from "../../discovery/lib/front-door/projections.ts";
+import type { MirroredRuntimeFollowUpOpenProjectionInput } from "../../runtime/lib/projections/follow-up-projections.ts";
+import type { MirroredRuntimeProofOpenProjectionInput } from "../../runtime/lib/projections/proof-open-projections.ts";
+import type { MirroredRuntimeCapabilityBoundaryOpenProjectionInput } from "../../runtime/lib/projections/capability-boundary-projections.ts";
+import type { MirroredRuntimePromotionReadinessOpenProjectionInput } from "../../runtime/lib/projections/promotion-readiness-projections.ts";
 import { readJson, writeJson as writeJsonPretty } from "../../shared/lib/file-io.ts";
 
-export type DirectiveMirroredDiscoveryCaseRecord = {
+export type MirroredDiscoveryCaseRecord = {
   schemaVersion: 1;
   mirrorKind: "discovery_front_door_submission";
   caseId: string;
@@ -45,12 +45,12 @@ export type DirectiveMirroredDiscoveryCaseRecord = {
     resultRecordPath?: string | null;
   };
   projectionInputs?: {
-    discoveryFrontDoor?: DirectiveMirroredDiscoveryFrontDoorProjectionInput;
-    noteArchitectureCloseout?: DirectiveMirroredNoteArchitectureCloseoutProjectionInput;
-    runtimeFollowUpOpen?: DirectiveMirroredRuntimeFollowUpOpenProjectionInput;
-    runtimeProofOpen?: DirectiveMirroredRuntimeProofOpenProjectionInput;
-    runtimeCapabilityBoundaryOpen?: DirectiveMirroredRuntimeCapabilityBoundaryOpenProjectionInput;
-    runtimePromotionReadinessOpen?: DirectiveMirroredRuntimePromotionReadinessOpenProjectionInput;
+    discoveryFrontDoor?: MirroredDiscoveryFrontDoorProjectionInput;
+    noteArchitectureCloseout?: MirroredNoteArchitectureCloseoutProjectionInput;
+    runtimeFollowUpOpen?: MirroredRuntimeFollowUpOpenProjectionInput;
+    runtimeProofOpen?: MirroredRuntimeProofOpenProjectionInput;
+    runtimeCapabilityBoundaryOpen?: MirroredRuntimeCapabilityBoundaryOpenProjectionInput;
+    runtimePromotionReadinessOpen?: MirroredRuntimePromotionReadinessOpenProjectionInput;
   } | null;
 };
 
@@ -66,8 +66,8 @@ export type MirrorDirectiveDiscoveryFrontDoorSubmissionInput = {
   routeTarget: string | null;
   operatingMode: string | null;
   queueStatus: string | null;
-  linkedArtifacts: DirectiveMirroredDiscoveryCaseRecord["linkedArtifacts"];
-  projectionInputs?: DirectiveMirroredDiscoveryCaseRecord["projectionInputs"];
+  linkedArtifacts: MirroredDiscoveryCaseRecord["linkedArtifacts"];
+  projectionInputs?: MirroredDiscoveryCaseRecord["projectionInputs"];
 };
 
 export type MirrorDirectiveNoteArchitectureCloseoutInput = {
@@ -75,8 +75,8 @@ export type MirrorDirectiveNoteArchitectureCloseoutInput = {
   caseId: string;
   receivedAt: string;
   queueStatus: string | null;
-  linkedArtifacts: DirectiveMirroredDiscoveryCaseRecord["linkedArtifacts"];
-  projectionInput: DirectiveMirroredNoteArchitectureCloseoutProjectionInput;
+  linkedArtifacts: MirroredDiscoveryCaseRecord["linkedArtifacts"];
+  projectionInput: MirroredNoteArchitectureCloseoutProjectionInput;
 };
 
 export type MirrorDirectiveRuntimeFollowUpOpenInput = {
@@ -84,8 +84,8 @@ export type MirrorDirectiveRuntimeFollowUpOpenInput = {
   caseId: string;
   receivedAt: string;
   queueStatus: string | null;
-  linkedArtifacts: DirectiveMirroredDiscoveryCaseRecord["linkedArtifacts"];
-  projectionInput: DirectiveMirroredRuntimeFollowUpOpenProjectionInput;
+  linkedArtifacts: MirroredDiscoveryCaseRecord["linkedArtifacts"];
+  projectionInput: MirroredRuntimeFollowUpOpenProjectionInput;
 };
 
 export type MirrorDirectiveRuntimeProofOpenInput = {
@@ -93,8 +93,8 @@ export type MirrorDirectiveRuntimeProofOpenInput = {
   caseId: string;
   receivedAt: string;
   queueStatus: string | null;
-  linkedArtifacts: DirectiveMirroredDiscoveryCaseRecord["linkedArtifacts"];
-  projectionInput: DirectiveMirroredRuntimeProofOpenProjectionInput;
+  linkedArtifacts: MirroredDiscoveryCaseRecord["linkedArtifacts"];
+  projectionInput: MirroredRuntimeProofOpenProjectionInput;
 };
 
 export type MirrorDirectiveRuntimeCapabilityBoundaryOpenInput = {
@@ -102,8 +102,8 @@ export type MirrorDirectiveRuntimeCapabilityBoundaryOpenInput = {
   caseId: string;
   receivedAt: string;
   queueStatus: string | null;
-  linkedArtifacts: DirectiveMirroredDiscoveryCaseRecord["linkedArtifacts"];
-  projectionInput: DirectiveMirroredRuntimeCapabilityBoundaryOpenProjectionInput;
+  linkedArtifacts: MirroredDiscoveryCaseRecord["linkedArtifacts"];
+  projectionInput: MirroredRuntimeCapabilityBoundaryOpenProjectionInput;
 };
 
 export type MirrorDirectiveRuntimePromotionReadinessOpenInput = {
@@ -111,8 +111,8 @@ export type MirrorDirectiveRuntimePromotionReadinessOpenInput = {
   caseId: string;
   receivedAt: string;
   queueStatus: string | null;
-  linkedArtifacts: DirectiveMirroredDiscoveryCaseRecord["linkedArtifacts"];
-  projectionInput: DirectiveMirroredRuntimePromotionReadinessOpenProjectionInput;
+  linkedArtifacts: MirroredDiscoveryCaseRecord["linkedArtifacts"];
+  projectionInput: MirroredRuntimePromotionReadinessOpenProjectionInput;
 };
 
 function sanitizeCaseId(value: string) {
@@ -133,7 +133,7 @@ export function resolveDirectiveCaseRecordPath(input: {
   );
 }
 
-export function readDirectiveMirroredDiscoveryCaseRecord(input: {
+export function readMirroredDiscoveryCaseRecord(input: {
   directiveRoot: string;
   caseId: string;
 }) {
@@ -147,13 +147,13 @@ export function readDirectiveMirroredDiscoveryCaseRecord(input: {
 
   return {
     caseRecordPath,
-    record: readJson<DirectiveMirroredDiscoveryCaseRecord>(caseRecordPath),
+    record: readJson<MirroredDiscoveryCaseRecord>(caseRecordPath),
   };
 }
 
-export function writeDirectiveMirroredDiscoveryCaseRecord(input: {
+export function writeMirroredDiscoveryCaseRecord(input: {
   directiveRoot: string;
-  record: DirectiveMirroredDiscoveryCaseRecord;
+  record: MirroredDiscoveryCaseRecord;
 }) {
   const caseRecordPath = resolveDirectiveCaseRecordPath({
     directiveRoot: input.directiveRoot,
@@ -204,14 +204,14 @@ function buildDiscoveryMirrorEvents(
       queueStatus: input.queueStatus,
       linkedArtifactPath: input.linkedArtifacts.routingRecordPath,
     },
-  ] satisfies DirectiveCaseMirrorEvent[];
+  ] satisfies CaseMirrorEvent[];
 }
 
 function nextDirectiveMirrorEventSequence(input: {
   directiveRoot: string;
   caseId: string;
 }) {
-  const eventLog = readDirectiveCaseMirrorEvents(input);
+  const eventLog = readCaseMirrorEvents(input);
   return eventLog.events.reduce(
     (highest, event) => Math.max(highest, event.sequence),
     0,
@@ -222,12 +222,12 @@ export function mirrorDirectiveDiscoveryFrontDoorSubmission(
   input: MirrorDirectiveDiscoveryFrontDoorSubmissionInput,
 ) {
   const { caseRecordPath, record: existingRecord } =
-    readDirectiveMirroredDiscoveryCaseRecord({
+    readMirroredDiscoveryCaseRecord({
       directiveRoot: input.directiveRoot,
       caseId: input.caseId,
     });
 
-  const nextRecord: DirectiveMirroredDiscoveryCaseRecord = {
+  const nextRecord: MirroredDiscoveryCaseRecord = {
     schemaVersion: 1,
     mirrorKind: "discovery_front_door_submission",
     caseId: input.caseId,
@@ -255,11 +255,11 @@ export function mirrorDirectiveDiscoveryFrontDoorSubmission(
     projectionInputs: input.projectionInputs ?? existingRecord?.projectionInputs ?? null,
   };
 
-  writeDirectiveMirroredDiscoveryCaseRecord({
+  writeMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     record: nextRecord,
   });
-  const appendedEvents = appendDirectiveCaseMirrorEvents({
+  const appendedEvents = appendCaseMirrorEvents({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
     events: buildDiscoveryMirrorEvents(input),
@@ -277,7 +277,7 @@ export function mirrorDirectiveDiscoveryFrontDoorSubmission(
 export function mirrorDirectiveNoteArchitectureCloseout(
   input: MirrorDirectiveNoteArchitectureCloseoutInput,
 ) {
-  const mirrored = readDirectiveMirroredDiscoveryCaseRecord({
+  const mirrored = readMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
@@ -287,7 +287,7 @@ export function mirrorDirectiveNoteArchitectureCloseout(
     );
   }
 
-  const nextRecord: DirectiveMirroredDiscoveryCaseRecord = {
+  const nextRecord: MirroredDiscoveryCaseRecord = {
     ...mirrored.record,
     routeTarget: mirrored.record.routeTarget ?? "architecture",
     operatingMode: mirrored.record.operatingMode ?? "note",
@@ -331,7 +331,7 @@ export function mirrorDirectiveNoteArchitectureCloseout(
     },
   };
 
-  writeDirectiveMirroredDiscoveryCaseRecord({
+  writeMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     record: nextRecord,
   });
@@ -340,7 +340,7 @@ export function mirrorDirectiveNoteArchitectureCloseout(
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
-  const appendedEvents = appendDirectiveCaseMirrorEvents({
+  const appendedEvents = appendCaseMirrorEvents({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
     events: [
@@ -374,7 +374,7 @@ export function mirrorDirectiveNoteArchitectureCloseout(
 export function mirrorDirectiveRuntimeFollowUpOpen(
   input: MirrorDirectiveRuntimeFollowUpOpenInput,
 ) {
-  const mirrored = readDirectiveMirroredDiscoveryCaseRecord({
+  const mirrored = readMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
@@ -384,7 +384,7 @@ export function mirrorDirectiveRuntimeFollowUpOpen(
     );
   }
 
-  const nextRecord: DirectiveMirroredDiscoveryCaseRecord = {
+  const nextRecord: MirroredDiscoveryCaseRecord = {
     ...mirrored.record,
     routeTarget: mirrored.record.routeTarget ?? "runtime",
     queueStatus: input.queueStatus,
@@ -427,7 +427,7 @@ export function mirrorDirectiveRuntimeFollowUpOpen(
     },
   };
 
-  writeDirectiveMirroredDiscoveryCaseRecord({
+  writeMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     record: nextRecord,
   });
@@ -436,7 +436,7 @@ export function mirrorDirectiveRuntimeFollowUpOpen(
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
-  const appendedEvents = appendDirectiveCaseMirrorEvents({
+  const appendedEvents = appendCaseMirrorEvents({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
     events: [
@@ -470,7 +470,7 @@ export function mirrorDirectiveRuntimeFollowUpOpen(
 export function mirrorDirectiveRuntimeProofOpen(
   input: MirrorDirectiveRuntimeProofOpenInput,
 ) {
-  const mirrored = readDirectiveMirroredDiscoveryCaseRecord({
+  const mirrored = readMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
@@ -480,7 +480,7 @@ export function mirrorDirectiveRuntimeProofOpen(
     );
   }
 
-  const nextRecord: DirectiveMirroredDiscoveryCaseRecord = {
+  const nextRecord: MirroredDiscoveryCaseRecord = {
     ...mirrored.record,
     routeTarget: mirrored.record.routeTarget ?? "runtime",
     queueStatus: input.queueStatus,
@@ -523,7 +523,7 @@ export function mirrorDirectiveRuntimeProofOpen(
     },
   };
 
-  writeDirectiveMirroredDiscoveryCaseRecord({
+  writeMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     record: nextRecord,
   });
@@ -532,7 +532,7 @@ export function mirrorDirectiveRuntimeProofOpen(
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
-  const appendedEvents = appendDirectiveCaseMirrorEvents({
+  const appendedEvents = appendCaseMirrorEvents({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
     events: [
@@ -566,7 +566,7 @@ export function mirrorDirectiveRuntimeProofOpen(
 export function mirrorDirectiveRuntimeCapabilityBoundaryOpen(
   input: MirrorDirectiveRuntimeCapabilityBoundaryOpenInput,
 ) {
-  const mirrored = readDirectiveMirroredDiscoveryCaseRecord({
+  const mirrored = readMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
@@ -576,7 +576,7 @@ export function mirrorDirectiveRuntimeCapabilityBoundaryOpen(
     );
   }
 
-  const nextRecord: DirectiveMirroredDiscoveryCaseRecord = {
+  const nextRecord: MirroredDiscoveryCaseRecord = {
     ...mirrored.record,
     routeTarget: mirrored.record.routeTarget ?? "runtime",
     queueStatus: input.queueStatus,
@@ -619,7 +619,7 @@ export function mirrorDirectiveRuntimeCapabilityBoundaryOpen(
     },
   };
 
-  writeDirectiveMirroredDiscoveryCaseRecord({
+  writeMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     record: nextRecord,
   });
@@ -628,7 +628,7 @@ export function mirrorDirectiveRuntimeCapabilityBoundaryOpen(
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
-  const appendedEvents = appendDirectiveCaseMirrorEvents({
+  const appendedEvents = appendCaseMirrorEvents({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
     events: [
@@ -662,7 +662,7 @@ export function mirrorDirectiveRuntimeCapabilityBoundaryOpen(
 export function mirrorDirectiveRuntimePromotionReadinessOpen(
   input: MirrorDirectiveRuntimePromotionReadinessOpenInput,
 ) {
-  const mirrored = readDirectiveMirroredDiscoveryCaseRecord({
+  const mirrored = readMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
@@ -672,7 +672,7 @@ export function mirrorDirectiveRuntimePromotionReadinessOpen(
     );
   }
 
-  const nextRecord: DirectiveMirroredDiscoveryCaseRecord = {
+  const nextRecord: MirroredDiscoveryCaseRecord = {
     ...mirrored.record,
     routeTarget: mirrored.record.routeTarget ?? "runtime",
     queueStatus: input.queueStatus,
@@ -719,7 +719,7 @@ export function mirrorDirectiveRuntimePromotionReadinessOpen(
     },
   };
 
-  writeDirectiveMirroredDiscoveryCaseRecord({
+  writeMirroredDiscoveryCaseRecord({
     directiveRoot: input.directiveRoot,
     record: nextRecord,
   });
@@ -728,7 +728,7 @@ export function mirrorDirectiveRuntimePromotionReadinessOpen(
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
   });
-  const appendedEvents = appendDirectiveCaseMirrorEvents({
+  const appendedEvents = appendCaseMirrorEvents({
     directiveRoot: input.directiveRoot,
     caseId: input.caseId,
     events: [

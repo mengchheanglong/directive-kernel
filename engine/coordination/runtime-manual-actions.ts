@@ -3,20 +3,20 @@ import {
   requireDirectiveString,
 } from "../approval-boundary.ts";
 import {
-  type DirectiveAutonomousRuntimePromotionAutomationPolicy,
-  buildDirectiveRuntimePromotionAutomationDryRunReport,
+  type AutonomousRuntimePromotionAutomationPolicy,
+  buildRuntimePromotionAutomationDryRunReport,
 } from "./runtime-promotion-automation.ts";
 import {
   type RuntimePromotionRecordRequest,
   evaluatePreHostRuntimePromotionRecordPrerequisites,
   resolveRuntimePromotionRecordPath,
-} from "../../runtime/lib/writers/runtime-promotion-record-writer.ts";
+} from "../../runtime/lib/writers/promotion-record-writer.ts";
 import {
   resolveDirectiveRuntimePromotionSpecificationPath,
-} from "../../runtime/lib/host/runtime-promotion-specification.ts";
-import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/runtime-registry-entry-writer.ts";
+} from "../../runtime/lib/host/promotion-specification.ts";
+import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/registry-entry-writer.ts";
 
-const MANUAL_RUNTIME_REGISTRY_POLICY: DirectiveAutonomousRuntimePromotionAutomationPolicy = {
+const MANUAL_RUNTIME_REGISTRY_POLICY: AutonomousRuntimePromotionAutomationPolicy = {
   autoHostAdapterDescriptor: false,
   autoHostCallableExecution: false,
   autoWriteRegistryEntry: true,
@@ -139,7 +139,7 @@ export function buildManualRuntimeRegistryAcceptanceRequest(input: {
   const acceptedBy = normalizeDirectiveApprovalActor(input.acceptedBy);
   const rationale = requireDirectiveString(input.rationale, "rationale");
   const acceptedAt = String(input.acceptedAt ?? "").trim() || new Date().toISOString();
-  const report = buildDirectiveRuntimePromotionAutomationDryRunReport({
+  const report = buildRuntimePromotionAutomationDryRunReport({
     directiveRoot: input.directiveRoot,
     promotionRecordPath: input.promotionRecordPath,
     policy: MANUAL_RUNTIME_REGISTRY_POLICY,

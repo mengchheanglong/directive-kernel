@@ -5,25 +5,25 @@ import {
   resolveStructuralProcessStages,
 } from "./lane-planning-helpers.ts";
 import type {
-  DirectiveEngineAdaptationPlan,
-  DirectiveEngineAnalysis,
-  DirectiveEngineCandidate,
-  DirectiveEngineDecision,
-  DirectiveEngineEvent,
-  DirectiveEngineExtractionPlan,
-  DirectiveEngineImprovementPlan,
-  DirectiveEngineIntegrationProposal,
-  DirectiveEngineProofPlan,
-  DirectiveEngineReportPlan,
+  EngineAdaptationPlan,
+  EngineAnalysis,
+  EngineCandidate,
+  EngineDecision,
+  EngineEvent,
+  EngineExtractionPlan,
+  EngineImprovementPlan,
+  EngineIntegrationProposal,
+  EngineProofPlan,
+  EngineReportPlan,
 } from "../types.ts";
-import type { DirectiveEngineLanePlanningInput } from "../lane.ts";
+import type { EngineLanePlanningInput } from "../lane.ts";
 
 function buildSourceAnalysis(
   input: {
-    planningInput: DirectiveEngineLanePlanningInput;
+    planningInput: EngineLanePlanningInput;
     usefulnessRationale: string;
   },
-): DirectiveEngineAnalysis {
+): EngineAnalysis {
   const structuralProcessStages = resolveStructuralProcessStages(
     input.planningInput.source,
   );
@@ -76,16 +76,16 @@ function buildSourceAnalysis(
 
 function buildEvents(input: {
   receivedAt: string;
-  analysis: DirectiveEngineAnalysis;
-  candidate: DirectiveEngineCandidate;
-  extractionPlan: DirectiveEngineExtractionPlan;
-  adaptationPlan: DirectiveEngineAdaptationPlan;
-  improvementPlan: DirectiveEngineImprovementPlan;
-  proofPlan: DirectiveEngineProofPlan;
-  decision: DirectiveEngineDecision;
-  integrationProposal: DirectiveEngineIntegrationProposal;
-  reportPlan: DirectiveEngineReportPlan;
-}): DirectiveEngineEvent[] {
+  analysis: EngineAnalysis;
+  candidate: EngineCandidate;
+  extractionPlan: EngineExtractionPlan;
+  adaptationPlan: EngineAdaptationPlan;
+  improvementPlan: EngineImprovementPlan;
+  proofPlan: EngineProofPlan;
+  decision: EngineDecision;
+  integrationProposal: EngineIntegrationProposal;
+  reportPlan: EngineReportPlan;
+}): EngineEvent[] {
   return [
     {
       type: "source_ingested",

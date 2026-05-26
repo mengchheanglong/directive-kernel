@@ -4,10 +4,10 @@ import path from "node:path";
 import fs from "node:fs";
 
 import {
-  DirectiveEngine,
-  createFilesystemDirectiveEngineStore,
+  Engine,
+  createFilesystemEngineStore,
   createDirectiveWorkspaceEngineLanes,
-  type DirectiveEngineMissionInput,
+  type EngineMissionInput,
 } from "../../engine/index.ts";
 import {
   approveGapFormalization,
@@ -25,7 +25,7 @@ import {
   supersedeMissionEvolution,
 } from "../../engine/mission/index.ts";
 import { buildOperatorDecisionInboxReport } from "../../engine/coordination/operator-decision-inbox/operator-decision-inbox.ts";
-import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/discovery-gap-worklist-refresh.ts";
+import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/gap-worklist-refresh.ts";
 import {
   buildArchitectureSourceInput,
   writeJson,
@@ -109,7 +109,7 @@ export async function runMissionFeedbackLoopChecks() {
     ].join("\n"),
   );
 
-  const weakMission: DirectiveEngineMissionInput = {
+  const weakMission: EngineMissionInput = {
     missionId: "mission-feedback-hardening",
     currentObjective: "Improve the system.",
     usefulnessSignals: ["be better"],
@@ -118,10 +118,10 @@ export async function runMissionFeedbackLoopChecks() {
     successSignal: "Better.",
     adoptionTarget: "architecture",
   };
-  const store = createFilesystemDirectiveEngineStore({
+  const store = createFilesystemEngineStore({
     engineRunsRoot: path.join(directiveRoot, "runtime", "standalone-host", "engine-runs"),
   });
-  const engine = new DirectiveEngine({
+  const engine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),
     store,
   });

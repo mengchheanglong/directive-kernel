@@ -50,7 +50,7 @@ export {
   listDirectiveRuntimeScientifyLiteratureAccessTools,
 } from "./bundle.ts";
 export type {
-  DirectiveRuntimeCallableBundleTool,
+  RuntimeCallableBundleTool,
   ScientifyLiteratureAccessToolName,
 } from "./bundle.ts";
 

@@ -1,8 +1,8 @@
-import type { DirectiveWorkspaceArtifactKind } from "../index.ts";
+import type { WorkspaceArtifactKind } from "../index.ts";
 import {
-  readDirectiveRuntimeFollowUpArtifact,
-  type DirectiveRuntimeFollowUpArtifact,
-} from "../../../runtime/lib/openers/runtime-follow-up-opener.ts";
+  readRuntimeFollowUpArtifact,
+  type RuntimeFollowUpArtifact,
+} from "../../../runtime/lib/openers/follow-up.ts";
 import {
   extractColonValue,
   extractMarkdownSectionSummary,
@@ -34,7 +34,7 @@ import {
   recordMissingExpectedArtifact,
   recordMissingLinkedArtifactIfAbsent,
 } from "../../artifact-link-validation.ts";
-import { resolveDirectiveRuntimePromotionSpecificationPath } from "../../../runtime/lib/host/runtime-promotion-specification.ts";
+import { resolveDirectiveRuntimePromotionSpecificationPath } from "../../../runtime/lib/host/promotion-specification.ts";
 import type {
   GenericLegacyRuntimeFollowUpArtifact,
   GenericLegacyRuntimeHandoffArtifact,
@@ -60,7 +60,7 @@ import type {
   GenericRuntimeRuntimeCapabilityBoundaryArtifact,
   GenericRuntimePromotionReadinessArtifact,
   GenericRuntimePromotionRecordArtifact,
-} from "./runtime-focus-readers.ts";
+} from "./readers.ts";
 import {
   isAcceptedRuntimeRegistryArtifact,
   readGenericCallableIntegrationArtifact,
@@ -69,7 +69,7 @@ import {
   readGenericRuntimeProofArtifact,
   readGenericRuntimeRecordArtifact,
   readGenericRuntimeRuntimeCapabilityBoundaryArtifact,
-} from "./runtime-focus-readers.ts";
+} from "./readers.ts";
 import {
   buildLegacyRuntimeFollowUpState,
   buildLegacyRuntimeHandoffState,
@@ -88,7 +88,7 @@ import {
   buildLegacyRuntimeTransformationProofState,
   buildLegacyRuntimeTransformationRecordState,
   buildLegacyRuntimeValidationNoteState,
-} from "./runtime-focus-legacy.ts";
+} from "./legacy.ts";
 import {
   findRuntimePromotionReadinessPathForCandidate,
   findRuntimePromotionRecordPathForCandidate,
@@ -98,7 +98,7 @@ import {
   inferRuntimePromotionReadinessPathFromCapabilityBoundary,
   inferRuntimePromotionSpecificationPathFromPromotionReadiness,
   inferRuntimeRuntimeCapabilityBoundaryPathFromProof,
-} from "./runtime-focus-paths.ts";
+} from "./paths.ts";
 
 export function buildRuntimePromotionReadinessBlockers(input: {
   promotionReadiness: GenericRuntimePromotionReadinessArtifact | null;
@@ -126,7 +126,7 @@ export function buildRuntimePromotionReadinessBlockers(input: {
 
 function buildRuntimeState(input: {
   directiveRoot: string;
-  followUp: DirectiveRuntimeFollowUpArtifact | null;
+  followUp: RuntimeFollowUpArtifact | null;
   runtimeRecord: GenericRuntimeRecordArtifact | null;
   runtimeProof: GenericRuntimeProofArtifact | null;
   capabilityBoundary: GenericRuntimeRuntimeCapabilityBoundaryArtifact | null;
@@ -482,7 +482,7 @@ function buildRuntimeState(input: {
 
 export function buildRuntimeArtifactStage(input: {
   directiveRoot: string;
-  artifactKind: DirectiveWorkspaceArtifactKind;
+  artifactKind: WorkspaceArtifactKind;
   legacyFollowUp: GenericLegacyRuntimeFollowUpArtifact | null;
   legacyHandoff: GenericLegacyRuntimeHandoffArtifact | null;
   legacyRuntimeRecord: GenericLegacyRuntimeRecordArtifact | null;
@@ -740,7 +740,7 @@ export function resolveRuntimeFocusFromAnyPath(input: {
 }) {
   const relativePath = resolveDirectiveRelativePath(input.directiveRoot, input.artifactPath, "artifactPath");
 
-  let followUp: DirectiveRuntimeFollowUpArtifact | null = null;
+  let followUp: RuntimeFollowUpArtifact | null = null;
   let legacyFollowUp: GenericLegacyRuntimeFollowUpArtifact | null = null;
   let legacyHandoff: GenericLegacyRuntimeHandoffArtifact | null = null;
   let legacyRuntimeRecord: GenericLegacyRuntimeRecordArtifact | null = null;
@@ -764,7 +764,7 @@ export function resolveRuntimeFocusFromAnyPath(input: {
   let promotionReadiness: GenericRuntimePromotionReadinessArtifact | null = null;
   let promotionRecord: GenericRuntimePromotionRecordArtifact | null = null;
   let callableIntegration: ReturnType<typeof readGenericCallableIntegrationArtifact> | null = null;
-  let artifactKind: DirectiveWorkspaceArtifactKind = "unknown";
+  let artifactKind: WorkspaceArtifactKind = "unknown";
 
   if (relativePath.startsWith("runtime/legacy-handoff/")) {
     legacyHandoff = readGenericLegacyRuntimeHandoffArtifact({
@@ -774,7 +774,7 @@ export function resolveRuntimeFocusFromAnyPath(input: {
     artifactKind = "runtime_handoff_legacy";
   } else if (relativePath.startsWith("runtime/00-follow-up/")) {
     try {
-      followUp = readDirectiveRuntimeFollowUpArtifact({
+      followUp = readRuntimeFollowUpArtifact({
         directiveRoot: input.directiveRoot,
         followUpPath: relativePath,
       });
@@ -1096,7 +1096,7 @@ export function resolveRuntimeFocusFromAnyPath(input: {
     followUp = readLinkedArtifactIfPresent({
       directiveRoot: input.directiveRoot,
       relativePath: runtimeRecord.linkedFollowUpRecord,
-      read: (followUpPath) => readDirectiveRuntimeFollowUpArtifact({
+      read: (followUpPath) => readRuntimeFollowUpArtifact({
         directiveRoot: input.directiveRoot,
         followUpPath,
       }),
@@ -1121,7 +1121,7 @@ export function resolveRuntimeFocusFromAnyPath(input: {
     followUp = readLinkedArtifactIfPresent({
       directiveRoot: input.directiveRoot,
       relativePath: runtimeProof.linkedFollowUpPath,
-      read: (followUpPath) => readDirectiveRuntimeFollowUpArtifact({
+      read: (followUpPath) => readRuntimeFollowUpArtifact({
         directiveRoot: input.directiveRoot,
         followUpPath,
       }),
@@ -1234,7 +1234,7 @@ export function resolveRuntimeFocusFromAnyPath(input: {
   }
 
   if (runtimeRecord?.linkedFollowUpRecord && !followUp && fileExistsInDirectiveWorkspace(input.directiveRoot, runtimeRecord.linkedFollowUpRecord)) {
-    followUp = readDirectiveRuntimeFollowUpArtifact({
+    followUp = readRuntimeFollowUpArtifact({
       directiveRoot: input.directiveRoot,
       followUpPath: runtimeRecord.linkedFollowUpRecord,
     });
@@ -1346,7 +1346,7 @@ export function resolveRuntimeFocusFromAnyPath(input: {
     && !followUp
     && fileExistsInDirectiveWorkspace(input.directiveRoot, runtimeRecord.linkedFollowUpRecord)
   ) {
-    followUp = readDirectiveRuntimeFollowUpArtifact({
+    followUp = readRuntimeFollowUpArtifact({
       directiveRoot: input.directiveRoot,
       followUpPath: runtimeRecord.linkedFollowUpRecord,
     });

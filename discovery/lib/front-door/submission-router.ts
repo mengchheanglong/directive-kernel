@@ -1,0 +1,120 @@
+﻿import type {
+  DiscoveryIntakeSubmission,
+  DiscoverySourceType,
+} from "../intake/queue-writer.ts";
+import type { DiscoveryCaseIntakeSection, DiscoveryCaseTriageSection } from "../records/case-record-writer.ts";
+import type { DiscoveryCompletionRecordRequest } from "../records/completion-record-writer.ts";
+import type {
+  DiscoveryFastPathRecordRequest,
+} from "../records/fast-path-record-writer.ts";
+import type {
+  DiscoveryRoutingDecisionState,
+} from "../routing/record-writer.ts";
+import type { DiscoveryRoutingTarget } from "../intake/queue-writer.ts";
+import type {
+  EnginePrimaryAdoptionTarget,
+  EngineWorkflowBoundaryShape,
+} from "../../../engine/types.ts";
+import { requiredString } from "../../../shared/lib/validation.ts";
+
+export type DiscoverySubmissionShape = "queue_only" | "fast_path" | "split_case";
+
+type DiscoveryCaseRoutingSection = {
+  route_date: string;
+  source_type: DiscoverySourceType;
+  decision_state: DiscoveryRoutingDecisionState;
+  adoption_target: string;
+  route_destination: Exclude<DiscoveryRoutingTarget, null>;
+  why_this_route: string;
+  why_not_alternatives: string;
+  receiving_track_owner: string;
+  required_next_artifact: string;
+  handoff_contract_used?: string | null;
+  reentry_or_promotion_conditions?: string | null;
+  review_cadence?: string | null;
+  output_relative_path?: string | null;
+};
+
+type DiscoveryCaseCompletionSection = Omit<
+  DiscoveryCompletionRecordRequest,
+  "candidate_id" | "candidate_name" | "linked_intake_record" | "linked_routing_record"
+>;
+
+export type DiscoverySubmissionRequest = DiscoveryIntakeSubmission & {
+  primary_adoption_target?: EnginePrimaryAdoptionTarget | null;
+  contains_executable_code?: boolean | null;
+  contains_workflow_pattern?: boolean | null;
+  improves_directive_workspace?: boolean | null;
+  workflow_boundary_shape?: EngineWorkflowBoundaryShape | null;
+  record_shape?: DiscoverySubmissionShape | "auto" | null;
+  fast_path?: Omit<
+    DiscoveryFastPathRecordRequest,
+    "candidate_id" | "candidate_name" | "source_type" | "source_reference"
+  > | null;
+  case_record?: {
+    intake: Omit<
+      DiscoveryCaseIntakeSection,
+      "source_type" | "source_reference"
+    > & { source_type?: DiscoverySourceType | null; source_reference?: string | null };
+    triage: DiscoveryCaseTriageSection;
+    routing: DiscoveryCaseRoutingSection;
+    completion?: DiscoveryCaseCompletionSection | null;
+  } | null;
+};
+
+export function determineDiscoverySubmissionShape(
+  request: DiscoverySubmissionRequest,
+): DiscoverySubmissionShape {
+  const explicitShape = request.record_shape ?? "auto";
+
+  if (explicitShape === "fast_path") {
+    if (!request.fast_path) {
+      throw new Error("fast_path payload is required when record_shape is fast_path");
+    }
+    return "fast_path";
+  }
+
+  if (explicitShape === "split_case") {
+    if (!request.case_record) {
+      throw new Error("case_record payload is required when record_shape is split_case");
+    }
+    return "split_case";
+  }
+
+  if (explicitShape === "queue_only") {
+    return "queue_only";
+  }
+
+  if (request.case_record) {
+    return "split_case";
+  }
+  if (request.fast_path) {
+    return "fast_path";
+  }
+  return "queue_only";
+}
+
+export function toDiscoveryIntakeSubmission(
+  request: DiscoverySubmissionRequest,
+): DiscoveryIntakeSubmission {
+  const submissionOrigin = request.submission_origin ?? null;
+  return {
+    candidate_id: requiredString(request.candidate_id, "candidate_id"),
+    candidate_name: requiredString(request.candidate_name, "candidate_name"),
+    source_type: request.source_type ?? "internal-signal",
+    source_reference: requiredString(request.source_reference, "source_reference"),
+    mission_alignment: request.mission_alignment ?? null,
+    capability_gap_id: request.capability_gap_id ?? null,
+    notes: request.notes ?? null,
+    ...(submissionOrigin ? { submission_origin: submissionOrigin } : {}),
+    ...(typeof request.discovery_signal_band === "string" && request.discovery_signal_band.trim()
+      ? { discovery_signal_band: request.discovery_signal_band }
+      : {}),
+    ...(typeof request.signal_total_score === "number" && Number.isFinite(request.signal_total_score)
+      ? { signal_total_score: request.signal_total_score }
+      : {}),
+    ...(typeof request.signal_score_summary === "string" && request.signal_score_summary.trim()
+      ? { signal_score_summary: request.signal_score_summary }
+      : {}),
+  };
+}
