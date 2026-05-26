@@ -195,7 +195,7 @@ export function findRuntimeStandaloneHostConsumptionReportPathForCandidate(input
   const reportDir = path.join(
     input.directiveRoot,
     "runtime",
-    "standalone-host",
+    "host-artifacts",
     "host-consumption",
   );
   if (!fs.existsSync(reportDir)) {
@@ -208,7 +208,7 @@ export function findRuntimeStandaloneHostConsumptionReportPathForCandidate(input
       entry.isFile() && entry.name.endsWith(`-${candidateId}-host-consumption-report.json`)
     )
     .map((entry) =>
-      path.join("runtime", "standalone-host", "host-consumption", entry.name).replace(/\\/g, "/")
+      path.join("runtime", "host-artifacts", "host-consumption", entry.name).replace(/\\/g, "/")
     )
     .sort((left, right) => left.localeCompare(right));
 

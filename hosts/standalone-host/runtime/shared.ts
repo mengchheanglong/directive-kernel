@@ -131,7 +131,7 @@ export function resolveStandaloneHostReportPath(input: {
   return path
     .join(
       "runtime",
-      "standalone-host",
+      "host-artifacts",
       input.category,
       `${date}-${input.candidateId}-${input.suffix}.json`,
     )

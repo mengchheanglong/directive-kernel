@@ -403,7 +403,7 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
 
   const runtimeArtifactsRoot = normalizeAbsolutePath(
     input.runtimeArtifactsRoot
-      ?? path.join(directiveRoot, "runtime", "standalone-host"),
+      ?? path.join(directiveRoot, "runtime", "host-artifacts"),
   );
   const engineRunsRoot = normalizeAbsolutePath(path.resolve(runtimeArtifactsRoot, "engine-runs"));
   const queue = loadQueue(directiveRoot);

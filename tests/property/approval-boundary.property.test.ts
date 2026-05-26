@@ -49,10 +49,10 @@ function invokeGuard(scenario: ApprovalScenario): void {
 function seedEngineRunFixture(): { directiveRoot: string; artifactPath: string } {
   const directiveRoot = path.join(os.tmpdir(), `dk-approval-boundary-${randomUUID()}`);
   const runId = "approval-boundary-allowed-fixture";
-  const engineRunsDir = path.join(directiveRoot, "runtime", "standalone-host", "engine-runs");
+  const engineRunsDir = path.join(directiveRoot, "runtime", "host-artifacts", "engine-runs");
   fs.mkdirSync(engineRunsDir, { recursive: true });
 
-  const artifactPath = `runtime/standalone-host/engine-runs/${runId}.json`;
+  const artifactPath = `runtime/host-artifacts/engine-runs/${runId}.json`;
   const record = {
     runId,
     receivedAt: new Date().toISOString(),

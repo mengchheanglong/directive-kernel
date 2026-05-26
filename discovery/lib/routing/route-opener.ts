@@ -578,7 +578,7 @@ function findEngineRunForCandidate(input: {
   directiveRoot: string;
   candidateId: string;
 }): EngineRunMatch | null {
-  const engineRunsRoot = path.join(input.directiveRoot, "runtime", "standalone-host", "engine-runs");
+  const engineRunsRoot = path.join(input.directiveRoot, "runtime", "host-artifacts", "engine-runs");
   if (!fs.existsSync(engineRunsRoot)) {
     return null;
   }

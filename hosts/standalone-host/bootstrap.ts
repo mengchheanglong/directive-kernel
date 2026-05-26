@@ -87,7 +87,7 @@ const RUNTIME_SCAFFOLD_DIRS = [
   path.join("runtime", "06-promotion-specifications"),
   path.join("runtime", "07-promotion-records"),
   path.join("runtime", "08-registry"),
-  path.join("runtime", "standalone-host"),
+  path.join("runtime", "host-artifacts"),
 ] as const;
 
 function createDirectiveRootScaffold(directiveRoot: string) {
@@ -473,7 +473,7 @@ export function bootstrapStandaloneHostWorkspace(
   );
   const scaffoldDirectories = createDirectiveRootScaffold(directiveRoot);
   const runtimeArtifactsDirectory = normalizeAbsolutePath(
-    path.resolve(directiveRoot, "runtime", "standalone-host"),
+    path.resolve(directiveRoot, "runtime", "host-artifacts"),
   );
   const readmePath = normalizeAbsolutePath(
     path.resolve(outputRoot, DEFAULT_STANDALONE_BOOTSTRAP_README_FILENAME),
@@ -558,7 +558,7 @@ export function bootstrapStandaloneHostWorkspace(
       port: 8787,
     },
     runtimeArtifacts: {
-      relativeRoot: "runtime/standalone-host",
+      relativeRoot: "runtime/host-artifacts",
       writeStatusFile: true,
       writeAccessLog: true,
       writeBootLog: true,

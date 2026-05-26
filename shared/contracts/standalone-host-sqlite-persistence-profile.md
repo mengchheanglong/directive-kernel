@@ -17,7 +17,7 @@ SQLite runtime boundary:
 - the SQLite lane must stay optional and fail-closed
 
 Default path behavior:
-- when `persistence.mode = filesystem_and_sqlite` and `persistence.sqlitePath` is omitted, the host must default to `runtime/standalone-host/standalone-host.sqlite` under the configured Directive root
+- when `persistence.mode = filesystem_and_sqlite` and `persistence.sqlitePath` is omitted, the host must default to `runtime/host-artifacts/standalone-host.sqlite` under the configured Directive root
 - when `persistence.sqlitePath` is provided, it becomes the resolved database path for the host
 
 Minimum required ledger coverage:

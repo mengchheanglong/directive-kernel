@@ -162,7 +162,7 @@ Every task in this plan is mandatory. No task is marked optional.
     - Named scheme rejection (`file:`, `data:`, `ftp:`, `gopher:`)
     - Loopback flag interaction: rejects `http://localhost` with `allowLoopback: false`, accepts with `allowLoopback: true`
     - Rate limiter exhaustion: under `auth.mode: static_bearer`, drive the host past `requestsPerMinute + burst` and assert the next response is `429` with `Retry-After`
-    - Rate limiter does not persist: assert no rate-limit-named files appear under `runtime/standalone-host/` after a burst
+    - Rate limiter does not persist: assert no rate-limit-named files appear under `runtime/host-artifacts/` after a burst
     - Sanitizer behavior: one strip case and one length-cap case
     - Offline mode integration: stand up the host with `runtime.allowExternalFetches: false` and call one literature-access executor; assert the failure carries `reason: "external_fetches_disabled"`
     - Schema constraints: read each schema named in the design table and assert the named fields carry the expected `maxLength`

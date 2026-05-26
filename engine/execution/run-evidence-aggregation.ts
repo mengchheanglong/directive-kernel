@@ -280,7 +280,7 @@ export function aggregateRunEvidence(options: {
     options.directiveRoot || getDefaultDirectiveWorkspaceRoot(),
   );
   const engineRunsRoot = normalizeAbsolutePath(
-    path.join(directiveRoot, "runtime", "standalone-host", "engine-runs"),
+    path.join(directiveRoot, "runtime", "host-artifacts", "engine-runs"),
   );
 
   const artifacts = readAllRunRecords(engineRunsRoot);

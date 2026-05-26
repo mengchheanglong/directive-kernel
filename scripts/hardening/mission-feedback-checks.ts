@@ -119,7 +119,7 @@ export async function runMissionFeedbackLoopChecks() {
     adoptionTarget: "architecture",
   };
   const store = createFilesystemEngineStore({
-    engineRunsRoot: path.join(directiveRoot, "runtime", "standalone-host", "engine-runs"),
+    engineRunsRoot: path.join(directiveRoot, "runtime", "host-artifacts", "engine-runs"),
   });
   const engine = new Engine({
     laneSet: createDirectiveWorkspaceEngineLanes(),

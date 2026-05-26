@@ -558,7 +558,7 @@ export function readEngineRunsOverview(
 ): EngineRunsOverview {
   const directiveRoot = normalizeAbsolutePath(options.directiveRoot || getDefaultDirectiveWorkspaceRoot());
   const engineRunsRoot = normalizeAbsolutePath(
-    path.join(directiveRoot, "runtime", "standalone-host", "engine-runs"),
+    path.join(directiveRoot, "runtime", "host-artifacts", "engine-runs"),
   );
   const maxRuns = Math.max(1, options.maxRuns ?? 6);
   const counts = zeroCounts();
@@ -645,7 +645,7 @@ export function readEngineRunDetail(
 ): EngineRunDetail {
   const directiveRoot = normalizeAbsolutePath(options.directiveRoot || getDefaultDirectiveWorkspaceRoot());
   const engineRunsRoot = normalizeAbsolutePath(
-    path.join(directiveRoot, "runtime", "standalone-host", "engine-runs"),
+    path.join(directiveRoot, "runtime", "host-artifacts", "engine-runs"),
   );
   const runId = String(options.runId || "").trim();
 

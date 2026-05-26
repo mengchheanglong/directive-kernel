@@ -437,7 +437,7 @@ Append-only ledger at `<directiveRoot>/engine/decision-policy-ledger.json`. Each
 - `runtime/lib/` — lifecycle orchestration code
 - `runtime/core/` — contract types and constants
 - `runtime/capabilities/` — concrete callable implementations
-- `runtime/standalone-host/` — artifact directory used by standalone host server (NOT a host)
+- `runtime/host-artifacts/` — artifact directory used by standalone host server (NOT a host)
 
 ### Web host "missing build" page
 `server.ts` returns 503 with a helpful page when `ui/dist/index.html` is absent. The `start` script builds UI first; `dev` proxies via Vite.

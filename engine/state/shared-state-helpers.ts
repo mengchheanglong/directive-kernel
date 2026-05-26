@@ -1031,7 +1031,7 @@ export function findLatestEngineRunByCandidateId(directiveRoot: string, candidat
     return null;
   }
 
-  const engineRunsRoot = path.join(directiveRoot, "runtime", "standalone-host", "engine-runs");
+  const engineRunsRoot = path.join(directiveRoot, "runtime", "host-artifacts", "engine-runs");
   if (!fs.existsSync(engineRunsRoot)) {
     return null;
   }

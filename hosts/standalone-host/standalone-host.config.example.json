@@ -8,7 +8,7 @@
     "port": 8787
   },
   "runtimeArtifacts": {
-    "relativeRoot": "runtime/standalone-host",
+    "relativeRoot": "runtime/host-artifacts",
     "writeStatusFile": true,
     "writeAccessLog": true,
     "writeBootLog": true

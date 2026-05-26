@@ -306,15 +306,15 @@ Order in the table reflects recommended sequencing within each priority band.
 
 **Priority:** P1 · **Effort:** S
 
-**Problem.** `runtime/lib/` (lifecycle code), `runtime/core/` (contract types), `runtime/capabilities/` (concrete callables), and `runtime/standalone-host/` (artifact directory used by the standalone host server, not a host) — plus `hosts/standalone-host/` (the actual host). The runtime/standalone-host vs hosts/standalone-host collision has burned someone already; it will burn more people.
+**Problem.** `runtime/lib/` (lifecycle code), `runtime/core/` (contract types), `runtime/capabilities/` (concrete callables), and `runtime/host-artifacts/` (artifact directory used by the standalone host server, not a host) — plus `hosts/standalone-host/` (the actual host). The runtime/standalone-host vs hosts/standalone-host collision has burned someone already; it will burn more people.
 
 **Fix.**
-1. Rename `runtime/standalone-host/` → `runtime/host-artifacts/` (or `runtime/runtime-state/`). It is a state directory, name it like one.
+1. Rename `runtime/standalone-host/` → `runtime/host-artifacts/`. It is a state directory, name it like one.
 2. Update all references (`hosts/standalone-host/server.ts`, `config.ts`, docs).
 3. Add a one-paragraph "where things live" map to `runtime/README.md` distinguishing `lib/`, `core/`, `capabilities/`, `meta/`, and the artifact directory.
 4. Consider folding `runtime/core/` into `runtime/lib/contracts/` so there's one operating-code root per lane. Lower priority; do only if it doesn't break consumers.
 
-**Files.** `runtime/standalone-host/` rename, `hosts/standalone-host/config.ts` defaults, `hosts/standalone-host/server.ts` paths, `runtime/README.md`.
+**Files.** `runtime/host-artifacts/` rename, `hosts/standalone-host/config.ts` defaults, `hosts/standalone-host/server.ts` paths, `runtime/README.md`.
 
 **Risk.** Low. The directory is gitignored content; the rename is mostly path-string updates.
 

@@ -34,7 +34,7 @@ function normalizeEngineStoreAbsolutePath(filePath: string) {
 
 function resolveDefaultEngineRunsRoot() {
   return normalizeEngineStoreAbsolutePath(
-    path.join(process.cwd(), "runtime", "standalone-host", "engine-runs"),
+    path.join(process.cwd(), "runtime", "host-artifacts", "engine-runs"),
   );
 }
 

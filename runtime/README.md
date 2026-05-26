@@ -10,6 +10,14 @@ This repo ships the Runtime operating code:
 - `capabilities/`
 - `meta/`
 
+Where things live:
+- **`lib/`** — lifecycle orchestration code (openers, runners, sequences, projections, control logic, writers)
+- **`core/`** — contract types that define the Runtime capability, decision, proof, and workflow interfaces
+- **`capabilities/`** — concrete callable implementations (literature-access, research-vault, etc.)
+- **`meta/`** — baseline promotion profiles for self-improvement
+- **`../hosts/standalone-host/`** — the standalone API host implementation
+- **`runtime/host-artifacts/`** — runtime artifact directory used by the standalone host server at the consuming-project level (exists inside a directive-root, NOT a host source directory)
+
 It does not ship the old workspace Runtime artifact corpus.
 
 When a consuming project bootstraps a `directive-root`, it should expose these numbered Runtime folders:

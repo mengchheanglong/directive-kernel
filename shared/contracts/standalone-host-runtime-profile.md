@@ -31,7 +31,7 @@ Optional runtime profile inputs:
 - `runtimeArtifacts.writeBootLog`
 
 Default runtime artifact root:
-- `runtime/standalone-host/` under the configured `directiveRoot`
+- `runtime/host-artifacts/` under the configured `directiveRoot`
 
 Canonical runtime artifacts:
 - `status.json`

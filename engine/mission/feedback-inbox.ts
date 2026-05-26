@@ -65,7 +65,7 @@ function listFilesystemRuns(directiveRoot?: string) {
 
 function resolveEngineRunsRoot(directiveRoot?: string) {
   return normalizeAbsolutePath(
-    path.join(resolveDirectiveRoot(directiveRoot), "runtime", "standalone-host", "engine-runs"),
+    path.join(resolveDirectiveRoot(directiveRoot), "runtime", "host-artifacts", "engine-runs"),
   );
 }
 

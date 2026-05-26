@@ -107,7 +107,7 @@ const eligibleStatusDisallowedArb: fc.Arbitrary<ApprovalScenario> = fc
 // For the two integrity-dependent guards, the disallowed surface includes
 // any artifact path that does not match one of the resolver's supported
 // prefixes (`discovery/03-routing-log/`, `discovery/04-monitor/`,
-// `runtime/standalone-host/engine-runs/...json`, `architecture/`,
+// `runtime/host-artifacts/engine-runs/...json`, `architecture/`,
 // `runtime/`). The resolver throws `unsupported artifact path` for anything
 // else, which the guard rethrows. We pin `directiveRoot` to a non-existent
 // path under the OS temp pattern to keep the scenario hermetic — even if

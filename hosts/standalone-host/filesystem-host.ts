@@ -281,7 +281,7 @@ export function createStandaloneFilesystemHost(
   });
   const runtimeArtifactsRoot = normalizeAbsolutePath(
     options.runtimeArtifactsRoot
-      ?? path.resolve(options.directiveRoot, "runtime", "standalone-host"),
+      ?? path.resolve(options.directiveRoot, "runtime", "host-artifacts"),
   );
   const storage = {
     ...harness.bridge,

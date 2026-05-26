@@ -339,7 +339,7 @@ export function resolveDirectiveWorkspaceState(input: {
         directiveRoot,
         artifactPath,
       });
-    } else if (artifactPath.startsWith("runtime/standalone-host/engine-runs/") && artifactPath.endsWith(".json")) {
+    } else if (artifactPath.startsWith("runtime/host-artifacts/engine-runs/") && artifactPath.endsWith(".json")) {
       focus = resolveEngineFocus({
         directiveRoot,
         artifactPath,

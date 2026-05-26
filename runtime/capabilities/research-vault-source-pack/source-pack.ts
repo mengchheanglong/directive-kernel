@@ -117,7 +117,7 @@ export const RESEARCH_VAULT_SOURCE_PACK_SECTIONS: ResearchVaultSourcePackSection
     evidence: [
       {
         source:
-          "runtime/standalone-host/host-executions/2026-04-07-research-engine-web-aakashsharan-com-research-va-20260407t052643z-20260407t052702.-host-callable-execution-report.json",
+          "runtime/host-artifacts/host-executions/2026-04-07-research-engine-web-aakashsharan-com-research-va-20260407t052643z-20260407t052702.-host-callable-execution-report.json",
         claim:
           "The prior host report was descriptor-only and explicitly avoided imported-source execution and registry acceptance claims.",
       },

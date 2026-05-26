@@ -150,7 +150,7 @@ describe("security hardening", () => {
         error: "rate_limited",
       });
 
-      const artifactRoot = path.join(directiveRoot, "runtime", "standalone-host");
+      const artifactRoot = path.join(directiveRoot, "runtime", "host-artifacts");
       const rateLimitArtifacts = walkFiles(artifactRoot).filter((filePath) =>
         /rate[-_]limit/iu.test(path.basename(filePath)),
       );

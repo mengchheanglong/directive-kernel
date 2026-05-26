@@ -32,7 +32,7 @@ export async function runWebHostSmoke() {
   const runtimePromotionSpecificationPath =
     `runtime/06-promotion-specifications/${runtimeDate}-${runtimeCandidateId}-promotion-specification.json`;
   const runtimeHostConsumptionReportPath =
-    `runtime/standalone-host/host-consumption/${runtimeDate}-${runtimeCandidateId}-host-consumption-report.json`;
+    `runtime/host-artifacts/host-consumption/${runtimeDate}-${runtimeCandidateId}-host-consumption-report.json`;
   const runtimeCallableExecutionPath =
     `runtime/callable-executions/${runtimeDate}-${runtimeCandidateId}-callable-execution.json`;
 

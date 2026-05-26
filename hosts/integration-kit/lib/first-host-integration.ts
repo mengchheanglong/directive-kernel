@@ -176,7 +176,7 @@ function ensureDirectiveRootSubdirs(directiveRoot: string) {
   for (const relativeDir of [
     "discovery",
     "knowledge",
-    "runtime/standalone-host",
+    "runtime/host-artifacts",
   ]) {
     fs.mkdirSync(path.join(directiveRoot, relativeDir), { recursive: true });
   }

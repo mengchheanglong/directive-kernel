@@ -8,7 +8,7 @@ export const STANDALONE_HOST_CONFIG_MODE = "standalone_reference_api_host";
 export const DEFAULT_STANDALONE_HOST_SERVER_HOST = "127.0.0.1";
 export const DEFAULT_STANDALONE_HOST_SERVER_PORT = 8787;
 export const DEFAULT_STANDALONE_RUNTIME_ARTIFACTS_RELATIVE_ROOT =
-  "runtime/standalone-host";
+  "runtime/host-artifacts";
 export const DEFAULT_STANDALONE_HOST_PROTECTED_ROUTE_PREFIXES = ["/api/"] as const;
 export const DEFAULT_STANDALONE_HOST_PERSISTENCE_SQLITE_FILENAME =
   "standalone-host.sqlite";
