@@ -3,12 +3,14 @@ import {
   acquireDirectiveRootLock,
   releaseDirectiveRootLock,
 } from "../../shared/lib/process-lock.ts";
+import { archiveRunRecords, rotateDecisionPolicyLedger, summarizeKernelStorage } from "../../engine/maintenance/archive.ts";
 
 function printUsage() {
   process.stdout.write(`Directive Kernel UI CLI
 
 Commands:
   serve [--directive-root <path>] [--host <host>] [--port <port>]
+  maintenance archive --directive-root <path> [--max-age-days <n>] [--rotate-ledger] [--no-rotate-ledger] [--dry-run]
 
 Environment variables (overridden by explicit flags):
   DIRECTIVE_UI_HOST, DIRECTIVE_FRONTEND_HOST     default host
@@ -40,8 +42,77 @@ function parseArgs(argv: string[]) {
   };
 }
 
+async function runMaintenanceArchiveCommand(args: string[]): Promise<void> {
+  const flags: Record<string, string> = {};
+  const valueless = new Set(["dry-run", "no-rotate-ledger", "rotate-ledger"]);
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (!token.startsWith("--")) {
+      throw new Error(`Unexpected positional argument: ${token}`);
+    }
+    const key = token.slice(2);
+    const nextValue = args[index + 1];
+    if (!nextValue || nextValue.startsWith("--")) {
+      if (valueless.has(key)) {
+        flags[key] = "true";
+        continue;
+      }
+      throw new Error(`Missing value for --${key}`);
+    }
+    flags[key] = nextValue;
+    index += 1;
+  }
+
+  const directiveRoot = String(flags["directive-root"] || "");
+  if (!directiveRoot) throw new Error("Missing required flag --directive-root");
+
+  const maxAgeDays = Number(flags["max-age-days"] ?? 30);
+  const dryRun = "dry-run" in flags;
+  const rotateLedger = !("no-rotate-ledger" in flags);
+
+  if (!dryRun) {
+    acquireDirectiveRootLock(directiveRoot);
+  }
+  try {
+    const beforeSummary = summarizeKernelStorage(directiveRoot);
+    if (dryRun) {
+      process.stdout.write(`${JSON.stringify({
+        dry_run: true,
+        before: beforeSummary,
+        maxAgeDays,
+        rotateLedger,
+      }, null, 2)}\n`);
+      return;
+    }
+    const { archivedCount, bytesMoved } = await archiveRunRecords(directiveRoot, { maxAgeDays });
+    let rotatedSegments = 0;
+    if (rotateLedger) {
+      const { rotated } = await rotateDecisionPolicyLedger(directiveRoot);
+      rotatedSegments = rotated ? 1 : 0;
+    }
+    const afterSummary = summarizeKernelStorage(directiveRoot);
+    process.stdout.write(`archived ${archivedCount} run records, rotated ${rotatedSegments} ledger segments, total bytes moved ${bytesMoved}\n`);
+  } finally {
+    if (!dryRun) releaseDirectiveRootLock(directiveRoot);
+  }
+}
+
 async function main() {
-  const { command, flags } = parseArgs(process.argv.slice(2));
+  const rawArgs = process.argv.slice(2);
+  if (rawArgs[0] === "maintenance") {
+    const subcommand = rawArgs[1];
+    if (!subcommand) {
+      printUsage();
+      process.exit(1);
+    }
+    if (subcommand !== "archive") {
+      throw new Error(`Unknown maintenance subcommand: ${subcommand}`);
+    }
+    await runMaintenanceArchiveCommand(rawArgs.slice(2));
+    return;
+  }
+
+  const { command, flags } = parseArgs(rawArgs);
   if (command !== "serve") {
     printUsage();
     process.exit(1);

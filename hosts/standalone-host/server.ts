@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { writeJsonAtomic, appendJsonLine } from "../../shared/lib/file-io.ts";
+import { summarizeKernelStorage } from "../../engine/maintenance/archive.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import {
   acquireDirectiveRootLock,
@@ -520,6 +521,7 @@ export function startStandaloneHostServer(
         writeJson(res, 200, {
           ok: true,
           runtime: runtimeRecorder.readStatus(),
+          storage: summarizeKernelStorage(options.directiveRoot),
         });
         return;
       }

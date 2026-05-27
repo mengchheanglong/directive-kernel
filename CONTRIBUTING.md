@@ -27,3 +27,5 @@
 Every read-modify-write of a mutable JSON store SHALL go through `withPerFileLock` (see `shared/lib/file-io.ts`). Every append to an append-only ledger SHALL go through `appendJsonLine`. Every host process SHALL acquire the directive-root process lock at boot via `acquireDirectiveRootLock` (see `shared/lib/process-lock.ts`).
 
 See [shared/contracts/concurrency-model.md](shared/contracts/concurrency-model.md) for the full concurrency model including stale-lock recovery semantics and the federation roadmap.
+
+For the data retention and ledger rotation schedule, see [shared/contracts/data-retention.md](shared/contracts/data-retention.md).

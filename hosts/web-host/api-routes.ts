@@ -47,6 +47,7 @@ import {
   rejectMissionFeedbackEntry,
   revertMissionEvolution,
 } from "../../engine/mission/index.ts";
+import { summarizeKernelStorage } from "../../engine/maintenance/archive.ts";
 import { createStandaloneFilesystemHost } from "../standalone-host/filesystem-host.ts";
 import {
   readDirectiveFrontendDiscoveryRoutingDetail,
@@ -93,6 +94,14 @@ export async function handleDirectiveUiApiRequest(input: {
     runtimeHost,
     uiOperatorActor,
   } = input;
+
+  if (method === "GET" && pathname === "/api/runtime/status") {
+    writeJson(res, 200, {
+      ok: true,
+      storage: summarizeKernelStorage(directiveRoot),
+    });
+    return true;
+  }
 
   if (method === "GET" && pathname === "/api/snapshot") {
     writeJson(res, 200, readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200, maxQueueEntries: 500, maxHandoffs: 250 }));

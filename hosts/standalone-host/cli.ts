@@ -19,6 +19,8 @@ import {
 } from "../../engine/mission/index.ts";
 import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/gap-worklist-refresh.ts";
 
+import { archiveRunRecords, rotateDecisionPolicyLedger, summarizeKernelStorage } from "../../engine/maintenance/archive.ts";
+
 import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/submission-router.ts";
 import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/follow-up-record-writer.ts";
 import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/proof-bundle-writer.ts";
@@ -84,7 +86,8 @@ type CommandName =
   | "runtime-live-mini-swe-agent"
   | "runtime-overview"
   | "serve"
-  | "try";
+  | "try"
+  | "maintenance";
 
 type FlagMap = Record<string, string[]>;
 
@@ -128,13 +131,14 @@ Commands:
   runtime-overview (--directive-root <path> | --config <path>) [--max-entries <n>] [--persistence-sqlite-path <path>]
   serve (--directive-root <path> | --config <path>) [--host <host>] [--port <port>] [--received-at <yyyy-mm-dd>] [--unresolved-gap-id <id> ...] [--auth-bearer-token <token>] [--persistence-sqlite-path <path>]
   try [--output-root <path>]
+  maintenance archive --directive-root <path> [--max-age-days <n>] [--rotate-ledger] [--no-rotate-ledger] [--dry-run]
 `);
 }
 
 function parseArgs(argv: string[]) {
   const [command, ...rest] = argv;
   const flags: FlagMap = {};
-  const flagWithoutValue = new Set(["dry-run", "process-with-engine"]);
+  const flagWithoutValue = new Set(["dry-run", "process-with-engine", "no-rotate-ledger", "rotate-ledger"]);
 
   for (let index = 0; index < rest.length; index += 1) {
     const token = rest[index];
@@ -300,8 +304,90 @@ function resolveDirectiveRootFromFlags(
   return config?.directiveRoot ?? readRequiredFlag(flags, "directive-root");
 }
 
+interface MaintenanceFlags {
+  [key: string]: string[] | undefined;
+  "directive-root"?: string[];
+  "max-age-days"?: string[];
+  "dry-run"?: string[];
+  "no-rotate-ledger"?: string[];
+  "rotate-ledger"?: string[];
+}
+
+function parseMaintenanceFlags(args: string[]): MaintenanceFlags {
+  const flags: MaintenanceFlags = {};
+  const valueless = new Set(["dry-run", "no-rotate-ledger", "rotate-ledger"]);
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (!token.startsWith("--")) {
+      throw new Error(`Unexpected positional argument: ${token}`);
+    }
+    const key = token.slice(2);
+    const nextValue = args[index + 1];
+    if (!nextValue || nextValue.startsWith("--")) {
+      if (valueless.has(key)) {
+        flags[key] = ["true"];
+        continue;
+      }
+      throw new Error(`Missing value for --${key}`);
+    }
+    flags[key] = [nextValue];
+    index += 1;
+  }
+  return flags;
+}
+
+async function runMaintenanceArchiveCommand(flags: MaintenanceFlags): Promise<void> {
+  const directiveRoot = flags["directive-root"]?.[0];
+  if (!directiveRoot) throw new Error("Missing required flag --directive-root");
+
+  const maxAgeDays = Number(flags["max-age-days"]?.[0] ?? 30);
+  const dryRun = "dry-run" in flags;
+  const rotateLedger = !("no-rotate-ledger" in flags);
+
+  if (!dryRun) {
+    acquireDirectiveRootLock(directiveRoot);
+  }
+  try {
+    const beforeSummary = summarizeKernelStorage(directiveRoot);
+    if (dryRun) {
+      process.stdout.write(`${JSON.stringify({
+        dry_run: true,
+        before: beforeSummary,
+        maxAgeDays,
+        rotateLedger,
+      }, null, 2)}\n`);
+      return;
+    }
+    const { archivedCount, bytesMoved } = await archiveRunRecords(directiveRoot, { maxAgeDays });
+    let rotatedSegments = 0;
+    if (rotateLedger) {
+      const { rotated } = await rotateDecisionPolicyLedger(directiveRoot);
+      rotatedSegments = rotated ? 1 : 0;
+    }
+    const afterSummary = summarizeKernelStorage(directiveRoot);
+    process.stdout.write(`archived ${archivedCount} run records, rotated ${rotatedSegments} ledger segments, total bytes moved ${bytesMoved}\n`);
+  } finally {
+    if (!dryRun) releaseDirectiveRootLock(directiveRoot);
+  }
+}
+
 async function main() {
-  const { command, flags } = parseArgs(process.argv.slice(2));
+  const rawArgs = process.argv.slice(2);
+  if (rawArgs[0] === "maintenance") {
+    const subcommand = rawArgs[1];
+    if (!subcommand) {
+      printUsage();
+      process.exit(1);
+    }
+    if (subcommand !== "archive") {
+      throw new Error(`Unknown maintenance subcommand: ${subcommand}`);
+    }
+    const flags = parseMaintenanceFlags(rawArgs.slice(2));
+    await runMaintenanceArchiveCommand(flags);
+    return;
+  }
+
+  const { command, flags } = parseArgs(rawArgs);
   if (!command) {
     printUsage();
     process.exit(1);

@@ -57,4 +57,5 @@ runtime/07-promotion-records/
 runtime/08-registry/
 runtime/callable-executions/
 runtime/host-artifacts/
+archive/
 *.cpuprofile

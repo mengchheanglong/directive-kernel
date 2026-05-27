@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import fs from "node:fs";
+import * as fs from "node:fs";
 import path from "node:path";
 
 import { uniqueStrings } from "./source-utils.ts";
@@ -23,6 +23,7 @@ const LEDGER_JSON_RELATIVE_PATH = "engine/decision-policy-ledger.json";
 const LEDGER_JSONL_RELATIVE_PATH = "engine/decision-policy-ledger.jsonl";
 
 type LedgerCacheEntry = {
+  activePath: string;
   mtimeMs: number;
   ledger: DecisionPolicyLedger;
 };
@@ -36,6 +37,8 @@ function defaultLedger(): DecisionPolicyLedger {
     suggestions: [],
   };
 }
+
+type Lookback = "active-only" | "all" | { sinceMonth: string };
 
 export { compileDecisionPolicySuggestions } from "./decision-policy-ledger-suggestions.ts";
 
@@ -86,26 +89,63 @@ function readDecisionPolicyEventsFromJsonl(jsonlPath: string): DecisionPolicyEve
   return events;
 }
 
-export function readDecisionPolicyLedger(directiveRoot: string): DecisionPolicyLedger {
-  const jsonlPath = resolveDecisionPolicyLedgerJsonlPath(directiveRoot);
+export function readDecisionPolicyLedger(
+  directiveRoot: string,
+  opts: { lookback?: Lookback } = {},
+): DecisionPolicyLedger {
+  const lookback = opts.lookback ?? "active-only";
+  const dir = path.join(directiveRoot, "engine");
+  const activePath = path.join(dir, "decision-policy-ledger.jsonl");
 
-  if (fs.existsSync(jsonlPath)) {
+  const segments: string[] = [];
+  if (lookback !== "active-only") {
+    const all = fs.readdirSync(dir)
+      .filter((f) => /^decision-policy-ledger\.\d{4}-\d{2}\.jsonl$/.test(f))
+      .sort();
+    if (lookback === "all") {
+      segments.push(...all.map((f) => path.join(dir, f)));
+    } else {
+      const since = lookback.sinceMonth;
+      segments.push(...all
+        .filter((f) => f.replace("decision-policy-ledger.", "").replace(".jsonl", "") >= since)
+        .map((f) => path.join(dir, f))
+      );
+    }
+  }
+  if (fs.existsSync(activePath)) segments.push(activePath);
+
+  if (lookback === "active-only" && segments.length === 1 && segments[0] === activePath) {
     try {
-      const stat = fs.statSync(jsonlPath);
-      if (jsonlCache !== null && jsonlCache.mtimeMs === stat.mtimeMs) {
+      const stat = fs.statSync(activePath);
+      if (jsonlCache !== null && jsonlCache.activePath === activePath && jsonlCache.mtimeMs === stat.mtimeMs) {
         return jsonlCache.ledger;
       }
 
-      const events = readDecisionPolicyEventsFromJsonl(jsonlPath);
+      const events = readDecisionPolicyEventsFromJsonl(activePath);
       const suggestions = compileDecisionPolicySuggestions(events);
       const ledger: DecisionPolicyLedger = { schemaVersion: 1, events, suggestions };
 
-      jsonlCache = { mtimeMs: stat.mtimeMs, ledger };
+      jsonlCache = { activePath, mtimeMs: stat.mtimeMs, ledger };
       return ledger;
     } catch {
       jsonlCache = null;
       return readDecisionPolicyLedgerFromJson(directiveRoot);
     }
+  }
+
+  const events: DecisionPolicyEvent[] = [];
+  for (const segPath of segments) {
+    let content: string;
+    try { content = fs.readFileSync(segPath, "utf8"); } catch { continue; }
+    const lines = content.split("\n").filter(Boolean);
+    for (const line of lines) {
+      try { events.push(JSON.parse(line)); } catch { /* skip torn line */ }
+    }
+  }
+
+  if (events.length > 0) {
+    const suggestions = compileDecisionPolicySuggestions(events);
+    return { schemaVersion: 1, events, suggestions };
   }
 
   return readDecisionPolicyLedgerFromJson(directiveRoot);
