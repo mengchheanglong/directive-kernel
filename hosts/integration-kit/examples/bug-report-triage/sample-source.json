@@ -1,0 +1,9 @@
+{
+  "$schema": "shared/schemas/first-consuming-host-source.schema.json",
+  "candidateId": "gh-issue-482",
+  "candidateName": "Search bar loses focus after every keystroke on macOS Safari 17.2",
+  "sourceType": "internal-signal",
+  "sourceReference": "https://github.com/some-org/some-repo/issues/482",
+  "summary": "Bug report about search bar focus loss on macOS Safari 17.2. Severity-medium, affects the search-v3 feature currently in sprint. Reported by 4 users in last 24 hours.",
+  "notes": "Repro: open search, type three characters, focus lost after second character, search input collapses. Sprint goal: zero-regression search UX shipping to beta this week."
+}

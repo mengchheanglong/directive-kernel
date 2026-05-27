@@ -7,16 +7,14 @@
 
 ## 1. Project Purpose
 
-Directive Kernel is a **reusable workflow kernel** that a host project embeds to:
+Directive Kernel is a **reusable workflow kernel** for dev teams running source-driven workflows that need a structured intake → routing → decision pipeline. A host project embeds it to:
 
-1. Ingest outside sources (papers, repos, essays, internal signals).
-2. Judge each source against the host's current goal.
+1. Ingest inbound items (bug reports, incident alerts, source repos, feature requests, security advisories, customer feedback, papers).
+2. Judge each source against the host's current mission.
 3. Route useful work through a structured lifecycle.
 4. Turn results into reusable capability (Runtime) or system improvement (Architecture).
 
-The kernel owns the workflow model, lane logic, contracts, reference hosts, and reusable operating code. The consuming project owns goals, operator identity, storage choices, and approval policy.
-
-**Package:** `@directive/kernel` (private, clone-and-wire distribution model)
+The locked audience is `general-workflow-kernel`. See [`AUDIENCE.md`](./AUDIENCE.md) for the rationale and reversal conditions.
 
 ---
 

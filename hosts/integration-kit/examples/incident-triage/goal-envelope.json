@@ -1,0 +1,12 @@
+{
+  "$schema": "shared/schemas/first-consuming-host-goal-envelope.schema.json",
+  "goalId": "dev-team-incident-triage",
+  "goalStatement": "Triage inbound incident alerts against active service-level objectives and route each to page-on-call, monitor-only, auto-resolve, or noise.",
+  "whyNow": "On-call rotation costs human attention; only true SLO breaches should page.",
+  "adoptionTarget": "runtime",
+  "constraints": [
+    "page-on-call only for breaches above severity threshold",
+    "auto-resolve requires a known recovery script"
+  ],
+  "successSignal": "Each routed incident has a clear urgency classification and the operator can audit the rationale."
+}

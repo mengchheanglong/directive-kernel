@@ -1,0 +1,12 @@
+{
+  "$schema": "shared/schemas/first-consuming-host-goal-envelope.schema.json",
+  "goalId": "dev-team-bug-triage",
+  "goalStatement": "Triage inbound bug reports against active sprint priorities and route each to fix-now, backlog, wontfix, or duplicate.",
+  "whyNow": "Active sprint has bandwidth for high-priority bugs only; backlog grooming happens weekly.",
+  "adoptionTarget": "runtime",
+  "constraints": [
+    "no auto-assign without human review",
+    "duplicates must reference the original issue id"
+  ],
+  "successSignal": "Each routed bug has a clear next-step decision and the operator can audit the routing rationale."
+}

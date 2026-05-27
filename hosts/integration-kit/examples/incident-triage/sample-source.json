@@ -1,0 +1,9 @@
+{
+  "$schema": "shared/schemas/first-consuming-host-source.schema.json",
+  "candidateId": "alert-cpu-sat-svc-payments",
+  "candidateName": "CPU saturation alert: payments-service in us-east-1",
+  "sourceType": "internal-signal",
+  "sourceReference": "https://monitoring.example.com/alerts/cpu-saturation-payments-us-east-1-2026-05-26",
+  "summary": "CPU saturation alert triggered at 2026-05-26T14:22:00Z. CPU hit 92% sustained for 8 minutes on the payments service in us-east-1. Auto-scale kicked in and brought CPU back to 78%. No customer-visible errors.",
+  "notes": "Severity-high, requires manual review per incident-response SLA. The payments service is a critical-path dependency for all checkout flows. P99 latency stayed under 300ms throughout."
+}

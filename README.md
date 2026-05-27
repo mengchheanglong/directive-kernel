@@ -22,7 +22,17 @@ That runs the kernel end-to-end against a sample source in a fresh temp directiv
 
 ## What This Repo Is For
 
-Use Directive Kernel when you want your project to take in outside sources, judge them against your current goal, and move them through a clear workflow instead of handling everything by hand.
+Directive Kernel is for **dev teams running source-driven workflows that need a structured intake → routing → decision pipeline.**
+
+You have a stream of inbound items — bug reports, incident alerts, source repos to evaluate, feature requests, security advisories, customer feedback, papers worth tracking — and each needs the same kind of decision: *what do we do with this?* The kernel takes that source, judges it against your current mission, routes it to the right next step, and records the decision so later work has provenance.
+
+Your team gets a **mission-conditioned routing pass,** a **structured intake queue + lifecycle,** a **decision-policy ledger** for audit and replay, and a **read-only operator dashboard** for visibility (mutations through CLI).
+
+Two flagship example consumers ship with the kernel:
+- **[Bug-report triage](hosts/integration-kit/examples/bug-report-triage/README.md)** — GitHub issue → routing decision (`fix-now`, `backlog`, `wontfix`, `duplicate`)
+- **[Incident triage](hosts/integration-kit/examples/incident-triage/README.md)** — alert webhook → routing decision (`page-on-call`, `monitor-only`, `auto-resolve`, `noise`)
+
+See [`AUDIENCE.md`](./AUDIENCE.md) for the full rationale behind this framing and the conditions under which we'd revisit it.
 
 ## How It Works
 
@@ -110,7 +120,7 @@ pnpm install
 ```
 
 If you want live web/provider research, also configure the optional provider keys described in:
-- [discovery/research-engine/README.md](./discovery/research-engine/README.md)
+- [discovery/research-engine/README.md](./discovery/research-engine/README.md) (used primarily by the research-curation domain — see [`docs/lineage/research-curation.md`](./docs/lineage/research-curation.md))
 
 Before embedding the kernel in another host, review the security boundary:
 - [SECURITY.md](./SECURITY.md)

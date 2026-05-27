@@ -27,18 +27,18 @@ Order in the table reflects recommended sequencing within each priority band.
 | F2 | Compile to JS for production runs | P0 | M | ✅ done |
 | F3 | Build a 60-second hello world quickstart | P0 | S | ✅ done |
 | F4 | Vocabulary diet + glossary | P0 | M | ✅ done |
-| F5 | Audit and prune `shared/contracts/` | P1 | M | |
-| F6 | Resolve the three "runtime" surface confusion | P1 | S | |
+| F5 | Audit and prune `shared/contracts/` | P1 | M | ✅ done |
+| F6 | Resolve the three "runtime" surface confusion | P1 | S | ✅ done |
 | F7 | Freeze `DirectiveEngineRunRecord` schema + migration policy | P1 | M | ✅ done |
 | F8 | Decide UI direction: read-only vs operator workbench | P1 | M–L | ✅ done |
-| F9 | Surface-area prune in `engine/` and `runtime/lib/` | P2 | L | |
-| F10 | Pick an audience and over-serve them | P2 | varies | |
+| F9 | Surface-area prune in `engine/` and `runtime/lib/` | P2 | L | ✅ done |
+| F10 | Pick an audience and over-serve them | P2 | varies | ✅ done |
 | F11 | Prefix prune and file/type naming consistency | P1 | M | ✅ done |
-| F12 | Decide on the numbered folder convention (keep, simplify, drop) | P2 | S | |
-| F13 | Concurrency / locking story for filesystem persistence | P1 | M | |
-| F14 | Data retention and ledger rotation policy | P1 | M | |
+| F12 | Decide on the numbered folder convention (keep, simplify, drop) | P2 | S | ✅ done |
+| F13 | Concurrency / locking story for filesystem persistence | P1 | M | ✅ done |
+| F14 | Data retention and ledger rotation policy | P1 | M | ✅ done |
 | F15 | Security posture: threat model, SSRF protection, input sanitization | P0 | M | ✅ done |
-| F16 | Schema ↔ example drift CI check | P2 | S | |
+| F16 | Schema ↔ example drift CI check | P2 | S | ✅ done |
 
 ---
 
@@ -394,27 +394,80 @@ Order in the table reflects recommended sequencing within each priority band.
 
 ## F9 — Surface-area prune in `engine/` and `runtime/lib/`
 
-**Priority:** P2 · **Effort:** L
+**Status:** ✅ done · **Priority:** P2 · **Effort:** L · **Shipped as:** two coordinated sub-cuts (Sub_Cut_A + Sub_Cut_B)
 
-**Problem.** The "smallest but highest-leverage layer" has 7 grouped subfolders in `engine/` and 7 in `runtime/lib/`. Some of these are real boundaries (`routing/` vs `mission/`); some are organizational habit (`coordination/` and `execution/` overlap; `openers/` vs `runners/` vs `sequences/` is three names for "things that drive state forward").
+**Spec:** `.kiro/specs/directive-kernel-surface-prune/`
 
-**Fix.**
-1. Map every file to: "what state does it read", "what state does it write", "who calls it". Output as a CSV.
-2. For each grouped subfolder, ask: does this name describe a real boundary or just a folder of files we put together? Merge the second kind.
-3. Likely consolidations to evaluate:
-   - `engine/coordination/` + `engine/execution/` → `engine/orchestration/`
-   - `runtime/lib/openers/` + `runtime/lib/runners/` + `runtime/lib/sequences/` → `runtime/lib/operations/`
-4. Each merge is a separate spec/PR.
+**Outcome.** The kernel's "smallest but highest-leverage layer" surface tightened from 8 → 7 directories under `engine/` and 7 → 5 directories under `runtime/lib/`. Two folder pairs that overlapped in concept were merged: `engine/coordination/` + `engine/execution/` collapsed into `engine/orchestration/`, and `runtime/lib/openers/` + `runtime/lib/runners/` + `runtime/lib/sequences/` collapsed into `runtime/lib/operations/`. The audit phase produced two committed deliverables that locked the file-by-file move plan before any code changed; the execution phase was mechanical via `smartRelocate`. Test count stayed exactly the same before and after (`142 passed / 6 skipped`), proving the merge was correctness-preserving. The four surviving `runtime/lib/` directories (`control`, `host`, `projections`, `writers`) plus the new `operations` each describe a real boundary — control governs whether/how operations execute, host integrates with hosts, projections transform state into snapshots, writers persist outputs.
 
-**Files.** Many. Use `smartRelocate` to preserve imports. F1 must land first so test breakage surfaces immediately.
+**Components delivered.**
+- `scripts/audit-engine-runtime-state.ts` — one-shot audit walker producing the CSV from a ripgrep sweep.
+- `engine-runtime-state-audit.csv` at the repo root — 126 rows mapping every `.ts` source file in `engine/` and `runtime/lib/` to reads/writes/callers/proposed-destination/disposition.
+- `engine-runtime-boundary-map.md` at the repo root — synthesized boundary analysis with verdict per folder, file-by-file move tables for both sub-cuts, basename-collision handling, and resolved open questions.
+- **Sub_Cut_A**: 22 files relocated from `engine/coordination/` (19) + `engine/execution/` (3) into `engine/orchestration/`. Subdirectory structure preserved so the three `types.ts` files remain at distinct paths (`autonomous-lane-loop/`, `operator-decision-inbox/`, `read-only-lifecycle-coordination/`). New `engine/orchestration/index.ts` barrel re-exports the merged surface.
+- **Sub_Cut_B**: 15 files relocated from `runtime/lib/openers/` (5) + `runtime/lib/runners/` (6) + `runtime/lib/sequences/` (4) into `runtime/lib/operations/`. Flat structure under `operations/`. New `runtime/lib/operations/index.ts` barrel.
+- `package.json` `exports` map collapsed: `./engine/coordination` + `./engine/execution` → single `./engine/orchestration` key; `./runtime/openers` + `./runtime/runners` + `./runtime/sequences` → single `./runtime/operations` key. All four conditions retargeted.
+- `engine/index.ts` and `runtime/lib/index.ts` re-export from the new barrels.
+- 20+ importer files auto-updated by `smartRelocate` across `discovery/`, `runtime/`, `hosts/`, `scripts/`, `engine/state/`, `engine/orchestration/` itself, `architecture/lib/experiments/`, `tests/unit/`.
+- Doc cleanups across `STANDALONE_SURFACE.json`, `Tech_Blueprint.md`, `README.md`, `engine/README.md`, `shared/lib/README.md`, `CONTRIBUTING.md`, `GLOSSARY.md` — every documented path retargeted.
 
-**Risk.** High if rushed. Sequence late and stage carefully.
+**Side fixes during F9.**
+- Three `types.ts` files initially flagged `defer` in the CSV (collision concern) were reclassified to `move-to-orchestration` once the audit confirmed subdirectory paths under `engine/orchestration/` resolve the basename collision automatically. No rename needed.
+- During Sub_Cut_A evaluation, four stale references to the deleted `engine/coordination/` and `engine/execution/` paths were caught in canonical docs (`STANDALONE_SURFACE.json`, `Tech_Blueprint.md`, `engine/README.md`, `shared/lib/README.md`) and `CONTRIBUTING.md`'s naming-rule example. All five fixed before flipping Sub_Cut_A done.
+- During Sub_Cut_B evaluation, the same doc-stale-reference sweep ran; only `Fix_Plan.md` history rows and audit-deliverable docs (which document the move) had remaining matches — those are appropriate as historical record.
+
+**Verification.**
+- `pnpm run typecheck` → green
+- `pnpm run test` → 142 passed / 6 skipped (identical to pre-cut count, proving the merge preserved correctness)
+- `pnpm run check:build` → green (post-build dist resolves the new `./engine/orchestration` and `./runtime/operations` exports)
+- `pnpm run check:naming` → green
+- `pnpm run check:contracts` → green
+- `pnpm run check:examples` → green (16 examples / 13 schemas)
+- Folder absence check: `engine/coordination/`, `engine/execution/`, `runtime/lib/openers/`, `runtime/lib/runners/`, `runtime/lib/sequences/` all deleted.
+- Folder presence check: `engine/orchestration/` (23 .ts files: 22 source + barrel) and `runtime/lib/operations/` (16 .ts files: 15 source + barrel).
+
+**Unblocks:** Nothing structural — F9 was the last surface-shape cut planned. The cleaner `engine/` and `runtime/lib/` topology makes future audits (F10 audience pick will reference this surface; any future trim is an Improvement Plan item) easier to reason about because each remaining subfolder name now matches a real boundary.
+
+**Original problem statement (preserved for history):**
+
+The "smallest but highest-leverage layer" had 7 grouped subfolders in `engine/` and 7 in `runtime/lib/`. Some were real boundaries (`routing/` vs `mission/`); some were organizational habit (`coordination/` and `execution/` overlapped; `openers/` vs `runners/` vs `sequences/` was three names for "things that drive state forward"). The audit identified the merge candidates and the spec staged the work as two coordinated sub-cuts, each landing CI-green on its own.
 
 ---
 
 ## F10 — Pick an audience and over-serve them
 
-**Priority:** P2 · **Effort:** varies
+**Status:** ✅ done · **Priority:** P2 · **Effort:** M (decision) / L (execution)
+
+**Spec:** `.kiro/specs/directive-kernel-audience-pick/`
+
+**Outcome.** The kernel locked its audience as `general-workflow-kernel` — dev teams running source-driven workflows that need a structured intake → routing → decision pipeline. The research-curation lineage was relocated to `docs/lineage/research-curation.md` so the seven research-surfaces (literature-access capabilities, research-engine workspace, source-pack curation, etc.) are documented as one supported domain without dominating the README's first-page framing. Two flagship example consumers shipped: `bug-report-triage` (GitHub issue → routing decision) and `incident-triage` (alert webhook → routing decision), both with working flow.ts scripts and end-to-end integration tests.
+
+**Components delivered.**
+- `AUDIENCE.md` — locked decision document with primary use case, not-audience list, success signals, reversal conditions, and lineage relocation plan.
+- `audience-feature-inventory.md` — 50+ feature inventory scored on research-coupling and generalizability with cost estimates for both paths.
+- `audience-scope-trim.md` — trim table documenting which research surfaces relocate from core README narrative to `docs/lineage/research-curation.md`.
+- `docs/lineage/research-curation.md` — lineage acknowledgment doc covering 7 research surfaces with pointers to capabilities, workspace, templates, and contracts.
+- `hosts/integration-kit/examples/bug-report-triage/` — goal envelope, sample source (GitHub issue payload), flow.ts script, and README walkthrough.
+- `hosts/integration-kit/examples/incident-triage/` — goal envelope, sample source (CPU alert payload), flow.ts script, and README walkthrough.
+- `tests/integration/bug-report-triage.test.ts` — 4 tests asserting ok, valid lane routing, decision state produced, artifacts written to disk.
+- `tests/integration/incident-triage.test.ts` — 4 tests, same shape for incident example.
+- `README.md` — "What This Repo Is For" section rewritten with general-workflow framing, flagship examples, and AUDIENCE.md link; research-engine link annotated with lineage pointer.
+- `Tech_Blueprint.md` — Section 1 (Purpose) rewritten to match locked audience.
+- `Fix_Plan.md` — F10 row flipped to ✅ done with this outcome block.
+
+**Side fixes during F10.**
+- Added `$schema` fields to the four example JSON files so `pnpm run check:examples` validates them against the existing `first-consuming-host-goal-envelope.schema.json` and `first-consuming-host-source.schema.json`.
+
+**Verification.**
+- `pnpm run typecheck` → green (kernel + UI)
+- `pnpm run test` → 150 passed / 6 skipped, 37 test files
+- `pnpm run check:build` → green
+- `pnpm run check:naming` → green
+- `pnpm run check:contracts` → green
+- `pnpm run check:examples` → green (20 examples / 13 schemas)
+- Both flow.ts scripts exit 0 and print valid routing JSON to stdout
+
+**Unblocks:** F9 was the last surface-shape cut planned. The locked audience gives every future Fix_Plan item a concrete target user to validate against. If the first three real adopters are research-curation users, the reversal condition in AUDIENCE.md triggers.
 
 **Problem.** Literature-access capability + research-engine sub-package + Scientify lineage suggests this came from a research/literature curation context. The generalization to "any workflow kernel" feels premature. Solo devs won't tolerate the ceremony; large teams want roles, audit, persistence guarantees the kernel doesn't ship.
 
