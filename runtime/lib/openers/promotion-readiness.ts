@@ -300,12 +300,12 @@ export function readDirectiveRuntimeRuntimeCapabilityBoundaryArtifact(input: {
   };
 }
 
-export function openDirectiveRuntimePromotionReadiness(input: {
+export async function openDirectiveRuntimePromotionReadiness(input: {
   capabilityBoundaryPath: string;
   approved?: boolean;
   approvedBy?: string | null;
   directiveRoot?: string;
-}): RuntimePromotionReadinessOpenResult {
+}): Promise<RuntimePromotionReadinessOpenResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "open a Runtime promotion-readiness artifact",
@@ -395,7 +395,7 @@ export function openDirectiveRuntimePromotionReadiness(input: {
     });
   }
 
-  mirrorDirectiveRuntimePromotionReadinessOpen({
+  await mirrorDirectiveRuntimePromotionReadinessOpen({
     directiveRoot,
     caseId: artifact.candidateId,
     receivedAt: snapshotAt,

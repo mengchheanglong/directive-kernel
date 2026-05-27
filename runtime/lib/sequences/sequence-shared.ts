@@ -156,7 +156,7 @@ export function appendRuntimeTwoStepSequenceEvent(input: {
 }
 
 export function assertDirectiveRuntimeSharedStepSuccess(
-  result: ReturnType<typeof runDirectiveRuntimeActionByExplicitInvocation>,
+  result: Awaited<ReturnType<typeof runDirectiveRuntimeActionByExplicitInvocation>>,
 ): asserts result is RuntimeSharedInvocationSuccessResult {
   if (!result.ok) {
     throw new Error(
@@ -165,12 +165,12 @@ export function assertDirectiveRuntimeSharedStepSuccess(
   }
 }
 
-export function runDirectiveRuntimeTwoStepAction(input: {
+export async function runDirectiveRuntimeTwoStepAction(input: {
   directiveRoot: string;
   approved: boolean | undefined;
   step: RuntimeTwoStepSequenceStepRecord;
 }) {
-  const result = runDirectiveRuntimeActionByExplicitInvocation({
+  const result = await runDirectiveRuntimeActionByExplicitInvocation({
     directiveRoot: input.directiveRoot,
     actionKind: input.step.actionKind,
     targetPath: input.step.targetPath,
@@ -326,7 +326,7 @@ function sequenceFailed(input: {
   throw input.error;
 }
 
-export function runDirectiveRuntimeTwoStepSequence(input: {
+export async function runDirectiveRuntimeTwoStepSequence(input: {
   directiveRoot: string;
   approved: boolean | undefined;
   declared: NormalizedDirectiveRuntimeTwoStepSequence;
@@ -343,7 +343,7 @@ export function runDirectiveRuntimeTwoStepSequence(input: {
   afterStep1PrerequisiteError: string;
   expectedStep2TargetPath: (runtimeResult: RunnerActionResult) => string | null | undefined;
   afterStep1MismatchError: (runtimeResult: RunnerActionResult) => string;
-}): RuntimeTwoStepSequenceResult {
+}): Promise<RuntimeTwoStepSequenceResult> {
   const sequenceRecordPath = resolveDirectiveTwoStepSequenceRecordPath({
     directiveRoot: input.directiveRoot,
     sequenceId: input.declared.sequenceId,
@@ -467,7 +467,7 @@ export function runDirectiveRuntimeTwoStepSequence(input: {
 
   try {
     if (record.completedStepCount === 0) {
-      const step1Result = runDirectiveRuntimeTwoStepAction({
+      const step1Result = await runDirectiveRuntimeTwoStepAction({
         directiveRoot: input.directiveRoot,
         approved: input.approved,
         step: record.steps[0],
@@ -528,7 +528,7 @@ export function runDirectiveRuntimeTwoStepSequence(input: {
     }
 
     if (record.completedStepCount < 2) {
-      const step2Result = runDirectiveRuntimeTwoStepAction({
+      const step2Result = await runDirectiveRuntimeTwoStepAction({
         directiveRoot: input.directiveRoot,
         approved: input.approved,
         step: record.steps[1],

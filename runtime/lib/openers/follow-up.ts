@@ -241,12 +241,12 @@ export function readRuntimeFollowUpArtifact(input: {
   return artifact;
 }
 
-export function openDirectiveRuntimeFollowUp(input: {
+export async function openDirectiveRuntimeFollowUp(input: {
   followUpPath: string;
   approved?: boolean;
   approvedBy?: string | null;
   directiveRoot?: string;
-}): RuntimeFollowUpOpenResult {
+}): Promise<RuntimeFollowUpOpenResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "open a Runtime follow-up",
@@ -334,7 +334,7 @@ export function openDirectiveRuntimeFollowUp(input: {
     });
   }
 
-  mirrorDirectiveRuntimeFollowUpOpen({
+  await mirrorDirectiveRuntimeFollowUpOpen({
     directiveRoot,
     caseId: artifact.candidateId,
     receivedAt: snapshotAt,

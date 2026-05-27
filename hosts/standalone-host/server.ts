@@ -8,6 +8,10 @@ import path from "node:path";
 import { writeJsonAtomic, appendJsonLine } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import {
+  acquireDirectiveRootLock,
+  releaseDirectiveRootLock,
+} from "../../shared/lib/process-lock.ts";
+import {
   sanitizeText,
   TEXT_FIELD_LIMITS,
 } from "../../shared/lib/text-sanitizer.ts";
@@ -815,6 +819,73 @@ export function startStandaloneHostServerFromConfig(
   config: ResolvedStandaloneHostConfig,
 ) {
   return startStandaloneHostServer({
+    directiveRoot: config.directiveRoot,
+    host: config.server.host,
+    port: config.server.port,
+    unresolvedGapIds: config.unresolvedGapIds,
+    receivedAt: config.receivedAt,
+    initialQueue: config.initialQueue,
+    auth: config.auth,
+    rateLimit: config.rateLimit,
+    persistence: config.persistence,
+    runtimeArtifactsRoot: config.runtimeArtifacts.root,
+    allowExternalFetches: config.runtime.allowExternalFetches,
+    writeStatusFile: config.runtimeArtifacts.writeStatusFile,
+    writeAccessLog: config.runtimeArtifacts.writeAccessLog,
+    writeBootLog: config.runtimeArtifacts.writeBootLog,
+  });
+}
+
+let _serverHandle: StandaloneHostServerHandle | null = null;
+let _serverDirectiveRoot: string | null = null;
+let _originalServerClose: (() => Promise<void>) | null = null;
+
+export async function stop(): Promise<void> {
+  if (!_serverHandle || !_originalServerClose) return;
+  const closeOriginal = _originalServerClose;
+  _serverHandle = null;
+  _originalServerClose = null;
+  try {
+    await closeOriginal();
+  } finally {
+    if (_serverDirectiveRoot) {
+      releaseDirectiveRootLock(_serverDirectiveRoot);
+      _serverDirectiveRoot = null;
+    }
+  }
+}
+
+export async function start(
+  options: StartStandaloneHostServerOptions,
+): Promise<StandaloneHostServerHandle> {
+  const directiveRoot = options.directiveRoot;
+  try {
+    acquireDirectiveRootLock(directiveRoot);
+  } catch (error) {
+    process.stderr.write(`${String((error as Error).message || error)}\n`);
+    process.exit(1);
+  }
+
+  const handle = await startStandaloneHostServer(options);
+  _serverHandle = handle;
+  _serverDirectiveRoot = directiveRoot;
+  _originalServerClose = handle.close.bind(handle);
+  handle.close = stop;
+
+  process.on("SIGINT", () => {
+    void stop().finally(() => process.exit(0));
+  });
+  process.on("SIGTERM", () => {
+    void stop().finally(() => process.exit(0));
+  });
+
+  return handle;
+}
+
+export function startFromConfig(
+  config: ResolvedStandaloneHostConfig,
+): Promise<StandaloneHostServerHandle> {
+  return start({
     directiveRoot: config.directiveRoot,
     host: config.server.host,
     port: config.server.port,

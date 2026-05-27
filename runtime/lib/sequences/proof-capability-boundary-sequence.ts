@@ -154,9 +154,9 @@ function buildStep2MismatchError(runtimeResult: RunnerActionResult) {
   return `invalid_input: declared step 2 target does not match step 1 opened Runtime proof ${runtimeResult.runtimeProofRelativePath}`;
 }
 
-export function runDirectiveRuntimeProofCapabilityBoundaryTwoStepSequence(
+export async function runDirectiveRuntimeProofCapabilityBoundaryTwoStepSequence(
   input: RuntimeProofCapabilityBoundarySequenceInput,
-): RuntimeProofCapabilityBoundarySequenceResult {
+): Promise<RuntimeProofCapabilityBoundarySequenceResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "run the explicit Runtime proof -> capability-boundary two-step sequence",
@@ -169,7 +169,7 @@ export function runDirectiveRuntimeProofCapabilityBoundaryTwoStepSequence(
     steps: input.steps,
   });
 
-  return runDirectiveRuntimeTwoStepSequence({
+  return await runDirectiveRuntimeTwoStepSequence({
     directiveRoot,
     approved: input.approved,
     declared,

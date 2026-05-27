@@ -86,10 +86,10 @@ export type RuntimeNamedSequenceResult =
   | RuntimeNamedSequenceSuccessResult
   | RuntimeNamedSequenceInterruptedResult;
 
-function dispatchNamedSequence(input: RuntimeNamedSequenceInput & { directiveRoot: string }) {
+async function dispatchNamedSequence(input: RuntimeNamedSequenceInput & { directiveRoot: string }) {
   switch (input.sequenceKind) {
     case "runtime_follow_up_to_proof":
-      return runDirectiveRuntimeFollowUpProofTwoStepSequence({
+      return await runDirectiveRuntimeFollowUpProofTwoStepSequence({
         directiveRoot: input.directiveRoot,
         steps: input.steps,
         approved: input.approved,
@@ -97,7 +97,7 @@ function dispatchNamedSequence(input: RuntimeNamedSequenceInput & { directiveRoo
         testInterruptPoint: input.testInterruptPoint,
       });
     case "runtime_proof_to_capability_boundary":
-      return runDirectiveRuntimeProofCapabilityBoundaryTwoStepSequence({
+      return await runDirectiveRuntimeProofCapabilityBoundaryTwoStepSequence({
         directiveRoot: input.directiveRoot,
         steps: input.steps,
         approved: input.approved,
@@ -107,11 +107,11 @@ function dispatchNamedSequence(input: RuntimeNamedSequenceInput & { directiveRoo
   }
 }
 
-export function runDirectiveRuntimeNamedSequenceByExplicitInvocation(
+export async function runDirectiveRuntimeNamedSequenceByExplicitInvocation(
   input: RuntimeNamedSequenceInput,
-): RuntimeNamedSequenceResult {
+): Promise<RuntimeNamedSequenceResult> {
   const directiveRoot = normalizeDirectiveWorkspaceRoot(input.directiveRoot);
-  const dispatched = dispatchNamedSequence({
+  const dispatched = await dispatchNamedSequence({
     ...input,
     directiveRoot,
   });

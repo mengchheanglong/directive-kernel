@@ -35,22 +35,26 @@ export type RuntimeManualControlResult =
     mode: "sequence";
   } & RuntimeNamedSequenceResult);
 
-export function runDirectiveRuntimeManualControl(
+export async function runDirectiveRuntimeManualControl(
   input: RuntimeManualControlInput,
-): RuntimeManualControlResult {
+): Promise<RuntimeManualControlResult> {
   switch (input.mode) {
-    case "action":
+    case "action": {
+      const actionResult = await runDirectiveRuntimeActionByExplicitInvocation(input);
       return {
         surface: "runtime_manual_control_cli",
         mode: "action",
-        ...runDirectiveRuntimeActionByExplicitInvocation(input),
+        ...actionResult,
       };
-    case "sequence":
+    }
+    case "sequence": {
+      const sequenceResult = await runDirectiveRuntimeNamedSequenceByExplicitInvocation(input);
       return {
         surface: "runtime_manual_control_cli",
         mode: "sequence",
-        ...runDirectiveRuntimeNamedSequenceByExplicitInvocation(input),
+        ...sequenceResult,
       };
+    }
     default: {
       const exhaustiveCheck: never = input;
       throw new Error(`invalid_input: unsupported manual control mode: ${String(exhaustiveCheck)}`);

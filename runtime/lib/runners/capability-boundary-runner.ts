@@ -35,7 +35,7 @@ const RUNNER_ACTION_KIND = "runtime_capability_boundary_open";
 
 function toRunnerActionResult(input: {
   artifact: ReturnType<typeof readDirectiveRuntimeProofArtifact>;
-  result: ReturnType<typeof openDirectiveRuntimeProofRuntimeCapabilityBoundary>;
+  result: Awaited<ReturnType<typeof openDirectiveRuntimeProofRuntimeCapabilityBoundary>>;
 }) {
   return {
     created: input.result.created,
@@ -52,14 +52,14 @@ function toRunnerActionResult(input: {
   };
 }
 
-export function runDirectiveRuntimeCapabilityBoundaryWithRunner(input: {
+export async function runDirectiveRuntimeCapabilityBoundaryWithRunner(input: {
   runtimeProofPath: string;
   approved?: boolean;
   approvedBy?: string | null;
   directiveRoot?: string;
   runnerId?: string | null;
   testInterruptPoint?: RuntimeCapabilityBoundaryRunnerInterruptionPoint;
-}): RuntimeCapabilityBoundaryRunnerResult {
+}): Promise<RuntimeCapabilityBoundaryRunnerResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "run the Runtime capability-boundary opener through the checkpoint runner",
@@ -80,7 +80,7 @@ export function runDirectiveRuntimeCapabilityBoundaryWithRunner(input: {
     throw new Error(`invalid_input: runner ${runnerId} is not a Runtime capability-boundary runner`);
   }
 
-  return runDirectiveRuntimeCheckpointRunner({
+  return await runDirectiveRuntimeCheckpointRunner({
     directiveRoot,
     runnerId,
     caseId,
@@ -102,9 +102,9 @@ export function runDirectiveRuntimeCapabilityBoundaryWithRunner(input: {
       "Runner checkpointed after the Runtime capability-boundary opener completed.",
     completedAfterActionMessage:
       "Runner completed after the after_action checkpoint.",
-    action: () => toRunnerActionResult({
+    action: async () => toRunnerActionResult({
       artifact,
-      result: openDirectiveRuntimeProofRuntimeCapabilityBoundary({
+      result: await openDirectiveRuntimeProofRuntimeCapabilityBoundary({
         directiveRoot,
         runtimeProofPath: artifact.runtimeProofRelativePath,
         approved: input.approved,

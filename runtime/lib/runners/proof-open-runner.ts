@@ -35,7 +35,7 @@ const RUNNER_ACTION_KIND = "runtime_proof_open";
 
 function toRunnerActionResult(input: {
   artifact: ReturnType<typeof readDirectiveRuntimeRecordArtifact>;
-  result: ReturnType<typeof openDirectiveRuntimeRecordProof>;
+  result: Awaited<ReturnType<typeof openDirectiveRuntimeRecordProof>>;
 }) {
   return {
     created: input.result.created,
@@ -50,14 +50,14 @@ function toRunnerActionResult(input: {
   };
 }
 
-export function runDirectiveRuntimeProofOpenWithRunner(input: {
+export async function runDirectiveRuntimeProofOpenWithRunner(input: {
   runtimeRecordPath: string;
   approved?: boolean;
   approvedBy?: string | null;
   directiveRoot?: string;
   runnerId?: string | null;
   testInterruptPoint?: RuntimeProofOpenRunnerInterruptionPoint;
-}): RuntimeProofOpenRunnerResult {
+}): Promise<RuntimeProofOpenRunnerResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "run the Runtime proof opener through the checkpoint runner",
@@ -78,7 +78,7 @@ export function runDirectiveRuntimeProofOpenWithRunner(input: {
     throw new Error(`invalid_input: runner ${runnerId} is not a Runtime proof runner`);
   }
 
-  return runDirectiveRuntimeCheckpointRunner({
+  return await runDirectiveRuntimeCheckpointRunner({
     directiveRoot,
     runnerId,
     caseId,
@@ -100,9 +100,9 @@ export function runDirectiveRuntimeProofOpenWithRunner(input: {
       "Runner checkpointed after the Runtime proof opener completed.",
     completedAfterActionMessage:
       "Runner completed after the after_action checkpoint.",
-    action: () => toRunnerActionResult({
+    action: async () => toRunnerActionResult({
       artifact,
-      result: openDirectiveRuntimeRecordProof({
+      result: await openDirectiveRuntimeRecordProof({
         directiveRoot,
         runtimeRecordPath: artifact.runtimeRecordRelativePath,
         approved: input.approved,

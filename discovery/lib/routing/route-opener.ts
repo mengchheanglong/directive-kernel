@@ -11,7 +11,7 @@ import {
   resolveDirectiveWorkspaceRelativePath,
   writeDirectiveArtifactIfMissing,
 } from "../../../engine/approval-boundary.ts";
-import { writeJson as writeJsonPretty } from "../../../shared/lib/file-io.ts";
+import { writeJson as writeJsonPretty, withPerFileLock } from "../../../shared/lib/file-io.ts";
 import {
   normalizeDirectiveRelativePath,
 } from "../../../shared/lib/relative-path.ts";

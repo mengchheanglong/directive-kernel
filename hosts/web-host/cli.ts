@@ -1,4 +1,8 @@
 import { startDirectiveUiServer } from "./server.ts";
+import {
+  acquireDirectiveRootLock,
+  releaseDirectiveRootLock,
+} from "../../shared/lib/process-lock.ts";
 
 function printUsage() {
   process.stdout.write(`Directive Kernel UI CLI
@@ -43,9 +47,6 @@ async function main() {
     process.exit(1);
   }
 
-  // --directive-root is optional. When omitted the host serves the current
-  // working directory, which matches the `pnpm start` flow that runs the
-  // server from the repo root.
   const directiveRoot = String(flags["directive-root"] || process.cwd()).trim();
 
   const hostFlag = flags.host
@@ -59,6 +60,13 @@ async function main() {
   const port = portFlag ? Number(portFlag) : undefined;
   if (port !== undefined && (!Number.isInteger(port) || port < 0 || port > 65535)) {
     throw new Error("Invalid value for --port");
+  }
+
+  try {
+    acquireDirectiveRootLock(directiveRoot);
+  } catch (error) {
+    process.stderr.write(`${String((error as Error).message || error)}\n`);
+    process.exit(1);
   }
 
   const handle = await startDirectiveUiServer({
@@ -81,11 +89,9 @@ async function main() {
     )}\n`,
   );
 
-  // Keep the process alive until SIGINT/SIGTERM, then close gracefully.
-  // Mirrors the previous `scripts/start-ui.ts` shutdown behavior so this CLI
-  // is a superset of that script.
   const close = async () => {
     await handle.close();
+    releaseDirectiveRootLock(directiveRoot);
     process.exit(0);
   };
   process.on("SIGINT", () => void close());

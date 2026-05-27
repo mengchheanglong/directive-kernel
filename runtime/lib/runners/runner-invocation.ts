@@ -113,7 +113,7 @@ function readRunnerRecordOrThrow(input: {
   };
 }
 
-function dispatchRuntimeAction(input: {
+async function dispatchRuntimeAction(input: {
   actionKind: RuntimeSharedInvocationActionKind;
   targetPath: string;
   approved?: boolean;
@@ -121,14 +121,15 @@ function dispatchRuntimeAction(input: {
   directiveRoot: string;
   runnerId?: string | null;
   testInterruptPoint?: RuntimeSharedInvocationInterruptionPoint;
-}):
+}): Promise<
   | RuntimeFollowUpRunnerResult
   | RuntimeProofOpenRunnerResult
   | RuntimeCapabilityBoundaryRunnerResult
-  | RuntimePromotionReadinessRunnerResult {
+  | RuntimePromotionReadinessRunnerResult
+> {
   switch (input.actionKind) {
     case "runtime_follow_up_open":
-      return runDirectiveRuntimeFollowUpWithRunner({
+      return await runDirectiveRuntimeFollowUpWithRunner({
         directiveRoot: input.directiveRoot,
         runnerId: input.runnerId,
         followUpPath: input.targetPath,
@@ -137,7 +138,7 @@ function dispatchRuntimeAction(input: {
         testInterruptPoint: input.testInterruptPoint,
       });
     case "runtime_proof_open":
-      return runDirectiveRuntimeProofOpenWithRunner({
+      return await runDirectiveRuntimeProofOpenWithRunner({
         directiveRoot: input.directiveRoot,
         runnerId: input.runnerId,
         runtimeRecordPath: input.targetPath,
@@ -146,7 +147,7 @@ function dispatchRuntimeAction(input: {
         testInterruptPoint: input.testInterruptPoint,
       });
     case "runtime_capability_boundary_open":
-      return runDirectiveRuntimeCapabilityBoundaryWithRunner({
+      return await runDirectiveRuntimeCapabilityBoundaryWithRunner({
         directiveRoot: input.directiveRoot,
         runnerId: input.runnerId,
         runtimeProofPath: input.targetPath,
@@ -155,7 +156,7 @@ function dispatchRuntimeAction(input: {
         testInterruptPoint: input.testInterruptPoint,
       });
     case "runtime_promotion_readiness_open":
-      return runDirectiveRuntimePromotionReadinessWithRunner({
+      return await runDirectiveRuntimePromotionReadinessWithRunner({
         directiveRoot: input.directiveRoot,
         runnerId: input.runnerId,
         capabilityBoundaryPath: input.targetPath,
@@ -170,11 +171,11 @@ function dispatchRuntimeAction(input: {
   }
 }
 
-export function runDirectiveRuntimeActionByExplicitInvocation(
+export async function runDirectiveRuntimeActionByExplicitInvocation(
   input: RuntimeSharedInvocationInput,
-): RuntimeSharedInvocationResult {
+): Promise<RuntimeSharedInvocationResult> {
   const directiveRoot = normalizeDirectiveWorkspaceRoot(input.directiveRoot);
-  const dispatched = dispatchRuntimeAction({
+  const dispatched = await dispatchRuntimeAction({
     actionKind: input.actionKind,
     targetPath: input.targetPath,
     approved: input.approved,

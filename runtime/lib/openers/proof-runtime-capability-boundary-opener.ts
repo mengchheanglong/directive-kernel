@@ -262,12 +262,12 @@ export function readDirectiveRuntimeProofArtifact(input: {
   };
 }
 
-export function openDirectiveRuntimeProofRuntimeCapabilityBoundary(input: {
+export async function openDirectiveRuntimeProofRuntimeCapabilityBoundary(input: {
   runtimeProofPath: string;
   approved?: boolean;
   approvedBy?: string | null;
   directiveRoot?: string;
-}): RuntimeProofRuntimeCapabilityBoundaryOpenResult {
+}): Promise<RuntimeProofRuntimeCapabilityBoundaryOpenResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "open a Runtime runtime capability boundary",
@@ -356,7 +356,7 @@ export function openDirectiveRuntimeProofRuntimeCapabilityBoundary(input: {
     });
   }
 
-  mirrorDirectiveRuntimeCapabilityBoundaryOpen({
+  await mirrorDirectiveRuntimeCapabilityBoundaryOpen({
     directiveRoot,
     caseId: artifact.candidateId,
     receivedAt: snapshotAt,

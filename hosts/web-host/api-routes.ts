@@ -327,7 +327,7 @@ export async function handleDirectiveUiApiRequest(input: {
       rationale: string;
       priority: "high" | "medium" | "low";
     }>(await readBody(req));
-    const result = approveGapFormalization({
+    const result = await approveGapFormalization({
       directiveRoot,
       formalizationId: payload.formalizationId,
       operatorRationale: payload.rationale,
@@ -550,7 +550,7 @@ export async function handleDirectiveUiApiRequest(input: {
       noUnresolvedBaggage?: boolean;
       productArtifactMaterialized?: boolean;
     }>(await readBody(req));
-    writeJson(res, 200, closeArchitectureNoteHandoff({
+    writeJson(res, 200, await closeArchitectureNoteHandoff({
       directiveRoot,
       handoffPath: payload.handoffPath,
       resultSummary: payload.resultSummary,

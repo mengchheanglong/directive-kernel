@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { normalizeText } from "../source-utils.ts";
 import type { GapRadarReport, GapRadarSuggestion } from "../routing/gap-radar.ts";
-import { readJsonOptional, writeJsonAtomic } from "../../shared/lib/file-io.ts";
+import { readJsonOptional, writeJsonAtomic, withPerFileLock } from "../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import { resolveDirectiveWorkspaceRoot } from "../../shared/lib/workspace-root.ts";
 
@@ -250,7 +250,7 @@ function buildCapabilityGapFromFormalization(input: {
   } satisfies FormalizedCapabilityGapRecord;
 }
 
-export function approveGapFormalization(input: {
+export async function approveGapFormalization(input: {
   directiveRoot?: string;
   formalizationId: string;
   operatorRationale: string;
@@ -274,14 +274,16 @@ export function approveGapFormalization(input: {
     record: currentRecord,
     priority: input.operatorApprovedPriority,
   });
-  const gaps = readCapabilityGaps(input.directiveRoot);
-  if (!gaps.some((gap) => gap.gap_id === newGap.gap_id)) {
-    gaps.push(newGap);
-    writeCapabilityGaps({
-      directiveRoot: input.directiveRoot,
-      gaps,
-    });
-  }
+  await withPerFileLock(path.join(resolveDirectiveRoot(input.directiveRoot), "discovery", "capability-gaps.json"), async () => {
+    const gaps = readCapabilityGaps(input.directiveRoot);
+    if (!gaps.some((gap) => gap.gap_id === newGap.gap_id)) {
+      gaps.push(newGap);
+      writeCapabilityGaps({
+        directiveRoot: input.directiveRoot,
+        gaps,
+      });
+    }
+  });
 
   const updatedRecord = {
     ...currentRecord,

@@ -35,7 +35,7 @@ const RUNNER_ACTION_KIND = "runtime_promotion_readiness_open";
 
 function toRunnerActionResult(input: {
   artifact: ReturnType<typeof readDirectiveRuntimeRuntimeCapabilityBoundaryArtifact>;
-  result: ReturnType<typeof openDirectiveRuntimePromotionReadiness>;
+  result: Awaited<ReturnType<typeof openDirectiveRuntimePromotionReadiness>>;
 }) {
   return {
     created: input.result.created,
@@ -54,14 +54,14 @@ function toRunnerActionResult(input: {
   };
 }
 
-export function runDirectiveRuntimePromotionReadinessWithRunner(input: {
+export async function runDirectiveRuntimePromotionReadinessWithRunner(input: {
   capabilityBoundaryPath: string;
   approved?: boolean;
   approvedBy?: string | null;
   directiveRoot?: string;
   runnerId?: string | null;
   testInterruptPoint?: RuntimePromotionReadinessRunnerInterruptionPoint;
-}): RuntimePromotionReadinessRunnerResult {
+}): Promise<RuntimePromotionReadinessRunnerResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "run the Runtime promotion-readiness opener through the checkpoint runner",
@@ -82,7 +82,7 @@ export function runDirectiveRuntimePromotionReadinessWithRunner(input: {
     throw new Error(`invalid_input: runner ${runnerId} is not a Runtime promotion-readiness runner`);
   }
 
-  return runDirectiveRuntimeCheckpointRunner({
+  return await runDirectiveRuntimeCheckpointRunner({
     directiveRoot,
     runnerId,
     caseId,
@@ -104,9 +104,9 @@ export function runDirectiveRuntimePromotionReadinessWithRunner(input: {
       "Runner checkpointed after the Runtime promotion-readiness opener completed.",
     completedAfterActionMessage:
       "Runner completed after the after_action checkpoint.",
-    action: () => toRunnerActionResult({
+    action: async () => toRunnerActionResult({
       artifact,
-      result: openDirectiveRuntimePromotionReadiness({
+      result: await openDirectiveRuntimePromotionReadiness({
         directiveRoot,
         capabilityBoundaryPath: artifact.capabilityBoundaryRelativePath,
         approved: input.approved,

@@ -150,7 +150,7 @@ export function writeInterruptedDirectiveRuntimeRunnerRecord(input: {
   return interruptedRecord;
 }
 
-export function runDirectiveRuntimeCheckpointRunner(input: {
+export async function runDirectiveRuntimeCheckpointRunner(input: {
   directiveRoot: string;
   runnerId: string;
   caseId: string;
@@ -165,8 +165,8 @@ export function runDirectiveRuntimeCheckpointRunner(input: {
   beforeActionCheckpointMessage: string;
   afterActionCheckpointMessage: string;
   completedAfterActionMessage: string;
-  action: () => RunnerActionResult;
-}): RuntimeCheckpointRunnerResult {
+  action: () => Promise<RunnerActionResult>;
+}): Promise<RuntimeCheckpointRunnerResult> {
   const resumed = input.existingRecord !== null;
 
   if (input.existingRecord?.lifecycleState === "completed" && input.existingRecord.actionResult) {
@@ -297,7 +297,7 @@ export function runDirectiveRuntimeCheckpointRunner(input: {
   }
 
   try {
-    const actionResult = input.action();
+    const actionResult = await input.action();
     const afterActionAt = new Date().toISOString();
     const afterActionRecord = writeDirectiveRuntimeRunnerRecord({
       directiveRoot: input.directiveRoot,

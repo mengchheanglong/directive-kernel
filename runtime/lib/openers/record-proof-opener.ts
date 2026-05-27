@@ -251,12 +251,12 @@ export function readDirectiveRuntimeRecordArtifact(input: {
   };
 }
 
-export function openDirectiveRuntimeRecordProof(input: {
+export async function openDirectiveRuntimeRecordProof(input: {
   runtimeRecordPath: string;
   approved?: boolean;
   approvedBy?: string | null;
   directiveRoot?: string;
-}): RuntimeRecordProofOpenResult {
+}): Promise<RuntimeRecordProofOpenResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "open a Runtime proof artifact",
@@ -344,7 +344,7 @@ export function openDirectiveRuntimeRecordProof(input: {
     });
   }
 
-  mirrorDirectiveRuntimeProofOpen({
+  await mirrorDirectiveRuntimeProofOpen({
     directiveRoot,
     caseId: artifact.candidateId,
     receivedAt: snapshotAt,

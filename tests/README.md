@@ -31,6 +31,18 @@ discovered through `vitest.config.ts` at the repo root, which globs
 - `pnpm run test` — single run, exits with the Vitest exit code.
 - `pnpm run test:watch` — watch mode for local development.
 
+## Concurrent tests
+
+Some property tests (`tests/property/concurrent-submissions.property.test.ts`) spawn multiple Node worker threads and are **gated** by the environment variable `CONCURRENT_TESTS=1`. These tests are skipped by default because they require additional system resources and are not safe to run in parallel with other test files.
+
+To run concurrent tests:
+
+```bash
+CONCURRENT_TESTS=1 pnpm run test
+```
+
+CI runs concurrent tests in a dedicated workflow step to avoid interference with the main test suite.
+
 ## Integration tests and tmpdir
 
 Integration suites use unique paths under `os.tmpdir()` (timestamp suffixed)

@@ -345,7 +345,7 @@ export function createStandaloneFilesystemHost(
       approved?: boolean;
       approvedBy?: string | null;
     }) {
-      return openDirectiveRuntimeFollowUp({
+      return await openDirectiveRuntimeFollowUp({
         directiveRoot: harness.directiveRoot,
         followUpPath: input.followUpPath,
         approved: input.approved,
@@ -357,7 +357,7 @@ export function createStandaloneFilesystemHost(
       approved?: boolean;
       approvedBy?: string | null;
     }) {
-      return openDirectiveRuntimeRecordProof({
+      return await openDirectiveRuntimeRecordProof({
         directiveRoot: harness.directiveRoot,
         runtimeRecordPath: input.runtimeRecordPath,
         approved: input.approved,
@@ -369,7 +369,7 @@ export function createStandaloneFilesystemHost(
       approved?: boolean;
       approvedBy?: string | null;
     }) {
-      return openDirectiveRuntimeProofRuntimeCapabilityBoundary({
+      return await openDirectiveRuntimeProofRuntimeCapabilityBoundary({
         directiveRoot: harness.directiveRoot,
         runtimeProofPath: input.runtimeProofPath,
         approved: input.approved,
@@ -381,7 +381,7 @@ export function createStandaloneFilesystemHost(
       approved?: boolean;
       approvedBy?: string | null;
     }) {
-      return openDirectiveRuntimePromotionReadiness({
+      return await openDirectiveRuntimePromotionReadiness({
         directiveRoot: harness.directiveRoot,
         capabilityBoundaryPath: input.capabilityBoundaryPath,
         approved: input.approved,

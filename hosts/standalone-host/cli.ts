@@ -1,4 +1,8 @@
 import { readJson } from "../../shared/lib/file-io.ts";
+import {
+  acquireDirectiveRootLock,
+  releaseDirectiveRootLock,
+} from "../../shared/lib/process-lock.ts";
 import type { EnginePlanProgressUpdate } from "../../engine/types.ts";
 import {
   approveGapFormalization,
@@ -36,8 +40,8 @@ import {
   runStandaloneHostAcceptanceQuickstart,
 } from "./filesystem-host.ts";
 import {
-  startStandaloneHostServer,
-  startStandaloneHostServerFromConfig,
+  start,
+  startFromConfig,
 } from "./server.ts";
 import {
   formatTryCommandOutput,
@@ -317,42 +321,55 @@ async function main() {
       throw new Error("Invalid value for --auth-template");
     }
 
-    const result = bootstrapStandaloneHostWorkspace({
-      outputRoot: readRequiredFlag(flags, "output-root"),
-      hostName: readOptionalFlag(flags, "host-name"),
-      receivedAt: readOptionalFlag(flags, "received-at"),
-      configFilename: readOptionalFlag(flags, "config-filename"),
-      includeSqlitePersistence: persistenceMode === "filesystem_and_sqlite",
-      includeAuthTemplate: authTemplate === "include",
-    });
+    const outputRoot = readRequiredFlag(flags, "output-root");
+    acquireDirectiveRootLock(outputRoot);
+    try {
+      const result = bootstrapStandaloneHostWorkspace({
+        outputRoot,
+        hostName: readOptionalFlag(flags, "host-name"),
+        receivedAt: readOptionalFlag(flags, "received-at"),
+        configFilename: readOptionalFlag(flags, "config-filename"),
+        includeSqlitePersistence: persistenceMode === "filesystem_and_sqlite",
+        includeAuthTemplate: authTemplate === "include",
+      });
 
-    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(outputRoot);
+    }
     return;
   }
 
   if (command === "acceptance-quickstart") {
     const outputRoot = readRequiredFlag(flags, "output-root");
-    const hostName =
-      readOptionalFlag(flags, "host-name") ?? DEFAULT_STANDALONE_HOST_NAME;
-    const relativeOutputPath = readOptionalFlag(flags, "relative-output-path");
-    const generatedAt = readOptionalFlag(flags, "generated-at");
+    acquireDirectiveRootLock(outputRoot);
+    try {
+      const hostName =
+        readOptionalFlag(flags, "host-name") ?? DEFAULT_STANDALONE_HOST_NAME;
+      const relativeOutputPath = readOptionalFlag(flags, "relative-output-path");
+      const generatedAt = readOptionalFlag(flags, "generated-at");
 
-    const result = await runStandaloneHostAcceptanceQuickstart({
-      outputRoot,
-      hostName,
-      relativeOutputPath,
-      generatedAt,
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+      const result = await runStandaloneHostAcceptanceQuickstart({
+        outputRoot,
+        hostName,
+        relativeOutputPath,
+        generatedAt,
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(outputRoot);
+    }
     return;
   }
 
   if (command === "discovery-submit") {
     const inputJsonPath = readRequiredFlag(flags, "input-json-path");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
     const dryRun = flags["dry-run"]?.[0] === "true";
     const processWithEngine = flags["process-with-engine"]?.[0] === "true";
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const request = readJson<DiscoverySubmissionRequest>(inputJsonPath);
@@ -363,15 +380,18 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "discovery-overview") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
     const maxEntriesRaw = readOptionalFlag(flags, "max-entries");
     const maxEntries = maxEntriesRaw ? Number(maxEntriesRaw) : undefined;
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const overview = host.readDiscoveryOverview(
@@ -381,6 +401,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify({ ok: true, overview }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -388,16 +409,23 @@ async function main() {
   if (command === "mission-feedback") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    process.stdout.write(`${JSON.stringify({
-      ok: true,
-      activeEvolution: readActiveMissionEvolution({ directiveRoot }),
-      entries: listMissionFeedbackEntries({ directiveRoot }),
-    }, null, 2)}\n`);
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      process.stdout.write(`${JSON.stringify({
+        ok: true,
+        activeEvolution: readActiveMissionEvolution({ directiveRoot }),
+        entries: listMissionFeedbackEntries({ directiveRoot }),
+      }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
+    }
     return;
   }
 
   if (command === "engine-plan-progress") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const plan = readRequiredFlag(flags, "plan");
@@ -440,12 +468,15 @@ async function main() {
       process.stdout.write(`${JSON.stringify({ ok: true, record: result }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "engine-reroute") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const answers = readJson<Record<string, unknown>>(
@@ -459,6 +490,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -466,115 +498,157 @@ async function main() {
   if (command === "mission-preview") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    const result = previewMissionFeedbackEntry({
-      directiveRoot,
-      feedbackId: readRequiredFlag(flags, "feedback-id"),
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      const result = previewMissionFeedbackEntry({
+        directiveRoot,
+        feedbackId: readRequiredFlag(flags, "feedback-id"),
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
+    }
     return;
   }
 
   if (command === "mission-approve") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    const cascadeScope = readOptionalFlag(flags, "cascade-scope") ?? "none";
-    if (
-      cascadeScope !== "none"
-      && cascadeScope !== "low_confidence"
-      && cascadeScope !== "conflicted"
-      && cascadeScope !== "discovery_held"
-    ) {
-      throw new Error("Invalid value for --cascade-scope");
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      const cascadeScope = readOptionalFlag(flags, "cascade-scope") ?? "none";
+      if (
+        cascadeScope !== "none"
+        && cascadeScope !== "low_confidence"
+        && cascadeScope !== "conflicted"
+        && cascadeScope !== "discovery_held"
+      ) {
+        throw new Error("Invalid value for --cascade-scope");
+      }
+      const result = approveMissionFeedbackEntry({
+        directiveRoot,
+        feedbackId: readRequiredFlag(flags, "feedback-id"),
+        operatorRationale: readRequiredFlag(flags, "rationale"),
+        approvedRunIds: readRepeatedFlag(flags, "run-id"),
+        cascadeScope,
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
     }
-    const result = approveMissionFeedbackEntry({
-      directiveRoot,
-      feedbackId: readRequiredFlag(flags, "feedback-id"),
-      operatorRationale: readRequiredFlag(flags, "rationale"),
-      approvedRunIds: readRepeatedFlag(flags, "run-id"),
-      cascadeScope,
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
     return;
   }
 
   if (command === "mission-reject") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    const result = rejectMissionFeedbackEntry({
-      directiveRoot,
-      feedbackId: readRequiredFlag(flags, "feedback-id"),
-      operatorRationale: readRequiredFlag(flags, "rationale"),
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      const result = rejectMissionFeedbackEntry({
+        directiveRoot,
+        feedbackId: readRequiredFlag(flags, "feedback-id"),
+        operatorRationale: readRequiredFlag(flags, "rationale"),
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
+    }
     return;
   }
 
   if (command === "mission-revert") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    const result = revertMissionEvolution({
-      directiveRoot,
-      operatorRationale: readRequiredFlag(flags, "rationale"),
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      const result = revertMissionEvolution({
+        directiveRoot,
+        operatorRationale: readRequiredFlag(flags, "rationale"),
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
+    }
     return;
   }
 
   if (command === "mission-history") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    process.stdout.write(`${JSON.stringify({
-      ok: true,
-      history: listMissionEvolutionHistory({ directiveRoot }),
-    }, null, 2)}\n`);
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      process.stdout.write(`${JSON.stringify({
+        ok: true,
+        history: listMissionEvolutionHistory({ directiveRoot }),
+      }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
+    }
     return;
   }
 
   if (command === "gap-formalize") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    process.stdout.write(`${JSON.stringify({
-      ok: true,
-      pending: listPendingGapFormalizationCandidates({ directiveRoot }),
-      history: listGapFormalizationRecords({ directiveRoot }),
-    }, null, 2)}\n`);
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      process.stdout.write(`${JSON.stringify({
+        ok: true,
+        pending: listPendingGapFormalizationCandidates({ directiveRoot }),
+        history: listGapFormalizationRecords({ directiveRoot }),
+      }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
+    }
     return;
   }
 
   if (command === "gap-approve") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    const priority = readRequiredFlag(flags, "priority");
-    if (priority !== "high" && priority !== "medium" && priority !== "low") {
-      throw new Error("Invalid value for --priority");
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      const priority = readRequiredFlag(flags, "priority");
+      if (priority !== "high" && priority !== "medium" && priority !== "low") {
+        throw new Error("Invalid value for --priority");
+      }
+      const result = await approveGapFormalization({
+        directiveRoot,
+        formalizationId: readRequiredFlag(flags, "formalization-id"),
+        operatorRationale: readRequiredFlag(flags, "rationale"),
+        operatorApprovedPriority: priority,
+      });
+      const refreshedWorklist = refreshDiscoveryGapWorklist({
+        directiveRoot,
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, ...result, refreshedWorklist }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
     }
-    const result = approveGapFormalization({
-      directiveRoot,
-      formalizationId: readRequiredFlag(flags, "formalization-id"),
-      operatorRationale: readRequiredFlag(flags, "rationale"),
-      operatorApprovedPriority: priority,
-    });
-    const refreshedWorklist = refreshDiscoveryGapWorklist({
-      directiveRoot,
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, ...result, refreshedWorklist }, null, 2)}\n`);
     return;
   }
 
   if (command === "gap-reject") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
     const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
-    const result = rejectGapFormalization({
-      directiveRoot,
-      formalizationId: readRequiredFlag(flags, "formalization-id"),
-      operatorRationale: readRequiredFlag(flags, "rationale"),
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
+    acquireDirectiveRootLock(directiveRoot);
+    try {
+      const result = rejectGapFormalization({
+        directiveRoot,
+        formalizationId: readRequiredFlag(flags, "formalization-id"),
+        operatorRationale: readRequiredFlag(flags, "rationale"),
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
+    } finally {
+      releaseDirectiveRootLock(directiveRoot);
+    }
     return;
   }
 
   if (command === "runtime-host-selection-resolve") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const decision = readRequiredFlag(flags, "decision");
@@ -607,6 +681,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -615,7 +690,9 @@ async function main() {
     const promotionReadinessPath = readRequiredFlag(flags, "promotion-readiness-path");
     const rationale = readRequiredFlag(flags, "rationale");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const result = await host.writeRuntimePromotionSeamDecision({
@@ -626,6 +703,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -634,7 +712,9 @@ async function main() {
     const promotionRecordPath = readRequiredFlag(flags, "promotion-record-path");
     const rationale = readRequiredFlag(flags, "rationale");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const result = await host.writeRuntimeRegistryAcceptanceDecision({
@@ -645,6 +725,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -652,7 +733,9 @@ async function main() {
   if (command === "runtime-followup-write") {
     const inputJsonPath = readRequiredFlag(flags, "input-json-path");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const request = readJson<RuntimeFollowUpRecordRequest>(inputJsonPath);
@@ -660,6 +743,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -667,7 +751,9 @@ async function main() {
   if (command === "runtime-record-write") {
     const inputJsonPath = readRequiredFlag(flags, "input-json-path");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const request = readJson<RuntimeRecordRequest>(inputJsonPath);
@@ -675,6 +761,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -682,7 +769,9 @@ async function main() {
   if (command === "runtime-promotion-write") {
     const inputJsonPath = readRequiredFlag(flags, "input-json-path");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const request = readJson<RuntimePromotionRecordRequest>(inputJsonPath);
@@ -690,6 +779,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -697,7 +787,9 @@ async function main() {
   if (command === "runtime-proof-write") {
     const inputJsonPath = readRequiredFlag(flags, "input-json-path");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const request = readJson<RuntimeProofBundleRequest>(inputJsonPath);
@@ -705,6 +797,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -712,7 +805,9 @@ async function main() {
   if (command === "runtime-transformation-proof-write") {
     const inputJsonPath = readRequiredFlag(flags, "input-json-path");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const request = readJson<RuntimeTransformationProofRequest>(inputJsonPath);
@@ -720,6 +815,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -727,7 +823,9 @@ async function main() {
   if (command === "runtime-transformation-record-write") {
     const inputJsonPath = readRequiredFlag(flags, "input-json-path");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const request = readJson<RuntimeTransformationRecordRequest>(inputJsonPath);
@@ -735,6 +833,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -742,7 +841,9 @@ async function main() {
   if (command === "runtime-registry-write") {
     const inputJsonPath = readRequiredFlag(flags, "input-json-path");
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const request = readJson<RuntimeRegistryEntryRequest>(inputJsonPath);
@@ -750,15 +851,18 @@ async function main() {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-overview") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
     const maxEntriesRaw = readOptionalFlag(flags, "max-entries");
     const maxEntries = maxEntriesRaw ? Number(maxEntriesRaw) : undefined;
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const overview = await host.readRuntimeOverview(
@@ -767,25 +871,30 @@ async function main() {
       process.stdout.write(`${JSON.stringify({ ok: true, overview }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-scientify-bundle") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const descriptor = await host.readScientifyLiteratureAccessBundle();
       process.stdout.write(`${JSON.stringify({ ok: true, descriptor }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-scientify-invoke") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
     const timeoutMsRaw = readOptionalFlag(flags, "timeout-ms");
     const timeoutMs = timeoutMsRaw ? Number(timeoutMsRaw) : undefined;
     if (timeoutMsRaw && (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0)) {
@@ -800,6 +909,7 @@ async function main() {
       throw new Error("Invalid value for --persist-artifacts");
     }
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const input = readJson<Record<string, unknown>>(
@@ -821,24 +931,29 @@ async function main() {
       process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-research-vault-descriptor") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const descriptor = await host.readResearchVaultDescriptor();
       process.stdout.write(`${JSON.stringify({ ok: true, descriptor }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-research-vault-descriptor-callable") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
     const includeOpenDecisionsRaw = readOptionalFlag(flags, "include-open-decisions");
     if (
       includeOpenDecisionsRaw
@@ -847,6 +962,7 @@ async function main() {
     ) {
       throw new Error("Invalid value for --include-open-decisions");
     }
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const result = await host.invokeResearchVaultDescriptorCallable({
@@ -859,12 +975,14 @@ async function main() {
       process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-research-vault-source-pack-query") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
     const includeEvidenceRaw = readOptionalFlag(flags, "include-evidence");
     if (
       includeEvidenceRaw
@@ -889,6 +1007,7 @@ async function main() {
     if (timeoutMs !== undefined && timeoutMs < 1) {
       throw new Error("Invalid value for --timeout-ms");
     }
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const result = await host.invokeResearchVaultSourcePackTool({
@@ -909,24 +1028,29 @@ async function main() {
       process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-blisspixel-deepr-descriptor") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const descriptor = await host.readBlisspixelDeeprDescriptor();
       process.stdout.write(`${JSON.stringify({ ok: true, descriptor }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-blisspixel-deepr-descriptor-callable") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
     const includeOpenDecisionsRaw = readOptionalFlag(flags, "include-open-decisions");
     if (
       includeOpenDecisionsRaw
@@ -935,6 +1059,7 @@ async function main() {
     ) {
       throw new Error("Invalid value for --include-open-decisions");
     }
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const result = await host.invokeBlisspixelDeeprDescriptorCallable({
@@ -947,19 +1072,23 @@ async function main() {
       process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
 
   if (command === "runtime-live-mini-swe-agent") {
     const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
 
+    acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
       const descriptor = await host.readLiveMiniSweAgentDescriptor();
       process.stdout.write(`${JSON.stringify({ ok: true, descriptor }, null, 2)}\n`);
     } finally {
       host.close();
+      releaseDirectiveRootLock(directiveRoot);
     }
     return;
   }
@@ -972,8 +1101,8 @@ async function main() {
     const port = readOptionalNumberFlag(flags, "port");
 
     const handle = runtimeConfig
-      ? await startStandaloneHostServerFromConfig(runtimeConfig)
-      : await startStandaloneHostServer({
+      ? await startFromConfig(runtimeConfig)
+      : await start({
           directiveRoot,
           host: bindHost,
           port,
@@ -1010,25 +1139,22 @@ async function main() {
         2,
       )}\n`,
     );
-
-    const shutdown = async () => {
-      await handle.close();
-      process.exit(0);
-    };
-
-    process.on("SIGINT", () => {
-      void shutdown();
-    });
-    process.on("SIGTERM", () => {
-      void shutdown();
-    });
     return;
   }
 
   if (command === "try") {
     const outputRoot = readOptionalFlag(flags, "output-root") ?? null;
-    const result = await runStandaloneHostTryCommand({ outputRoot });
-    process.stdout.write(`${formatTryCommandOutput(result)}\n`);
+    if (outputRoot) {
+      acquireDirectiveRootLock(outputRoot);
+    }
+    try {
+      const result = await runStandaloneHostTryCommand({ outputRoot });
+      process.stdout.write(`${formatTryCommandOutput(result)}\n`);
+    } finally {
+      if (outputRoot) {
+        releaseDirectiveRootLock(outputRoot);
+      }
+    }
     return;
   }
 

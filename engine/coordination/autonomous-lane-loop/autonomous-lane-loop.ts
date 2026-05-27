@@ -397,7 +397,7 @@ async function maybeAdvanceAutonomousLaneLoop(input: {
       return { advanced: false as const, stopReason: "Runtime autonomous follow-through is disabled by policy." };
     }
 
-    const followUp = openDirectiveRuntimeFollowUp({
+    const followUp = await openDirectiveRuntimeFollowUp({
       directiveRoot: input.directiveRoot,
       followUpPath: sourcePath,
       approved: true,
@@ -421,7 +421,7 @@ async function maybeAdvanceAutonomousLaneLoop(input: {
   }
 
   if (input.currentStage === "runtime.record.pending_proof_boundary") {
-    const proof = openDirectiveRuntimeRecordProof({
+    const proof = await openDirectiveRuntimeRecordProof({
       directiveRoot: input.directiveRoot,
       runtimeRecordPath: sourcePath,
       approved: true,
@@ -445,7 +445,7 @@ async function maybeAdvanceAutonomousLaneLoop(input: {
   }
 
   if (input.currentStage === "runtime.proof.opened") {
-    const boundary = openDirectiveRuntimeProofRuntimeCapabilityBoundary({
+    const boundary = await openDirectiveRuntimeProofRuntimeCapabilityBoundary({
       directiveRoot: input.directiveRoot,
       runtimeProofPath: sourcePath,
       approved: true,
@@ -469,7 +469,7 @@ async function maybeAdvanceAutonomousLaneLoop(input: {
   }
 
   if (input.currentStage === "runtime.runtime_capability_boundary.opened") {
-    const readiness = openDirectiveRuntimePromotionReadiness({
+    const readiness = await openDirectiveRuntimePromotionReadiness({
       directiveRoot: input.directiveRoot,
       capabilityBoundaryPath: sourcePath,
       approved: true,

@@ -154,9 +154,9 @@ function buildStep2MismatchError(runtimeResult: RunnerActionResult) {
   return `invalid_input: declared step 2 target does not match step 1 opened Runtime record ${runtimeResult.runtimeRecordRelativePath}`;
 }
 
-export function runDirectiveRuntimeFollowUpProofTwoStepSequence(
+export async function runDirectiveRuntimeFollowUpProofTwoStepSequence(
   input: RuntimeFollowUpProofSequenceInput,
-): RuntimeFollowUpProofSequenceResult {
+): Promise<RuntimeFollowUpProofSequenceResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "run the explicit Runtime follow-up -> proof two-step sequence",
@@ -169,7 +169,7 @@ export function runDirectiveRuntimeFollowUpProofTwoStepSequence(
     steps: input.steps,
   });
 
-  return runDirectiveRuntimeTwoStepSequence({
+  return await runDirectiveRuntimeTwoStepSequence({
     directiveRoot,
     approved: input.approved,
     declared,

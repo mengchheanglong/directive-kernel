@@ -267,7 +267,7 @@ export async function runMissionFeedbackLoopChecks() {
     ),
   );
 
-  const approvedGap = approveGapFormalization({
+  const approvedGap = await approveGapFormalization({
     directiveRoot,
     formalizationId: pendingFormalizations[0]!.formalizationId,
     operatorRationale: "Track the repeated runtime pressure explicitly.",

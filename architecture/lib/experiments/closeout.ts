@@ -1383,9 +1383,9 @@ export function continueArchitectureFromBoundedResult(
   };
 }
 
-export function closeArchitectureNoteHandoff(
+export async function closeArchitectureNoteHandoff(
   input: CloseArchitectureNoteHandoffInput,
-): ArchitectureBoundedCloseoutResult {
+): Promise<ArchitectureBoundedCloseoutResult> {
   const handoffArtifact = readArchitectureHandoffArtifact({
     directiveRoot: input.directiveRoot,
     handoffPath: input.handoffPath,
@@ -1499,7 +1499,7 @@ export function closeArchitectureNoteHandoff(
       });
     }
 
-    mirrorDirectiveNoteArchitectureCloseout({
+    await mirrorDirectiveNoteArchitectureCloseout({
       directiveRoot: handoffArtifact.directiveRoot,
       caseId: handoffArtifact.candidateId,
       receivedAt: snapshotAt,

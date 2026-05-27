@@ -33,7 +33,7 @@ export type RuntimeFollowUpRunnerResult =
 const RUNNER_ID_PREFIX = "runtime-follow-up-open";
 const RUNNER_ACTION_KIND = "runtime_follow_up_open";
 
-function toRunnerActionResult(input: ReturnType<typeof openDirectiveRuntimeFollowUp>) {
+function toRunnerActionResult(input: Awaited<ReturnType<typeof openDirectiveRuntimeFollowUp>>) {
   return {
     created: input.created,
     directiveRoot: input.directiveRoot,
@@ -45,14 +45,14 @@ function toRunnerActionResult(input: ReturnType<typeof openDirectiveRuntimeFollo
   };
 }
 
-export function runDirectiveRuntimeFollowUpWithRunner(input: {
+export async function runDirectiveRuntimeFollowUpWithRunner(input: {
   followUpPath: string;
   approved?: boolean;
   approvedBy?: string | null;
   directiveRoot?: string;
   runnerId?: string | null;
   testInterruptPoint?: RuntimeFollowUpRunnerInterruptionPoint;
-}): RuntimeFollowUpRunnerResult {
+}): Promise<RuntimeFollowUpRunnerResult> {
   requireDirectiveExplicitApproval({
     approved: input.approved,
     action: "run the Runtime follow-up opener through the checkpoint runner",
@@ -73,7 +73,7 @@ export function runDirectiveRuntimeFollowUpWithRunner(input: {
     throw new Error(`invalid_input: runner ${runnerId} is not a Runtime follow-up runner`);
   }
 
-  return runDirectiveRuntimeCheckpointRunner({
+  return await runDirectiveRuntimeCheckpointRunner({
     directiveRoot,
     runnerId,
     caseId,
@@ -95,8 +95,8 @@ export function runDirectiveRuntimeFollowUpWithRunner(input: {
       "Runner checkpointed after the Runtime follow-up opener completed.",
     completedAfterActionMessage:
       "Runner completed after the after_action checkpoint.",
-    action: () => toRunnerActionResult(
-      openDirectiveRuntimeFollowUp({
+    action: async () => toRunnerActionResult(
+      await openDirectiveRuntimeFollowUp({
         directiveRoot,
         followUpPath: artifact.followUpRelativePath,
         approved: input.approved,

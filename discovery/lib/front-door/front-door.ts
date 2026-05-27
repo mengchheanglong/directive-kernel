@@ -43,7 +43,7 @@ import {
   writeDirectiveDiscoveryFrontDoorProjectionSet,
   type MirroredDiscoveryFrontDoorProjectionInput,
 } from "./projections.ts";
-import { readJson, writeJson as writeJsonPretty, writeUtf8 } from "../../../shared/lib/file-io.ts";
+import { readJson, withPerFileLock, writeJson as writeJsonPretty, writeUtf8 } from "../../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../../shared/lib/path-normalization.ts";
 
 type DiscoveryFrontDoorDecision = {
@@ -778,64 +778,70 @@ export async function submitDirectiveDiscoveryFrontDoor(input: {
     },
   };
 
-  writeJsonPretty(engineArtifactPaths.recordPath, engineResult.record);
-  writeUtf8(
-    engineArtifactPaths.reportPath,
-    renderEngineRunReport({
-      record: engineResult.record,
-      recordRelativePath: engineArtifactPaths.recordRelativePath,
-    }),
-  );
-
-  mirrorDirectiveDiscoveryFrontDoorSubmission({
-    directiveRoot,
-    caseId: input.request.candidate_id,
-    candidateId: input.request.candidate_id,
-    candidateName: input.request.candidate_name,
-    sourceType: normalizedRequest.source_type ?? "internal-signal",
-    sourceReference: input.request.source_reference,
-    receivedAt: engineResult.record.receivedAt,
-    decisionState: frontDoorDecision.decisionState,
-    routeTarget: frontDoorDecision.routingTarget,
-    operatingMode: normalizedRequest.operating_mode ?? null,
-    queueStatus: "routed",
-    linkedArtifacts: {
-      intakeRecordPath,
-      triageRecordPath,
-      routingRecordPath,
-      engineRunRecordPath: engineArtifactPaths.recordRelativePath,
-      engineRunReportPath: engineArtifactPaths.reportRelativePath,
-    },
-    projectionInputs: {
-      discoveryFrontDoor: projectionInput,
-    },
-  });
-  const projectionWrite = writeDirectiveDiscoveryFrontDoorProjectionSet({
-    directiveRoot,
-    caseId: input.request.candidate_id,
-  });
-  if (!projectionWrite.ok) {
-    throw new Error(
-      `generated_discovery_projection_failed:${projectionWrite.reason}:${input.request.candidate_id}`,
+  const lockResult = await withPerFileLock(queuePath, async () => {
+    writeJsonPretty(engineArtifactPaths.recordPath, engineResult.record);
+    writeUtf8(
+      engineArtifactPaths.reportPath,
+      renderEngineRunReport({
+        record: engineResult.record,
+        recordRelativePath: engineArtifactPaths.recordRelativePath,
+      }),
     );
-  }
-  const lifecycleResult = syncDiscoveryIntakeLifecycle({
-    queue: queueWithMatchedGap,
-    request: {
-      candidate_id: input.request.candidate_id,
-      target_phase: "routed",
-      routing_target: frontDoorDecision.routingTarget,
-      intake_record_path: intakeRecordPath,
-      routing_record_path: routingRecordPath,
-      result_record_path: null,
-      note_append:
-        `discovery front door materialized: ${intakeRecordPath}, ${triageRecordPath}, ${routingRecordPath}`,
-    } satisfies DiscoveryIntakeLifecycleSyncRequest,
-    transitionDate: routeDate,
-    directiveRoot,
+
+    await mirrorDirectiveDiscoveryFrontDoorSubmission({
+      directiveRoot,
+      caseId: input.request.candidate_id,
+      candidateId: input.request.candidate_id,
+      candidateName: input.request.candidate_name,
+      sourceType: normalizedRequest.source_type ?? "internal-signal",
+      sourceReference: input.request.source_reference,
+      receivedAt: engineResult.record.receivedAt,
+      decisionState: frontDoorDecision.decisionState,
+      routeTarget: frontDoorDecision.routingTarget,
+      operatingMode: normalizedRequest.operating_mode ?? null,
+      queueStatus: "routed",
+      linkedArtifacts: {
+        intakeRecordPath,
+        triageRecordPath,
+        routingRecordPath,
+        engineRunRecordPath: engineArtifactPaths.recordRelativePath,
+        engineRunReportPath: engineArtifactPaths.reportRelativePath,
+      },
+      projectionInputs: {
+        discoveryFrontDoor: projectionInput,
+      },
+    });
+    const projectionWrite = writeDirectiveDiscoveryFrontDoorProjectionSet({
+      directiveRoot,
+      caseId: input.request.candidate_id,
+    });
+    if (!projectionWrite.ok) {
+      throw new Error(
+        `generated_discovery_projection_failed:${projectionWrite.reason}:${input.request.candidate_id}`,
+      );
+    }
+    const lifecycleResult = syncDiscoveryIntakeLifecycle({
+      queue: queueWithMatchedGap,
+      request: {
+        candidate_id: input.request.candidate_id,
+        target_phase: "routed",
+        routing_target: frontDoorDecision.routingTarget,
+        intake_record_path: intakeRecordPath,
+        routing_record_path: routingRecordPath,
+        result_record_path: null,
+        note_append:
+          `discovery front door materialized: ${intakeRecordPath}, ${triageRecordPath}, ${routingRecordPath}`,
+      } satisfies DiscoveryIntakeLifecycleSyncRequest,
+      transitionDate: routeDate,
+      directiveRoot,
+    });
+    writeJsonPretty(queuePath, lifecycleResult.queue);
+
+    return { lifecycleResult };
   });
-  writeJsonPretty(queuePath, lifecycleResult.queue);
-  mirrorDirectiveDiscoveryFrontDoorSubmission({
+
+  const { lifecycleResult } = lockResult;
+  await mirrorDirectiveDiscoveryFrontDoorSubmission({
     directiveRoot,
     caseId: input.request.candidate_id,
     candidateId: input.request.candidate_id,
