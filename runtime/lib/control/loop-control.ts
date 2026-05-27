@@ -5,13 +5,13 @@ import { getDefaultDirectiveWorkspaceRoot } from "../../../shared/lib/workspace-
 import {
   selectNextCompletionSlice,
   type CompletionSliceSelection,
-} from "../../../engine/coordination/completion-slice-selector.ts";
+} from "../../../engine/orchestration/completion-slice-selector.ts";
 import {
   buildDirectiveRuntimePromotionAssistanceReport,
   type RuntimePromotionAssistanceRecommendation,
 } from "./promotion-assistance.ts";
-import { buildReadOnlyLifecycleCoordinationReport } from "../../../engine/coordination/read-only-lifecycle-coordination/read-only-lifecycle-coordination.ts";
-import { buildBoundedPersistentCoordinationReport } from "../../../engine/coordination/bounded-persistent-coordination.ts";
+import { buildReadOnlyLifecycleCoordinationReport } from "../../../engine/orchestration/read-only-lifecycle-coordination/read-only-lifecycle-coordination.ts";
+import { buildBoundedPersistentCoordinationReport } from "../../../engine/orchestration/bounded-persistent-coordination.ts";
 
 export type RuntimeLoopSelectionDomain =
   | "completion"

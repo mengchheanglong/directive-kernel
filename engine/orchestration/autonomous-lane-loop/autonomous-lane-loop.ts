@@ -26,10 +26,10 @@ import { confirmDirectiveArchitectureRetention } from "../../../architecture/lib
 import { createDirectiveArchitectureIntegrationRecord } from "../../../architecture/lib/materialization/integration-record.ts";
 import { recordDirectiveArchitectureConsumption } from "../../../architecture/lib/materialization/consumption-record.ts";
 import { evaluateDirectiveArchitectureConsumption } from "../../../architecture/lib/materialization/post-consumption-evaluation.ts";
-import { openDirectiveRuntimeFollowUp } from "../../../runtime/lib/openers/follow-up.ts";
-import { openDirectiveRuntimeRecordProof } from "../../../runtime/lib/openers/record-proof-opener.ts";
-import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../../runtime/lib/openers/proof-runtime-capability-boundary-opener.ts";
-import { openDirectiveRuntimePromotionReadiness } from "../../../runtime/lib/openers/promotion-readiness.ts";
+import { openDirectiveRuntimeFollowUp } from "../../../runtime/lib/operations/follow-up.ts";
+import { openDirectiveRuntimeRecordProof } from "../../../runtime/lib/operations/record-proof-opener.ts";
+import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../../runtime/lib/operations/proof-runtime-capability-boundary-opener.ts";
+import { openDirectiveRuntimePromotionReadiness } from "../../../runtime/lib/operations/promotion-readiness.ts";
 import {
   resolveDirectiveRuntimePromotionSpecificationPath,
 } from "../../../runtime/lib/host/promotion-specification.ts";

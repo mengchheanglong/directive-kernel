@@ -4,10 +4,10 @@ import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/submission-router.ts";
 import { submitDirectiveDiscoveryFrontDoor } from "../../discovery/lib/front-door/front-door.ts";
 import { openDirectiveDiscoveryRoute } from "../../discovery/lib/routing/route-opener.ts";
-import { openDirectiveRuntimeFollowUp } from "../../runtime/lib/openers/follow-up.ts";
-import { openDirectiveRuntimeRecordProof } from "../../runtime/lib/openers/record-proof-opener.ts";
-import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../runtime/lib/openers/proof-runtime-capability-boundary-opener.ts";
-import { openDirectiveRuntimePromotionReadiness } from "../../runtime/lib/openers/promotion-readiness.ts";
+import { openDirectiveRuntimeFollowUp } from "../../runtime/lib/operations/follow-up.ts";
+import { openDirectiveRuntimeRecordProof } from "../../runtime/lib/operations/record-proof-opener.ts";
+import { openDirectiveRuntimeProofRuntimeCapabilityBoundary } from "../../runtime/lib/operations/proof-runtime-capability-boundary-opener.ts";
+import { openDirectiveRuntimePromotionReadiness } from "../../runtime/lib/operations/promotion-readiness.ts";
 import {
   type RuntimeHostSelectionResolutionInput,
   writeRuntimeHostSelectionResolution as writeRuntimeHostSelectionResolutionArtifact,
@@ -26,7 +26,7 @@ import { resolveEngineStoreRecordPath } from "../../engine/storage.ts";
 import {
   buildManualRuntimePromotionRecordRequest,
   buildManualRuntimeRegistryAcceptanceRequest,
-} from "../../engine/coordination/runtime-manual-actions.ts";
+} from "../../engine/orchestration/runtime-manual-actions.ts";
 import type {
   ResolvedStandaloneHostConfig,
   ResolvedStandaloneHostPersistence,
@@ -49,7 +49,7 @@ import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/regi
 import type { RuntimeRecordRequest } from "../../runtime/lib/writers/record-writer.ts";
 import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/transformation-proof-writer.ts";
 import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/transformation-record-writer.ts";
-import { describeEngineGapPressure } from "../../engine/execution/run-artifacts.ts";
+import { describeEngineGapPressure } from "../../engine/orchestration/run-artifacts.ts";
 
 type JsonValue = Record<string, unknown>;
 

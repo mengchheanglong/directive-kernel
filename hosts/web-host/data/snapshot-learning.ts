@@ -4,7 +4,7 @@ import {
   resolveDirectiveGapRadarPath,
   type GapRadarReport,
 } from "../../../engine/routing/gap-radar.ts";
-import type { EngineRunsOverview } from "../../../engine/execution/run-artifacts.ts";
+import type { EngineRunsOverview } from "../../../engine/orchestration/run-artifacts.ts";
 
 export function readDirectiveGapRadarSnapshotSummary(directiveRoot: string) {
   const reportPath = resolveDirectiveGapRadarPath(directiveRoot);

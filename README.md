@@ -41,6 +41,12 @@ The three main lanes are:
 ## Main Parts
 
 - `engine/` - shared logic that ties the lanes together
+  - `engine/orchestration/` — coordination, execution, and lifecycle logic merged into one orchestration surface
+  - `engine/cases/` — tracked case records per submission
+  - `engine/mission/` — goal and gap management
+  - `engine/planning/` — plan construction and consumption
+  - `engine/routing/` — lane scoring, assessment, and routing decisions
+  - `engine/state/` — workspace state resolution
 - `discovery/` - source intake and routing
 - `runtime/` - reusable capability work
 - `architecture/` - system-improvement work

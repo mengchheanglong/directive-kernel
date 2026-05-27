@@ -458,8 +458,7 @@ The legitimate import paths for consumers (from `package.json` exports):
 @directive/kernel                          → index.ts
 @directive/kernel/engine                   → engine/index.ts
 @directive/kernel/engine/cases             → engine/cases/index.ts
-@directive/kernel/engine/coordination      → engine/coordination/index.ts
-@directive/kernel/engine/execution         → engine/execution/index.ts
+@directive/kernel/engine/orchestration    → engine/orchestration/index.ts
 @directive/kernel/engine/state             → engine/state/index.ts
 @directive/kernel/engine/mission           → engine/mission/index.ts
 @directive/kernel/engine/routing           → engine/routing/index.ts
@@ -472,10 +471,8 @@ The legitimate import paths for consumers (from `package.json` exports):
 @directive/kernel/discovery/records        → discovery/lib/records/index.ts
 @directive/kernel/discovery/importers      → discovery/importers/index.ts
 @directive/kernel/runtime                  → runtime/lib/index.ts
-@directive/kernel/runtime/openers          → runtime/lib/openers/index.ts
+@directive/kernel/runtime/operations       → runtime/lib/operations/index.ts
 @directive/kernel/runtime/projections      → runtime/lib/projections/index.ts
-@directive/kernel/runtime/runners          → runtime/lib/runners/index.ts
-@directive/kernel/runtime/sequences        → runtime/lib/sequences/index.ts
 @directive/kernel/runtime/writers          → runtime/lib/writers/index.ts
 @directive/kernel/runtime/host             → runtime/lib/host/index.ts
 @directive/kernel/runtime/control          → runtime/lib/control/index.ts

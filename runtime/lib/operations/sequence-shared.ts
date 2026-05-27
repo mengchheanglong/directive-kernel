@@ -10,11 +10,11 @@ import {
   type RuntimeTwoStepSequenceRecord,
   type RuntimeTwoStepSequenceStepRecord,
   writeRuntimeTwoStepSequenceRecord,
-} from "../../../engine/execution/runner-state.ts";
+} from "../../../engine/orchestration/runner-state.ts";
 import {
   runDirectiveRuntimeActionByExplicitInvocation,
   type RuntimeSharedInvocationSuccessResult,
-} from "../runners/runner-invocation.ts";
+} from "./runner-invocation.ts";
 
 export type RuntimeTwoStepSequenceInterruptionPoint =
   | "after_before_step_1_checkpoint"

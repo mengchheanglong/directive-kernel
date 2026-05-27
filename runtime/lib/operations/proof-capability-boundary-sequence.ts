@@ -8,8 +8,8 @@ import {
 import type {
   RunnerActionResult,
   RuntimeTwoStepSequenceStepRecord,
-} from "../../../engine/execution/runner-state.ts";
-import { readDirectiveRuntimeRecordArtifact } from "../openers/record-proof-opener.ts";
+} from "../../../engine/orchestration/runner-state.ts";
+import { readDirectiveRuntimeRecordArtifact } from "./record-proof-opener.ts";
 import {
   buildDirectiveRuntimeTwoStepSequenceRunnerId,
   runDirectiveRuntimeTwoStepSequence,

@@ -18,7 +18,7 @@ import type {
 import {
   readEngineRunsOverview,
   type StoredEngineRunRecord,
-} from "../execution/run-artifacts.ts";
+} from "../orchestration/run-artifacts.ts";
 import { applyDirectiveWorkspaceIntegrityGate } from "../workspace-truth.ts";
 import {
   fileExistsInDirectiveWorkspace,

@@ -4,7 +4,7 @@ import { readJson } from "../../../shared/lib/file-io.ts";
 import { normalizeAbsolutePath } from "../../../shared/lib/path-normalization.ts";
 import { getDefaultDirectiveWorkspaceRoot } from "../../../shared/lib/workspace-root.ts";
 import { resolveDirectiveWorkspaceState } from "../../state/index.ts";
-import { aggregateRunEvidence } from "../../execution/run-evidence-aggregation.ts";
+import { aggregateRunEvidence } from "../run-evidence-aggregation.ts";
 import { buildDirectiveRuntimePromotionAssistanceReport } from "../../../runtime/lib/control/promotion-assistance.ts";
 import type { DiscoveryIntakeQueueEntry } from "../../../discovery/lib/intake/queue-writer.ts";
 import {

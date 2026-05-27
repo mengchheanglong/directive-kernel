@@ -1,7 +1,6 @@
 export * as engine from "./engine/index.ts";
 export * as engineCases from "./engine/cases/index.ts";
-export * as engineCoordination from "./engine/coordination/index.ts";
-export * as engineExecution from "./engine/execution/index.ts";
+export * as engineOrchestration from "./engine/orchestration/index.ts";
 export * as integrationKit from "./hosts/integration-kit/index.ts";
 export * as standaloneHost from "./hosts/standalone-host/index.ts";
 export * as frontend from "./hosts/web-host/index.ts";

@@ -3,13 +3,13 @@ import {
   runDirectiveRuntimeActionByExplicitInvocation,
   type RuntimeSharedInvocationInput,
   type RuntimeSharedInvocationResult,
-} from "../runners/runner-invocation.ts";
+} from "../operations/runner-invocation.ts";
 import {
   DIRECTIVE_RUNTIME_NAMED_SEQUENCE_KINDS,
   runDirectiveRuntimeNamedSequenceByExplicitInvocation,
   type RuntimeNamedSequenceInput,
   type RuntimeNamedSequenceResult,
-} from "../sequences/sequence-invocation.ts";
+} from "../operations/sequence-invocation.ts";
 
 export const DIRECTIVE_RUNTIME_MANUAL_ACTION_KINDS =
   DIRECTIVE_RUNTIME_SHARED_INVOCATION_ACTIONS;

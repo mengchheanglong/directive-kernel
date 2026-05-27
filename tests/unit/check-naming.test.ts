@@ -4,13 +4,13 @@ import { scanForNamingViolations } from "../../scripts/check-naming.ts";
 const FIXTURE: Record<string, string> = {
   "discovery/lib/intake/directive-intake-queue.ts":
     "export interface IntakeQueue {}",
-  "runtime/lib/openers/openers-follow-up.ts":
+  "runtime/lib/operations/operations-follow-up.ts":
     "export const followUp = () => {};",
   "discovery/lib/test-export.ts":
     "export interface DirectiveEngineRunRecord { runId: string }",
-  "runtime/lib/openers/runtime-runtime-capability.ts":
+  "runtime/lib/operations/runtime-runtime-capability.ts":
     "export const x = 1;",
-  "runtime/lib/openers/follow-up.ts":
+  "runtime/lib/operations/follow-up.ts":
     "export const ok = () => {};",
   "architecture/04-materialization/04-bad/some-file.ts":
     "export const x = 1;",

@@ -3,7 +3,7 @@ import path from "node:path";
 import { readDirectiveDiscoveryRoutingArtifact } from "../../discovery/lib/routing/route-opener.ts";
 import {
   type StoredEngineRunRecord,
-} from "../execution/run-artifacts.ts";
+} from "../orchestration/run-artifacts.ts";
 import {
   readLinkedArtifactIfPresent,
   recordMissingLinkedArtifactIfAbsent,

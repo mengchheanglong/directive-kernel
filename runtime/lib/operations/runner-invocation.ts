@@ -7,7 +7,7 @@ import {
   type ActionRunnerRecord,
   type RunnerActionKind,
   type RunnerActionResult,
-} from "../../../engine/execution/runner-state.ts";
+} from "../../../engine/orchestration/runner-state.ts";
 import {
   runDirectiveRuntimeCapabilityBoundaryWithRunner,
   type RuntimeCapabilityBoundaryRunnerResult,

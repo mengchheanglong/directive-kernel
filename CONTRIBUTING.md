@@ -4,7 +4,7 @@
 
 1. **No `Directive` type-name prefix and no `directive-` filename prefix inside the kernel.** Exported types, interfaces, classes, and functions must not start with `Directive`. Filenames must not start with `directive-`. The sole allowlisted exception is `engine/types.ts` for `DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION` — see [Fix_Plan.md](Fix_Plan.md) F4/F7/F11 for the deferral rationale.
 
-2. **A file's basename does not repeat its immediate parent folder name as a prefix.** For example, a file inside `discovery/` must not be named `discovery-foo.ts`; a file inside `engine/execution/` must not be named `execution-bar.ts`.
+2. **A file's basename does not repeat its immediate parent folder name as a prefix.** For example, a file inside `discovery/` must not be named `discovery-foo.ts`; a file inside `engine/orchestration/` must not be named `orchestration-bar.ts`.
 
 3. **JSON Schema files in `shared/schemas/` use unprefixed shape names.** Schema `$id` values and filenames must not carry a `Directive` or `directive-` prefix. The schema filename alone is the shape name.
 

@@ -2,7 +2,7 @@ import type { WorkspaceArtifactKind } from "../index.ts";
 import {
   readRuntimeFollowUpArtifact,
   type RuntimeFollowUpArtifact,
-} from "../../../runtime/lib/openers/follow-up.ts";
+} from "../../../runtime/lib/operations/follow-up.ts";
 import {
   extractColonValue,
   extractMarkdownSectionSummary,

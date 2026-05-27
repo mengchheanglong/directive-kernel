@@ -35,8 +35,7 @@ Start with these Engine-owned grouped surfaces first:
 - `discovery/lib/`
 - `engine/state/`
 - `engine/cases/`
-- `engine/coordination/`
-- `engine/execution/`
+- `engine/orchestration/`
 - `discovery/importers/`
 
 Open `shared/lib/` only when you need residual support code rather than a lane home.

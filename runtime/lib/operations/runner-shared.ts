@@ -6,7 +6,7 @@ import {
   type RunnerActionKind,
   type RunnerActionResult,
   writeActionRunnerRecord,
-} from "../../../engine/execution/runner-state.ts";
+} from "../../../engine/orchestration/runner-state.ts";
 
 export type RuntimeCheckpointRunnerInterruptionPoint =
   | "after_before_action_checkpoint"

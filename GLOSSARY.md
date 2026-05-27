@@ -123,16 +123,16 @@ readable companion to that audit.
   See [`engine/process-source-record.ts`](./engine/process-source-record.ts).
 - **Promotion**: Runtime's promotion lifecycle stage that advances
   artifacts toward readiness. See
-  [`runtime/lib/openers/promotion-readiness.ts`](./runtime/lib/openers/promotion-readiness.ts).
+  [`runtime/lib/operations/promotion-readiness.ts`](./runtime/lib/operations/promotion-readiness.ts).
 - **Proof**: Evidence backing a runtime or architecture record,
   collected during proof-openers. See
-  [`runtime/lib/openers/record-proof-opener.ts`](./runtime/lib/openers/record-proof-opener.ts).
+  [`runtime/lib/operations/record-proof-opener.ts`](./runtime/lib/operations/record-proof-opener.ts).
 - **Rate limit**: A request-rate cap enforced by the kernel on host
   calls. See
   [`shared/contracts/standalone-host-api-auth-guard.md`](./shared/contracts/standalone-host-api-auth-guard.md).
 - **Readiness**: The runtime promotion-readiness state that gates whether
   an artifact can be promoted. See
-  [`runtime/lib/openers/promotion-readiness.ts`](./runtime/lib/openers/promotion-readiness.ts).
+  [`runtime/lib/operations/promotion-readiness.ts`](./runtime/lib/operations/promotion-readiness.ts).
 - **Record**: A persisted JSON artifact at rest in a directive root. See
   [`engine/storage.ts`](./engine/storage.ts).
 - **Registry**: Runtime's registry of accepted capabilities that the

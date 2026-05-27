@@ -4,11 +4,11 @@ import {
 } from "../../../engine/approval-boundary.ts";
 import {
   readActionRunnerRecord,
-} from "../../../engine/execution/runner-state.ts";
+} from "../../../engine/orchestration/runner-state.ts";
 import {
   openDirectiveRuntimeFollowUp,
   readRuntimeFollowUpArtifact,
-} from "../openers/follow-up.ts";
+} from "./follow-up.ts";
 import {
   buildDirectiveRuntimeRunnerId,
   runDirectiveRuntimeCheckpointRunner,

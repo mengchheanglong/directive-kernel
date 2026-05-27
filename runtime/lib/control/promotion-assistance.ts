@@ -7,7 +7,7 @@ import {
 import { normalizeAbsolutePath } from "../../../shared/lib/path-normalization.ts";
 import { getDefaultDirectiveWorkspaceRoot } from "../../../shared/lib/workspace-root.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
-import { aggregateRunEvidence } from "../../../engine/execution/run-evidence-aggregation.ts";
+import { aggregateRunEvidence } from "../../../engine/orchestration/run-evidence-aggregation.ts";
 import { buildRuntimeCallableExecutionEvidenceReport } from "./callable-execution-evidence.ts";
 import {
   evaluatePreHostRuntimePromotionRecordPrerequisites,

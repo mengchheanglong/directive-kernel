@@ -4,7 +4,7 @@ import path from "node:path";
 import {
   buildOperatorDecisionInboxReport,
   type OperatorDecisionInboxReport,
-} from "../../../engine/coordination/index.ts";
+} from "../../../engine/orchestration/index.ts";
 import {
   resolveDirectiveWorkspaceState,
   type WorkspaceStateReport,

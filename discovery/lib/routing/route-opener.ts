@@ -30,11 +30,11 @@ import {
   extractRuntimeOpenerMarkdownTitle as extractMarkdownTitle,
   extractRuntimeOpenerOptionalBulletValue as extractOptionalBulletValue,
   extractRuntimeOpenerRequiredBulletValue as extractBulletValue,
-} from "../../../runtime/lib/openers/opener-shared.ts";
+} from "../../../runtime/lib/operations/opener-shared.ts";
 import {
   describeEngineGapPressure,
   type EngineGapPressureDetail,
-} from "../../../engine/execution/run-artifacts.ts";
+} from "../../../engine/orchestration/run-artifacts.ts";
 import type { EngineRoutingAssessment } from "../../../engine/types.ts";
 
 type EngineRunRecordLike = {

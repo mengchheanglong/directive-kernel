@@ -4,3 +4,6 @@ export * from "./completion-slice-selector.ts";
 export * from "./autonomous-lane-loop/autonomous-lane-loop.ts";
 export * from "./runtime-promotion-automation.ts";
 export * from "./operator-decision-inbox/operator-decision-inbox.ts";
+export * from "./runner-state.ts";
+export * from "./run-evidence-aggregation.ts";
+export * from "./run-artifacts.ts";

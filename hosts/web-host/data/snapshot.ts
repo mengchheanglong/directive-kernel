@@ -34,22 +34,22 @@ import {
 import {
   readRuntimeFollowUpArtifact,
   type RuntimeFollowUpArtifact,
-} from "../../../runtime/lib/openers/follow-up.ts";
+} from "../../../runtime/lib/operations/follow-up.ts";
 import {
   type RuntimeRecordArtifact,
-} from "../../../runtime/lib/openers/record-proof-opener.ts";
+} from "../../../runtime/lib/operations/record-proof-opener.ts";
 import {
   type RuntimeProofArtifact,
-} from "../../../runtime/lib/openers/proof-runtime-capability-boundary-opener.ts";
+} from "../../../runtime/lib/operations/proof-runtime-capability-boundary-opener.ts";
 import {
   type RuntimeRuntimeCapabilityBoundaryArtifact,
-} from "../../../runtime/lib/openers/promotion-readiness.ts";
+} from "../../../runtime/lib/operations/promotion-readiness.ts";
 import {
   readEngineRunDetail,
   readEngineRunsOverview,
   type EngineRunDetail,
   type EngineRunsOverview,
-} from "../../../engine/execution/run-artifacts.ts";
+} from "../../../engine/orchestration/run-artifacts.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import {
   ARCHITECTURE_DEEP_TAIL_STAGE,

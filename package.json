@@ -47,17 +47,11 @@
       "import": "./dist/engine/cases/index.js",
       "default": "./dist/engine/cases/index.js"
     },
-    "./engine/coordination": {
-      "development": "./engine/coordination/index.ts",
-      "types": "./dist/engine/coordination/index.d.ts",
-      "import": "./dist/engine/coordination/index.js",
-      "default": "./dist/engine/coordination/index.js"
-    },
-    "./engine/execution": {
-      "development": "./engine/execution/index.ts",
-      "types": "./dist/engine/execution/index.d.ts",
-      "import": "./dist/engine/execution/index.js",
-      "default": "./dist/engine/execution/index.js"
+    "./engine/orchestration": {
+      "development": "./engine/orchestration/index.ts",
+      "types": "./dist/engine/orchestration/index.d.ts",
+      "import": "./dist/engine/orchestration/index.js",
+      "default": "./dist/engine/orchestration/index.js"
     },
     "./integration-kit": {
       "development": "./hosts/integration-kit/index.ts",
@@ -227,29 +221,17 @@
       "import": "./dist/runtime/lib/index.js",
       "default": "./dist/runtime/lib/index.js"
     },
-    "./runtime/openers": {
-      "development": "./runtime/lib/openers/index.ts",
-      "types": "./dist/runtime/lib/openers/index.d.ts",
-      "import": "./dist/runtime/lib/openers/index.js",
-      "default": "./dist/runtime/lib/openers/index.js"
+    "./runtime/operations": {
+      "development": "./runtime/lib/operations/index.ts",
+      "types": "./dist/runtime/lib/operations/index.d.ts",
+      "import": "./dist/runtime/lib/operations/index.js",
+      "default": "./dist/runtime/lib/operations/index.js"
     },
     "./runtime/projections": {
       "development": "./runtime/lib/projections/index.ts",
       "types": "./dist/runtime/lib/projections/index.d.ts",
       "import": "./dist/runtime/lib/projections/index.js",
       "default": "./dist/runtime/lib/projections/index.js"
-    },
-    "./runtime/runners": {
-      "development": "./runtime/lib/runners/index.ts",
-      "types": "./dist/runtime/lib/runners/index.d.ts",
-      "import": "./dist/runtime/lib/runners/index.js",
-      "default": "./dist/runtime/lib/runners/index.js"
-    },
-    "./runtime/sequences": {
-      "development": "./runtime/lib/sequences/index.ts",
-      "types": "./dist/runtime/lib/sequences/index.d.ts",
-      "import": "./dist/runtime/lib/sequences/index.js",
-      "default": "./dist/runtime/lib/sequences/index.js"
     },
     "./runtime/writers": {
       "development": "./runtime/lib/writers/index.ts",

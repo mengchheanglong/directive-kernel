@@ -24,7 +24,7 @@ import {
   revertMissionEvolution,
   supersedeMissionEvolution,
 } from "../../engine/mission/index.ts";
-import { buildOperatorDecisionInboxReport } from "../../engine/coordination/operator-decision-inbox/operator-decision-inbox.ts";
+import { buildOperatorDecisionInboxReport } from "../../engine/orchestration/operator-decision-inbox/operator-decision-inbox.ts";
 import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/gap-worklist-refresh.ts";
 import {
   buildArchitectureSourceInput,

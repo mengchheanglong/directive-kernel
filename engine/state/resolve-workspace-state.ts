@@ -11,7 +11,7 @@ import {
 } from "./shared-state-helpers.ts";
 import {
   readEngineRunsOverview,
-} from "../execution/run-artifacts.ts";
+} from "../orchestration/run-artifacts.ts";
 import { buildWorkspaceProductTruth } from "../workspace-truth.ts";
 import {
   ARCHITECTURE_DEEP_TAIL_STAGE,

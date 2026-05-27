@@ -47,7 +47,7 @@ import {
   writeDirectiveNoteArchitectureCloseoutProjectionSet,
   type MirroredNoteArchitectureCloseoutProjectionInput,
 } from "../control/note-closeout-projections.ts";
-import { readRuntimeOpenerJson as readJson } from "../../../runtime/lib/openers/opener-shared.ts";
+import { readRuntimeOpenerJson as readJson } from "../../../runtime/lib/operations/opener-shared.ts";
 
 export type ArchitectureBoundedStartArtifact = {
   title: string;

@@ -35,7 +35,7 @@ import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/
 import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/gap-worklist-refresh.ts";
 import {
   buildOperatorDecisionInboxReport,
-} from "../../engine/coordination/operator-decision-inbox/operator-decision-inbox.ts";
+} from "../../engine/orchestration/operator-decision-inbox/operator-decision-inbox.ts";
 import {
   approveGapFormalization,
   approveMissionFeedbackEntry,
