@@ -30,7 +30,7 @@ Order in the table reflects recommended sequencing within each priority band.
 | F5 | Audit and prune `shared/contracts/` | P1 | M | |
 | F6 | Resolve the three "runtime" surface confusion | P1 | S | |
 | F7 | Freeze `DirectiveEngineRunRecord` schema + migration policy | P1 | M | ✅ done |
-| F8 | Decide UI direction: read-only vs operator workbench | P1 | M–L | |
+| F8 | Decide UI direction: read-only vs operator workbench | P1 | M–L | ✅ done |
 | F9 | Surface-area prune in `engine/` and `runtime/lib/` | P2 | L | |
 | F10 | Pick an audience and over-serve them | P2 | varies | |
 | F11 | Prefix prune and file/type naming consistency | P1 | M | ✅ done |
@@ -341,7 +341,36 @@ Order in the table reflects recommended sequencing within each priority band.
 
 ## F8 — Decide UI direction: read-only or operator workbench
 
-**Priority:** P1 · **Effort:** M (decision only) / L (full implementation)
+**Status:** ✅ done · **Priority:** P1 · **Effort:** M (decision only)
+
+**Spec:** `.kiro/specs/directive-kernel-ui-direction/`
+
+**Outcome.** The kernel shipped the locked decision: the UI is the read-only "Directive Operator Dashboard," and the full operator workbench is deferred until concrete demand exists. Every prior "Directive Workspace UI" or "Mission Control UI" reference was renamed. A Mutation_Boundary_Note banner now appears at the top of every dashboard page stating that mutations live in the CLI. The `ui-mutation-coverage-audit.md` audit document captured all eight operator actions, their web-host endpoints, CLI subcommands, and workbench value assessments. A workbench spec stub exists at `.kiro/specs/directive-kernel-operator-workbench/` for future promotion.
+
+**Components delivered.**
+- `ui-mutation-coverage-audit.md` — 8-operator-action audit table with web-host endpoints, CLI subcommands, source-of-truth artifacts, and workbench value assessments, plus a locked decision section and workbench scope estimate appendix.
+- `docs/operator-cli.md` — canonical CLI reference grouped by operator action with full invocation patterns, realistic examples, and contract links.
+- Mutation_Boundary_Note banner in `ui/src/renderers/dashboard.ts` — visible above-the-fold on every dashboard page.
+- `<legal-next-steps-hint>` Lit component in `ui/src/components/legal-next-steps-hint.ts` — surfaces `allowedNextSteps` with CLI invocation blocks; mounted on 3 renderers (discovery-routing-record, runtime-follow-up, architecture-adoption-decision).
+- `ui/src/components/legal-next-steps-hint.test.ts` — 3 unit tests (empty steps, non-empty steps, malformed step).
+- `tests/integration/dashboard-readonly-surface.test.ts` — CI-gated assertion that the rendered dashboard contains zero `<form method="POST">` and zero inline `fetch(...method: POST)` patterns.
+- Display-string rename: "Directive Workspace UI" / "Mission Control UI" → "Directive Operator Dashboard" in `README.md`, `Tech_Blueprint.md`, `ui/README.md`, `hosts/web-host/README.md`, and `<title>`. No TypeScript semantic renames.
+- `.kiro/specs/directive-kernel-operator-workbench/` — spec stub for the deferred workbench (`requirements.md`, `design.md`, `tasks.md` intentionally absent; promote when demand materializes).
+- Workbench_Deferred_Note in the F8 Fix_Plan section pointing at `ui-mutation-coverage-audit.md`.
+
+**Side fixes during F8.**
+- Removed a broken `@property({ type: Array })` decorator in the legal-next-steps-hint component that blocked typecheck.
+- Corrected the audit table's web-host endpoints and CLI subcommand names against the actual source files (two actions have no CLI subcommand yet; recorded as "not yet exposed").
+
+**Verification.**
+- `pnpm run typecheck` → green (kernel + UI)
+- `pnpm run test` → 142 passed / 6 skipped, 35 files
+- `pnpm run check:build` → green
+- `pnpm run check:naming` → green
+- `pnpm run check:contracts` → green
+- `pnpm run check:examples` → green (16 examples / 13 schemas)
+
+**Unblocks:** F9 (the surface-area prune can be informed by the audit of what the dashboard actually renders), F10 (the audience decision can reference the read-only CLI-first posture as the current UX model).
 
 **Problem.** The UI today is read-only. Every mutation requires the CLI or hand-crafted POST. For a system that pitches "make workflow visible," shipping a read-only operator view is half a product. Either commit to read-only and stop pretending it's an operator console, or finish the job.
 
@@ -358,6 +387,8 @@ Order in the table reflects recommended sequencing within each priority band.
 **Files.** `ui/src/renderers/`, `ui/src/page-actions.ts`, possibly new `ui/src/forms/`.
 
 **Risk.** Medium. UI mutations against the existing API need careful approval-boundary respect; the F1 test infrastructure should cover the API path before the UI path lands.
+
+**Deferral rationale.** The workbench was evaluated and the Mutation_Coverage_Audit captured the implementation surface. Deferring until concrete operator demand exists. See `ui-mutation-coverage-audit.md` for scope estimate.
 
 ---
 

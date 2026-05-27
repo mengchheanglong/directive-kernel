@@ -1,4 +1,4 @@
-# Directive Kernel UI App
+# Directive Operator Dashboard
 
 This is the canonical standalone UI app for Directive Kernel.
 

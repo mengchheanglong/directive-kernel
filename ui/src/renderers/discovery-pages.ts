@@ -5,6 +5,8 @@ import type {
   FrontendSnapshot,
 } from "../types/index.ts";
 import { navTo } from "../app-utils.ts";
+import type { AllowedNextStep } from "../components/legal-next-steps-hint.ts";
+import "../components/legal-next-steps-hint.ts";
 
 type DiscoveryRoutingDetailRendererContext = {
   artifactLink: (pathValue: string | null | undefined) => unknown;
@@ -46,6 +48,24 @@ type DiscoveryRoutingDetailRendererContext = {
     value: FrontendDiscoveryRoutingDetail["sourceSimilarity"],
   ) => unknown;
 };
+
+function deriveSteps(artifact: Record<string, unknown>): AllowedNextStep[] {
+  const steps = (artifact as Record<string, unknown>).allowedNextSteps;
+  if (!Array.isArray(steps)) return [];
+  return steps.filter(Boolean).map((step: Record<string, unknown>) => {
+    const stepKind = String(step.kind ?? step.step ?? step.label ?? "");
+    const cliMap: Record<string, string> = {
+      approve: "pnpm run standalone:cli discovery-route-approve --directive-root <root> --routing-record-path <path>",
+      reject: "pnpm run standalone:cli discovery-route-reject --directive-root <root> --routing-record-path <path>",
+      defer: "pnpm run standalone:cli discovery-route-defer --directive-root <root> --routing-record-path <path>",
+    };
+    return {
+      label: String(step.label ?? step.description ?? stepKind),
+      cliInvocation: cliMap[stepKind] ?? "pnpm run standalone:cli discovery-route-approve --directive-root <root> --routing-record-path <path>",
+      docsAnchor: step.docsAnchor as string | undefined,
+    };
+  });
+}
 
 type HandoffsPageRendererContext = {
   artifactLink: (pathValue: string | null | undefined) => unknown;
@@ -128,6 +148,7 @@ export function renderDiscoveryRoutingDetailPage(
     ${context.renderEarnedAutonomy(detail.earnedAutonomy)}
     ${context.renderGoalCopilot(detail.goalCopilot)}
     ${context.renderRoutingExplanationBreakdown(detail)}
+    <legal-next-steps-hint .steps=${deriveSteps(detail as unknown as Record<string, unknown>)}></legal-next-steps-hint>
     <section class=${detail.downstreamStubRelativePath ? "panel good" : detail.approvalAllowed ? "panel message" : "panel warning"}>
       <h3>Route approval</h3>
       <p>${detail.downstreamStubRelativePath

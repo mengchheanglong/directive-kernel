@@ -644,6 +644,11 @@ export function renderHomePage(
   const queueConflictedCount = snapshot.queue.entries.filter((entry) => entry.review_pressure?.route_conflict).length;
 
   return html`
+      <aside style="background: #f5f5f5; padding: 0.5rem; border-left: 3px solid #888;">
+        This is a read-only view. State mutations live in the CLI:
+        <code>pnpm run standalone:cli &lt;subcommand&gt;</code>.
+        See <a href="/docs/operator-cli.md">the operator CLI reference</a> for the canonical operator surface.
+      </aside>
     <section class="dashboard-section">
       <div class="dashboard-section-heading">Active Surfaces</div>
       <div class="dashboard-focus-grid">

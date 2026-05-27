@@ -1,6 +1,8 @@
 import { html, nothing } from "lit";
 
 import { artifactPathToViewPath, navTo } from "../app-utils.ts";
+import type { AllowedNextStep } from "../components/legal-next-steps-hint.ts";
+import "../components/legal-next-steps-hint.ts";
 
 export function renderResidualDetailPage(page: any, context: any) {
   switch (page.kind) {
@@ -37,6 +39,7 @@ export function renderResidualDetailPage(page: any, context: any) {
             </div>
           </section>
           <section class="panel"><h3>Raw follow-up artifact</h3><pre>${detail.content}</pre></section>
+          <legal-next-steps-hint .steps=${deriveRuntimeFollowUpSteps(detail as unknown as Record<string, unknown>)}></legal-next-steps-hint>
         `;
       }
       if (detail.kind === "runtime_follow_up_legacy") {
@@ -286,8 +289,8 @@ export function renderResidualDetailPage(page: any, context: any) {
         </section>
         <section class="panel message">
           <h3>Directive Kernel product boundary</h3>
-          <p>The Directive Kernel UI is the active review surface here. It exposes current stage, next legal step, proposed host, blockers, and linked artifacts, while Runtime and Engine continue to own all real gating and progression logic.</p>
-          <p class="muted">DW UI capability: ${detail.frontendCapabilityDecision || "not explicitly recorded"} | host-facing promotion decision: ${detail.hostFacingPromotionDecision || "not explicitly recorded"}</p>
+          <p>The Directive Operator Dashboard is the active review surface here. It exposes current stage, next legal step, proposed host, blockers, and linked artifacts, while Runtime and Engine continue to own all real gating and progression logic.</p>
+          <p class="muted">Dashboard capability: ${detail.frontendCapabilityDecision || "not explicitly recorded"} | host-facing promotion decision: ${detail.hostFacingPromotionDecision || "not explicitly recorded"}</p>
         </section>
         <section class="panel"><h3>Raw promotion-readiness artifact</h3><pre>${detail.content}</pre></section>
       `;
@@ -311,6 +314,42 @@ export function renderResidualDetailPage(page: any, context: any) {
     default:
       return null;
   }
+}
+
+function deriveRuntimeFollowUpSteps(artifact: Record<string, unknown>): AllowedNextStep[] {
+  const steps = (artifact as Record<string, unknown>).allowedNextSteps;
+  if (!Array.isArray(steps)) return [];
+  return steps.filter(Boolean).map((step: Record<string, unknown>) => {
+    const stepKind = String(step.kind ?? step.step ?? step.label ?? "");
+    const cliMap: Record<string, string> = {
+      approve: "pnpm run standalone:cli runtime-follow-up-approve --directive-root <root> --follow-up-path <path>",
+      reject: "pnpm run standalone:cli runtime-follow-up-reject --directive-root <root> --follow-up-path <path>",
+      defer: "pnpm run standalone:cli runtime-follow-up-defer --directive-root <root> --follow-up-path <path>",
+    };
+    return {
+      label: String(step.label ?? step.description ?? stepKind),
+      cliInvocation: cliMap[stepKind] ?? "pnpm run standalone:cli runtime-follow-up-approve --directive-root <root> --follow-up-path <path>",
+      docsAnchor: step.docsAnchor as string | undefined,
+    };
+  });
+}
+
+function deriveArchitectureAdoptionSteps(artifact: Record<string, unknown>): AllowedNextStep[] {
+  const steps = (artifact as Record<string, unknown>).allowedNextSteps;
+  if (!Array.isArray(steps)) return [];
+  return steps.filter(Boolean).map((step: Record<string, unknown>) => {
+    const stepKind = String(step.kind ?? step.step ?? step.label ?? "");
+    const cliMap: Record<string, string> = {
+      adopt: "pnpm run standalone:cli architecture-adopt --directive-root <root> --result-path <path>",
+      "create-implementation-target": "pnpm run standalone:cli architecture-create-implementation-target --directive-root <root> --adoption-path <path>",
+      reopen: "pnpm run standalone:cli architecture-reopen --directive-root <root> --adoption-path <path>",
+    };
+    return {
+      label: String(step.label ?? step.description ?? stepKind),
+      cliInvocation: cliMap[stepKind] ?? "pnpm run standalone:cli architecture-create-implementation-target --directive-root <root> --adoption-path <path>",
+      docsAnchor: step.docsAnchor as string | undefined,
+    };
+  });
 }
 
 function renderArchitectureResidualPage(page: any, context: any) {
@@ -400,5 +439,6 @@ function renderArchitectureResidualPage(page: any, context: any) {
       <div class="actions">${actionsByKind[page.kind] as any}</div>
     </section>
     <section class="panel"><h3>Raw artifact</h3><pre>${detail.content}</pre></section>
+    ${page.kind === "architecture-adoption" ? html`<legal-next-steps-hint .steps=${deriveArchitectureAdoptionSteps(detail as unknown as Record<string, unknown>)}></legal-next-steps-hint>` : nothing}
   `;
 }
