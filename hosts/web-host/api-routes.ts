@@ -70,6 +70,7 @@ import {
   readDirectiveFrontendRunDetail,
   readDirectiveFrontendSnapshot,
 } from "./data/snapshot.ts";
+import { buildApiManifest } from "./api-manifest.ts";
 import { parseJsonBody, readBody, writeJson } from "./http-support.ts";
 
 type RuntimeHost = ReturnType<typeof createStandaloneFilesystemHost>;
@@ -100,6 +101,11 @@ export async function handleDirectiveUiApiRequest(input: {
       ok: true,
       storage: summarizeKernelStorage(directiveRoot),
     });
+    return true;
+  }
+
+  if (method === "GET" && pathname === "/api/manifest") {
+    writeJson(res, 200, buildApiManifest());
     return true;
   }
 

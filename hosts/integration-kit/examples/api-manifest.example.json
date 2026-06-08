@@ -1,0 +1,42 @@
+{
+  "$schema": "shared/schemas/api-manifest.schema.json",
+  "operations": [
+    {
+      "name": "discovery_submit",
+      "method": "POST",
+      "path": "/api/discovery/submissions",
+      "summary": "Submit a source through the Discovery front door for routing.",
+      "input_schema": "shared/schemas/discovery-submission-request.schema.json",
+      "side_effects": [
+        "writes intake record",
+        "writes routing record",
+        "may write engine run record"
+      ],
+      "prerequisites": [
+        "directive root initialized",
+        "goal envelope present"
+      ],
+      "allowed_after": [
+        "engine_run_reroute",
+        "discovery_open_route",
+        "discovery_resolve_routing_review"
+      ]
+    },
+    {
+      "name": "snapshot_get",
+      "method": "GET",
+      "path": "/api/snapshot",
+      "summary": "Read the current dashboard snapshot of queue, runs, and handoffs."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "literature-access"
+    }
+  ],
+  "schema_index": {
+    "api-manifest": "shared/schemas/api-manifest.schema.json",
+    "discovery-submission-request": "shared/schemas/discovery-submission-request.schema.json",
+    "run-record": "shared/schemas/run-record.schema.json"
+  }
+}

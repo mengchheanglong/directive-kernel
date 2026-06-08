@@ -10,6 +10,7 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 // here so the build fails loudly rather than silently shipping a partial
 // artifact. (R1.7, R6.5)
 const RUNTIME_DATA_FILES = [
+  "hosts/integration-kit/examples/api-manifest.example.json",
   "hosts/integration-kit/examples/discovery-submission-fast-path.json",
   "hosts/integration-kit/examples/discovery-submission-front-door.json",
   "hosts/integration-kit/examples/discovery-submission-queue-only.json",
