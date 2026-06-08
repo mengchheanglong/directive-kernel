@@ -1,4 +1,6 @@
-﻿import type { IncomingMessage, ServerResponse } from "node:http";
+﻿import fs from "node:fs";
+import path from "node:path";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   closeArchitectureBoundedStart,
   closeArchitectureNoteHandoff,
@@ -739,6 +741,22 @@ export async function handleDirectiveUiApiRequest(input: {
       evaluationPath: payload.evaluationPath,
       reopenedBy: uiOperatorActor,
     }));
+    return true;
+  }
+
+  if (method === "GET" && pathname.startsWith("/api/schemas/")) {
+    const SCHEMA_NAME_RE = /^[A-Za-z0-9._-]+\.schema\.json$/;
+    const schemaName = decodeURIComponent(pathname.replace(/^\/api\/schemas\//, ""));
+    if (schemaName.includes("..") || !SCHEMA_NAME_RE.test(schemaName)) {
+      writeJson(res, 400, { ok: false, error: "invalid_schema_name" });
+      return true;
+    }
+    const schemaPath = path.resolve(process.cwd(), "shared", "schemas", schemaName);
+    if (!fs.existsSync(schemaPath)) {
+      writeJson(res, 404, { ok: false, error: "schema_not_found" });
+      return true;
+    }
+    writeJson(res, 200, JSON.parse(fs.readFileSync(schemaPath, "utf8")));
     return true;
   }
 
