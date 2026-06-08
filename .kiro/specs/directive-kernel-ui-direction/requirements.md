@@ -6,7 +6,7 @@ The kernel ships a Lit + Vite UI under `ui/` that today renders read-only views 
 
 This feature is **a decision spec plus the read-only-finalize path**. It produces:
 
-1. An audit document `ui-mutation-coverage-audit.md` listing every operator action a real workbench needs and mapping each one to its existing web-host POST endpoint.
+1. An audit document `docs/audits/ui-mutation-coverage-audit.md` listing every operator action a real workbench needs and mapping each one to its existing web-host POST endpoint.
 2. A locked decision recorded in `Fix_Plan.md` and `README.md`: the kernel ships the read-only operator dashboard now (workbench is deferred to a later spec), with the existing CLI mutations remaining canonical.
 3. The renaming and copy fixes that turn "the UI" into "the Directive Operator Dashboard," including a clear statement in every relevant doc that mutations live in the CLI.
 4. A `legalNextSeams`-driven hint surface added to existing artifact renderers so each artifact view tells the operator what the canonical CLI command is to advance the artifact.
@@ -18,7 +18,7 @@ The work depends on F1 (test infrastructure) ✅ done.
 ## Glossary
 
 - **Kernel**: The root TypeScript package `@directive/kernel` plus the `ui/` workspace member.
-- **Mutation_Coverage_Audit**: The new Markdown file `ui-mutation-coverage-audit.md` at the repository root. Lists every operator-facing mutation, the web-host POST endpoint that already exists, the CLI subcommand that already exists, and a one-sentence usefulness assessment for a future workbench.
+- **Mutation_Coverage_Audit**: The Markdown file `docs/audits/ui-mutation-coverage-audit.md`. Lists every operator-facing mutation, the web-host POST endpoint that already exists, the CLI subcommand that already exists, and a one-sentence usefulness assessment for a future workbench.
 - **Operator_Action_Set**: The eight canonical actions: submit source, approve route, reroute with answers, write decision, formalize gap, mission edit, runtime opener, architecture handoff.
 - **Operator_Dashboard**: The renamed UI, post-spec. The identifier `Directive Operator Dashboard` replaces every prior "Directive Workspace UI" or "Mission Control UI" reference inside the kernel.
 - **Legal_Next_Steps_Hint**: A small Lit component (or per-renderer extension) that surfaces, for any artifact rendered in the UI, the bounded set of `allowedNextSteps` (post-F4 rename of the old `legalNextSeams`) plus the canonical CLI command that performs each step.
@@ -35,7 +35,7 @@ The work depends on F1 (test infrastructure) ✅ done.
 
 #### Acceptance Criteria
 
-1. THE Kernel SHALL include a Mutation_Coverage_Audit at `ui-mutation-coverage-audit.md` in the repository root.
+1. THE Kernel SHALL include a Mutation_Coverage_Audit at `docs/audits/ui-mutation-coverage-audit.md`.
 2. THE Mutation_Coverage_Audit SHALL contain one section per Operator_Action listing: the action name, the web-host POST endpoint (or stating "not yet exposed"), the CLI subcommand that performs it, the source-of-truth artifact it mutates, and a one-sentence assessment of operator value if a UI form existed.
 3. THE Mutation_Coverage_Audit SHALL include a final "Decision" section recording the locked decision: ship Operator_Dashboard now, defer the workbench.
 4. THE Mutation_Coverage_Audit SHALL include a "Workbench scope estimate" appendix listing the Lit components that would need to exist (forms, validation, optimistic UI, error toast) if the workbench were to ship.

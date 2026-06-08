@@ -140,7 +140,7 @@ Order in the table reflects recommended sequencing within each priority band.
 
 **Components delivered.**
 - `GLOSSARY.md` at the repo root with one-sentence definitions and canonical-source links for every term in the post-rename vocabulary.
-- `GLOSSARY_CANDIDATES.md` — audit deliverable produced by Claude during the audit phase, lists all 8 canonical renames plus the do-not-touch and keep-as-is dispositions.
+- `docs/audits/GLOSSARY_CANDIDATES.md` — audit deliverable produced by Claude during the audit phase, lists all 8 canonical renames plus the do-not-touch and keep-as-is dispositions.
 - 8 vocabulary renames applied repo-wide:
   - `earned autonomy` → `operator trust score` (`earnedAutonomy` → `operatorTrustScore`)
   - `gap radar` → `open gaps view` (`gapRadar` → `openGapsView`)
@@ -150,7 +150,7 @@ Order in the table reflects recommended sequencing within each priority band.
   - `forbidden scope expansion` → `out of scope` (`forbiddenScopeExpansion` → `outOfScope`)
   - `bounded closeout` → `closeout` (`boundedCloseout` → `closeout`)
   - `integrity gate` → `integrity check` (`integrityGate` → `integrityCheck`)
-- `tests/integration/vocabulary-sweep.test.ts` — CI-gated sweep that scans the repo for residual LHS matches outside the documented allowlist (`GLOSSARY_CANDIDATES.md`, `Fix_Plan.md` history, `shared/schemas/migrations/v8-to-v9.ts`).
+- `tests/integration/vocabulary-sweep.test.ts` — CI-gated sweep that scans the repo for residual LHS matches outside the documented allowlist (`docs/audits/GLOSSARY_CANDIDATES.md`, `Fix_Plan.md` history, `shared/schemas/migrations/v8-to-v9.ts`).
 
 **Side fixes during F4.**
 - The vocabulary sweep test rejected one near-miss occurrence in a code comment that was not on the audit's call-site list; the audit was extended during execution to keep the sweep test green.
@@ -223,7 +223,7 @@ Order in the table reflects recommended sequencing within each priority band.
   - **B2**: ~52 files moved across `discovery/lib/`, `runtime/lib/`, `architecture/lib/`, plus barrel-file rewrites and importer updates
   - **B3**: 6 `directive-*.ts` files moved (the schema file is part of Section A row 13)
 - `package.json` `exports` map retargeted in lockstep across all four conditions (`development`, `types`, `import`, `default`); subpath keys preserved.
-- `DIRECTIVE_PREFIX_INVENTORY.md` — audit deliverable produced by Claude during the audit phase, lists Section A canonical 13 + Section B bulk rules + Section C allowlist seed.
+- `docs/audits/DIRECTIVE_PREFIX_INVENTORY.md` — audit deliverable produced by Claude during the audit phase, lists Section A canonical 13 + Section B bulk rules + Section C allowlist seed.
 - `CONTRIBUTING.md` — new naming-rules section with the four rules + the `pnpm run check:naming` invocation + cross-links to `GLOSSARY.md` and `shared/contracts/schema-versioning.md`.
 - `scripts/check-naming.ts` — CI lint with four rules: `directive-prefix-filename`, `folder-prefix-filename` (walks every ancestor folder, not just the immediate parent), `directive-prefix-export`, `double-prefix-filename`. Exports `scanForNamingViolations` for unit testing; CLI entry walks the real file tree and exits non-zero on any violation.
 - `tests/unit/check-naming.test.ts` — synthetic-fixture unit test asserting each of the 4 rules fires exactly once on its target.
@@ -345,10 +345,10 @@ Order in the table reflects recommended sequencing within each priority band.
 
 **Spec:** `.kiro/specs/directive-kernel-ui-direction/`
 
-**Outcome.** The kernel shipped the locked decision: the UI is the read-only "Directive Operator Dashboard," and the full operator workbench is deferred until concrete demand exists. Every prior "Directive Workspace UI" or "Mission Control UI" reference was renamed. A Mutation_Boundary_Note banner now appears at the top of every dashboard page stating that mutations live in the CLI. The `ui-mutation-coverage-audit.md` audit document captured all eight operator actions, their web-host endpoints, CLI subcommands, and workbench value assessments. A workbench spec stub exists at `.kiro/specs/directive-kernel-operator-workbench/` for future promotion.
+**Outcome.** The kernel shipped the locked decision: the UI is the read-only "Directive Operator Dashboard," and the full operator workbench is deferred until concrete demand exists. Every prior "Directive Workspace UI" or "Mission Control UI" reference was renamed. A Mutation_Boundary_Note banner now appears at the top of every dashboard page stating that mutations live in the CLI. The `docs/audits/ui-mutation-coverage-audit.md` audit document captured all eight operator actions, their web-host endpoints, CLI subcommands, and workbench value assessments. A workbench spec stub exists at `.kiro/specs/directive-kernel-operator-workbench/` for future promotion.
 
 **Components delivered.**
-- `ui-mutation-coverage-audit.md` — 8-operator-action audit table with web-host endpoints, CLI subcommands, source-of-truth artifacts, and workbench value assessments, plus a locked decision section and workbench scope estimate appendix.
+- `docs/audits/ui-mutation-coverage-audit.md` — 8-operator-action audit table with web-host endpoints, CLI subcommands, source-of-truth artifacts, and workbench value assessments, plus a locked decision section and workbench scope estimate appendix.
 - `docs/operator-cli.md` — canonical CLI reference grouped by operator action with full invocation patterns, realistic examples, and contract links.
 - Mutation_Boundary_Note banner in `ui/src/renderers/dashboard.ts` — visible above-the-fold on every dashboard page.
 - `<legal-next-steps-hint>` Lit component in `ui/src/components/legal-next-steps-hint.ts` — surfaces `allowedNextSteps` with CLI invocation blocks; mounted on 3 renderers (discovery-routing-record, runtime-follow-up, architecture-adoption-decision).
@@ -356,7 +356,7 @@ Order in the table reflects recommended sequencing within each priority band.
 - `tests/integration/dashboard-readonly-surface.test.ts` — CI-gated assertion that the rendered dashboard contains zero `<form method="POST">` and zero inline `fetch(...method: POST)` patterns.
 - Display-string rename: "Directive Workspace UI" / "Mission Control UI" → "Directive Operator Dashboard" in `README.md`, `Tech_Blueprint.md`, `ui/README.md`, `hosts/web-host/README.md`, and `<title>`. No TypeScript semantic renames.
 - `.kiro/specs/directive-kernel-operator-workbench/` — spec stub for the deferred workbench (`requirements.md`, `design.md`, `tasks.md` intentionally absent; promote when demand materializes).
-- Workbench_Deferred_Note in the F8 Fix_Plan section pointing at `ui-mutation-coverage-audit.md`.
+- Workbench_Deferred_Note in the F8 Fix_Plan section pointing at `docs/audits/ui-mutation-coverage-audit.md`.
 
 **Side fixes during F8.**
 - Removed a broken `@property({ type: Array })` decorator in the legal-next-steps-hint component that blocked typecheck.
@@ -388,7 +388,7 @@ Order in the table reflects recommended sequencing within each priority band.
 
 **Risk.** Medium. UI mutations against the existing API need careful approval-boundary respect; the F1 test infrastructure should cover the API path before the UI path lands.
 
-**Deferral rationale.** The workbench was evaluated and the Mutation_Coverage_Audit captured the implementation surface. Deferring until concrete operator demand exists. See `ui-mutation-coverage-audit.md` for scope estimate.
+**Deferral rationale.** The workbench was evaluated and the Mutation_Coverage_Audit captured the implementation surface. Deferring until concrete operator demand exists. See `docs/audits/ui-mutation-coverage-audit.md` for scope estimate.
 
 ---
 
@@ -402,8 +402,8 @@ Order in the table reflects recommended sequencing within each priority band.
 
 **Components delivered.**
 - `scripts/audit-engine-runtime-state.ts` — one-shot audit walker producing the CSV from a ripgrep sweep.
-- `engine-runtime-state-audit.csv` at the repo root — 126 rows mapping every `.ts` source file in `engine/` and `runtime/lib/` to reads/writes/callers/proposed-destination/disposition.
-- `engine-runtime-boundary-map.md` at the repo root — synthesized boundary analysis with verdict per folder, file-by-file move tables for both sub-cuts, basename-collision handling, and resolved open questions.
+- `docs/audits/engine-runtime-state-audit.csv` — 126 rows mapping every `.ts` source file in `engine/` and `runtime/lib/` to reads/writes/callers/proposed-destination/disposition.
+- `docs/audits/engine-runtime-boundary-map.md` — synthesized boundary analysis with verdict per folder, file-by-file move tables for both sub-cuts, basename-collision handling, and resolved open questions.
 - **Sub_Cut_A**: 22 files relocated from `engine/coordination/` (19) + `engine/execution/` (3) into `engine/orchestration/`. Subdirectory structure preserved so the three `types.ts` files remain at distinct paths (`autonomous-lane-loop/`, `operator-decision-inbox/`, `read-only-lifecycle-coordination/`). New `engine/orchestration/index.ts` barrel re-exports the merged surface.
 - **Sub_Cut_B**: 15 files relocated from `runtime/lib/openers/` (5) + `runtime/lib/runners/` (6) + `runtime/lib/sequences/` (4) into `runtime/lib/operations/`. Flat structure under `operations/`. New `runtime/lib/operations/index.ts` barrel.
 - `package.json` `exports` map collapsed: `./engine/coordination` + `./engine/execution` → single `./engine/orchestration` key; `./runtime/openers` + `./runtime/runners` + `./runtime/sequences` → single `./runtime/operations` key. All four conditions retargeted.
@@ -444,8 +444,8 @@ The "smallest but highest-leverage layer" had 7 grouped subfolders in `engine/` 
 
 **Components delivered.**
 - `AUDIENCE.md` — locked decision document with primary use case, not-audience list, success signals, reversal conditions, and lineage relocation plan.
-- `audience-feature-inventory.md` — 50+ feature inventory scored on research-coupling and generalizability with cost estimates for both paths.
-- `audience-scope-trim.md` — trim table documenting which research surfaces relocate from core README narrative to `docs/lineage/research-curation.md`.
+- `docs/audits/audience-feature-inventory.md` — 50+ feature inventory scored on research-coupling and generalizability with cost estimates for both paths.
+- `docs/audits/audience-scope-trim.md` — trim table documenting which research surfaces relocate from core README narrative to `docs/lineage/research-curation.md`.
 - `docs/lineage/research-curation.md` — lineage acknowledgment doc covering 7 research surfaces with pointers to capabilities, workspace, templates, and contracts.
 - `hosts/integration-kit/examples/bug-report-triage/` — goal envelope, sample source (GitHub issue payload), flow.ts script, and README walkthrough.
 - `hosts/integration-kit/examples/incident-triage/` — goal envelope, sample source (CPU alert payload), flow.ts script, and README walkthrough.

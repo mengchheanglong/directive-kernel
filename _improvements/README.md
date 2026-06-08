@@ -1,19 +1,24 @@
-# Improvements (Future Work)
+# Improvements
 
-This folder holds the **net-new enhancement track** for Directive Kernel.
+This folder holds the post-fix enhancement track for Directive Kernel.
 
-The work in `Fix_Plan.md` (at the repo root) takes priority. Once the fix track is complete, the items here become the active roadmap.
+## Current task surfaces
 
-## Contents
+- `../Fix_Plan.md`
+  Historical fix track and its acceptance record.
+- `Improvement_Plan.md`
+  The active enhancement backlog. Status values here are the source of truth for open versus shipped improvement items.
+- `OPEN_TASKS.md`
+  The detailed working document for the remaining open improvement items (`I4` through `I13`).
+- `../.kiro/specs/README.md`
+  The execution index for promoted specs, grouped by shipped work versus deferred stubs.
 
-- `Improvement_Plan.md` — 13 enhancement items (I1–I13), prioritized for humans and AI coding agents
+## Working rule
 
-## Working order
+1. Treat `Improvement_Plan.md` as the backlog.
+2. Promote only the next active item into a Kiro spec when it is ready to execute.
+3. Keep historical audits and one-off analysis in `docs/audits/`, not at the repo root.
 
-1. Finish the items in the root-level `Fix_Plan.md` first.
-2. Pull from this plan in priority order: I1 → I3 → I2 → I7 → I5 → I6 → I4 → I8 → I13 → I9 → I10 → I11 → I12.
-3. As items are picked up, promote them to Kiro specs and remove from the plan when shipped.
+## Why this folder exists
 
-## Why it lives in its own folder
-
-To keep the active fix track unambiguous. Items in this folder are explicitly **post-fix** work — useful to think about, not yet ready to execute.
+It keeps roadmap work separate from the kernel runtime, host surfaces, and archived audit material.

@@ -124,7 +124,7 @@ for term in earnedAutonomy gapRadar narrativeThreading deepTail legalNextSeams f
     --glob '!discovery/research-engine/**' --glob '!node_modules/**' \
     --glob '!vocabulary-audit.csv' --glob '!Fix_Plan.md' \
     --glob '!shared/schemas/migrations/v8-to-v9.ts' \
-    --glob '!GLOSSARY_CANDIDATES.md' \
+    --glob '!docs/audits/GLOSSARY_CANDIDATES.md' \
     -- "$term"
 done
 ```

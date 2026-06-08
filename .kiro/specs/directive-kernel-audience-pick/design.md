@@ -13,7 +13,7 @@ The decision MUST be made before any artifact is written. The audit phase produc
        1. Inventory the kernel's actual feature set
        2. Score each feature on "research-only", "general", or "both"
        3. Estimate cost of each path
-       → audience-feature-inventory.md (committed)
+       → docs/audits/audience-feature-inventory.md (committed)
 
    Decision phase (user):
        Read the audit. Pick option (a) or option (b). Lock in AUDIENCE.md.
@@ -34,7 +34,7 @@ The decision MUST be made before any artifact is written. The audit phase produc
 
 ## Components and Interfaces
 
-### Audit deliverable: `audience-feature-inventory.md`
+### Audit deliverable: `docs/audits/audience-feature-inventory.md`
 
 ```markdown
 # Kernel feature inventory for audience decision
@@ -134,7 +134,7 @@ No new data models. The example consumers reuse the existing source/goal envelop
 
 | Wave | Scope | Path applicability | Checkpoint |
 |---|---|---|---|
-| 1 | Audit (`audience-feature-inventory.md`) | both | typecheck + test (no code changes) |
+| 1 | Audit (`docs/audits/audience-feature-inventory.md`) | both | typecheck + test (no code changes) |
 | 2 | Decision lock (`AUDIENCE.md` filled in by maintainer) | both | typecheck + test |
 | 3a | Research_Curation_Path: README rewrite + Scope_Trim_List with deprecations | a only | typecheck + test + check:contracts |
 | 3b | General_Workflow_Path: README rewrite + Scope_Trim_List relocations + 2 example consumers + 2 integration tests | b only | typecheck + test + check:build + check:examples |

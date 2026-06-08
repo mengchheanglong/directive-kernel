@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 const REPO_ROOT = process.cwd();
+const AUDIT_ROOT = path.join(REPO_ROOT, "docs", "audits");
 
 // ── scan targets ────────────────────────────────────────────────────────────
 const SCAN_ROOTS = ["engine", "runtime/lib"] as const;
@@ -311,7 +312,8 @@ function main(): void {
     csvLines.push(escaped.join(","));
   }
 
-  const csvPath = path.join(REPO_ROOT, "engine-runtime-state-audit.csv");
+  fs.mkdirSync(AUDIT_ROOT, { recursive: true });
+  const csvPath = path.join(AUDIT_ROOT, "engine-runtime-state-audit.csv");
   fs.writeFileSync(csvPath, csvLines.join("\n") + "\n", "utf8");
 
   // Summary
@@ -320,7 +322,7 @@ function main(): void {
     dispositionCounts[row.disposition] = (dispositionCounts[row.disposition] || 0) + 1;
   }
 
-  console.log(`Wrote engine-runtime-state-audit.csv with ${outRows.length} rows`);
+  console.log(`Wrote docs/audits/engine-runtime-state-audit.csv with ${outRows.length} rows`);
   console.log("Disposition counts:");
   for (const [d, c] of Object.entries(dispositionCounts).sort()) {
     console.log(`  ${d}: ${c}`);

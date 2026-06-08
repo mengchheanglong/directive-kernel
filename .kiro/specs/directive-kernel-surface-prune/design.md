@@ -30,7 +30,7 @@ The work is judgment-light: the audit phase establishes which files belong toget
 
 ### Audit script
 
-`scripts/audit-engine-runtime-state.ts` — one-shot, not run in CI. Walks the two surfaces, ripgrep imports, classifies each file. Output: `engine-runtime-state-audit.csv` + the body of `engine-runtime-boundary-map.md`.
+`scripts/audit-engine-runtime-state.ts` — one-shot, not run in CI. Walks the two surfaces, ripgrep imports, classifies each file. Output: `docs/audits/engine-runtime-state-audit.csv` + the body of `docs/audits/engine-runtime-boundary-map.md`.
 
 ```ts
 // pseudocode

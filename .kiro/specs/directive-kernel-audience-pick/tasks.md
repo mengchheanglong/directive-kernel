@@ -15,7 +15,7 @@ Path b's two new examples must pass their integration tests in the same wave the
 ## Tasks
 
 - [ ] 1. Wave 1 — Audit (Claude / Codex)
-  - [ ] 1.1 Create `audience-feature-inventory.md` per `design.md → "Audit deliverable"`. Walk every kernel capability, contract, and example. Score on research-coupling and generalizability. Estimate cost of both paths.
+  - [ ] 1.1 Create `docs/audits/audience-feature-inventory.md` per `design.md → "Audit deliverable"`. Walk every kernel capability, contract, and example. Score on research-coupling and generalizability. Estimate cost of both paths.
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
   - [ ] 1.2 Wave 1 checkpoint: typecheck + test (no code changes).
 
@@ -26,7 +26,7 @@ Path b's two new examples must pass their integration tests in the same wave the
 - [ ] 3a. Wave 3a — Research_Curation_Path execution (only if Audience_Decision = `research-curation-kernel`)
   - [ ] 3a.1 Rewrite `README.md` "What This Repo Is For" section per `design.md`.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 5.1, 5.2_
-  - [ ] 3a.2 Create `audience-scope-trim.md` listing capabilities + contracts to retain, relocate, or deprecate.
+  - [ ] 3a.2 Create `docs/audits/audience-scope-trim.md` listing capabilities + contracts to retain, relocate, or deprecate.
     - _Requirements: 3.1, 3.2, 3.3_
   - [ ] 3a.3 Apply any deprecations identified in the trim list (move features to `docs/lineage/` or delete).
     - _Requirements: 3.3_
@@ -36,7 +36,7 @@ Path b's two new examples must pass their integration tests in the same wave the
 - [ ] 3b. Wave 3b — General_Workflow_Path execution (only if Audience_Decision = `general-workflow-kernel`)
   - [ ] 3b.1 Rewrite `README.md` "What This Repo Is For" section per `design.md`.
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
-  - [ ] 3b.2 Create `audience-scope-trim.md` identifying research-specific copy to relocate from core README to `docs/lineage/research-curation.md`.
+  - [ ] 3b.2 Create `docs/audits/audience-scope-trim.md` identifying research-specific copy to relocate from core README to `docs/lineage/research-curation.md`.
     - _Requirements: 3.1, 3.2, 3.4_
   - [ ] 3b.3 Apply the relocations.
     - _Requirements: 3.4_
@@ -58,3 +58,4 @@ Path b's two new examples must pass their integration tests in the same wave the
 
 - [ ] 5. Final block
   - [ ] 5.1 Re-run the full verification gate. Capture for the F10 hand-off message.
+

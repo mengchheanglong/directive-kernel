@@ -19,7 +19,7 @@ The work depends on F1 ✅, F11 ✅, and F5 ✅ (the contract surface needs to b
 - **General_Workflow_Path**: Audience_Decision = `general-workflow-kernel`. The kernel proves generality with at least two non-research example consumers (e.g. customer-feedback triage + security-advisory triage); drops research-only language from core docs.
 - **Example_Consumer_Set**: The integration-kit examples under `hosts/integration-kit/examples/`. Currently 7 examples, all research-shaped.
 - **Non_Audience_Section**: A section in Audience_Doc that lists who the kernel explicitly does NOT serve and why.
-- **Scope_Trim_List**: A bulleted list of repo features (capabilities, contracts, examples) to either retain, relocate, or delete based on Audience_Decision. Captured in `audience-scope-trim.md`.
+- **Scope_Trim_List**: A bulleted list of repo features (capabilities, contracts, examples) to either retain, relocate, or delete based on Audience_Decision. Captured in `docs/audits/audience-scope-trim.md`.
 - **README_Pitch_Block**: The "What This Repo Is For" section of `README.md`. Currently generic; this spec rewrites it to name the audience and the use case.
 
 ## Requirements
@@ -54,7 +54,7 @@ The work depends on F1 ✅, F11 ✅, and F5 ✅ (the contract surface needs to b
 
 #### Acceptance Criteria
 
-1. THE Kernel SHALL include a Scope_Trim_List at `audience-scope-trim.md` at the repo root.
+1. THE Kernel SHALL include a Scope_Trim_List at `docs/audits/audience-scope-trim.md`.
 2. THE Scope_Trim_List SHALL include one row per repo capability, contract, or example payload that is either retained, relocated, or deleted based on Audience_Decision. Use a CSV-like Markdown table.
 3. WHERE Audience_Decision = `research-curation-kernel`, THE Scope_Trim_List SHALL retain every existing literature-access capability and SHOULD propose deleting or deprecating capabilities that are not source-curation-shaped (audit phase identifies these).
 4. WHERE Audience_Decision = `general-workflow-kernel`, THE Scope_Trim_List SHALL propose adding two non-research example consumers and SHALL identify research-specific copy that should be relocated from the core README into a `docs/lineage/research-curation.md` (so the lineage remains visible without dominating the front page).

@@ -11,7 +11,7 @@ Wave 4 is the only wave that risks breaking existing UI tests; the renderer exte
 ## Tasks
 
 - [ ] 1. Wave 1 — Audit + decision record
-  - [ ] 1.1 Create `ui-mutation-coverage-audit.md` per `design.md → "Mutation_Coverage_Audit structure"`. Walk `hosts/web-host/api-routes.ts` and `hosts/standalone-host/cli.ts` to populate the table.
+  - [ ] 1.1 Create `docs/audits/ui-mutation-coverage-audit.md` per `design.md → "Mutation_Coverage_Audit structure"`. Walk `hosts/web-host/api-routes.ts` and `hosts/standalone-host/cli.ts` to populate the table.
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - [ ] 1.2 Add the Workbench_Deferred_Note paragraph to F8 in `Fix_Plan.md`.
     - _Requirements: 5.1_
@@ -55,3 +55,4 @@ Wave 4 is the only wave that risks breaking existing UI tests; the renderer exte
 - [ ] 6. Final block
   - [ ] 6.1 Update `Fix_Plan.md` F8 row to ✅ done with outcome block. The outcome block records the deferral as the F8 result.
   - [ ] 6.2 Re-run the full gate. Capture for the F8 hand-off message.
+

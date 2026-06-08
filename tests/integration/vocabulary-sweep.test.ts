@@ -14,7 +14,7 @@ const VOCAB_LHS_TERMS = [
 
 const ALLOWLIST = new Set([
   "vocabulary-audit.csv",
-  "GLOSSARY_CANDIDATES.md",
+  "docs/audits/GLOSSARY_CANDIDATES.md",
   "Fix_Plan.md",
   "shared/schemas/migrations/v8-to-v9.ts",
   "shared/schemas/directive-engine-run-record.schema.json",
@@ -23,7 +23,7 @@ const ALLOWLIST = new Set([
 function runRg(term: string): string[] {
   try {
     const output = execSync(
-      `pnpm exec rg --files-with-matches --case-sensitive --glob '!dist/**' --glob '!ui/**' --glob '!discovery/research-engine/**' --glob '!node_modules/**' --glob '!GLOSSARY_CANDIDATES.md' -- "${term}"`,
+      `pnpm exec rg --files-with-matches --case-sensitive --glob '!dist/**' --glob '!ui/**' --glob '!discovery/research-engine/**' --glob '!node_modules/**' --glob '!docs/audits/GLOSSARY_CANDIDATES.md' -- "${term}"`,
       {
         cwd: process.cwd(),
         encoding: "utf-8",

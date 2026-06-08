@@ -6,14 +6,14 @@ The cut is split across three agent phases:
 
 | Phase | Who | Tasks | Why |
 |---|---|---|---|
-| **Audit** | Claude / Codex | 2.1 (vocabulary enumerate), 3.1 (Directive-prefix enumerate) | Judgment-heavy, requires exhaustive enumeration. Output is two files: [`GLOSSARY_CANDIDATES.md`](../../GLOSSARY_CANDIDATES.md) and [`DIRECTIVE_PREFIX_INVENTORY.md`](../../DIRECTIVE_PREFIX_INVENTORY.md). |
+| **Audit** | Claude / Codex | 2.1 (vocabulary enumerate), 3.1 (Directive-prefix enumerate) | Judgment-heavy, requires exhaustive enumeration. Output is two files: [`GLOSSARY_CANDIDATES.md`](../../../docs/audits/GLOSSARY_CANDIDATES.md) and [`DIRECTIVE_PREFIX_INVENTORY.md`](../../../docs/audits/DIRECTIVE_PREFIX_INVENTORY.md). |
 | **Execution** | DeepSeek + OpenCode | Every other task across waves 1–5 (24 tasks) | Mechanical renames once the audit is fixed. Reads the two audit files as fixed inputs; zero ambiguity, zero judgment calls. |
 | **Evaluation** | Claude / Codex | Final block (6.1, 6.2) | Catches what DeepSeek missed; runs the four-command verification gate; updates `Fix_Plan.md`. |
 
 **The two audit files are already produced** by the Audit phase ahead of execution:
 
-- [`GLOSSARY_CANDIDATES.md`](../../GLOSSARY_CANDIDATES.md) — locks the 8 canonical Vocabulary_Rename_Set pairs, the 7 Do_Not_Touch_Term_Set entries, and the ~50 keep-as-is terms documented in the post-Wave-5 glossary. DeepSeek's Wave 2 reads this file and applies the renames; it makes no decisions.
-- [`DIRECTIVE_PREFIX_INVENTORY.md`](../../DIRECTIVE_PREFIX_INVENTORY.md) — locks the 13 canonical type/file/schema renames plus the bulk-rename rules B1 (`Directive` prefix prune), B2 (folder-name prefix prune), B3 (`directive-` filename prune). Pre-populates the `DIRECTIVE_PREFIX_ALLOWLIST` constant in `scripts/check-naming.ts`. Includes confirmed call-counts and exhaustive file enumerations from the ripgrep sweep (376 unique `Directive`-prefixed exports across ~80 files; 5 files with `directive-` prefix; ~50 files with redundant lane-prefix).
+- [`GLOSSARY_CANDIDATES.md`](../../../docs/audits/GLOSSARY_CANDIDATES.md) — locks the 8 canonical Vocabulary_Rename_Set pairs, the 7 Do_Not_Touch_Term_Set entries, and the ~50 keep-as-is terms documented in the post-Wave-5 glossary. DeepSeek's Wave 2 reads this file and applies the renames; it makes no decisions.
+- [`DIRECTIVE_PREFIX_INVENTORY.md`](../../../docs/audits/DIRECTIVE_PREFIX_INVENTORY.md) — locks the 13 canonical type/file/schema renames plus the bulk-rename rules B1 (`Directive` prefix prune), B2 (folder-name prefix prune), B3 (`directive-` filename prune). Pre-populates the `DIRECTIVE_PREFIX_ALLOWLIST` constant in `scripts/check-naming.ts`. Includes confirmed call-counts and exhaustive file enumerations from the ripgrep sweep (376 unique `Directive`-prefixed exports across ~80 files; 5 files with `directive-` prefix; ~50 files with redundant lane-prefix).
 
 DeepSeek receives **both files plus this `tasks.md` plus `requirements.md` and `design.md`** as the complete input set. There is no further enumeration or audit work for DeepSeek to do during waves 1–5.
 
@@ -131,14 +131,14 @@ fc.assert(fc.property(arb, (input) => { ... }), { numRuns: 100 });
 
 - [ ] 2. Wave 2 — Vocabulary renames
 
-  - [x] 2.1 ~~Generate `vocabulary-audit.csv` at the repo root~~ **COMPLETED BY AUDIT PHASE** — see [`GLOSSARY_CANDIDATES.md`](../../GLOSSARY_CANDIDATES.md)
-    - The audit phase (Claude / Codex) produced `GLOSSARY_CANDIDATES.md` instead of the originally-planned `vocabulary-audit.csv`. The Markdown file format was chosen because it carries case-form tables, confirmed call-sites, do-not-touch rationale, and edge-case rules better than a flat CSV.
-    - DeepSeek reads `GLOSSARY_CANDIDATES.md` as the fixed input for tasks 2.2 and 2.3.
-    - Requirement 1's CSV is satisfied by the structured tables in `GLOSSARY_CANDIDATES.md`; the post-Wave-5 `GLOSSARY.md` renders the human-readable glossary the original requirement also called for.
+  - [x] 2.1 ~~Generate `vocabulary-audit.csv` at the repo root~~ **COMPLETED BY AUDIT PHASE** — see [`GLOSSARY_CANDIDATES.md`](../../../docs/audits/GLOSSARY_CANDIDATES.md)
+    - The audit phase (Claude / Codex) produced `docs/audits/GLOSSARY_CANDIDATES.md` instead of the originally-planned `vocabulary-audit.csv`. The Markdown file format was chosen because it carries case-form tables, confirmed call-sites, do-not-touch rationale, and edge-case rules better than a flat CSV.
+    - DeepSeek reads `docs/audits/GLOSSARY_CANDIDATES.md` as the fixed input for tasks 2.2 and 2.3.
+    - Requirement 1's CSV is satisfied by the structured tables in `docs/audits/GLOSSARY_CANDIDATES.md`; the post-Wave-5 `GLOSSARY.md` renders the human-readable glossary the original requirement also called for.
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8 — interpreted as: file exists at repo root, all 8 Vocabulary_Rename_Set rows present, all 7 Do_Not_Touch_Term_Set rows present, every additional domain term enumerated, no missing terms_
 
   - [ ] 2.2 Apply the 8 Vocabulary_Rename_Set renames across the kernel
-    - **Input:** [`GLOSSARY_CANDIDATES.md`](../../GLOSSARY_CANDIDATES.md). DeepSeek reads the Vocabulary_Rename_Set table (8 canonical pairs in all four case forms: prose, camelCase, PascalCase, kebab-case) and applies every form.
+    - **Input:** [`GLOSSARY_CANDIDATES.md`](../../../docs/audits/GLOSSARY_CANDIDATES.md). DeepSeek reads the Vocabulary_Rename_Set table (8 canonical pairs in all four case forms: prose, camelCase, PascalCase, kebab-case) and applies every form.
     - For TypeScript identifiers, use `semanticRename` so every caller updates transitively. For prose, JSON keys appearing in source-as-string, JSON Schema text, and Markdown, use grep + plain rewrite.
     - Apply each pair in both `prose source → prose target` and `camelCase source → camelCase target` form (`PascalCase` and `kebab-case` mirrored where they appear):
       - `earned autonomy` → `operator trust score` (`earnedAutonomy` → `operatorTrustScore`)
@@ -168,19 +168,19 @@ fc.assert(fc.property(arb, (input) => { ... }), { numRuns: 100 });
 
 - [ ] 3. Wave 3 — Naming renames + file moves + package.json exports retargeting
 
-  - [x] 3.1 ~~Generate `naming-audit.csv` at the repo root~~ **COMPLETED BY AUDIT PHASE** — see [`DIRECTIVE_PREFIX_INVENTORY.md`](../../DIRECTIVE_PREFIX_INVENTORY.md)
-    - The audit phase (Claude / Codex) produced `DIRECTIVE_PREFIX_INVENTORY.md` instead of the originally-planned `naming-audit.csv`. Format chosen for the same reason as 2.1.
+  - [x] 3.1 ~~Generate `naming-audit.csv` at the repo root~~ **COMPLETED BY AUDIT PHASE** — see [`DIRECTIVE_PREFIX_INVENTORY.md`](../../../docs/audits/DIRECTIVE_PREFIX_INVENTORY.md)
+    - The audit phase (Claude / Codex) produced `docs/audits/DIRECTIVE_PREFIX_INVENTORY.md` instead of the originally-planned `naming-audit.csv`. Format chosen for the same reason as 2.1.
     - The inventory file:
       - **Section A:** the 13 canonical Naming_Rename_Table rows from Requirement 4 with caller_count anchors.
       - **Section B:** three bulk-rename rules (B1: drop `Directive` prefix from every export; B2: drop folder-name prefix from same-folder file basenames with the full ~50-row file list; B3: drop `directive-` filename prefix with the 5-file list).
       - **Section C:** the pre-populated `DIRECTIVE_PREFIX_ALLOWLIST` (one entry: `engine/types.ts` for `DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION`).
     - Audit numbers confirmed: 376 unique `Directive`-prefixed exports, 5 `directive-*.ts` files, ~50 lane-prefix files.
-    - DeepSeek reads `DIRECTIVE_PREFIX_INVENTORY.md` as the fixed input for tasks 3.2–3.5 and 5.5.
-    - Requirement 3's CSV is satisfied by the structured tables in `DIRECTIVE_PREFIX_INVENTORY.md`.
+    - DeepSeek reads `docs/audits/DIRECTIVE_PREFIX_INVENTORY.md` as the fixed input for tasks 3.2–3.5 and 5.5.
+    - Requirement 3's CSV is satisfied by the structured tables in `docs/audits/DIRECTIVE_PREFIX_INVENTORY.md`.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8 — interpreted as: file exists at repo root, every Naming_Rename_Table row present, every additional Directive-prefixed export and folder-prefix file enumerated, kind/disposition/caller_count documented_
 
   - [ ] 3.2 Rename 5 types via `semanticRename`
-    - **Input:** [`DIRECTIVE_PREFIX_INVENTORY.md`](../../DIRECTIVE_PREFIX_INVENTORY.md) Section A rows 1–5.
+    - **Input:** [`DIRECTIVE_PREFIX_INVENTORY.md`](../../../docs/audits/DIRECTIVE_PREFIX_INVENTORY.md) Section A rows 1–5.
     - `DirectiveEngineSourceItem` → `EngineSourceItem`
     - `DirectiveEngineMissionContext` → `MissionContext`
     - `DirectiveEngineCapabilityGap` → `CapabilityGap`
@@ -190,21 +190,21 @@ fc.assert(fc.property(arb, (input) => { ... }), { numRuns: 100 });
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.17_
 
   - [ ] 3.3 Rename 2 functions via `semanticRename`
-    - **Input:** [`DIRECTIVE_PREFIX_INVENTORY.md`](../../DIRECTIVE_PREFIX_INVENTORY.md) Section A rows 6–7.
+    - **Input:** [`DIRECTIVE_PREFIX_INVENTORY.md`](../../../docs/audits/DIRECTIVE_PREFIX_INVENTORY.md) Section A rows 6–7.
     - `requireDirectiveExplicitApproval` → `requireExplicitApproval`
     - `requireDirectiveIntegrityForOpening` → `requireIntegrityForOpening`
     - Every declaration site and every call site MUST be updated.
     - _Requirements: 4.1, 4.7, 4.8_
 
   - [ ] 3.4 Move 5 files via `smartRelocate`
-    - **Input:** [`DIRECTIVE_PREFIX_INVENTORY.md`](../../DIRECTIVE_PREFIX_INVENTORY.md) Section A rows 8–12.
+    - **Input:** [`DIRECTIVE_PREFIX_INVENTORY.md`](../../../docs/audits/DIRECTIVE_PREFIX_INVENTORY.md) Section A rows 8–12.
     - `discovery/lib/front-door/discovery-front-door.ts` → `discovery/lib/front-door/index.ts`
     - `discovery/lib/front-door/discovery-front-door-coverage.ts` → `discovery/lib/front-door/coverage.ts`
     - `runtime/lib/openers/runtime-follow-up-opener.ts` → `runtime/lib/openers/follow-up.ts`
     - `runtime/lib/openers/runtime-runtime-capability-boundary-promotion-readiness-opener.ts` → `runtime/lib/openers/promotion-readiness.ts`
     - `architecture/lib/control/architecture-deep-tail-stage-map.ts` → `architecture/lib/control/materialization-tail-stage-map.ts` (the file rename also picks up the `deep tail → materialization tail` Vocabulary_Rename_Set pair from Wave 2).
     - `smartRelocate` updates all importers automatically; verify with `pnpm run typecheck` immediately after each move.
-    - **Then apply Section B bulk rules:** after the 5 canonical moves above, DeepSeek applies [`DIRECTIVE_PREFIX_INVENTORY.md`](../../DIRECTIVE_PREFIX_INVENTORY.md) Section B rules in order:
+    - **Then apply Section B bulk rules:** after the 5 canonical moves above, DeepSeek applies [`DIRECTIVE_PREFIX_INVENTORY.md`](../../../docs/audits/DIRECTIVE_PREFIX_INVENTORY.md) Section B rules in order:
       - **B1** drop `Directive` prefix from every kernel export NOT in the allowlist (`engine/types.ts:DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION` is the one exception). Run `semanticRename` per export, batch typecheck after every 10–20 renames.
       - **B2** drop folder-name prefix from same-folder file basenames per the Section B file-list table (~50 files). Run `smartRelocate` per file, batch typecheck after every 5–10 moves. The Section B note about the `architecture-bounded-closeout.ts` / `architecture-closeout.ts` collision applies — inspect content and merge before completing the move.
       - **B3** drop `directive-` filename prefix from the 5 files listed in Section B. Includes the schema file rename which is also Section A row 13 (Wave 4 task 4.1/4.2 handles the schema specifically).
@@ -294,7 +294,7 @@ fc.assert(fc.property(arb, (input) => { ... }), { numRuns: 100 });
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7_
 
   - [ ] 5.5 Create `scripts/check-naming.ts`
-    - **Input:** [`DIRECTIVE_PREFIX_INVENTORY.md`](../../DIRECTIVE_PREFIX_INVENTORY.md) Section C — pre-populated `DIRECTIVE_PREFIX_ALLOWLIST` constant (one entry: `engine/types.ts`). Copy the constant verbatim from the inventory's Section C.
+    - **Input:** [`DIRECTIVE_PREFIX_INVENTORY.md`](../../../docs/audits/DIRECTIVE_PREFIX_INVENTORY.md) Section C — pre-populated `DIRECTIVE_PREFIX_ALLOWLIST` constant (one entry: `engine/types.ts`). Copy the constant verbatim from the inventory's Section C.
     - Export `scanForNamingViolations(files: Record<string, string>): Violation[]` taking a synthetic file map (basename → source text); used by the unit test.
     - CLI entry point: when invoked directly (e.g., via `tsx`), reads the real file tree under `discovery/`, `runtime/`, `architecture/`, `engine/`, `shared/`, `hosts/`, `scripts/`, plus JSON Schema files under `shared/schemas/`.
     - 4 rules per `design.md → "CI naming-lint script"`:
@@ -397,3 +397,4 @@ Tasks within each wave are sequential (one wave-of-graph per task), and waves ar
   ]
 }
 ```
+

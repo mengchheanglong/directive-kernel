@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 const REPO_ROOT = process.cwd();
+const AUDIT_ROOT = path.join(REPO_ROOT, "docs", "audits");
 const PATTERN = "architecture/04-materialization/0[4-9]-[a-z]";
 const EXCLUDE_DIRS = ["discovery/research-engine/", "dist/", "node_modules/", ".kiro/", ".git/"];
 
@@ -54,13 +55,10 @@ function main(): void {
     }
   }
 
-  fs.writeFileSync(
-    path.join(REPO_ROOT, "nested-path-audit.csv"),
-    out.join("\n") + "\n",
-    "utf-8",
-  );
+  fs.mkdirSync(AUDIT_ROOT, { recursive: true });
+  fs.writeFileSync(path.join(AUDIT_ROOT, "nested-path-audit.csv"), out.join("\n") + "\n", "utf-8");
 
-  console.log(`Wrote nested-path-audit.csv with ${out.length - 1} rows`);
+  console.log(`Wrote docs/audits/nested-path-audit.csv with ${out.length - 1} rows`);
 }
 
 main();

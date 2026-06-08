@@ -16,8 +16,8 @@ The work depends on F1 (test infrastructure) ✅ done, F11 (naming consistency) 
 - **Kernel**: The root TypeScript package `@directive/kernel`.
 - **Engine_Surface**: The directory `engine/` and every subdirectory.
 - **Runtime_Lib_Surface**: The directory `runtime/lib/` and every subdirectory.
-- **Read_Write_Audit**: A CSV file `engine-runtime-state-audit.csv` at the repo root that maps every TypeScript file in `Engine_Surface` and `Runtime_Lib_Surface` to: the on-disk state it reads (file paths or schemas), the on-disk state it writes (file paths or schemas), its current callers (file paths from a ripgrep import sweep). One row per source file.
-- **Boundary_Map**: A short Markdown document `engine-runtime-boundary-map.md` at the repo root that summarizes the Read_Write_Audit into the proposed sub-cut groupings: which folders merge, which folders stay, which files move where, and the rationale.
+- **Read_Write_Audit**: A CSV file `docs/audits/engine-runtime-state-audit.csv` that maps every TypeScript file in `Engine_Surface` and `Runtime_Lib_Surface` to: the on-disk state it reads (file paths or schemas), the on-disk state it writes (file paths or schemas), its current callers (file paths from a ripgrep import sweep). One row per source file.
+- **Boundary_Map**: A short Markdown document `docs/audits/engine-runtime-boundary-map.md` that summarizes the Read_Write_Audit into the proposed sub-cut groupings: which folders merge, which folders stay, which files move where, and the rationale.
 - **Sub_Cut_A**: The merge `engine/coordination/` + `engine/execution/` → `engine/orchestration/`.
 - **Sub_Cut_B**: The merge `runtime/lib/openers/` + `runtime/lib/runners/` + `runtime/lib/sequences/` → `runtime/lib/operations/`.
 - **Public_Exports_Map**: The `exports` object in `package.json`. Every relocation that crosses a public surface key SHALL update the corresponding key.
@@ -32,7 +32,7 @@ The work depends on F1 (test infrastructure) ✅ done, F11 (naming consistency) 
 
 #### Acceptance Criteria
 
-1. THE Kernel SHALL include a Read_Write_Audit at `engine-runtime-state-audit.csv` at the repository root.
+1. THE Kernel SHALL include a Read_Write_Audit at `docs/audits/engine-runtime-state-audit.csv`.
 2. THE Read_Write_Audit SHALL have exactly the columns `file_path`, `reads`, `writes`, `callers`, `proposed_destination`, `disposition` in that order on the header row.
 3. THE Read_Write_Audit SHALL include one row per `.ts` source file (excluding `.test.ts`, `.d.ts`, `index.ts` barrels) in `Engine_Surface` and `Runtime_Lib_Surface`.
 4. THE `reads` column SHALL list the relative paths under a Directive_Root that the file reads (e.g. `discovery/intake-queue.json`, `engine/decision-policy-ledger.jsonl`) or a short label like `none`.
@@ -47,7 +47,7 @@ The work depends on F1 (test infrastructure) ✅ done, F11 (naming consistency) 
 
 #### Acceptance Criteria
 
-1. THE Kernel SHALL include a Boundary_Map at `engine-runtime-boundary-map.md` at the repository root.
+1. THE Kernel SHALL include a Boundary_Map at `docs/audits/engine-runtime-boundary-map.md`.
 2. THE Boundary_Map SHALL contain a section per folder that exists today, summarizing what each folder owns and whether the folder survives, merges into another, or splits.
 3. THE Boundary_Map SHALL explicitly answer the F9 questions for each grouped subfolder: does this name describe a real boundary, or is it a folder of files we put together?
 4. THE Boundary_Map SHALL list the Sub_Cut_A and Sub_Cut_B file moves with `before → after` paths.

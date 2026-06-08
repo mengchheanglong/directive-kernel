@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { resolveSchema } from "./check-example-schemas.js";
 
 const REPO_ROOT = process.cwd();
+const AUDIT_ROOT = path.resolve(REPO_ROOT, "docs", "audits");
 
 const EXAMPLE_ROOTS: readonly string[] = [
   "hosts/integration-kit/examples",
@@ -58,8 +59,9 @@ function main(): void {
     lines.push(`${sf},${schemaCounts.get(sf) ?? 0}`);
   }
 
-  fs.writeFileSync(path.resolve(REPO_ROOT, "schema-example-coverage.csv"), lines.join("\n") + "\n", "utf8");
-  process.stdout.write(`audit-example-coverage: wrote ${schemaFiles.length} schema rows to schema-example-coverage.csv\n`);
+  fs.mkdirSync(AUDIT_ROOT, { recursive: true });
+  fs.writeFileSync(path.join(AUDIT_ROOT, "schema-example-coverage.csv"), lines.join("\n") + "\n", "utf8");
+  process.stdout.write(`audit-example-coverage: wrote ${schemaFiles.length} schema rows to docs/audits/schema-example-coverage.csv\n`);
   process.exit(0);
 }
 

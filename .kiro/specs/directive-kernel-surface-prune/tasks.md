@@ -17,9 +17,9 @@ Both sub-cuts land in single coherent change sets. Each change set must be all-o
 ## Tasks
 
 - [ ] 1. Wave 1 — Audit (Claude / Codex)
-  - [ ] 1.1 Create `scripts/audit-engine-runtime-state.ts` per `design.md → "Audit script"`. Run it. Commit `engine-runtime-state-audit.csv` at the repo root.
+  - [ ] 1.1 Create `scripts/audit-engine-runtime-state.ts` per `design.md → "Audit script"`. Run it. Commit `docs/audits/engine-runtime-state-audit.csv`.
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8_
-  - [ ] 1.2 Synthesize `engine-runtime-boundary-map.md` from the CSV plus a per-folder review of `engine/coordination/`, `engine/execution/`, `runtime/lib/openers/`, `runtime/lib/runners/`, `runtime/lib/sequences/`. Include explicit before→after paths for both sub-cuts.
+  - [ ] 1.2 Synthesize `docs/audits/engine-runtime-boundary-map.md` from the CSV plus a per-folder review of `engine/coordination/`, `engine/execution/`, `runtime/lib/openers/`, `runtime/lib/runners/`, `runtime/lib/sequences/`. Include explicit before→after paths for both sub-cuts.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
   - [ ] 1.3 Wave 1 checkpoint: typecheck + test (no code moved).
 
@@ -59,3 +59,4 @@ Both sub-cuts land in single coherent change sets. Each change set must be all-o
   - [ ] 4.1 Audit-resweeps: confirm zero remaining files under `engine/coordination/`, `engine/execution/`, `runtime/lib/openers/`, `runtime/lib/runners/`, `runtime/lib/sequences/`. Confirm `engine/index.ts` and `runtime/lib/index.ts` re-export from the new locations only. Confirm `package.json` `exports` keys agree.
   - [ ] 4.2 Update `Fix_Plan.md` F9 row to ✅ done with outcome block.
   - [ ] 4.3 Re-run the full gate. Capture for the F9 hand-off message.
+
