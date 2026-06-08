@@ -20,6 +20,10 @@ That runs the kernel end-to-end against a sample source in a fresh temp directiv
 
 <!-- TODO: replace this block with a recorded terminal cast (Fix_Plan.md F3 follow-up). -->
 
+## For AI agents
+
+If you are an AI coding agent, start with [`AGENTS.md`](./AGENTS.md).
+
 ## What This Repo Is For
 
 Directive Kernel is for **dev teams running source-driven workflows that need a structured intake → routing → decision pipeline.**

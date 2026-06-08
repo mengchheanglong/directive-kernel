@@ -29,11 +29,11 @@ If the answer is no, the enhancement waits.
 
 ## Priority summary
 
-| # | Item | Audience | Priority | Effort |
-|---|------|----------|----------|--------|
+| # | Item | Audience | Priority | Effort | Status |
+|---|------|----------|----------|--------|--------|
 | I1 | MCP server mirroring the HTTP API | A | P0 | M |
-| I2 | `/api/manifest` operation catalog | A | P0 | S |
-| I3 | `AGENTS.md` repo-root primer | A | P0 | S |
+| I2 | `/api/manifest` operation catalog | A | P0 | S | done |
+| I3 | `AGENTS.md` repo-root primer | A | P0 | S | ✅ done |
 | I4 | `/api/explain?runId=...` natural-language summary | B | P1 | M |
 | I5 | `/api/glossary` queryable vocabulary | B | P1 | S |
 | I6 | "Next legal action" hints on every read | B | P1 | M |
