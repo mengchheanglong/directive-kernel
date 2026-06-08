@@ -23,6 +23,7 @@
     "standalone:cli": "node ./dist/hosts/standalone-host/cli.js",
     "try": "tsx ./hosts/standalone-host/cli.ts try",
     "web:serve": "node ./dist/hosts/web-host/cli.js serve --directive-root .",
+    "mcp:serve": "node --import tsx hosts/mcp-host/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc -p tsconfig.build.json && node ./scripts/copy-runtime-assets.mjs",
@@ -286,15 +287,30 @@
       "types": "./dist/runtime/core/runtime-core-contract.d.ts",
       "import": "./dist/runtime/core/runtime-core-contract.js",
       "default": "./dist/runtime/core/runtime-core-contract.js"
+    },
+    "./mcp-host": {
+      "development": "./hosts/mcp-host/index.ts",
+      "types": "./dist/hosts/mcp-host/index.d.ts",
+      "import": "./dist/hosts/mcp-host/index.js",
+      "default": "./dist/hosts/mcp-host/index.js"
+    },
+    "./mcp-host/cli": {
+      "development": "./hosts/mcp-host/cli.ts",
+      "types": "./dist/hosts/mcp-host/cli.d.ts",
+      "import": "./dist/hosts/mcp-host/cli.js",
+      "default": "./dist/hosts/mcp-host/cli.js"
     }
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
     "fast-check": "^3.22.0",
-    "ajv": "8.17.1",
-    "ajv-formats": "3.0.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "@modelcontextprotocol/sdk": "1.29.0"
   }
 }

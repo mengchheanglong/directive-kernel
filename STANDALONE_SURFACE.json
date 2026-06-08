@@ -25,6 +25,7 @@
       "./standalone-host/config",
       "./standalone-host/persistence",
       "./standalone-host/server",
+      "./mcp-host",
       "./ui",
       "./ui/cli",
       "./ui/server",

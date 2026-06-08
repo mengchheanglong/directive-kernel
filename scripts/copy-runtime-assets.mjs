@@ -18,6 +18,16 @@ const RUNTIME_DATA_FILES = [
   "hosts/integration-kit/examples/first-consuming-host-goal-envelope.json",
   "hosts/integration-kit/examples/first-consuming-host-source.json",
   "hosts/integration-kit/examples/host-integration-acceptance-report.json",
+  "hosts/mcp-host/index.ts",
+  "hosts/mcp-host/cli.ts",
+  "hosts/mcp-host/types.ts",
+  "hosts/mcp-host/tool-registry.ts",
+  "hosts/mcp-host/server.ts",
+  "hosts/mcp-host/executors/read.ts",
+  "hosts/mcp-host/executors/discovery.ts",
+  "hosts/mcp-host/executors/runtime.ts",
+  "hosts/mcp-host/executors/architecture.ts",
+  "hosts/mcp-host/executors/mission.ts",
 ];
 
 async function copyOne(relativePath) {

@@ -31,7 +31,7 @@ If the answer is no, the enhancement waits.
 
 | # | Item | Audience | Priority | Effort | Status |
 |---|------|----------|----------|--------|--------|
-| I1 | MCP server mirroring the HTTP API | A | P0 | M |
+| I1 | MCP server mirroring the HTTP API | A | P0 | M | done |
 | I2 | `/api/manifest` operation catalog | A | P0 | S | done |
 | I3 | `AGENTS.md` repo-root primer | A | P0 | S | ✅ done |
 | I4 | `/api/explain?runId=...` natural-language summary | B | P1 | M |

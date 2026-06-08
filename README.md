@@ -186,6 +186,31 @@ Or for dev:
 pnpm run dev
 ```
 
+## MCP Server
+
+The kernel exposes an MCP (Model Context Protocol) server at `hosts/mcp-host/`
+that mirrors every API operation as an MCP tool. Any MCP-compatible client
+(Claude Desktop, Cursor, Continue, etc.) can drive the kernel through it.
+
+### Usage
+
+```powershell
+pnpm run mcp:serve -- --directive-root <path>
+```
+
+### Example Claude Desktop config
+
+```json
+{
+  "mcpServers": {
+    "directive-kernel": {
+      "command": "node",
+      "args": ["--import", "tsx", "hosts/mcp-host/cli.ts", "--directive-root", "/path/to/directive-root"]
+    }
+  }
+}
+```
+
 ## Clone-And-Wire Into Another Project
 
 Recommended setup:
