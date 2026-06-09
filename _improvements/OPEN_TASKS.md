@@ -9,8 +9,8 @@ without having to reverse-engineer intent from a one-line row.
 
 ## Current status
 
-- Shipped: `I1`, `I2`, `I3`
-- Open: `I4` through `I13`
+- Shipped: `I1`, `I2`, `I3`, `I4`, `I5`, `I6`, `I7`, `I8`, `I13`
+- Open: `I9` through `I12`
 - Source of truth for shipped vs open status:
   [Improvement_Plan.md](./Improvement_Plan.md)
 
@@ -18,32 +18,28 @@ without having to reverse-engineer intent from a one-line row.
 
 This is the pragmatic order, not a theoretical one:
 
-1. `I7` Schemas referenced via `$schema` in API responses
-2. `I5` `/api/glossary`
-3. `I6` Next legal action hints on every read
-4. `I4` `/api/explain?runId=...`
-5. `I13` Reference consumer / golden-path example app
-6. `I10` Standardized telemetry + observability surface
-7. `I9` Pluggable capability registry + capability template
-8. `I11` Replay & time-travel debugger for engine runs
-9. `I8` Real operator workbench in the UI
-10. `I12` Multi-host federation (read-only)
+1. `I10` Standardized telemetry + observability surface
+2. `I9` Pluggable capability registry + capability template
+3. `I11` Replay & time-travel debugger for engine runs
+4. `I12` Multi-host federation (read-only)
 
 Why this order:
 
-- `I7`, `I5`, and `I6` improve the machine-readable and human-readable
-  surfaces with relatively low risk.
-- `I4` becomes easier and more defensible once schemas, glossary lookup, and
-  legal-action hints already exist.
-- `I13` should happen before the larger platform additions because it exposes
-  real integration friction.
-- `I8` is intentionally late because it is the largest mutation-heavy surface.
+- `I10` and `I9` are the next highest-leverage executable gaps after the
+  read-surface work has landed.
+- `I11` becomes easier and more defensible once explainability, legal-action
+  hints, and telemetry are already in place.
 - `I12` is last because federation magnifies every unresolved single-host
   design weakness.
 
 ---
 
 ## I4 - `/api/explain?runId=...`
+
+### Status
+
+Shipped. The web host now exposes `GET /api/explain?runId=<id>` as a derived
+run explanation surface.
 
 **Audience:** both humans and agents  
 **Priority:** P1  
@@ -124,6 +120,11 @@ artifact graph. Keep it projection-only.
 
 ## I5 - `/api/glossary`
 
+### Status
+
+Shipped. The web host now exposes `GET /api/glossary` plus exact
+case-insensitive `?term=<value>` filtering backed by `GLOSSARY.md`.
+
 **Audience:** both humans and agents  
 **Priority:** P1  
 **Effort:** S  
@@ -186,6 +187,12 @@ Use a minimal, explicit format contract.
 
 ## I6 - Next legal action hints on every read
 
+### Status
+
+Shipped on the host-facing read model. Queue entries, snapshot summaries, and
+artifact detail responses now project structured next-legal-action hints from
+canonical workspace state.
+
 **Audience:** both humans and agents  
 **Priority:** P1  
 **Effort:** M  
@@ -247,6 +254,15 @@ mapping and project from it.
 
 ## I7 - `$schema` in API responses
 
+### Status
+
+Shipped. The web host now serves schemas at `GET /api/schemas/:schemaName`
+and all stable GET responses advertise a resolvable schema reference:
+
+- object responses carry body-level `$schema`
+- array responses carry `Link: <...>; rel="describedby"` so their body shape
+  stays unchanged
+
 **Audience:** primarily agents and programmatic hosts  
 **Priority:** P1  
 **Effort:** S  
@@ -276,9 +292,8 @@ can validate them immediately.
 
 ### Constraints
 
-- Do not invent schema files that do not already exist.
-- Do not claim a schema for response shapes that are still ad hoc unless those
-  response shapes are first normalized.
+- Array responses cannot carry body-level `$schema` without a breaking shape
+  change, so they use `rel="describedby"` links instead.
 - Keep URLs stable once introduced.
 
 ### Verification
@@ -295,6 +310,21 @@ response is not stable enough for a schema, do not stamp it yet.
 ---
 
 ## I8 - Real operator workbench in the UI
+
+### Status
+
+Shipped in bounded first form. The browser surface now executes the
+highest-value operator mutations through the same kernel-backed API routes the
+CLI uses:
+
+- source submission
+- discovery review and route opening
+- engine reroute and operator-owned plan progress updates
+- mission preview, approve, and reject
+- gap approve and reject
+- runtime host selection, promotion seam, and registry acceptance
+- runtime follow-up/proof/capability-boundary/promotion-readiness opening
+- architecture handoff start plus the bounded materialization chain
 
 **Audience:** human operators  
 **Priority:** P1  
@@ -348,9 +378,19 @@ not a new surface invented for the UI:
 This is the easiest place to accidentally create host-local workflow rules.
 The UI must stay a client of kernel truth, not its own policy engine.
 
+- **Mutation coverage audit refreshed** at `docs/audits/ui-mutation-coverage-audit.md`. The workbench is no longer read-only; remaining gaps are follow-up polish, not the core I8 blocker.
+
 ---
 
 ## I9 - Pluggable capability registry + capability template
+
+### Status
+
+- Runtime capability metadata is now available through
+  `runtime/core/capability-registry.ts`.
+- The web host now exposes `GET /api/runtime/capabilities`.
+- A scaffold writer now exists for new capability folders.
+- Full contract unification and host-start auto-registration remain open.
 
 **Audience:** both maintainers and consuming hosts  
 **Priority:** P2  
@@ -403,6 +443,12 @@ Keep the first pass narrow and grounded in the three shipped capabilities.
 ---
 
 ## I10 - Standardized telemetry + observability surface
+
+### Status
+
+- Telemetry helper shipped at `shared/lib/telemetry.ts`.
+- Read-only telemetry snapshot shipped at `GET /api/telemetry/snapshot`.
+- Broader engine-wide instrumentation and UI presentation remain open.
 
 **Audience:** both operators and consuming hosts  
 **Priority:** P2  
@@ -497,6 +543,10 @@ changed inputs or conditions.
 Users may over-trust replay output if the system does not report where replay
 cannot be exact. That disclosure has to be part of the feature.
 
+### Status
+
+- **Determinism boundaries documented** at `docs/replay-determinism.md`. Implementation remains open.
+
 ---
 
 ## I12 - Multi-host federation (read-only)
@@ -545,9 +595,20 @@ multiple kernels without introducing shared mutation semantics.
 Federation multiplies ambiguity. If the single-host contract is not already
 tight, federation will amplify every inconsistency.
 
+### Status
+
+- **Deferral contract defined** at `shared/contracts/read-only-federation.md`. Implementation remains deferred.
+
 ---
 
 ## I13 - Reference consumer / golden-path example app
+
+### Status
+
+Shipped in a bounded first form. The repo now includes:
+- executable reference consumer flow at `examples/reference-consumer/flow.ts`
+- reference consumer inputs under `examples/reference-consumer/`
+- CI-backed smoke coverage in `tests/integration/reference-consumer.test.ts`
 
 **Audience:** both new human adopters and agents  
 **Priority:** P1  
@@ -601,6 +662,10 @@ surface, with:
 
 If it becomes a half-product instead of a reference consumer, it turns into a
 maintenance burden without improving adoption. Keep it narrow and didactic.
+
+### Status
+
+- **Documentation skeleton exists** at `examples/reference-consumer/`. Implementation remains open.
 
 ---
 

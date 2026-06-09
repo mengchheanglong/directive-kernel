@@ -37,8 +37,8 @@ If the answer is no, the enhancement waits.
 | I4 | `/api/explain?runId=...` natural-language summary | B | P1 | M |
 | I5 | `/api/glossary` queryable vocabulary | B | P1 | S |
 | I6 | "Next legal action" hints on every read | B | P1 | M |
-| I7 | Schemas referenced via `$schema` in API responses | A | P1 | S |
-| I8 | Real operator workbench in the UI | H | P1 | L |
+| I7 | Schemas referenced via `$schema` in API responses | A | P1 | S | done |
+| I8 | Real operator workbench in the UI | H | P1 | L | done |
 | I9 | Pluggable capability registry + capability template | B | P2 | M |
 | I10 | Standardized telemetry + observability surface | B | P2 | M |
 | I11 | Replay & time-travel debugger for engine runs | B | P2 | L |

@@ -138,7 +138,7 @@ export async function resolveRuntimeHostSelectionAction(
   }
   const resolvedConfidence = String(data.get("resolved_confidence") || "").trim();
 
-  return getJson("/api/runtime/host-selection-resolutions", {
+  return getJson("/api/runtime/selection-resolutions", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({

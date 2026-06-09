@@ -1,6 +1,6 @@
 # Directive Operator CLI
 
-This is the canonical operator mutation surface. The Operator Dashboard is read-only.
+This is the canonical operator mutation surface. The browser workbench now executes the same bounded mutations through the web-host API, but the CLI remains the exact command reference.
 
 ## Submit a source
 

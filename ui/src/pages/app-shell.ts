@@ -307,7 +307,7 @@ class DirectiveUiApp extends LitElement {
             </div>
           </div>
           <p class="muted sidebar-footnote">
-            This shell stays read-only and lane-aware. Decisions remain explicit, traceable, and bounded by the underlying workflow.
+            This shell stays lane-aware while exposing bounded mutations through kernel-owned routes. Decisions remain explicit, traceable, and workflow-bound.
           </p>
         </div>
       </aside>

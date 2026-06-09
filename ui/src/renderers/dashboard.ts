@@ -604,7 +604,7 @@ export function renderOperatorDecisionInboxPage(
   return html`
     <section class="panel">
       <h2>Operator Decision Inbox</h2>
-      <p class="muted">Live triage over current Engine, Discovery, Architecture, and Runtime decision gates. Mission evolution, gap formalization, Discovery routing review, Runtime host selection, Runtime promotion seams, and proof-backed Runtime registry acceptance are executable here; lane-native materialization and downstream runtime execution remain separate explicit steps.</p>
+      <p class="muted">Live triage over current Engine, Discovery, Architecture, and Runtime decision gates. Mission evolution, gap formalization, Discovery routing review, Runtime host selection, Runtime promotion seams, proof-backed Runtime registry acceptance, and lane-native Architecture continuation all remain explicit, bounded, and executable here through the same kernel mutation surface.</p>
       <div class="queue-summary-grid">
         ${renderQueueStat("Actionable entries", inbox.summary.totalActionableEntries, "Current Discovery, Architecture, and Runtime decisions requiring explicit operator attention.")}
         ${renderQueueStat("Mission feedback", inbox.summary.missionHealthFeedbackCount, "Mission evolution proposals generated from mission-health pressure and routed into an explicit operator review loop.")}
@@ -645,9 +645,8 @@ export function renderHomePage(
 
   return html`
       <aside style="background: #f5f5f5; padding: 0.5rem; border-left: 3px solid #888;">
-        This is a read-only view. State mutations live in the CLI:
-        <code>pnpm run standalone:cli &lt;subcommand&gt;</code>.
-        See <a href="/docs/operator-cli.md">the operator CLI reference</a> for the canonical operator surface.
+        This workbench stays bounded, not passive. High-value operator mutations are executable here through the same kernel routes the CLI uses.
+        See <a href="/docs/operator-cli.md">the operator CLI reference</a> for the parallel command surface and exact subcommand shapes.
       </aside>
     <section class="dashboard-section">
       <div class="dashboard-section-heading">Active Surfaces</div>

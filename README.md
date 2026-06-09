@@ -30,7 +30,7 @@ Directive Kernel is for **dev teams running source-driven workflows that need a 
 
 You have a stream of inbound items — bug reports, incident alerts, source repos to evaluate, feature requests, security advisories, customer feedback, papers worth tracking — and each needs the same kind of decision: *what do we do with this?* The kernel takes that source, judges it against your current mission, routes it to the right next step, and records the decision so later work has provenance.
 
-Your team gets a **mission-conditioned routing pass,** a **structured intake queue + lifecycle,** a **decision-policy ledger** for audit and replay, and a **read-only operator dashboard** for visibility (mutations through CLI).
+Your team gets a **mission-conditioned routing pass,** a **structured intake queue + lifecycle,** a **decision-policy ledger** for audit and replay, and a **bounded operator workbench** for visibility and explicit workflow mutations.
 
 Two flagship example consumers ship with the kernel:
 - **[Bug-report triage](hosts/integration-kit/examples/bug-report-triage/README.md)** — GitHub issue → routing decision (`fix-now`, `backlog`, `wontfix`, `duplicate`)
@@ -66,7 +66,7 @@ The three main lanes are:
 - `architecture/` - system-improvement work
 - `shared/` - shared helpers and contracts
 - `hosts/` - ways to run or embed the system
-- `ui/` - a simple read-only operator view
+- `ui/` - a bounded operator workbench over the kernel mutation surface
 
 Executable code lives in the `lib/`, `engine/`, `hosts/`, and `ui/src/` surfaces. The numbered lane folders under `discovery/`, `runtime/`, and `architecture/` are artifact/state surfaces, not normal module trees.
 
