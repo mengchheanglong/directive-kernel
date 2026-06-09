@@ -1,6 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 
+export type RuntimeCapabilityManifest = {
+  displayName: string;
+  description: string;
+  domain: "runtime";
+  inputSchema?: string;
+  outputSchema?: string;
+};
+
 export type RuntimeCapabilityMetadata = {
   id: string;
   displayName: string;
@@ -20,29 +28,7 @@ export type RuntimeCapabilityScaffold = {
   files: RuntimeCapabilityScaffoldFile[];
 };
 
-const STATIC_CAPABILITIES: RuntimeCapabilityMetadata[] = [
-  {
-    id: "code-normalizer",
-    displayName: "Code Normalizer",
-    description:
-      "Normalizes source code artifacts into a standardized representation for downstream processing.",
-    modulePath: "runtime/capabilities/code-normalizer/index.ts",
-  },
-  {
-    id: "literature-access",
-    displayName: "Literature Access",
-    description:
-      "Provides access to academic and technical literature through the Scientify research bundle.",
-    modulePath: "runtime/capabilities/literature-access/index.ts",
-  },
-  {
-    id: "research-vault-source-pack",
-    displayName: "Research Vault Source Pack",
-    description:
-      "Packages research vault sources into consumable bundles for the kernel intake pipeline.",
-    modulePath: "runtime/capabilities/research-vault-source-pack/index.ts",
-  },
-];
+const DEFAULT_CAPABILITIES_ROOT = path.resolve(process.cwd(), "runtime", "capabilities");
 
 function toDisplayName(id: string) {
   return id
@@ -58,6 +44,49 @@ function toPascalCase(id: string) {
     .filter(Boolean)
     .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
     .join("");
+}
+
+export function resolveRuntimeCapabilitiesRoot(capabilitiesRoot?: string) {
+  return path.resolve(capabilitiesRoot ?? DEFAULT_CAPABILITIES_ROOT);
+}
+
+function resolveCapabilityRoot(capabilitiesRoot: string, id: string) {
+  return path.resolve(capabilitiesRoot, id);
+}
+
+function resolveCapabilityManifestPath(capabilitiesRoot: string, id: string) {
+  return path.resolve(resolveCapabilityRoot(capabilitiesRoot, id), "manifest.json");
+}
+
+function parseRuntimeCapabilityManifest(
+  manifestPath: string,
+): RuntimeCapabilityManifest {
+  const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Partial<RuntimeCapabilityManifest>;
+  if (parsed.domain !== "runtime") {
+    throw new Error(`invalid_runtime_capability_manifest: ${manifestPath} must declare domain "runtime"`);
+  }
+  if (!parsed.displayName || !parsed.description) {
+    throw new Error(`invalid_runtime_capability_manifest: ${manifestPath} must declare displayName and description`);
+  }
+  return {
+    displayName: parsed.displayName,
+    description: parsed.description,
+    domain: parsed.domain,
+    ...(parsed.inputSchema ? { inputSchema: parsed.inputSchema } : {}),
+    ...(parsed.outputSchema ? { outputSchema: parsed.outputSchema } : {}),
+  };
+}
+
+export function readRuntimeCapabilityManifest(input: {
+  capabilitiesRoot?: string;
+  id: string;
+}): RuntimeCapabilityManifest | null {
+  const capabilitiesRoot = resolveRuntimeCapabilitiesRoot(input.capabilitiesRoot);
+  const manifestPath = resolveCapabilityManifestPath(capabilitiesRoot, input.id);
+  if (!fs.existsSync(manifestPath)) {
+    return null;
+  }
+  return parseRuntimeCapabilityManifest(manifestPath);
 }
 
 export function normalizeRuntimeCapabilityId(value: string) {
@@ -77,7 +106,29 @@ export function normalizeRuntimeCapabilityId(value: string) {
 }
 
 export function listRuntimeCapabilityMetadata(): RuntimeCapabilityMetadata[] {
-  return [...STATIC_CAPABILITIES].sort((a, b) => a.id.localeCompare(b.id));
+  const capabilitiesRoot = resolveRuntimeCapabilitiesRoot();
+  if (!fs.existsSync(capabilitiesRoot)) {
+    return [];
+  }
+
+  return fs.readdirSync(capabilitiesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const manifest = readRuntimeCapabilityManifest({
+        capabilitiesRoot,
+        id: entry.name,
+      });
+      const displayName = manifest?.displayName ?? toDisplayName(entry.name);
+      const description = manifest?.description
+        ?? `Describe the bounded Runtime value exposed by ${displayName}.`;
+      return {
+        id: entry.name,
+        displayName,
+        description,
+        modulePath: `runtime/capabilities/${entry.name}/index.ts`,
+      } satisfies RuntimeCapabilityMetadata;
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export function buildRuntimeCapabilityScaffold(input: {
@@ -89,7 +140,7 @@ export function buildRuntimeCapabilityScaffold(input: {
   const description = String(input.description || "").trim()
     || `Describe the bounded Runtime value exposed by ${displayName}.`;
   const pascalName = toPascalCase(id);
-  const manifest = {
+  const manifest: RuntimeCapabilityManifest = {
     displayName,
     description,
     domain: "runtime",

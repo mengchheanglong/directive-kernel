@@ -108,6 +108,15 @@ function renderShellIcon(name: string) {
           <path d="m14 12-4 4 4 4"></path>
         </svg>
       `;
+    case "observability":
+      return html`
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 19V9"></path>
+          <path d="M12 19V5"></path>
+          <path d="M19 19v-8"></path>
+          <path d="M3 19h18"></path>
+        </svg>
+      `;
     default:
       return html`
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -173,8 +182,9 @@ export function getShellSnapshot(page: any): FrontendSnapshot | null {
     || page.kind === "architecture-lane"
     || page.kind === "runtime-lane"
     || page.kind === "handoffs"
+    || page.kind === "telemetry"
   ) {
-    return page.data as FrontendSnapshot;
+    return (page.kind === "telemetry" ? page.snapshot : page.data) as FrontendSnapshot;
   }
 
   if (page.kind === "workflow-map") {
@@ -195,6 +205,10 @@ export function getShellInbox(page: any): FrontendOperatorDecisionInboxReport | 
   }
 
   if (page.kind === "workflow-map") {
+    return page.inbox as FrontendOperatorDecisionInboxReport;
+  }
+
+  if (page.kind === "telemetry") {
     return page.inbox as FrontendOperatorDecisionInboxReport;
   }
 
@@ -246,6 +260,19 @@ export function getPageChrome(current: string): PageChrome {
       actions: [
         { href: "/workflow-map", label: "View workflow map", tone: "secondary" },
         { href: "/runtime", label: "Open runtime lane", tone: "primary" },
+      ],
+    };
+  }
+
+  if (current === "/telemetry") {
+    return {
+      eyebrow: "Observability",
+      title: "Telemetry",
+      description:
+        "Read host-visible request health, storage pressure, and recent bounded telemetry events without binding the kernel to an external vendor.",
+      actions: [
+        { href: "/", label: "Back to overview", tone: "secondary" },
+        { href: "/operator-inbox", label: "Open inbox", tone: "primary" },
       ],
     };
   }
@@ -367,6 +394,14 @@ export function renderSidebar(current: string, page: any) {
           icon: "inbox",
           badge: inbox?.summary.totalActionableEntries || null,
           active: (path) => path === "/operator-inbox",
+        })}
+        ${renderSidebarLink({
+          current,
+          href: "/telemetry",
+          label: "Observability",
+          caption: "Request health, storage pressure, and recent telemetry events",
+          icon: "observability",
+          active: (path) => path === "/telemetry",
         })}
       </div>
 

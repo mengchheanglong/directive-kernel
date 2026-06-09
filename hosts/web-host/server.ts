@@ -6,6 +6,7 @@ import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 import { createInMemoryTelemetry } from "../../shared/lib/telemetry.ts";
 import { createStandaloneFilesystemHost } from "../standalone-host/filesystem-host.ts";
 import { handleDirectiveUiApiRequest } from "./api-routes.ts";
+import { matchOperationEntry } from "./api-manifest.ts";
 import {
   escapeHtml,
   renderMissingBuildPage,
@@ -40,6 +41,77 @@ const UI_DIST_ROOT = path.join(UI_APP_ROOT, "dist");
 const UI_INDEX_PATH = path.join(UI_DIST_ROOT, "index.html");
 const UI_OPERATOR_ACTOR = "directive-ui-operator";
 
+type ObservedApiOperation = {
+  name: string;
+  kind: "read" | "write";
+};
+
+function getObservedApiOperation(method: string, pathname: string): ObservedApiOperation | null {
+  if (!pathname.startsWith("/api/")) {
+    return null;
+  }
+  const matched = matchOperationEntry(method, pathname);
+  if (matched) {
+    return {
+      name: matched.name,
+      kind: matched.method === "POST" ? "write" : "read",
+    };
+  }
+  return {
+    name: "api_not_found",
+    kind: method.toUpperCase() === "POST" ? "write" : "read",
+  };
+}
+
+function recordObservedApiOperation(input: {
+  telemetry: ReturnType<typeof createInMemoryTelemetry>;
+  operation: ObservedApiOperation | null;
+  durationMs: number;
+  statusCode: number;
+}) {
+  const { telemetry, operation, durationMs, statusCode } = input;
+  if (!operation) {
+    return;
+  }
+
+  telemetry.counter(`api.operations.${operation.name}.requests_total`);
+  telemetry.counter(
+    operation.kind === "write" ? "api.write_requests_total" : "api.read_requests_total",
+  );
+  telemetry.gauge(`api.operations.${operation.name}.last_duration_ms`, durationMs);
+
+  if (statusCode >= 400) {
+    telemetry.counter(`api.operations.${operation.name}.error_total`);
+    telemetry.event("api_operation_error", {
+      operation: operation.name,
+      kind: operation.kind,
+      statusCode,
+    });
+    return;
+  }
+
+  telemetry.counter(`api.operations.${operation.name}.success_total`);
+
+  if (operation.kind === "write") {
+    telemetry.event("api_operation_write", {
+      operation: operation.name,
+      statusCode,
+    });
+    return;
+  }
+
+  if (
+    operation.name === "snapshot_get"
+    || operation.name === "operator_decision_inbox_get"
+    || operation.name === "telemetry_snapshot_get"
+  ) {
+    telemetry.event("api_operation_read", {
+      operation: operation.name,
+      statusCode,
+    });
+  }
+}
+
 export function startDirectiveUiServer(
   options: StartDirectiveUiServerOptions,
 ): Promise<UiServerHandle> {
@@ -54,6 +126,7 @@ export function startDirectiveUiServer(
     const url = new URL(req.url || "/", `http://${host}:${port || 0}`);
     const pathname = url.pathname;
     const startedAt = Date.now();
+    const observedApiOperation = getObservedApiOperation(method, pathname);
     telemetry.counter("web_host.requests_total");
     if (pathname.startsWith("/api/")) {
       telemetry.counter("web_host.api_requests_total");
@@ -72,7 +145,14 @@ export function startDirectiveUiServer(
         telemetry,
       });
       if (apiHandled) {
-        telemetry.gauge("web_host.last_request_duration_ms", Date.now() - startedAt);
+        const durationMs = Date.now() - startedAt;
+        recordObservedApiOperation({
+          telemetry,
+          operation: observedApiOperation,
+          durationMs,
+          statusCode: res.statusCode || 200,
+        });
+        telemetry.gauge("web_host.last_request_duration_ms", durationMs);
         return;
       }
 
@@ -102,9 +182,16 @@ export function startDirectiveUiServer(
       telemetry.counter("web_host.errors_total");
       if (pathname.startsWith("/api/")) {
         telemetry.counter("web_host.api_errors_total");
+        const statusCode = resolveApiErrorStatus(error);
+        recordObservedApiOperation({
+          telemetry,
+          operation: observedApiOperation,
+          durationMs: Date.now() - startedAt,
+          statusCode,
+        });
         writeJson(
           res,
-          resolveApiErrorStatus(error),
+          statusCode,
           { ok: false, error: String((error as Error).message || error) },
         );
         telemetry.gauge("web_host.last_request_duration_ms", Date.now() - startedAt);

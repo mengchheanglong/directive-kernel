@@ -5,8 +5,10 @@ import type {
   FrontendOperatorDecisionInboxEntry,
   FrontendOperatorDecisionInboxReport,
   FrontendQueueEntry,
+  FrontendRuntimeStatus,
   FrontendRuntimeSummaryCase,
   FrontendSnapshot,
+  FrontendTelemetrySnapshot,
 } from "../types";
 import { navTo } from "../app-utils";
 import {
@@ -634,6 +636,8 @@ export function renderOperatorDecisionInboxPage(
 export function renderHomePage(
   snapshot: FrontendSnapshot,
   inbox: FrontendOperatorDecisionInboxReport,
+  telemetry: FrontendTelemetrySnapshot,
+  runtimeStatus: FrontendRuntimeStatus,
   context: HomeRendererContext,
 ) {
   const queueLead = snapshot.queue.entries[0] ?? null;
@@ -642,6 +646,11 @@ export function renderHomePage(
   const topDecision = inbox.entries[0] ?? null;
   const queueReviewPressureCount = snapshot.queue.entries.filter((entry) => Boolean(entry.review_pressure)).length;
   const queueConflictedCount = snapshot.queue.entries.filter((entry) => entry.review_pressure?.route_conflict).length;
+  const totalApiRequests = telemetry.counters["web_host.api_requests_total"] ?? 0;
+  const totalApiErrors = telemetry.counters["web_host.api_errors_total"] ?? 0;
+  const lastRequestDurationMs = telemetry.gauges["web_host.last_request_duration_ms"] ?? 0;
+  const activeRunRecords = runtimeStatus.storage.activeRunRecords ?? 0;
+  const archivedRunRecords = runtimeStatus.storage.archivedRunRecords ?? 0;
 
   return html`
       <aside style="background: #f5f5f5; padding: 0.5rem; border-left: 3px solid #888;">
@@ -685,6 +694,14 @@ export function renderHomePage(
           cta: "Open inbox",
           badge: inbox.summary.totalActionableEntries,
         })}
+        ${renderDashboardFocusCard({
+          kicker: "Observability",
+          title: `${totalApiRequests} API request${totalApiRequests === 1 ? "" : "s"}`,
+          meta: `${totalApiErrors} error${totalApiErrors === 1 ? "" : "s"} - ${lastRequestDurationMs.toFixed(0)} ms last request`,
+          body: `${activeRunRecords} active run record${activeRunRecords === 1 ? "" : "s"} | ${archivedRunRecords} archived`,
+          href: "/telemetry",
+          cta: "Open telemetry",
+        })}
       </div>
     </section>
     ${snapshot.handoffWarnings?.length ? html`<section class="panel warning"><h3>Handoff artifact warnings</h3><ul>${snapshot.handoffWarnings.map((warning: string) => html`<li>${warning}</li>`)}</ul></section>` : nothing}
@@ -695,6 +712,7 @@ export function renderHomePage(
         ${renderQueueStat("Decisions", inbox.summary.totalActionableEntries, "Current operator reviews across lanes.")}
         ${renderQueueStat("Architecture", snapshot.architectureSummary.activeCases.length, "Active Architecture cases.")}
         ${renderQueueStat("Runtime", snapshot.runtimeSummary.activeCases.length, "Active Runtime cases.")}
+        ${renderQueueStat("API requests", totalApiRequests, "Observed web-host API requests during this process lifetime.")}
       </section>
     </section>
     <section class="dashboard-section">
@@ -781,6 +799,179 @@ export function renderHomePage(
               ${renderActionLink("/architecture", "Open Architecture", "secondary")}
               ${renderActionLink("/runtime", "Open Runtime", "secondary")}
             </div>
+          </section>
+        </section>
+      </section>
+    </section>
+  `;
+}
+
+function formatTelemetryLabel(value: string) {
+  return value.replace(/[._]/g, " ");
+}
+
+function renderRecentTelemetryEvents(telemetry: FrontendTelemetrySnapshot) {
+  const recentEvents = telemetry.events.slice(-8).reverse();
+  if (!recentEvents.length) {
+    return html`<div class="queue-empty muted">No telemetry events have been recorded yet.</div>`;
+  }
+
+  return html`
+    <div class="simple-list">
+      ${recentEvents.map((event) => html`
+        <div class="simple-row">
+          <span class="simple-row-main simple-row-copy">
+            <span class="simple-row-kicker">${event.at}</span>
+            <strong class="simple-row-title">${formatTelemetryLabel(event.name)}</strong>
+            <span class="simple-row-support">${JSON.stringify(event.fields ?? {})}</span>
+          </span>
+        </div>
+      `)}
+    </div>
+  `;
+}
+
+function renderCounterRows(record: Record<string, number>, limit: number) {
+  const entries = Object.entries(record)
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .slice(0, limit);
+  if (!entries.length) {
+    return html`<div class="queue-empty muted">No counters recorded yet.</div>`;
+  }
+
+  return html`
+    <div class="status-list">
+      ${entries.map(([name, value]) => html`
+        <div class="status-row">
+          <span>${formatTelemetryLabel(name)}</span>
+          <strong>${value}</strong>
+        </div>
+      `)}
+    </div>
+  `;
+}
+
+function renderGaugeRows(record: Record<string, number>, limit: number) {
+  const entries = Object.entries(record)
+    .sort((left, right) => left[0].localeCompare(right[0]))
+    .slice(0, limit);
+  if (!entries.length) {
+    return html`<div class="queue-empty muted">No gauges recorded yet.</div>`;
+  }
+
+  return html`
+    <div class="status-list">
+      ${entries.map(([name, value]) => html`
+        <div class="status-row">
+          <span>${formatTelemetryLabel(name)}</span>
+          <strong>${value.toFixed(0)}</strong>
+        </div>
+      `)}
+    </div>
+  `;
+}
+
+export function renderTelemetryPage(input: {
+  telemetry: FrontendTelemetrySnapshot;
+  runtimeStatus: FrontendRuntimeStatus;
+  snapshot: FrontendSnapshot;
+  inbox: FrontendOperatorDecisionInboxReport;
+}) {
+  const { telemetry, runtimeStatus, snapshot, inbox } = input;
+  const writeRequests = telemetry.counters["api.write_requests_total"] ?? 0;
+  const readRequests = telemetry.counters["api.read_requests_total"] ?? 0;
+  const totalApiRequests = telemetry.counters["web_host.api_requests_total"] ?? 0;
+  const totalErrors = telemetry.counters["web_host.api_errors_total"] ?? 0;
+  const activeRunRecords = runtimeStatus.storage.activeRunRecords ?? 0;
+  const archivedRunRecords = runtimeStatus.storage.archivedRunRecords ?? 0;
+  const activeLedgerBytes = runtimeStatus.storage.activeLedgerBytes ?? 0;
+  const rotatedLedgerSegments = runtimeStatus.storage.rotatedLedgerSegments ?? 0;
+
+  return html`
+    <section class="panel message">
+      <h2>Host observability</h2>
+      <p class="muted">
+        This surface stays process-local and bounded. It exposes request counts, recent kernel-facing events,
+        and storage pressure without coupling Directive Kernel to an external telemetry vendor.
+      </p>
+      <div class="queue-summary-grid">
+        ${renderQueueStat("API requests", totalApiRequests, "Observed GET and POST requests handled by this web-host process.")}
+        ${renderQueueStat("Read requests", readRequests, "Read operations matched through the API manifest route table.")}
+        ${renderQueueStat("Write requests", writeRequests, "Mutation operations observed through the same route table.")}
+        ${renderQueueStat("API errors", totalErrors, "Observed 4xx/5xx responses emitted by API handlers.")}
+        ${renderQueueStat("Active run records", activeRunRecords, "Current run records under runtime/host-artifacts/engine-runs.")}
+        ${renderQueueStat("Archived run records", archivedRunRecords, "Archived run records under archive/yyyy/mm buckets.")}
+        ${renderQueueStat("Inbox decisions", inbox.summary.totalActionableEntries, "Current bounded operator decisions that may drive future write activity.")}
+        ${renderQueueStat("Queue entries", snapshot.queue.totalEntries, "Current Discovery source pressure against this directive root.")}
+      </div>
+    </section>
+    <section class="dashboard-section">
+      <div class="dashboard-section-heading">Storage pressure</div>
+      <section class="dashboard-grid">
+        <section class="dashboard-column">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Runtime storage</h3>
+                <p class="muted">Storage summary comes from the same maintenance surface used by archive and ledger rotation commands.</p>
+              </div>
+            </div>
+            <div class="status-list">
+              <div class="status-row">
+                <span>Active run records</span>
+                <strong>${activeRunRecords}</strong>
+              </div>
+              <div class="status-row">
+                <span>Archived run records</span>
+                <strong>${archivedRunRecords}</strong>
+              </div>
+              <div class="status-row">
+                <span>Active ledger bytes</span>
+                <strong>${activeLedgerBytes}</strong>
+              </div>
+              <div class="status-row">
+                <span>Rotated ledger segments</span>
+                <strong>${rotatedLedgerSegments}</strong>
+              </div>
+            </div>
+          </section>
+        </section>
+        <section class="dashboard-column">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Recent events</h3>
+                <p class="muted">Write operations and selected high-value reads are recorded as bounded process-local events.</p>
+              </div>
+            </div>
+            ${renderRecentTelemetryEvents(telemetry)}
+          </section>
+        </section>
+      </section>
+    </section>
+    <section class="dashboard-section">
+      <div class="dashboard-section-heading">Live counters</div>
+      <section class="dashboard-grid">
+        <section class="dashboard-column">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Top counters</h3>
+                <p class="muted">Highest-volume counters recorded by the in-memory sink.</p>
+              </div>
+            </div>
+            ${renderCounterRows(telemetry.counters, 12)}
+          </section>
+        </section>
+        <section class="dashboard-column">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Current gauges</h3>
+                <p class="muted">Last-observed duration and operation-level gauges.</p>
+              </div>
+            </div>
+            ${renderGaugeRows(telemetry.gauges, 12)}
           </section>
         </section>
       </section>

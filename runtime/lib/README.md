@@ -8,6 +8,11 @@ The Runtime lane has three different physical surfaces:
 - `runtime/` = follow-up, proof, boundary, promotion, and registry artifacts
 - `runtime/core/` and `runtime/capabilities/` = actual executable runtime capability surfaces
 
+Runtime capability folders are manifest-backed. New capabilities should be
+scaffolded through `pnpm run standalone:cli runtime-capability-scaffold ...`
+so the registry, manifest route, and host-facing capability listing all stay
+aligned from the start.
+
 ## Typical responsibilities
 
 - follow-up, proof-open, and promotion-readiness openers

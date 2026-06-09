@@ -20,6 +20,7 @@ import {
 import { refreshDiscoveryGapWorklist } from "../../discovery/lib/gaps/gap-worklist-refresh.ts";
 
 import { archiveRunRecords, rotateDecisionPolicyLedger, summarizeKernelStorage } from "../../engine/maintenance/archive.ts";
+import { writeRuntimeCapabilityScaffold } from "../../runtime/core/capability-registry.ts";
 
 import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/submission-router.ts";
 import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/follow-up-record-writer.ts";
@@ -85,6 +86,7 @@ type CommandName =
   | "runtime-blisspixel-deepr-descriptor-callable"
   | "runtime-live-mini-swe-agent"
   | "runtime-overview"
+  | "runtime-capability-scaffold"
   | "serve"
   | "try"
   | "maintenance";
@@ -129,6 +131,7 @@ Commands:
   runtime-blisspixel-deepr-descriptor-callable (--directive-root <path> | --config <path>) [--include-open-decisions <true|false>] [--execution-at <iso>] [--persistence-sqlite-path <path>]
   runtime-live-mini-swe-agent (--directive-root <path> | --config <path>) [--persistence-sqlite-path <path>]
   runtime-overview (--directive-root <path> | --config <path>) [--max-entries <n>] [--persistence-sqlite-path <path>]
+  runtime-capability-scaffold --name <name> [--description <text>] [--capabilities-root <path>] [--overwrite]
   serve (--directive-root <path> | --config <path>) [--host <host>] [--port <port>] [--received-at <yyyy-mm-dd>] [--unresolved-gap-id <id> ...] [--auth-bearer-token <token>] [--persistence-sqlite-path <path>]
   try [--output-root <path>]
   maintenance archive --directive-root <path> [--max-age-days <n>] [--rotate-ledger] [--no-rotate-ledger] [--dry-run]
@@ -138,7 +141,7 @@ Commands:
 function parseArgs(argv: string[]) {
   const [command, ...rest] = argv;
   const flags: FlagMap = {};
-  const flagWithoutValue = new Set(["dry-run", "process-with-engine", "no-rotate-ledger", "rotate-ledger"]);
+  const flagWithoutValue = new Set(["dry-run", "process-with-engine", "no-rotate-ledger", "rotate-ledger", "overwrite"]);
 
   for (let index = 0; index < rest.length; index += 1) {
     const token = rest[index];
@@ -959,6 +962,19 @@ async function main() {
       host.close();
       releaseDirectiveRootLock(directiveRoot);
     }
+    return;
+  }
+
+  if (command === "runtime-capability-scaffold") {
+    const capabilitiesRoot = readOptionalFlag(flags, "capabilities-root")
+      ?? "runtime/capabilities";
+    const result = writeRuntimeCapabilityScaffold({
+      capabilitiesRoot,
+      name: readRequiredFlag(flags, "name"),
+      description: readOptionalFlag(flags, "description"),
+      overwrite: flags["overwrite"]?.[0] === "true",
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, ...result }, null, 2)}\n`);
     return;
   }
 

@@ -225,6 +225,18 @@ Recommended setup:
 Start here for embedding:
 - [hosts/integration-kit/README.md](./hosts/integration-kit/README.md)
 
+## Runtime Capability Scaffolding
+
+To add a new manifest-backed Runtime capability folder:
+
+```powershell
+pnpm run standalone:cli runtime-capability-scaffold --name "Example Capability"
+```
+
+This writes `manifest.json`, `index.ts`, and `executor.ts` under
+`runtime/capabilities/<capability-id>/`. The registry and
+`GET /api/runtime/capabilities` then read the same manifest-backed metadata.
+
 ## Ownership
 
 The consuming project owns:

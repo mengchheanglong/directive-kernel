@@ -293,6 +293,44 @@ const DEEP_TAIL_DETAIL_ROUTE_TABLE: OperationEntry[] = ARCHITECTURE_DEEP_TAIL_ST
 export const ROUTE_TABLE: OperationEntry[] = [...STATIC_ROUTE_TABLE, ...DEEP_TAIL_DETAIL_ROUTE_TABLE]
   .sort((left, right) => left.name.localeCompare(right.name));
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function routePathToRegExp(routePath: string) {
+  const pattern = routePath
+    .split("/")
+    .map((segment) => {
+      if (!segment) {
+        return "";
+      }
+      if (segment.startsWith(":")) {
+        return "[^/]+";
+      }
+      return escapeRegex(segment);
+    })
+    .join("/");
+  return new RegExp(`^${pattern}$`);
+}
+
+const ROUTE_MATCHERS = ROUTE_TABLE.map((entry) => ({
+  entry,
+  regexp: routePathToRegExp(entry.path),
+}));
+
+export function matchOperationEntry(method: string, pathname: string): OperationEntry | null {
+  const normalizedMethod = method.toUpperCase();
+  for (const matcher of ROUTE_MATCHERS) {
+    if (matcher.entry.method !== normalizedMethod) {
+      continue;
+    }
+    if (matcher.regexp.test(pathname)) {
+      return matcher.entry;
+    }
+  }
+  return null;
+}
+
 function toApiSchemaPath(schemaPath: string) {
   return `/api/schemas/${path.basename(schemaPath)}`;
 }

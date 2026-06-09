@@ -1,0 +1,5 @@
+{
+  "displayName": "Code Normalizer",
+  "description": "Normalizes source code artifacts into a standardized representation for downstream processing.",
+  "domain": "runtime"
+}

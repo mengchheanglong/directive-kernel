@@ -11,8 +11,10 @@ import type {
   FrontendOperatorDecisionInboxReport,
   FrontendQueueEntry,
   FrontendQueueOverview,
+  FrontendRuntimeStatus,
   FrontendRuntimeSummaryCase,
   FrontendSnapshot,
+  FrontendTelemetrySnapshot,
 } from "../types";
 import { artifactPathToViewPath, navTo } from "../app-utils";
 import {
@@ -59,6 +61,7 @@ import {
 import {
   renderHomePage,
   renderOperatorDecisionInboxPage as renderOperatorDecisionInboxPageView,
+  renderTelemetryPage,
 } from "../renderers/dashboard";
 import {
   renderDiscoveryRoutingDetailPage,
@@ -220,10 +223,18 @@ class DirectiveUiApp extends LitElement {
             current,
             href: "/operator-inbox",
             label: "Decision inbox",
-            caption: "Human review gates and blockers",
+            caption: "Bounded operator triage and blockers",
             icon: "inbox",
             badge: inbox?.summary.totalActionableEntries || null,
             active: (path) => path === "/operator-inbox",
+          })}
+          ${this.renderSidebarLink({
+            current,
+            href: "/telemetry",
+            label: "Observability",
+            caption: "Request health, storage pressure, and recent telemetry events",
+            icon: "observability",
+            active: (path) => path === "/telemetry",
           })}
         </div>
 
@@ -925,6 +936,8 @@ class DirectiveUiApp extends LitElement {
       return renderHomePage(
         this.page.data as FrontendSnapshot,
         this.page.inbox as FrontendOperatorDecisionInboxReport,
+        this.page.telemetry as FrontendTelemetrySnapshot,
+        this.page.runtimeStatus as FrontendRuntimeStatus,
         {
           renderRuntimeCaseStrip: this.renderRuntimeCaseStrip.bind(this),
           currentHeadLink: this.currentHeadLink.bind(this),
@@ -972,6 +985,15 @@ class DirectiveUiApp extends LitElement {
           rejectMissionFeedback: this.rejectMissionFeedback.bind(this),
         },
       );
+    }
+
+    if (this.page.kind === "telemetry") {
+      return renderTelemetryPage({
+        snapshot: this.page.snapshot as FrontendSnapshot,
+        inbox: this.page.inbox as FrontendOperatorDecisionInboxReport,
+        telemetry: this.page.telemetry as FrontendTelemetrySnapshot,
+        runtimeStatus: this.page.runtimeStatus as FrontendRuntimeStatus,
+      });
     }
 
     if (this.page.kind === "workflow-map") {

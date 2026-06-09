@@ -39,8 +39,8 @@ If the answer is no, the enhancement waits.
 | I6 | "Next legal action" hints on every read | B | P1 | M |
 | I7 | Schemas referenced via `$schema` in API responses | A | P1 | S | done |
 | I8 | Real operator workbench in the UI | H | P1 | L | done |
-| I9 | Pluggable capability registry + capability template | B | P2 | M |
-| I10 | Standardized telemetry + observability surface | B | P2 | M |
+| I9 | Pluggable capability registry + capability template | B | P2 | M | done |
+| I10 | Standardized telemetry + observability surface | B | P2 | M | done |
 | I11 | Replay & time-travel debugger for engine runs | B | P2 | L |
 | I12 | Multi-host federation (read-only) | B | P3 | XL |
 | I13 | Reference consumer / golden-path example app | B | P1 | L |
@@ -252,6 +252,12 @@ Each form derives its inputs from the matching JSON Schema (I7). Each form respe
 
 **Risk.** Medium. Touches the runtime contract; F1 tests must catch regressions.
 
+**Status.** Shipped in bounded first form:
+- manifest-backed capability metadata in `runtime/capabilities/*/manifest.json`
+- registry-backed read surface at `GET /api/runtime/capabilities`
+- standalone scaffold command `runtime-capability-scaffold`
+- file-backed contract at `shared/contracts/capability.md`
+
 ---
 
 ## I10 — Standardized telemetry + observability surface
@@ -269,6 +275,12 @@ Each form derives its inputs from the matching JSON Schema (I7). Each form respe
 **Files.** New `shared/lib/telemetry.ts`, instrumentation throughout `engine/`, new route, UI panel.
 
 **Risk.** Low. Default no-op preserves current behavior.
+
+**Status.** Shipped in bounded first form:
+- shared telemetry helper at `shared/lib/telemetry.ts`
+- host-visible snapshot at `GET /api/telemetry/snapshot`
+- operation-aware web-host counters, gauges, and bounded events
+- browser observability page at `/telemetry` plus dashboard summary
 
 ---
 

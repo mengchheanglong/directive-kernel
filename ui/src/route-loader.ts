@@ -19,16 +19,20 @@ import type {
   FrontendRuntimeRecordDetail,
   FrontendRuntimeRuntimeCapabilityBoundaryDetail,
   FrontendSnapshot,
+  FrontendRuntimeStatus,
+  FrontendTelemetrySnapshot,
 } from "./types/index.ts";
 import { getJson } from "./app-utils.ts";
 
 export async function loadDirectiveUiPage(url: URL) {
   if (url.pathname === "/") {
-    const [snapshot, inbox] = await Promise.all([
+    const [snapshot, inbox, telemetry, runtimeStatus] = await Promise.all([
       getJson<FrontendSnapshot>("/api/snapshot"),
       getJson<FrontendOperatorDecisionInboxReport>("/api/operator-decision-inbox"),
+      getJson<FrontendTelemetrySnapshot>("/api/telemetry/snapshot"),
+      getJson<FrontendRuntimeStatus>("/api/runtime/status"),
     ]);
-    return { kind: "home", data: snapshot, inbox };
+    return { kind: "home", data: snapshot, inbox, telemetry, runtimeStatus };
   }
 
   if (url.pathname === "/discovery") {
@@ -60,6 +64,16 @@ export async function loadDirectiveUiPage(url: URL) {
       getJson<FrontendOperatorDecisionInboxReport>("/api/operator-decision-inbox"),
     ]);
     return { kind: "workflow-map", snapshot, inbox };
+  }
+
+  if (url.pathname === "/telemetry") {
+    const [snapshot, inbox, telemetry, runtimeStatus] = await Promise.all([
+      getJson<FrontendSnapshot>("/api/snapshot"),
+      getJson<FrontendOperatorDecisionInboxReport>("/api/operator-decision-inbox"),
+      getJson<FrontendTelemetrySnapshot>("/api/telemetry/snapshot"),
+      getJson<FrontendRuntimeStatus>("/api/runtime/status"),
+    ]);
+    return { kind: "telemetry", snapshot, inbox, telemetry, runtimeStatus };
   }
 
   if (url.pathname.startsWith("/engine-runs/")) {

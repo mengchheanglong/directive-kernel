@@ -39,10 +39,23 @@ export function getDirectiveUiPageChrome(current: string) {
       eyebrow: "Operator coordination",
       title: "Decision Inbox",
       description:
-        "Read-only triage over the explicit Discovery, Architecture, and Runtime decisions blocking forward motion.",
+        "Bounded operator triage over the explicit Discovery, Architecture, and Runtime decisions blocking forward motion.",
       actions: [
         { href: "/workflow-map", label: "View workflow map", tone: "secondary" as const },
         { href: "/runtime", label: "Open runtime lane", tone: "primary" as const },
+      ],
+    };
+  }
+
+  if (current === "/telemetry") {
+    return {
+      eyebrow: "Observability",
+      title: "Telemetry",
+      description:
+        "Read host-visible request health, storage pressure, and recent bounded telemetry events without binding the kernel to an external vendor.",
+      actions: [
+        { href: "/", label: "Back to overview", tone: "secondary" as const },
+        { href: "/operator-inbox", label: "Open inbox", tone: "primary" as const },
       ],
     };
   }

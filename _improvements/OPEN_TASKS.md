@@ -9,8 +9,8 @@ without having to reverse-engineer intent from a one-line row.
 
 ## Current status
 
-- Shipped: `I1`, `I2`, `I3`, `I4`, `I5`, `I6`, `I7`, `I8`, `I13`
-- Open: `I9` through `I12`
+- Shipped: `I1`, `I2`, `I3`, `I4`, `I5`, `I6`, `I7`, `I8`, `I9`, `I10`, `I13`
+- Open: `I11`, `I12`
 - Source of truth for shipped vs open status:
   [Improvement_Plan.md](./Improvement_Plan.md)
 
@@ -18,17 +18,13 @@ without having to reverse-engineer intent from a one-line row.
 
 This is the pragmatic order, not a theoretical one:
 
-1. `I10` Standardized telemetry + observability surface
-2. `I9` Pluggable capability registry + capability template
-3. `I11` Replay & time-travel debugger for engine runs
-4. `I12` Multi-host federation (read-only)
+1. `I11` Replay & time-travel debugger for engine runs
+2. `I12` Multi-host federation (read-only)
 
 Why this order:
 
-- `I10` and `I9` are the next highest-leverage executable gaps after the
-  read-surface work has landed.
-- `I11` becomes easier and more defensible once explainability, legal-action
-  hints, and telemetry are already in place.
+- `I11` becomes easier and more defensible now that explainability,
+  legal-action hints, schemas, and observability are already in place.
 - `I12` is last because federation magnifies every unresolved single-host
   design weakness.
 
@@ -386,11 +382,17 @@ The UI must stay a client of kernel truth, not its own policy engine.
 
 ### Status
 
-- Runtime capability metadata is now available through
+Shipped in bounded first form.
+
+- Runtime capability metadata is now manifest-backed through
   `runtime/core/capability-registry.ts`.
-- The web host now exposes `GET /api/runtime/capabilities`.
-- A scaffold writer now exists for new capability folders.
-- Full contract unification and host-start auto-registration remain open.
+- The web host exposes `GET /api/runtime/capabilities`.
+- The shipped capability folders now carry `manifest.json` metadata consumed
+  by both the registry and `/api/manifest`.
+- The standalone CLI now exposes
+  `runtime-capability-scaffold --name <name> ...`.
+- The file-backed contract is documented at
+  `shared/contracts/capability.md`.
 
 **Audience:** both maintainers and consuming hosts  
 **Priority:** P2  
@@ -414,11 +416,11 @@ adding a new runtime capability boring and consistent.
 - a registry/discovery mechanism
 - a minimal scaffold command or template
 
-### Likely implementation surface
+### Implementation surface used
 
 - `runtime/core/`
 - `runtime/capabilities/`
-- maybe `hosts/standalone-host/cli.ts` for a scaffold command
+- `hosts/standalone-host/cli.ts`
 - `shared/contracts/`
 
 ### Constraints
@@ -446,9 +448,16 @@ Keep the first pass narrow and grounded in the three shipped capabilities.
 
 ### Status
 
+Shipped in bounded first form.
+
 - Telemetry helper shipped at `shared/lib/telemetry.ts`.
+- Web host request and operation instrumentation now records bounded counters,
+  gauges, and recent events through the shared sink.
 - Read-only telemetry snapshot shipped at `GET /api/telemetry/snapshot`.
-- Broader engine-wide instrumentation and UI presentation remain open.
+- Browser observability surface shipped at `/telemetry` and summarized on the
+  home dashboard.
+- Storage pressure is exposed through the existing runtime-status surface and
+  presented alongside telemetry in the UI.
 
 **Audience:** both operators and consuming hosts  
 **Priority:** P2  
@@ -468,15 +477,16 @@ activity visible without binding the project to one telemetry vendor.
 ### Deliverable
 
 - no-op telemetry interface by default
-- instrumentation in high-value paths
+- instrumentation in high-value host paths
 - one read-only telemetry snapshot endpoint
+- one bounded UI observability view for operators
 
-### Likely implementation surface
+### Implementation surface used
 
 - `shared/lib/`
-- `engine/`
+- `hosts/web-host/server.ts`
 - `hosts/web-host/api-routes.ts`
-- optional dashboard reader
+- `ui/src/`
 
 ### Constraints
 
@@ -487,8 +497,8 @@ activity visible without binding the project to one telemetry vendor.
 ### Verification
 
 - unit tests for no-op and in-memory telemetry sinks
-- integration test for snapshot endpoint
-- performance sanity checks so instrumentation cost stays low
+- integration test for snapshot endpoint and operation counters
+- build sanity checks so the observability page ships in the compiled UI
 
 ### Main risk
 

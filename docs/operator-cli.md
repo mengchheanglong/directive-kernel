@@ -156,6 +156,23 @@ pnpm run standalone:cli runtime-followup-write --directive-root ./my-project --i
 
 **Contract.** [runtime-follow-up.schema.json](../shared/schemas/runtime-follow-up.schema.json)
 
+## Scaffold runtime capability
+
+**Purpose.** Generate a manifest-backed Runtime capability folder under
+`runtime/capabilities/` without hand-copying the existing capability layout.
+
+**CLI pattern:**
+```
+pnpm run standalone:cli runtime-capability-scaffold --name <name> [--description <text>] [--capabilities-root <path>] [--overwrite]
+```
+
+**Example:**
+```
+pnpm run standalone:cli runtime-capability-scaffold --name "Example Capability" --description "One bounded Runtime capability scaffold."
+```
+
+**Contract.** [capability.md](../shared/contracts/capability.md)
+
 ## Open architecture handoff
 
 **Purpose.** Start an Architecture handoff experiment from an existing handoff artifact.

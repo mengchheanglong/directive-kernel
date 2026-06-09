@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   buildRuntimeCapabilityScaffold,
+  readRuntimeCapabilityManifest,
   listRuntimeCapabilityMetadata,
   normalizeRuntimeCapabilityId,
   writeRuntimeCapabilityScaffold,
@@ -18,6 +19,13 @@ afterEach(() => {
 });
 
 describe("listRuntimeCapabilityMetadata", () => {
+  it("reads manifest-backed metadata for shipped capabilities", () => {
+    const manifest = readRuntimeCapabilityManifest({ id: "code-normalizer" });
+    expect(manifest).not.toBeNull();
+    expect(manifest?.displayName).toBe("Code Normalizer");
+    expect(manifest?.domain).toBe("runtime");
+  });
+
   it("returns exactly 3 capabilities", () => {
     const capabilities = listRuntimeCapabilityMetadata();
     expect(capabilities.length).toBe(3);
@@ -72,6 +80,7 @@ describe("runtime capability scaffold", () => {
       "my-capability/executor.ts",
     ]);
     expect(scaffold.files[0]?.content).toContain("\"displayName\": \"My Capability\"");
+    expect(scaffold.files[0]?.content).toContain("\"domain\": \"runtime\"");
     expect(scaffold.files[2]?.content).toContain("not_implemented: scaffolded capability executor");
   });
 

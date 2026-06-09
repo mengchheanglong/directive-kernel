@@ -1,0 +1,5 @@
+{
+  "displayName": "Research Vault Source Pack",
+  "description": "Packages research vault sources into consumable bundles for the kernel intake pipeline.",
+  "domain": "runtime"
+}
