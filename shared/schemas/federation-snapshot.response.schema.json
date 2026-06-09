@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/federation-snapshot.response.schema.json",
+  "title": "Federation Snapshot Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "configured",
+    "configPath",
+    "generatedAt",
+    "summary",
+    "roots"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/federation-snapshot.response.schema.json"
+    },
+    "configured": {
+      "type": "boolean"
+    },
+    "configPath": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "generatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalRoots",
+        "reachableRoots",
+        "failedRoots",
+        "totalQueueEntries",
+        "totalEngineRuns",
+        "totalActionableInboxEntries"
+      ],
+      "properties": {
+        "totalRoots": {
+          "type": "number"
+        },
+        "reachableRoots": {
+          "type": "number"
+        },
+        "failedRoots": {
+          "type": "number"
+        },
+        "totalQueueEntries": {
+          "type": "number"
+        },
+        "totalEngineRuns": {
+          "type": "number"
+        },
+        "totalActionableInboxEntries": {
+          "type": "number"
+        }
+      }
+    },
+    "roots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "url",
+          "authMode",
+          "ok",
+          "snapshot",
+          "operatorInbox",
+          "runtimeStatus",
+          "failedReads",
+          "error"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "authMode": {
+            "type": "string",
+            "enum": [
+              "none",
+              "static_bearer"
+            ]
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "snapshot": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "operatorInbox": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "runtimeStatus": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "failedReads": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "snapshot",
+                "operatorInbox",
+                "runtimeStatus"
+              ]
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

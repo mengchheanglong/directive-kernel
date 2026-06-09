@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/kernel-federation-config.schema.json",
+  "title": "Kernel Federation Config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "roots"
+  ],
+  "properties": {
+    "roots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "url"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "minLength": 1
+          },
+          "auth": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "static_bearer"
+                ]
+              },
+              "bearerToken": {
+                "type": "string",
+                "minLength": 1
+              },
+              "bearerTokenEnvName": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "mode": {
+                      "const": "static_bearer"
+                    }
+                  }
+                },
+                "then": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "bearerToken"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "bearerTokenEnvName"
+                      ]
+                    }
+                  ],
+                  "not": {
+                    "required": [
+                      "bearerToken",
+                      "bearerTokenEnvName"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

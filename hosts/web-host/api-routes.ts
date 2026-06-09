@@ -77,6 +77,7 @@ import { readGlossaryTerms } from "./glossary.ts";
 import { readDirectiveFrontendRunExplanation } from "./data/run-explanation.ts";
 import { listRuntimeCapabilityMetadata } from "../../runtime/core/capability-registry.ts";
 import type { TelemetrySink } from "../../shared/lib/telemetry.ts";
+import { readFederationSnapshot } from "./federation.ts";
 import {
   parseJsonBody,
   readBody,
@@ -132,6 +133,15 @@ export async function handleDirectiveUiApiRequest(input: {
       200,
       "telemetry-snapshot.response.schema.json",
       telemetry?.snapshot() ?? { counters: {}, gauges: {}, events: [] },
+    );
+    return true;
+  }
+  if (method === "GET" && pathname === "/api/federation/snapshot") {
+    writeJsonWithSchema(
+      res,
+      200,
+      "federation-snapshot.response.schema.json",
+      await readFederationSnapshot(directiveRoot),
     );
     return true;
   }

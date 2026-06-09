@@ -231,3 +231,7 @@ See `Tech_Blueprint.md` Section 4 ("Lanes") for the longer treatment.
 
 - **`/api/runtime/status`** - Storage and maintenance status for the
   directive root. Use this for storage summary, not full workflow state.
+
+- **`/api/federation/snapshot`** - Read-only aggregate visibility across
+  multiple configured directive roots. Requires
+  `kernel-federation.config.json` at the current directive root.

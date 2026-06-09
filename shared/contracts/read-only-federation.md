@@ -16,6 +16,12 @@ Federation must not perform writes to remote roots. A federation read from root 
 
 Mutation remains scoped to each directive root's normal host. An operator wishing to mutate root A must do so through root A's host. An operator wishing to mutate root B must do so through root B's host. Federation does not proxy, route, or relay mutation requests between roots.
 
-## Implementation deferred
+## Bounded first implementation
 
-This contract defines the boundary. Implementation of federation routes, config, and UI aggregation remains deferred until single-host read surfaces are stable and the integration contracts are proven.
+The first shipped implementation is bounded to:
+
+- `kernel-federation.config.json` for declaring remote roots
+- `GET /api/federation/snapshot` for read-only aggregation
+
+It does not add a root selector UI, merged workflow identities, remote-write
+proxying, or cross-root mutation semantics.

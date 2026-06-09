@@ -145,6 +145,7 @@ describe("api response schema stamping", () => {
       await fetchJson("/api/runtime/status"),
       await fetchJson("/api/manifest"),
       await fetchJson("/api/telemetry/snapshot"),
+      await fetchJson("/api/federation/snapshot"),
       await fetchJson("/api/runtime/capabilities"),
       await fetchJson("/api/glossary"),
       await fetchJson("/api/snapshot"),

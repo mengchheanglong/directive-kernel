@@ -58,6 +58,9 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
   op("GET", "telemetry_snapshot_get", "/api/telemetry/snapshot", "Read the current in-memory web-host telemetry snapshot.", {
     output_schema: "shared/schemas/telemetry-snapshot.response.schema.json",
   }),
+  op("GET", "federation_snapshot_get", "/api/federation/snapshot", "Read a read-only aggregate snapshot across configured remote directive roots.", {
+    output_schema: "shared/schemas/federation-snapshot.response.schema.json",
+  }),
   op("GET", "runtime_status", "/api/runtime/status", "Read storage and maintenance status for the directive root.", {
     output_schema: "shared/schemas/runtime-status.response.schema.json",
   }),

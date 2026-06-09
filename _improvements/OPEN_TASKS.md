@@ -9,8 +9,8 @@ without having to reverse-engineer intent from a one-line row.
 
 ## Current status
 
-- Shipped: `I1`, `I2`, `I3`, `I4`, `I5`, `I6`, `I7`, `I8`, `I9`, `I10`, `I11`, `I13`
-- Open: `I12`
+- Shipped: `I1`, `I2`, `I3`, `I4`, `I5`, `I6`, `I7`, `I8`, `I9`, `I10`, `I11`, `I12`, `I13`
+- Open: none
 - Source of truth for shipped vs open status:
   [Improvement_Plan.md](./Improvement_Plan.md)
 
@@ -18,12 +18,11 @@ without having to reverse-engineer intent from a one-line row.
 
 This is the pragmatic order, not a theoretical one:
 
-1. `I12` Multi-host federation (read-only)
+1. No remaining open improvement tasks.
 
 Why this order:
 
-- `I12` is last because federation magnifies every unresolved single-host
-  design weakness.
+- The current improvement plan is fully shipped in bounded form.
 
 ---
 
@@ -612,7 +611,14 @@ tight, federation will amplify every inconsistency.
 
 ### Status
 
-- **Deferral contract defined** at `shared/contracts/read-only-federation.md`. Implementation remains deferred.
+Shipped in bounded first form. The repo now includes:
+- `kernel-federation.config.json` contract via `shared/schemas/kernel-federation-config.schema.json`
+- read-only aggregate endpoint at `GET /api/federation/snapshot`
+- per-root snapshot, operator inbox, and runtime status aggregation with
+  partial-failure reporting
+
+Implementation remains intentionally bounded: no UI root selector, no merged
+workflow state, and no remote writes.
 
 ---
 

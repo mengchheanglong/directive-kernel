@@ -1,0 +1,17 @@
+{
+  "$schema": "shared/schemas/kernel-federation-config.schema.json",
+  "roots": [
+    {
+      "name": "team-alpha",
+      "url": "http://127.0.0.1:9101"
+    },
+    {
+      "name": "team-beta",
+      "url": "http://127.0.0.1:9102",
+      "auth": {
+        "mode": "static_bearer",
+        "bearerTokenEnvName": "DIRECTIVE_TEAM_BETA_TOKEN"
+      }
+    }
+  ]
+}

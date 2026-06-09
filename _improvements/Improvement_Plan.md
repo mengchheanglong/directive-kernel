@@ -34,16 +34,16 @@ If the answer is no, the enhancement waits.
 | I1 | MCP server mirroring the HTTP API | A | P0 | M | done |
 | I2 | `/api/manifest` operation catalog | A | P0 | S | done |
 | I3 | `AGENTS.md` repo-root primer | A | P0 | S | ✅ done |
-| I4 | `/api/explain?runId=...` natural-language summary | B | P1 | M |
-| I5 | `/api/glossary` queryable vocabulary | B | P1 | S |
-| I6 | "Next legal action" hints on every read | B | P1 | M |
+| I4 | `/api/explain?runId=...` natural-language summary | B | P1 | M | done |
+| I5 | `/api/glossary` queryable vocabulary | B | P1 | S | done |
+| I6 | "Next legal action" hints on every read | B | P1 | M | done |
 | I7 | Schemas referenced via `$schema` in API responses | A | P1 | S | done |
 | I8 | Real operator workbench in the UI | H | P1 | L | done |
 | I9 | Pluggable capability registry + capability template | B | P2 | M | done |
 | I10 | Standardized telemetry + observability surface | B | P2 | M | done |
 | I11 | Replay & time-travel debugger for engine runs | B | P2 | L | done |
-| I12 | Multi-host federation (read-only) | B | P3 | XL |
-| I13 | Reference consumer / golden-path example app | B | P1 | L |
+| I12 | Multi-host federation (read-only) | B | P3 | XL | done |
+| I13 | Reference consumer / golden-path example app | B | P1 | L | done |
 
 ---
 
@@ -317,6 +317,12 @@ Each form derives its inputs from the matching JSON Schema (I7). Each form respe
 **Sketch.** A federation host reads `kernel-federation.config.json` listing remote `(name, url, auth)` entries. It exposes `/api/federation/snapshot` aggregating per-root snapshots. UI gains a root selector.
 
 **Risk.** High. Don't build until the rest is solid.
+
+**Status.** Shipped in bounded first form:
+- federation config contract via `kernel-federation.config.json`
+- `GET /api/federation/snapshot` aggregation across configured roots
+- per-root partial-failure reporting and optional static-bearer auth
+- no merged workflow state, no remote writes, no UI root selector
 
 ---
 

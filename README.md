@@ -24,6 +24,17 @@ That runs the kernel end-to-end against a sample source in a fresh temp directiv
 
 If you are an AI coding agent, start with [`AGENTS.md`](./AGENTS.md).
 
+## Federation
+
+To aggregate multiple kernels without introducing shared mutation, create
+`kernel-federation.config.json` at the current directive root and read:
+
+- `GET /api/federation/snapshot`
+
+The first version is read-only. It aggregates remote `/api/snapshot`,
+`/api/operator-decision-inbox`, and `/api/runtime/status` responses per root.
+All writes remain scoped to each root's own host.
+
 ## What This Repo Is For
 
 Directive Kernel is for **dev teams running source-driven workflows that need a structured intake → routing → decision pipeline.**
