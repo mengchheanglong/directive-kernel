@@ -100,6 +100,11 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
     side_effects: ["writes engine run record", "writes routing assessment"],
     prerequisites: ["engine run exists", "answers payload present"],
   }),
+  op("POST", "engine_run_replay", "/api/engine-runs/:runId/replay", "Replay one engine run non-persistently with optional answer or mission overrides.", {
+    input_schema: "shared/schemas/engine-run-replay-request.schema.json",
+    output_schema: "shared/schemas/engine-run-replay.response.schema.json",
+    prerequisites: ["engine run exists"],
+  }),
   op("GET", "queue_list", "/api/queue", "List queue entries from the current workspace snapshot.", {
     output_schema: "shared/schemas/queue-overview.response.schema.json",
   }),

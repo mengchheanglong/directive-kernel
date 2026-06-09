@@ -23,6 +23,8 @@ import {
   type EngineProcessSourceInput,
   type EngineProcessSourceResult,
   type EnginePlanProgressUpdate,
+  type EngineRunReplayInput,
+  type EngineRunReplayResult,
   type EngineRunRecord,
   type EngineRoutingDigestPreview,
 } from "./types.ts";
@@ -39,6 +41,7 @@ import {
   sanitizeIdSegment,
 } from "./process-source-record.ts";
 import {
+  buildRunReplay,
   buildMissionPreviewDigest,
   buildReRouteProcessSourceInput,
 } from "./run-record-replay.ts";
@@ -259,6 +262,24 @@ export class Engine {
       corrections: input.corrections ?? null,
       policyEvents: input.policyEvents ?? null,
       receivedAt: input.receivedAt,
+    });
+  }
+
+  async replayRun(input: {
+    runId: string;
+    replayInput?: EngineRunReplayInput;
+  }): Promise<EngineRunReplayResult> {
+    const record = await this.getRun(input.runId);
+    if (!record) {
+      throw new Error(`not_found: run ${input.runId} does not exist`);
+    }
+
+    const existingRuns = (await this.listRuns()).filter((entry) => entry.runId !== record.runId);
+    return buildRunReplay({
+      laneSet: this.laneSet,
+      record,
+      existingRuns,
+      replayInput: input.replayInput,
     });
   }
 

@@ -237,6 +237,19 @@ This writes `manifest.json`, `index.ts`, and `executor.ts` under
 `runtime/capabilities/<capability-id>/`. The registry and
 `GET /api/runtime/capabilities` then read the same manifest-backed metadata.
 
+## Replay Engine Runs
+
+To replay one engine run non-persistently with optional mission or answer
+overrides:
+
+```powershell
+pnpm run standalone:cli engine-replay --directive-root <path> --run-id <id>
+```
+
+The replay surface reports whether the result is exact or approximate and
+never writes new run records unless you explicitly use a normal workflow
+mutation afterward.
+
 ## Ownership
 
 The consuming project owns:

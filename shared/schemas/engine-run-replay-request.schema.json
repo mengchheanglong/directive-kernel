@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/engine-run-replay-request.schema.json",
+  "title": "Engine Run Replay Request",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "answers": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "missionChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "objective": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "usefulnessSignals": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "capabilityLanes": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "constraints": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "successSignal": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "adoptionTarget": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "receivedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

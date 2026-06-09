@@ -173,6 +173,29 @@ pnpm run standalone:cli runtime-capability-scaffold --name "Example Capability" 
 
 **Contract.** [capability.md](../shared/contracts/capability.md)
 
+## Replay engine run
+
+**Purpose.** Replay one engine run non-persistently with optional answer or
+mission overrides, and return an exact-vs-approximate diff instead of writing
+new run records.
+
+**CLI pattern:**
+```
+pnpm run standalone:cli engine-replay --directive-root <path> --run-id <id> [--answers-json-path <path>] [--mission-change-json-path <path>] [--received-at <iso>]
+```
+
+**Example:**
+```
+pnpm run standalone:cli engine-replay --directive-root ./my-project --run-id 1234-abcd --mission-change-json-path ./mission-change.json
+```
+
+**Web-host endpoint:**
+```
+POST /api/engine-runs/:runId/replay
+```
+
+**Contract.** [engine-run-replay.request.schema.json](../shared/schemas/engine-run-replay-request.schema.json)
+
 ## Open architecture handoff
 
 **Purpose.** Start an Architecture handoff experiment from an existing handoff artifact.

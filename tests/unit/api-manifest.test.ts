@@ -48,6 +48,10 @@ function extractRouteSignaturesFromApiRoutesSource() {
       signatures.push("POST /api/engine-runs/:runId/reroute");
       continue;
     }
+    if (line === 'if (method === "POST" && pathname.startsWith("/api/engine-runs/") && pathname.endsWith("/replay")) {') {
+      signatures.push("POST /api/engine-runs/:runId/replay");
+      continue;
+    }
     if (line === 'if (method === "GET" && pathname === `/api/${segment}/detail`) {') {
       for (const stage of ARCHITECTURE_DEEP_TAIL_STAGES) {
         signatures.push(`GET /api/${stage.apiRouteSegment}/detail`);

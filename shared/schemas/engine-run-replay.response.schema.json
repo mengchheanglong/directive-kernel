@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/engine-run-replay.response.schema.json",
+  "title": "Engine Run Replay Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "runId",
+    "replayedAt",
+    "nonPersistent",
+    "determinism",
+    "overrides",
+    "baseline",
+    "replay",
+    "diff"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/engine-run-replay.response.schema.json"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "replayedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonPersistent": {
+      "const": true
+    },
+    "determinism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "driftedInputs",
+        "rationale"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "exact",
+            "approximate"
+          ]
+        },
+        "driftedInputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "detail"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "answers_override",
+                  "mission_change",
+                  "received_at_override",
+                  "workspace_newer_runs"
+                ]
+              },
+              "detail": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "rationale": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "overrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answerFields",
+        "missionFieldsChanged",
+        "receivedAtOverridden"
+      ],
+      "properties": {
+        "answerFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missionFieldsChanged": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "receivedAtOverridden": {
+          "type": "boolean"
+        }
+      }
+    },
+    "baseline": {
+      "$ref": "#/$defs/replayView"
+    },
+    "replay": {
+      "$ref": "#/$defs/replayView"
+    },
+    "diff": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "replayView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receivedAt",
+        "recommendedLaneId",
+        "confidence",
+        "needsHumanReview",
+        "decisionState",
+        "routingHeadline",
+        "decisionSummary"
+      ],
+      "properties": {
+        "receivedAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recommendedLaneId": {
+          "enum": [
+            "discovery",
+            "architecture",
+            "runtime"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "needsHumanReview": {
+          "type": "boolean"
+        },
+        "decisionState": {
+          "enum": [
+            "hold_in_discovery",
+            "accept_for_architecture",
+            "route_to_runtime_follow_up",
+            "needs_human_review"
+          ]
+        },
+        "routingHeadline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisionSummary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

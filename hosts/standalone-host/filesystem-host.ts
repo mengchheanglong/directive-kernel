@@ -516,6 +516,13 @@ export function createStandaloneFilesystemHost(
       const engine = createEngine();
       return engine.reRouteWithAnswers(input);
     },
+    async replayEngineRun(input: {
+      runId: string;
+      replayInput?: import("../../engine/types.ts").EngineRunReplayInput;
+    }) {
+      const engine = createEngine();
+      return engine.replayRun(input);
+    },
     readDiscoveryOverview(maxEntries?: number): DiscoveryOverviewSummary {
       return readDiscoveryOverviewWithHostBridge({
         storage,

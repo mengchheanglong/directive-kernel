@@ -58,6 +58,7 @@ type CommandName =
   | "discovery-overview"
   | "engine-plan-progress"
   | "engine-reroute"
+  | "engine-replay"
   | "mission-feedback"
   | "mission-preview"
   | "mission-approve"
@@ -103,6 +104,7 @@ Commands:
   discovery-overview (--directive-root <path> | --config <path>) [--max-entries <n>] [--received-at <yyyy-mm-dd>] [--persistence-sqlite-path <path>]
   engine-plan-progress (--directive-root <path> | --config <path>) --run-id <id> --plan <extraction|adaptation|improvement|proof> --item-type <type> [--index <n>] --status <pending|in_progress|completed|skipped> [--at <iso>] [--persistence-sqlite-path <path>]
   engine-reroute (--directive-root <path> | --config <path>) --run-id <id> --answers-json-path <path> [--received-at <iso>] [--persistence-sqlite-path <path>]
+  engine-replay (--directive-root <path> | --config <path>) --run-id <id> [--answers-json-path <path>] [--mission-change-json-path <path>] [--received-at <iso>] [--persistence-sqlite-path <path>]
   mission-feedback (--directive-root <path> | --config <path>)
   mission-preview (--directive-root <path> | --config <path>) --feedback-id <id>
   mission-approve (--directive-root <path> | --config <path>) --feedback-id <id> --rationale <text> [--cascade-scope <none|low_confidence|conflicted|discovery_held>] [--run-id <id> ...]
@@ -577,6 +579,36 @@ async function main() {
         receivedAt: readOptionalFlag(flags, "received-at") ?? null,
       });
       process.stdout.write(`${JSON.stringify({ ok: true, result }, null, 2)}\n`);
+    } finally {
+      host.close();
+      releaseDirectiveRootLock(directiveRoot);
+    }
+    return;
+  }
+
+  if (command === "engine-replay") {
+    const runtimeConfig = readOptionalRuntimeConfig(flags);
+    const directiveRoot = resolveDirectiveRootFromFlags(flags, runtimeConfig);
+    acquireDirectiveRootLock(directiveRoot);
+    const host = createRuntimeHostFromFlags(flags, runtimeConfig);
+    try {
+      const answersJsonPath = readOptionalFlag(flags, "answers-json-path");
+      const missionChangeJsonPath = readOptionalFlag(flags, "mission-change-json-path");
+      const result = await host.replayEngineRun({
+        runId: readRequiredFlag(flags, "run-id"),
+        replayInput: {
+          answers: answersJsonPath
+            ? readJson<Record<string, unknown>>(answersJsonPath)
+            : null,
+          missionChange: missionChangeJsonPath
+            ? readJson<import("../../engine/types.ts").EngineMissionPreviewChange>(
+              missionChangeJsonPath,
+            )
+            : null,
+          receivedAt: readOptionalFlag(flags, "received-at") ?? null,
+        },
+      });
+      process.stdout.write(`${JSON.stringify({ ok: true, replay: result }, null, 2)}\n`);
     } finally {
       host.close();
       releaseDirectiveRootLock(directiveRoot);

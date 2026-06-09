@@ -623,3 +623,57 @@ export type EngineRoutingDigestPreview = {
   diff: string[];
   assessment: EngineRoutingAssessment;
 };
+
+export type EngineRunReplayDriftKind =
+  | "answers_override"
+  | "mission_change"
+  | "received_at_override"
+  | "workspace_newer_runs";
+
+export type EngineRunReplayDrift = {
+  kind: EngineRunReplayDriftKind;
+  detail: string;
+};
+
+export type EngineRunReplayInput = {
+  answers?: Record<string, unknown> | null;
+  missionChange?: EngineMissionPreviewChange | null;
+  receivedAt?: string | null;
+  corrections?: EngineProcessSourceInput["corrections"];
+  policyEvents?: EngineProcessSourceInput["policyEvents"];
+};
+
+export type EngineRunReplayResult = {
+  runId: string;
+  replayedAt: string;
+  nonPersistent: true;
+  determinism: {
+    mode: "exact" | "approximate";
+    driftedInputs: EngineRunReplayDrift[];
+    rationale: string[];
+  };
+  overrides: {
+    answerFields: string[];
+    missionFieldsChanged: string[];
+    receivedAtOverridden: boolean;
+  };
+  baseline: {
+    receivedAt: string;
+    recommendedLaneId: EngineLaneId;
+    confidence: EngineRoutingConfidence;
+    needsHumanReview: boolean;
+    decisionState: EngineDecisionState;
+    routingHeadline: string;
+    decisionSummary: string;
+  };
+  replay: {
+    receivedAt: string;
+    recommendedLaneId: EngineLaneId;
+    confidence: EngineRoutingConfidence;
+    needsHumanReview: boolean;
+    decisionState: EngineDecisionState;
+    routingHeadline: string;
+    decisionSummary: string;
+  };
+  diff: string[];
+};

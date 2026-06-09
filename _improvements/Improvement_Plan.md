@@ -41,7 +41,7 @@ If the answer is no, the enhancement waits.
 | I8 | Real operator workbench in the UI | H | P1 | L | done |
 | I9 | Pluggable capability registry + capability template | B | P2 | M | done |
 | I10 | Standardized telemetry + observability surface | B | P2 | M | done |
-| I11 | Replay & time-travel debugger for engine runs | B | P2 | L |
+| I11 | Replay & time-travel debugger for engine runs | B | P2 | L | done |
 | I12 | Multi-host federation (read-only) | B | P3 | XL |
 | I13 | Reference consumer / golden-path example app | B | P1 | L |
 
@@ -299,6 +299,12 @@ Each form derives its inputs from the matching JSON Schema (I7). Each form respe
 **Files.** `engine/run-record-replay.ts` extensions, new route, UI panel, CLI command.
 
 **Risk.** Medium. Determinism guarantees need property tests. Sequence after F1, F7.
+
+**Status.** Shipped in bounded first form:
+- engine-side non-persistent replay helper over existing run records
+- replay API at `POST /api/engine-runs/:runId/replay`
+- standalone CLI command `engine-replay`
+- exact-vs-approximate determinism labeling with explicit drift reasons
 
 ---
 

@@ -9,8 +9,8 @@ without having to reverse-engineer intent from a one-line row.
 
 ## Current status
 
-- Shipped: `I1`, `I2`, `I3`, `I4`, `I5`, `I6`, `I7`, `I8`, `I9`, `I10`, `I13`
-- Open: `I11`, `I12`
+- Shipped: `I1`, `I2`, `I3`, `I4`, `I5`, `I6`, `I7`, `I8`, `I9`, `I10`, `I11`, `I13`
+- Open: `I12`
 - Source of truth for shipped vs open status:
   [Improvement_Plan.md](./Improvement_Plan.md)
 
@@ -18,13 +18,10 @@ without having to reverse-engineer intent from a one-line row.
 
 This is the pragmatic order, not a theoretical one:
 
-1. `I11` Replay & time-travel debugger for engine runs
-2. `I12` Multi-host federation (read-only)
+1. `I12` Multi-host federation (read-only)
 
 Why this order:
 
-- `I11` becomes easier and more defensible now that explainability,
-  legal-action hints, schemas, and observability are already in place.
 - `I12` is last because federation magnifies every unresolved single-host
   design weakness.
 
@@ -509,6 +506,18 @@ first version intentionally small.
 
 ## I11 - Replay and time-travel debugger for engine runs
 
+### Status
+
+Shipped in bounded first form.
+
+- Engine-side replay helper now simulates routing and decision state
+  non-persistently from an existing run record.
+- Web host exposes `POST /api/engine-runs/:runId/replay`.
+- Standalone CLI exposes `engine-replay --run-id <id> ...`.
+- Replay surfaces return exact-vs-approximate determinism labeling plus
+  explicit drift reasons.
+- Determinism boundaries remain documented at `docs/replay-determinism.md`.
+
 **Audience:** both humans and agents  
 **Priority:** P2  
 **Effort:** L  
@@ -552,10 +561,6 @@ changed inputs or conditions.
 
 Users may over-trust replay output if the system does not report where replay
 cannot be exact. That disclosure has to be part of the feature.
-
-### Status
-
-- **Determinism boundaries documented** at `docs/replay-determinism.md`. Implementation remains open.
 
 ---
 

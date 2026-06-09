@@ -260,6 +260,30 @@ export async function handleDirectiveUiApiRequest(input: {
     });
     return true;
   }
+  if (method === "POST" && pathname.startsWith("/api/engine-runs/") && pathname.endsWith("/replay")) {
+    const runId = decodeURIComponent(
+      pathname
+        .replace(/^\/api\/engine-runs\//, "")
+        .replace(/\/replay$/u, ""),
+    );
+    const rawBody = await readBody(req);
+    const payload = rawBody.trim()
+      ? parseJsonBody<{
+        answers?: Record<string, unknown>;
+        missionChange?: import("../../engine/types.ts").EngineMissionPreviewChange;
+        receivedAt?: string | null;
+      }>(rawBody)
+      : {};
+    writeJsonWithSchema(res, 200, "engine-run-replay.response.schema.json", await runtimeHost.replayEngineRun({
+      runId,
+      replayInput: {
+        answers: payload.answers ?? null,
+        missionChange: payload.missionChange ?? null,
+        receivedAt: payload.receivedAt ?? null,
+      },
+    }));
+    return true;
+  }
   if (method === "GET" && pathname === "/api/queue") {
     writeJsonWithSchema(
       res,
