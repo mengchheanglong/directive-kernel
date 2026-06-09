@@ -1,0 +1,11 @@
+{
+  "candidateId": "reference-consumer-feedback-001",
+  "candidateName": "Customer Feedback: Bulk Export Friction",
+  "sourceType": "internal-signal",
+  "sourceReference": "feedback://reference-consumer/customer-feedback/bulk-export-friction",
+  "summary": "Multiple operators report that bulk export requires repetitive manual steps and needs a bounded reusable operational flow.",
+  "notes": "Reference consumer smoke input for the customer feedback triage example.",
+  "containsWorkflowPattern": true,
+  "improvesDirectiveWorkspace": true,
+  "workflowBoundaryShape": "bounded_protocol"
+}

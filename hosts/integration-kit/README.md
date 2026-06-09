@@ -35,3 +35,4 @@ Use direct package imports when your host can depend on the kernel repo directly
 For the first real consuming-host path, start with:
 - `hosts/integration-kit/FIRST_INTEGRATION.md`
 - `hosts/integration-kit/examples/first-consuming-host.flow.ts`
+- `examples/reference-consumer/flow.ts`

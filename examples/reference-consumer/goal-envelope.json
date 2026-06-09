@@ -1,0 +1,12 @@
+{
+  "goalId": "reference-consumer-feedback-triage",
+  "goalStatement": "Triage high-signal customer feedback into bounded Runtime or Architecture follow-up without reimplementing kernel routing.",
+  "whyNow": "The host needs one concrete, reusable example of a thin consumer resolving a goal and submitting a source.",
+  "adoptionTarget": "runtime",
+  "constraints": [
+    "keep Discovery first",
+    "keep operator review explicit",
+    "do not widen autonomy"
+  ],
+  "successSignal": "One customer feedback source produces a kernel-owned routing result, snapshot, and operator inbox summary."
+}

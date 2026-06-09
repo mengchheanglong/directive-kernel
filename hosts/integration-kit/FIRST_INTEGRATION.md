@@ -28,7 +28,7 @@ Relevant helpers:
 Executable example:
 
 ```powershell
-node --experimental-strip-types ./hosts/integration-kit/examples/first-consuming-host.flow.ts
+pnpm exec tsx ./hosts/integration-kit/examples/first-consuming-host.flow.ts
 ```
 
 That example:
