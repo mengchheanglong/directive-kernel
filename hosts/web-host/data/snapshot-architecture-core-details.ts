@@ -16,7 +16,10 @@ import {
   readDirectiveArchitectureImplementationTargetPathForAdoption,
 } from "../../../architecture/lib/materialization/implementation-target.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
-import { buildDirectiveFrontendCurrentHead } from "./shared.ts";
+import {
+  buildDirectiveFrontendCurrentHead,
+  readDirectiveFrontendNextLegalProjection,
+} from "./shared.ts";
 import type {
   FrontendArchitectureAdoptionDetail,
   FrontendArchitectureResultDetail,
@@ -106,6 +109,10 @@ export function readDirectiveFrontendArchitectureStartDetail(
       directiveRoot: input.directiveRoot,
       startPath: relativePath,
     });
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     return {
       ok: true,
@@ -122,6 +129,9 @@ export function readDirectiveFrontendArchitectureStartDetail(
       decisionRelativePath: parsed.decisionExists ? parsed.decisionRelativePath : null,
       closeoutAssist,
       resultEvidence,
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       content: artifact.content,
     };
   } catch (error) {
@@ -182,6 +192,10 @@ export function readDirectiveFrontendArchitectureResultDetail(
     if (!focus || focus.lane !== "architecture") {
       throw new Error("architecture_bounded_result_focus_not_resolved");
     }
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     return {
       ok: true,
@@ -208,10 +222,11 @@ export function readDirectiveFrontendArchitectureResultDetail(
       }),
       artifactStage: focus.artifactStage,
       artifactNextLegalStep: focus.artifactNextLegalStep,
-      currentStage: focus.currentStage,
-      nextLegalStep: focus.nextLegalStep,
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
       currentHead: buildDirectiveFrontendCurrentHead(focus.currentHead),
       resultEvidence,
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       content: artifact.content,
     };
   } catch (error) {
@@ -263,6 +278,10 @@ export function readDirectiveFrontendArchitectureAdoptionDetail(
     if (!focus || focus.lane !== "architecture") {
       throw new Error("architecture_adoption_focus_not_resolved");
     }
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     return {
       ok: true,
@@ -281,9 +300,10 @@ export function readDirectiveFrontendArchitectureAdoptionDetail(
       }),
       artifactStage: focus.artifactStage,
       artifactNextLegalStep: focus.artifactNextLegalStep,
-      currentStage: focus.currentStage,
-      nextLegalStep: focus.nextLegalStep,
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
       currentHead: buildDirectiveFrontendCurrentHead(focus.currentHead),
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       content: detail.content,
     };
   } catch (error) {

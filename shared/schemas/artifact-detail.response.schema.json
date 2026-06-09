@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/artifact-detail.response.schema.json",
+  "title": "Artifact Detail Response",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "$schema",
+        "ok",
+        "relativePath"
+      ],
+      "properties": {
+        "$schema": {
+          "const": "/api/schemas/artifact-detail.response.schema.json"
+        },
+        "ok": {
+          "const": true
+        },
+        "relativePath": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "nextLegalActions": {
+          "type": "array"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "$schema",
+        "ok",
+        "error",
+        "relativePath"
+      ],
+      "properties": {
+        "$schema": {
+          "const": "/api/schemas/artifact-detail.response.schema.json"
+        },
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relativePath": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

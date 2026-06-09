@@ -67,9 +67,12 @@ import type {
   FrontendQueueOverview,
 } from "./queue.ts";
 import {
+  readDirectiveFrontendNextLegalProjection,
   readRuntimeApprovalAllowedFromCurrentHead,
   type FrontendCurrentHead,
+  type FrontendNextLegalProjection,
 } from "./shared.ts";
+import type { NextLegalAction } from "./next-legal-actions.ts";
 import {
   deriveDirectiveEarnedAutonomySnapshotSummary,
   readDirectiveGapRadarSnapshotSummary,
@@ -109,6 +112,12 @@ export type { FrontendQueueEntry, FrontendQueueOverview } from "./queue.ts";
 export type { FrontendCurrentHead } from "./shared.ts";
 export type { FrontendHandoffStub } from "./snapshot-handoffs.ts";
 export { readDirectiveFrontendQueueEntry, readFrontendQueueOverview };
+
+type FrontendNextLegalRead = {
+  currentStage: string | null;
+  nextLegalStep: string | null;
+  nextLegalActions: NextLegalAction[];
+};
 
 export type FrontendSnapshot = {
   engineRuns: EngineRunsOverview;
@@ -153,17 +162,19 @@ export type FrontendSnapshot = {
       candidate_name: string;
       current_case_stage: string | null;
       current_case_next_legal_step: string | null;
+      next_legal_actions: NextLegalAction[];
       current_head: FrontendCurrentHead | null;
       runtime_summary: {
         proposed_host: string | null;
         promotion_readiness_blockers: string[];
       } | null;
-    }>;
+    } & FrontendNextLegalRead>;
     recentAnchors: Array<{
       label: string;
       artifactPath: string;
-      currentStage: string;
-      nextLegalStep: string;
+      currentStage: string | null;
+      nextLegalStep: string | null;
+      nextLegalActions: NextLegalAction[];
       candidateId: string | null;
       candidateName: string | null;
     }>;
@@ -174,13 +185,15 @@ export type FrontendSnapshot = {
       candidate_name: string;
       current_case_stage: string | null;
       current_case_next_legal_step: string | null;
+      next_legal_actions: NextLegalAction[];
       current_head: FrontendCurrentHead | null;
-    }>;
+    } & FrontendNextLegalRead>;
     recentAnchors: Array<{
       label: string;
       artifactPath: string;
-      currentStage: string;
-      nextLegalStep: string;
+      currentStage: string | null;
+      nextLegalStep: string | null;
+      nextLegalActions: NextLegalAction[];
       candidateId: string | null;
       candidateName: string | null;
     }>;
@@ -197,7 +210,8 @@ export type FrontendHandoffDetail =
       relativePath: string;
       content: string;
       artifact: ArchitectureHandoffArtifact;
-    }
+      nextLegalActions: NextLegalAction[];
+    } & FrontendNextLegalRead
   | {
       ok: true;
       kind: "runtime_follow_up";
@@ -216,7 +230,8 @@ export type FrontendHandoffDetail =
       runtimeRecordExists: boolean;
       approvalAllowed: boolean;
       artifact: RuntimeFollowUpArtifact;
-    }
+      nextLegalActions: NextLegalAction[];
+    } & FrontendNextLegalRead
   | {
       ok: true;
       kind: "runtime_follow_up_legacy";
@@ -235,7 +250,8 @@ export type FrontendHandoffDetail =
       requiredProof: string[];
       requiredGates: string[];
       rollbackNote: string | null;
-    }
+      nextLegalActions: NextLegalAction[];
+    } & FrontendNextLegalRead
   | {
       ok: true;
       kind: "runtime_handoff_legacy";
@@ -256,7 +272,8 @@ export type FrontendHandoffDetail =
       promotionRecordPath: string | null;
       registryEntryPath: string | null;
       qualityGateResult: string | null;
-    }
+      nextLegalActions: NextLegalAction[];
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -396,6 +413,9 @@ export type FrontendDiscoveryRoutingDetail =
       secondaryLanes: DiscoveryRoutingArtifact["secondaryLanes"] | null;
       downstreamStubRelativePath: string | null;
       approvalAllowed: boolean;
+      currentStage: string | null;
+      nextLegalStep: string | null;
+      nextLegalActions: NextLegalAction[];
       content: string;
       artifact: DiscoveryRoutingArtifact;
     }
@@ -421,8 +441,9 @@ export type FrontendArchitectureStartDetail =
       decisionRelativePath: string | null;
       closeoutAssist: ArchitectureBoundedCloseoutAssist;
       resultEvidence: ArchitectureResultEvidenceSlot;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -447,9 +468,10 @@ export type FrontendRuntimeRecordDetail =
       runtimeProofRelativePath: string;
       proofExists: boolean;
       approvalAllowed: boolean;
+      nextLegalActions: NextLegalAction[];
       content: string;
       artifact: RuntimeRecordArtifact;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -474,9 +496,10 @@ export type FrontendRuntimeProofDetail =
       runtimeCapabilityBoundaryRelativePath: string;
       runtimeCapabilityBoundaryExists: boolean;
       approvalAllowed: boolean;
+      nextLegalActions: NextLegalAction[];
       content: string;
       artifact: RuntimeProofArtifact;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -502,9 +525,10 @@ export type FrontendRuntimeRuntimeCapabilityBoundaryDetail =
       promotionReadinessRelativePath: string;
       promotionReadinessExists: boolean;
       approvalAllowed: boolean;
+      nextLegalActions: NextLegalAction[];
       content: string;
       artifact: RuntimeRuntimeCapabilityBoundaryArtifact;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -540,11 +564,10 @@ export type FrontendRuntimePromotionReadinessDetail =
       linkedRoutingPath: string | null;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       promotionReadinessBlockers: string[];
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -572,12 +595,11 @@ export type FrontendArchitectureResultDetail =
       adoptionRelativePath: string | null;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       currentHead: FrontendCurrentHead;
       resultEvidence: ArchitectureResultEvidenceSlot;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -599,11 +621,10 @@ export type FrontendArchitectureAdoptionDetail =
       implementationTargetRelativePath: string | null;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       currentHead: FrontendCurrentHead;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -642,11 +663,10 @@ export type FrontendArchitectureImplementationTargetDetail =
       implementationResultRelativePath: string | null;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       currentHead: FrontendCurrentHead;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -685,11 +705,10 @@ export type FrontendArchitectureImplementationResultDetail =
       retainedRelativePath: string | null;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       currentHead: FrontendCurrentHead;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -716,11 +735,10 @@ export type FrontendArchitectureRetentionDetail =
       integrationRecordRelativePath: string | null;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       currentHead: FrontendCurrentHead;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -750,11 +768,10 @@ export type FrontendArchitectureIntegrationRecordDetail =
       consumptionRelativePath: string | null;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       currentHead: FrontendCurrentHead;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -785,11 +802,10 @@ export type FrontendArchitectureConsumptionRecordDetail =
       evaluationRelativePath: string | null;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       currentHead: FrontendCurrentHead;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -821,11 +837,10 @@ export type FrontendArchitecturePostConsumptionEvaluationDetail =
       sourceResultRelativePath: string;
       artifactStage: string;
       artifactNextLegalStep: string;
-      currentStage: string;
-      nextLegalStep: string;
       currentHead: FrontendCurrentHead;
+      nextLegalActions: NextLegalAction[];
       content: string;
-    }
+    } & FrontendNextLegalRead
   | {
       ok: false;
       error: string;
@@ -1044,6 +1059,10 @@ export function readDirectiveFrontendSnapshot(input: {
       candidate_name: entry.candidate_name,
       current_case_stage: entry.current_case_stage,
       current_case_next_legal_step: entry.current_case_next_legal_step,
+      currentStage: entry.current_case_stage,
+      nextLegalStep: entry.current_case_next_legal_step,
+      nextLegalActions: [...entry.next_legal_actions],
+      next_legal_actions: [...entry.next_legal_actions],
       current_head: entry.current_head,
       runtime_summary: entry.runtime_summary,
     }));
@@ -1055,6 +1074,10 @@ export function readDirectiveFrontendSnapshot(input: {
       candidate_name: entry.candidate_name,
       current_case_stage: entry.current_case_stage,
       current_case_next_legal_step: entry.current_case_next_legal_step,
+      currentStage: entry.current_case_stage,
+      nextLegalStep: entry.current_case_next_legal_step,
+      nextLegalActions: [...entry.next_legal_actions],
+      next_legal_actions: [...entry.next_legal_actions],
       current_head: entry.current_head,
     }));
   const engineRuns = readEngineRunsOverview({
@@ -1072,10 +1095,12 @@ export function readDirectiveFrontendSnapshot(input: {
     runtimeSummary: {
       activeCases: activeRuntimeCases,
       recentAnchors: runtimeAnchors.map((anchor) => ({
+        ...readDirectiveFrontendNextLegalProjection({
+          directiveRoot: input.directiveRoot,
+          relativePath: anchor.artifactPath,
+        }),
         label: anchor.label,
         artifactPath: anchor.artifactPath,
-        currentStage: anchor.currentStage,
-        nextLegalStep: anchor.nextLegalStep,
         candidateId: anchor.candidateId,
         candidateName: anchor.candidateName,
       })),
@@ -1083,10 +1108,12 @@ export function readDirectiveFrontendSnapshot(input: {
     architectureSummary: {
       activeCases: activeArchitectureCases,
       recentAnchors: architectureAnchors.map((anchor) => ({
+        ...readDirectiveFrontendNextLegalProjection({
+          directiveRoot: input.directiveRoot,
+          relativePath: anchor.artifactPath,
+        }),
         label: anchor.label,
         artifactPath: anchor.artifactPath,
-        currentStage: anchor.currentStage,
-        nextLegalStep: anchor.nextLegalStep,
         candidateId: anchor.candidateId,
         candidateName: anchor.candidateName,
       })),
@@ -1172,6 +1199,10 @@ export function readDirectiveFrontendDiscoveryRoutingDetail(input: {
       directiveRoot: input.directiveRoot,
       routingPath: relativePath,
     });
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     return {
       ok: true,
@@ -1219,6 +1250,9 @@ export function readDirectiveFrontendDiscoveryRoutingDetail(input: {
       secondaryLanes: artifact.secondaryLanes,
       downstreamStubRelativePath: artifact.downstreamStubRelativePath,
       approvalAllowed: artifact.approvalAllowed,
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       content: artifactText.content,
       artifact,
     };
@@ -1249,6 +1283,10 @@ export function readDirectiveFrontendHandoffDetail(input: {
       directiveRoot: input.directiveRoot,
       relativePath,
     });
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     if (
       relativePath.startsWith("architecture/01-experiments/")
@@ -1258,6 +1296,9 @@ export function readDirectiveFrontendHandoffDetail(input: {
         ok: true,
         kind: "architecture_handoff",
         relativePath,
+        currentStage: nextLegalProjection.currentStage,
+        nextLegalStep: nextLegalProjection.nextLegalStep,
+        nextLegalActions: nextLegalProjection.nextLegalActions,
         content: artifactText.content,
         artifact: readArchitectureHandoffArtifact({
           directiveRoot: input.directiveRoot,
@@ -1271,12 +1312,15 @@ export function readDirectiveFrontendHandoffDetail(input: {
       && relativePath.endsWith("-architecture-to-runtime-handoff.md")
     ) {
       const title = extractMarkdownTitle(artifactText.content);
-      return {
-        ok: true,
-        kind: "runtime_handoff_legacy",
-        relativePath,
-        content: artifactText.content,
-        title,
+        return {
+          ok: true,
+          kind: "runtime_handoff_legacy",
+          relativePath,
+          currentStage: nextLegalProjection.currentStage,
+          nextLegalStep: nextLegalProjection.nextLegalStep,
+          nextLegalActions: nextLegalProjection.nextLegalActions,
+          content: artifactText.content,
+          title,
         candidateId: extractBulletValue(artifactText.content, "Candidate id"),
         candidateName:
           optionalDisplayValue(extractBulletValue(artifactText.content, "Candidate name"))
@@ -1333,6 +1377,9 @@ export function readDirectiveFrontendHandoffDetail(input: {
           ok: true,
           kind: "runtime_follow_up",
           relativePath,
+          currentStage: nextLegalProjection.currentStage,
+          nextLegalStep: nextLegalProjection.nextLegalStep,
+          nextLegalActions: nextLegalProjection.nextLegalActions,
           content: artifactText.content,
           title: artifact.title || path.basename(relativePath),
           candidateId: artifact.candidateId,
@@ -1389,6 +1436,9 @@ export function readDirectiveFrontendHandoffDetail(input: {
           ok: true,
           kind: "runtime_follow_up_legacy",
           relativePath,
+          currentStage: nextLegalProjection.currentStage,
+          nextLegalStep: nextLegalProjection.nextLegalStep,
+          nextLegalActions: nextLegalProjection.nextLegalActions,
           content: artifactText.content,
           title: extractMarkdownTitle(artifactText.content) || path.basename(relativePath),
           candidateId,

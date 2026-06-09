@@ -9,7 +9,10 @@ import {
   readDirectiveRuntimeRuntimeCapabilityBoundaryArtifact,
 } from "../../../runtime/lib/operations/promotion-readiness.ts";
 import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
-import { readRuntimeApprovalAllowedFromCurrentHead } from "./shared.ts";
+import {
+  readDirectiveFrontendNextLegalProjection,
+  readRuntimeApprovalAllowedFromCurrentHead,
+} from "./shared.ts";
 import type {
   FrontendRuntimePromotionReadinessDetail,
   FrontendRuntimeProofDetail,
@@ -63,6 +66,10 @@ export function readDirectiveFrontendRuntimeRecordDetail(
       directiveRoot: input.directiveRoot,
       runtimeRecordPath: relativePath,
     });
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     return {
       ok: true,
@@ -87,6 +94,9 @@ export function readDirectiveFrontendRuntimeRecordDetail(
           relativePath,
           allowedCurrentStages: ["runtime.record."],
         }),
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       content: artifact.content,
       artifact,
     };
@@ -128,6 +138,10 @@ export function readDirectiveFrontendRuntimeProofDetail(input: {
       directiveRoot: input.directiveRoot,
       runtimeProofPath: relativePath,
     });
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     return {
       ok: true,
@@ -152,6 +166,9 @@ export function readDirectiveFrontendRuntimeProofDetail(input: {
           relativePath,
           allowedCurrentStages: ["runtime.proof."],
         }),
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       content: artifact.content,
       artifact,
     };
@@ -193,6 +210,10 @@ export function readDirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail(inpu
       directiveRoot: input.directiveRoot,
       capabilityBoundaryPath: relativePath,
     });
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     return {
       ok: true,
@@ -218,6 +239,9 @@ export function readDirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail(inpu
           relativePath,
           allowedCurrentStages: ["runtime.runtime_capability_boundary.opened"],
         }),
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       content: artifact.content,
       artifact,
     };
@@ -271,6 +295,10 @@ export function readDirectiveFrontendRuntimePromotionReadinessDetail(
     if (!focus || focus.lane !== "runtime") {
       throw new Error("runtime_promotion_readiness_focus_not_resolved");
     }
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
 
     return {
       ok: true,
@@ -316,9 +344,10 @@ export function readDirectiveFrontendRuntimePromotionReadinessDetail(
       linkedRoutingPath: helpers.extractBulletValue(artifact.content, "Linked Discovery routing record") || null,
       artifactStage: focus.artifactStage,
       artifactNextLegalStep: focus.artifactNextLegalStep,
-      currentStage: focus.currentStage,
-      nextLegalStep: focus.nextLegalStep,
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
       promotionReadinessBlockers: [...(focus.runtime?.promotionReadinessBlockers ?? [])],
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       content: artifact.content,
     };
   } catch (error) {

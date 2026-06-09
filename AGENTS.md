@@ -69,7 +69,7 @@ source and contracts. Each term is sourced from
   of routing and review decisions. See `engine/decision-policy-ledger.ts`.
 
 For terms not listed here, see [GLOSSARY.md](./GLOSSARY.md) or
-`/api/glossary` once I5 ships.
+query `/api/glossary`.
 
 ## Top operations
 
@@ -217,12 +217,11 @@ See `Tech_Blueprint.md` Section 4 ("Lanes") for the longer treatment.
 ## How to ask (live lookup)
 
 - **`/api/manifest`** - Operation catalog listing available endpoints and
-  commands. TODO: I2 not yet implemented; fall back to
-  `hosts/web-host/api-routes.ts` and `docs/operator-cli.md`.
+  commands, including schema references where defined.
 
 - **`/api/glossary`** - Vocabulary lookup returning one-sentence term
-  definitions. TODO: I5 not yet implemented; fall back to
-  [GLOSSARY.md](./GLOSSARY.md).
+  definitions from [GLOSSARY.md](./GLOSSARY.md). Supports
+  `?term=<name>` for exact case-insensitive lookup.
 
 - **`/api/snapshot`** - Current state of the directive root, including queue
   entries, engine runs, handoffs, and dashboard summary state.

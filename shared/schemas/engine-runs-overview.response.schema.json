@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/engine-runs-overview.response.schema.json",
+  "title": "Engine Runs Overview Response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "$schema",
+    "ok",
+    "rootPath",
+    "engineRunsRoot",
+    "snapshotAt",
+    "totalRuns",
+    "invalidArtifacts",
+    "counts",
+    "latest",
+    "recentRuns"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/engine-runs-overview.response.schema.json"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "rootPath": {
+      "type": "string"
+    },
+    "engineRunsRoot": {
+      "type": "string"
+    },
+    "snapshotAt": {
+      "type": "string"
+    },
+    "totalRuns": {
+      "type": "number"
+    },
+    "invalidArtifacts": {
+      "type": "number"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "latest": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "recentRuns": {
+      "type": "array"
+    }
+  }
+}

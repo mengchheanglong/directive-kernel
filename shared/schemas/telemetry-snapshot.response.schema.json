@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/telemetry-snapshot.response.schema.json",
+  "title": "Telemetry Snapshot Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "counters",
+    "gauges",
+    "events"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/telemetry-snapshot.response.schema.json"
+    },
+    "counters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "gauges": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "name",
+          "at"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}

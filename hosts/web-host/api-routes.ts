@@ -73,7 +73,16 @@ import {
   readDirectiveFrontendSnapshot,
 } from "./data/snapshot.ts";
 import { buildApiManifest } from "./api-manifest.ts";
-import { parseJsonBody, readBody, writeJson } from "./http-support.ts";
+import { readGlossaryTerms } from "./glossary.ts";
+import { readDirectiveFrontendRunExplanation } from "./data/run-explanation.ts";
+import { listRuntimeCapabilityMetadata } from "../../runtime/core/capability-registry.ts";
+import type { TelemetrySink } from "../../shared/lib/telemetry.ts";
+import {
+  parseJsonBody,
+  readBody,
+  writeJson,
+  writeJsonWithSchema,
+} from "./http-support.ts";
 
 type RuntimeHost = ReturnType<typeof createStandaloneFilesystemHost>;
 
@@ -86,6 +95,7 @@ export async function handleDirectiveUiApiRequest(input: {
   directiveRoot: string;
   runtimeHost: RuntimeHost;
   uiOperatorActor: string;
+  telemetry?: TelemetrySink;
 }) {
   const {
     req,
@@ -96,10 +106,11 @@ export async function handleDirectiveUiApiRequest(input: {
     directiveRoot,
     runtimeHost,
     uiOperatorActor,
+    telemetry,
   } = input;
 
   if (method === "GET" && pathname === "/api/runtime/status") {
-    writeJson(res, 200, {
+    writeJsonWithSchema(res, 200, "runtime-status.response.schema.json", {
       ok: true,
       storage: summarizeKernelStorage(directiveRoot),
     });
@@ -107,39 +118,106 @@ export async function handleDirectiveUiApiRequest(input: {
   }
 
   if (method === "GET" && pathname === "/api/manifest") {
-    writeJson(res, 200, buildApiManifest());
+    writeJsonWithSchema(
+      res,
+      200,
+      "api-manifest.schema.json",
+      buildApiManifest({ schemaRefStyle: "api" }),
+    );
+    return true;
+  }
+  if (method === "GET" && pathname === "/api/telemetry/snapshot") {
+    writeJsonWithSchema(
+      res,
+      200,
+      "telemetry-snapshot.response.schema.json",
+      telemetry?.snapshot() ?? { counters: {}, gauges: {}, events: [] },
+    );
+    return true;
+  }
+  if (method === "GET" && pathname === "/api/runtime/capabilities") {
+    writeJsonWithSchema(res, 200, "runtime-capabilities.response.schema.json", {
+      capabilities: listRuntimeCapabilityMetadata(),
+    });
+    return true;
+  }
+  if (method === "GET" && pathname === "/api/explain") {
+    writeJsonWithSchema(
+      res,
+      200,
+      "run-explanation.response.schema.json",
+      readDirectiveFrontendRunExplanation({
+        directiveRoot,
+        runId: String(url.searchParams.get("runId") || "").trim(),
+      }),
+    );
     return true;
   }
 
   if (method === "GET" && pathname === "/api/snapshot") {
-    writeJson(res, 200, readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200, maxQueueEntries: 500, maxHandoffs: 250 }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "snapshot.response.schema.json",
+      readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200, maxQueueEntries: 500, maxHandoffs: 250 }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/operator-decision-inbox") {
-    writeJson(res, 200, buildOperatorDecisionInboxReport({ directiveRoot }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "operator-decision-inbox.response.schema.json",
+      buildOperatorDecisionInboxReport({ directiveRoot }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/mission/feedback") {
-    writeJson(res, 200, listMissionFeedbackEntries({ directiveRoot }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "mission-feedback-list.response.schema.json",
+      listMissionFeedbackEntries({ directiveRoot }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/mission/history") {
-    writeJson(res, 200, listMissionEvolutionHistory({ directiveRoot }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "mission-evolution-history.response.schema.json",
+      listMissionEvolutionHistory({ directiveRoot }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/gaps/pending") {
-    writeJson(res, 200, listPendingGapFormalizationCandidates({ directiveRoot }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "gap-formalization-list.response.schema.json",
+      listPendingGapFormalizationCandidates({ directiveRoot }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/engine-runs") {
-    writeJson(res, 200, readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200 }).engineRuns);
+    writeJsonWithSchema(
+      res,
+      200,
+      "engine-runs-overview.response.schema.json",
+      readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200 }).engineRuns,
+    );
     return true;
   }
   if (method === "GET" && pathname.startsWith("/api/engine-runs/")) {
-    writeJson(res, 200, readDirectiveFrontendRunDetail({
-      directiveRoot,
-      runId: decodeURIComponent(pathname.replace(/^\/api\/engine-runs\//, "")),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "engine-run-detail.response.schema.json",
+      readDirectiveFrontendRunDetail({
+        directiveRoot,
+        runId: decodeURIComponent(pathname.replace(/^\/api\/engine-runs\//, "")),
+      }),
+    );
     return true;
   }
   if (method === "POST" && pathname.startsWith("/api/engine-runs/") && pathname.endsWith("/plan-progress")) {
@@ -183,82 +261,137 @@ export async function handleDirectiveUiApiRequest(input: {
     return true;
   }
   if (method === "GET" && pathname === "/api/queue") {
-    writeJson(res, 200, readDirectiveFrontendSnapshot({ directiveRoot, maxQueueEntries: 500 }).queue);
+    writeJsonWithSchema(
+      res,
+      200,
+      "queue-overview.response.schema.json",
+      readDirectiveFrontendSnapshot({ directiveRoot, maxQueueEntries: 500 }).queue,
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/queue-entry") {
-    writeJson(res, 200, readDirectiveFrontendQueueEntry({
-      directiveRoot,
-      candidateId: String(url.searchParams.get("candidateId") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "queue-entry.response.schema.json",
+      readDirectiveFrontendQueueEntry({
+        directiveRoot,
+        candidateId: String(url.searchParams.get("candidateId") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/discovery-routing-records/detail") {
-    writeJson(res, 200, readDirectiveFrontendDiscoveryRoutingDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendDiscoveryRoutingDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/handoffs") {
     const snapshot = readDirectiveFrontendSnapshot({ directiveRoot, maxHandoffs: 250 });
-    writeJson(res, 200, snapshot.handoffStubs);
+    writeJsonWithSchema(res, 200, "handoff-stubs.response.schema.json", snapshot.handoffStubs);
     return true;
   }
   if (method === "GET" && pathname === "/api/handoffs/detail") {
-    writeJson(res, 200, readDirectiveFrontendHandoffDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendHandoffDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/runtime-records/detail") {
-    writeJson(res, 200, readDirectiveFrontendRuntimeRecordDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendRuntimeRecordDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/runtime-proofs/detail") {
-    writeJson(res, 200, readDirectiveFrontendRuntimeProofDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendRuntimeProofDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/runtime-runtime-capability-boundaries/detail") {
-    writeJson(res, 200, readDirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendRuntimeRuntimeCapabilityBoundaryDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/runtime-promotion-readiness/detail") {
-    writeJson(res, 200, readDirectiveFrontendRuntimePromotionReadinessDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendRuntimePromotionReadinessDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/architecture-starts/detail") {
-    writeJson(res, 200, readDirectiveFrontendArchitectureStartDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendArchitectureStartDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/architecture-results/detail") {
-    writeJson(res, 200, readDirectiveFrontendArchitectureResultDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendArchitectureResultDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   if (method === "GET" && pathname === "/api/architecture-adoptions/detail") {
-    writeJson(res, 200, readDirectiveFrontendArchitectureAdoptionDetail({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-detail.response.schema.json",
+      readDirectiveFrontendArchitectureAdoptionDetail({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
   {
@@ -272,19 +405,29 @@ export async function handleDirectiveUiApiRequest(input: {
     };
     for (const [segment, handler] of Object.entries(deepTailDetailHandlers)) {
       if (method === "GET" && pathname === `/api/${segment}/detail`) {
-        writeJson(res, 200, handler({
-          directiveRoot,
-          relativePath: String(url.searchParams.get("path") || "").trim(),
-        }));
+        writeJsonWithSchema(
+          res,
+          200,
+          "artifact-detail.response.schema.json",
+          handler({
+            directiveRoot,
+            relativePath: String(url.searchParams.get("path") || "").trim(),
+          }),
+        );
         return true;
       }
     }
   }
   if (method === "GET" && pathname === "/api/artifacts") {
-    writeJson(res, 200, readDirectiveFrontendArtifactText({
-      directiveRoot,
-      relativePath: String(url.searchParams.get("path") || "").trim(),
-    }));
+    writeJsonWithSchema(
+      res,
+      200,
+      "artifact-text.response.schema.json",
+      readDirectiveFrontendArtifactText({
+        directiveRoot,
+        relativePath: String(url.searchParams.get("path") || "").trim(),
+      }),
+    );
     return true;
   }
 
@@ -748,20 +891,35 @@ export async function handleDirectiveUiApiRequest(input: {
     const SCHEMA_NAME_RE = /^[A-Za-z0-9._-]+\.schema\.json$/;
     const schemaName = decodeURIComponent(pathname.replace(/^\/api\/schemas\//, ""));
     if (schemaName.includes("..") || !SCHEMA_NAME_RE.test(schemaName)) {
-      writeJson(res, 400, { ok: false, error: "invalid_schema_name" });
+      writeJsonWithSchema(res, 400, "api-error.schema.json", { ok: false, error: "invalid_schema_name" });
       return true;
     }
     const schemaPath = path.resolve(process.cwd(), "shared", "schemas", schemaName);
     if (!fs.existsSync(schemaPath)) {
-      writeJson(res, 404, { ok: false, error: "schema_not_found" });
+      writeJsonWithSchema(res, 404, "api-error.schema.json", { ok: false, error: "schema_not_found" });
       return true;
     }
     writeJson(res, 200, JSON.parse(fs.readFileSync(schemaPath, "utf8")));
     return true;
   }
 
+  if (method === "GET" && pathname === "/api/glossary") {
+    const terms = readGlossaryTerms();
+    const filterTerm = url.searchParams.get("term");
+    if (filterTerm !== null) {
+      const lowerFilter = filterTerm.trim().toLowerCase();
+      const filtered = lowerFilter
+        ? terms.filter((t) => t.term.toLowerCase() === lowerFilter)
+        : terms;
+      writeJsonWithSchema(res, 200, "glossary.response.schema.json", { terms: filtered });
+    } else {
+      writeJsonWithSchema(res, 200, "glossary.response.schema.json", { terms });
+    }
+    return true;
+  }
+
   if (pathname.startsWith("/api/")) {
-    writeJson(res, 404, { ok: false, error: "not_found" });
+    writeJsonWithSchema(res, 404, "api-error.schema.json", { ok: false, error: "not_found" });
     return true;
   }
 

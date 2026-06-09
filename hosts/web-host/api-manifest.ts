@@ -3,6 +3,7 @@ import path from "node:path";
 import { ARCHITECTURE_DEEP_TAIL_STAGES } from "../../architecture/lib/control/materialization-tail-stage-map.ts";
 
 export const API_MANIFEST_SCHEMA_PATH = "shared/schemas/api-manifest.schema.json";
+const SHARED_SCHEMA_PREFIX = "shared/schemas/";
 
 export type OperationEntry = {
   name: string;
@@ -54,14 +55,43 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
   op("GET", "manifest_get", "/api/manifest", "Read the kernel API operation catalog.", {
     output_schema: API_MANIFEST_SCHEMA_PATH,
   }),
-  op("GET", "runtime_status", "/api/runtime/status", "Read storage and maintenance status for the directive root."),
-  op("GET", "snapshot_get", "/api/snapshot", "Read the current dashboard snapshot of queue, runs, and handoffs."),
-  op("GET", "operator_decision_inbox_get", "/api/operator-decision-inbox", "Read pending operator-facing review and approval work."),
-  op("GET", "mission_feedback_list", "/api/mission/feedback", "List pending mission feedback entries."),
-  op("GET", "mission_history_list", "/api/mission/history", "List mission evolution history."),
-  op("GET", "gaps_pending_list", "/api/gaps/pending", "List pending capability-gap formalization candidates."),
-  op("GET", "engine_runs_list", "/api/engine-runs", "List recent engine runs from the workspace snapshot."),
-  op("GET", "engine_run_get", "/api/engine-runs/:runId", "Read one engine run detail by run id."),
+  op("GET", "telemetry_snapshot_get", "/api/telemetry/snapshot", "Read the current in-memory web-host telemetry snapshot.", {
+    output_schema: "shared/schemas/telemetry-snapshot.response.schema.json",
+  }),
+  op("GET", "runtime_status", "/api/runtime/status", "Read storage and maintenance status for the directive root.", {
+    output_schema: "shared/schemas/runtime-status.response.schema.json",
+  }),
+  op("GET", "runtime_capabilities_list", "/api/runtime/capabilities", "List runtime capability metadata exposed by the kernel registry.", {
+    output_schema: "shared/schemas/runtime-capabilities.response.schema.json",
+  }),
+  op("GET", "snapshot_get", "/api/snapshot", "Read the current dashboard snapshot of queue, runs, and handoffs.", {
+    output_schema: "shared/schemas/snapshot.response.schema.json",
+  }),
+  op("GET", "explain_get", "/api/explain", "Read a derived explanation for one engine run by run id.", {
+    output_schema: "shared/schemas/run-explanation.response.schema.json",
+  }),
+  op("GET", "glossary_get", "/api/glossary", "Read canonical Directive Kernel glossary terms.", {
+    output_schema: "shared/schemas/glossary.response.schema.json",
+  }),
+  op("GET", "schema_get", "/api/schemas/:schemaName", "Read one JSON schema file served from shared/schemas."),
+  op("GET", "operator_decision_inbox_get", "/api/operator-decision-inbox", "Read pending operator-facing review and approval work.", {
+    output_schema: "shared/schemas/operator-decision-inbox.response.schema.json",
+  }),
+  op("GET", "mission_feedback_list", "/api/mission/feedback", "List pending mission feedback entries.", {
+    output_schema: "shared/schemas/mission-feedback-list.response.schema.json",
+  }),
+  op("GET", "mission_history_list", "/api/mission/history", "List mission evolution history.", {
+    output_schema: "shared/schemas/mission-evolution-history.response.schema.json",
+  }),
+  op("GET", "gaps_pending_list", "/api/gaps/pending", "List pending capability-gap formalization candidates.", {
+    output_schema: "shared/schemas/gap-formalization-list.response.schema.json",
+  }),
+  op("GET", "engine_runs_list", "/api/engine-runs", "List recent engine runs from the workspace snapshot.", {
+    output_schema: "shared/schemas/engine-runs-overview.response.schema.json",
+  }),
+  op("GET", "engine_run_get", "/api/engine-runs/:runId", "Read one engine run detail by run id.", {
+    output_schema: "shared/schemas/engine-run-detail.response.schema.json",
+  }),
   op("POST", "engine_run_plan_progress", "/api/engine-runs/:runId/plan-progress", "Update plan-progress state on an engine run.", {
     side_effects: ["writes engine run record"],
     prerequisites: ["engine run exists"],
@@ -70,19 +100,45 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
     side_effects: ["writes engine run record", "writes routing assessment"],
     prerequisites: ["engine run exists", "answers payload present"],
   }),
-  op("GET", "queue_list", "/api/queue", "List queue entries from the current workspace snapshot."),
-  op("GET", "queue_entry_get", "/api/queue-entry", "Read one queue entry by candidate id."),
-  op("GET", "discovery_routing_record_detail_get", "/api/discovery-routing-records/detail", "Read one discovery routing record detail by relative path."),
-  op("GET", "handoffs_list", "/api/handoffs", "List handoff stubs from the current workspace snapshot."),
-  op("GET", "handoff_detail_get", "/api/handoffs/detail", "Read one handoff detail by relative path."),
-  op("GET", "runtime_record_detail_get", "/api/runtime-records/detail", "Read one runtime record detail by relative path."),
-  op("GET", "runtime_proof_detail_get", "/api/runtime-proofs/detail", "Read one runtime proof detail by relative path."),
-  op("GET", "runtime_runtime_capability_boundary_detail_get", "/api/runtime-runtime-capability-boundaries/detail", "Read one runtime capability-boundary detail by relative path."),
-  op("GET", "runtime_promotion_readiness_detail_get", "/api/runtime-promotion-readiness/detail", "Read one runtime promotion-readiness detail by relative path."),
-  op("GET", "architecture_start_detail_get", "/api/architecture-starts/detail", "Read one architecture start detail by relative path."),
-  op("GET", "architecture_result_detail_get", "/api/architecture-results/detail", "Read one architecture result detail by relative path."),
-  op("GET", "architecture_adoption_detail_get", "/api/architecture-adoptions/detail", "Read one architecture adoption detail by relative path."),
-  op("GET", "artifact_text_get", "/api/artifacts", "Read raw artifact text by relative path."),
+  op("GET", "queue_list", "/api/queue", "List queue entries from the current workspace snapshot.", {
+    output_schema: "shared/schemas/queue-overview.response.schema.json",
+  }),
+  op("GET", "queue_entry_get", "/api/queue-entry", "Read one queue entry by candidate id.", {
+    output_schema: "shared/schemas/queue-entry.response.schema.json",
+  }),
+  op("GET", "discovery_routing_record_detail_get", "/api/discovery-routing-records/detail", "Read one discovery routing record detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "handoffs_list", "/api/handoffs", "List handoff stubs from the current workspace snapshot.", {
+    output_schema: "shared/schemas/handoff-stubs.response.schema.json",
+  }),
+  op("GET", "handoff_detail_get", "/api/handoffs/detail", "Read one handoff detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "runtime_record_detail_get", "/api/runtime-records/detail", "Read one runtime record detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "runtime_proof_detail_get", "/api/runtime-proofs/detail", "Read one runtime proof detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "runtime_runtime_capability_boundary_detail_get", "/api/runtime-runtime-capability-boundaries/detail", "Read one runtime capability-boundary detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "runtime_promotion_readiness_detail_get", "/api/runtime-promotion-readiness/detail", "Read one runtime promotion-readiness detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "architecture_start_detail_get", "/api/architecture-starts/detail", "Read one architecture start detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "architecture_result_detail_get", "/api/architecture-results/detail", "Read one architecture result detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "architecture_adoption_detail_get", "/api/architecture-adoptions/detail", "Read one architecture adoption detail by relative path.", {
+    output_schema: "shared/schemas/artifact-detail.response.schema.json",
+  }),
+  op("GET", "artifact_text_get", "/api/artifacts", "Read raw artifact text by relative path.", {
+    output_schema: "shared/schemas/artifact-text.response.schema.json",
+  }),
   op("POST", "discovery_submit", "/api/discovery/submissions", "Submit a source through the Discovery front door for routing.", {
     input_schema: "shared/schemas/discovery-submission-request.schema.json",
     side_effects: ["writes intake record", "writes routing record", "may write engine run record"],
@@ -228,13 +284,33 @@ const DEEP_TAIL_DETAIL_ROUTE_TABLE: OperationEntry[] = ARCHITECTURE_DEEP_TAIL_ST
     `${stage.id}_detail_get`,
     `/api/${stage.apiRouteSegment}/detail`,
     `Read one ${stage.id.replaceAll("_", " ")} detail by relative path.`,
+    {
+      output_schema: "shared/schemas/artifact-detail.response.schema.json",
+    },
   )
 );
 
 export const ROUTE_TABLE: OperationEntry[] = [...STATIC_ROUTE_TABLE, ...DEEP_TAIL_DETAIL_ROUTE_TABLE]
   .sort((left, right) => left.name.localeCompare(right.name));
 
-function buildCapabilityEntries(): CapabilityEntry[] {
+function toApiSchemaPath(schemaPath: string) {
+  return `/api/schemas/${path.basename(schemaPath)}`;
+}
+
+function rewriteSchemaRef(
+  schemaRef: string,
+  style: "repo" | "api",
+) {
+  if (style === "repo") {
+    return schemaRef;
+  }
+  if (schemaRef.startsWith(SHARED_SCHEMA_PREFIX)) {
+    return toApiSchemaPath(schemaRef);
+  }
+  return schemaRef;
+}
+
+function buildCapabilityEntries(style: "repo" | "api"): CapabilityEntry[] {
   const capabilitiesDir = path.resolve(process.cwd(), "runtime/capabilities");
   if (!fs.existsSync(capabilitiesDir)) {
     return [];
@@ -266,10 +342,10 @@ function buildCapabilityEntries(): CapabilityEntry[] {
           };
         }
         if (manifest.inputSchema) {
-          capability.inputSchema = manifest.inputSchema;
+          capability.inputSchema = rewriteSchemaRef(manifest.inputSchema, style);
         }
         if (manifest.outputSchema) {
-          capability.outputSchema = manifest.outputSchema;
+          capability.outputSchema = rewriteSchemaRef(manifest.outputSchema, style);
         }
         return capability;
       } catch {
@@ -279,7 +355,7 @@ function buildCapabilityEntries(): CapabilityEntry[] {
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
-function buildSchemaIndex(): Record<string, string> {
+function buildSchemaIndex(style: "repo" | "api"): Record<string, string> {
   const schemasDir = path.resolve(process.cwd(), "shared/schemas");
   if (!fs.existsSync(schemasDir)) {
     return {};
@@ -287,17 +363,34 @@ function buildSchemaIndex(): Record<string, string> {
 
   const entries = fs.readdirSync(schemasDir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".schema.json"))
-    .map((entry) => [entry.name.replace(/\.schema\.json$/u, ""), `shared/schemas/${entry.name}`] as const)
+    .map((entry) => {
+      const schemaRef = `shared/schemas/${entry.name}`;
+      return [
+        entry.name.replace(/\.schema\.json$/u, ""),
+        rewriteSchemaRef(schemaRef, style),
+      ] as const;
+    })
     .sort(([left], [right]) => left.localeCompare(right));
 
   return Object.fromEntries(entries);
 }
 
-export function buildApiManifest(): ApiManifest {
+export function buildApiManifest(input?: {
+  schemaRefStyle?: "repo" | "api";
+}): ApiManifest {
+  const schemaRefStyle = input?.schemaRefStyle ?? "repo";
   return {
-    $schema: API_MANIFEST_SCHEMA_PATH,
-    operations: ROUTE_TABLE,
-    capabilities: buildCapabilityEntries(),
-    schema_index: buildSchemaIndex(),
+    $schema: rewriteSchemaRef(API_MANIFEST_SCHEMA_PATH, schemaRefStyle),
+    operations: ROUTE_TABLE.map((entry) => ({
+      ...entry,
+      ...(entry.input_schema
+        ? { input_schema: rewriteSchemaRef(entry.input_schema, schemaRefStyle) }
+        : {}),
+      ...(entry.output_schema
+        ? { output_schema: rewriteSchemaRef(entry.output_schema, schemaRefStyle) }
+        : {}),
+    })),
+    capabilities: buildCapabilityEntries(schemaRefStyle),
+    schema_index: buildSchemaIndex(schemaRefStyle),
   };
 }

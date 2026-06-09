@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/snapshot.response.schema.json",
+  "title": "Frontend Snapshot Response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "$schema",
+    "engineRuns",
+    "queue",
+    "learningSummary",
+    "runtimeSummary",
+    "architectureSummary",
+    "architectureHandoffs",
+    "handoffStubs",
+    "handoffWarnings"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/snapshot.response.schema.json"
+    },
+    "engineRuns": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "queue": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "learningSummary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "runtimeSummary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "architectureSummary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "architectureHandoffs": {
+      "type": "array"
+    },
+    "handoffStubs": {
+      "type": "array"
+    },
+    "handoffWarnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

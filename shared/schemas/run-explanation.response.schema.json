@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/run-explanation.response.schema.json",
+  "title": "Run Explanation Response",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "$schema",
+        "ok",
+        "runId",
+        "summary",
+        "lane",
+        "status",
+        "blockingConditions",
+        "nextLegalActions",
+        "relatedArtifacts",
+        "rawRecordPath"
+      ],
+      "properties": {
+        "$schema": {
+          "const": "/api/schemas/run-explanation.response.schema.json"
+        },
+        "ok": {
+          "const": true
+        },
+        "runId": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lane": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blockingConditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nextLegalActions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "relatedArtifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rawRecordPath": {
+          "type": "string",
+          "pattern": "^/api/engine-runs/"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "$schema",
+        "ok",
+        "error",
+        "runId",
+        "rawRecordPath"
+      ],
+      "properties": {
+        "$schema": {
+          "const": "/api/schemas/run-explanation.response.schema.json"
+        },
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string"
+        },
+        "rawRecordPath": {
+          "type": "string",
+          "pattern": "^/api/engine-runs/"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/operator-decision-inbox.response.schema.json",
+  "title": "Operator Decision Inbox Response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "$schema",
+    "ok",
+    "inboxVersion",
+    "snapshotAt",
+    "directiveRoot",
+    "guardrails",
+    "summary",
+    "entries"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/operator-decision-inbox.response.schema.json"
+    },
+    "ok": {
+      "const": true
+    },
+    "inboxVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "snapshotAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "directiveRoot": {
+      "type": "string",
+      "minLength": 1
+    },
+    "guardrails": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  }
+}

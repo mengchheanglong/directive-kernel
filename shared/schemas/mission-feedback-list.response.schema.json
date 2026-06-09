@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/mission-feedback-list.response.schema.json",
+  "title": "Mission Feedback List Response",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": true,
+    "required": [
+      "feedbackId",
+      "kind",
+      "proposedAction",
+      "rationale",
+      "healthGradeAtGeneration",
+      "sourceSignals",
+      "suggestedMissionDelta",
+      "eligibleForCascade"
+    ],
+    "properties": {
+      "feedbackId": {
+        "type": "string",
+        "minLength": 1
+      },
+      "kind": {
+        "type": "string",
+        "minLength": 1
+      },
+      "proposedAction": {
+        "type": "string",
+        "minLength": 1
+      },
+      "rationale": {
+        "type": "string",
+        "minLength": 1
+      },
+      "healthGradeAtGeneration": {
+        "type": "string",
+        "minLength": 1
+      },
+      "sourceSignals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "suggestedMissionDelta": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "eligibleForCascade": {
+        "type": "boolean"
+      }
+    }
+  }
+}

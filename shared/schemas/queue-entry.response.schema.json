@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/queue-entry.response.schema.json",
+  "title": "Queue Entry Response",
+  "anyOf": [
+    {
+      "type": "null"
+    },
+    {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "$schema",
+        "candidate_id",
+        "candidate_name",
+        "status"
+      ],
+      "properties": {
+        "$schema": {
+          "const": "/api/schemas/queue-entry.response.schema.json"
+        },
+        "candidate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "next_legal_actions": {
+          "type": "array"
+        }
+      }
+    }
+  ]
+}

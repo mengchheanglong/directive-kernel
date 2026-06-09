@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/runtime-status.response.schema.json",
+  "title": "Runtime Status Response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "$schema",
+    "ok",
+    "storage"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/runtime-status.response.schema.json"
+    },
+    "ok": {
+      "const": true
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

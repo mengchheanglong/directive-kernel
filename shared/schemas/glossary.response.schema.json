@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/glossary.response.schema.json",
+  "title": "Glossary Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "terms"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/glossary.response.schema.json"
+    },
+    "terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "term",
+          "definition",
+          "definedIn"
+        ],
+        "properties": {
+          "term": {
+            "type": "string",
+            "minLength": 1
+          },
+          "definition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "definedIn": {
+            "const": "GLOSSARY.md"
+          }
+        }
+      }
+    }
+  }
+}

@@ -36,6 +36,10 @@ function extractRouteSignaturesFromApiRoutesSource() {
       signatures.push("GET /api/engine-runs/:runId");
       continue;
     }
+    if (line === 'if (method === "GET" && pathname.startsWith("/api/schemas/")) {') {
+      signatures.push("GET /api/schemas/:schemaName");
+      continue;
+    }
     if (line === 'if (method === "POST" && pathname.startsWith("/api/engine-runs/") && pathname.endsWith("/plan-progress")) {') {
       signatures.push("POST /api/engine-runs/:runId/plan-progress");
       continue;

@@ -288,6 +288,12 @@
       "import": "./dist/runtime/core/runtime-core-contract.js",
       "default": "./dist/runtime/core/runtime-core-contract.js"
     },
+    "./runtime/core/capability-registry": {
+      "development": "./runtime/core/capability-registry.ts",
+      "types": "./dist/runtime/core/capability-registry.d.ts",
+      "import": "./dist/runtime/core/capability-registry.js",
+      "default": "./dist/runtime/core/capability-registry.js"
+    },
     "./mcp-host": {
       "development": "./hosts/mcp-host/index.ts",
       "types": "./dist/hosts/mcp-host/index.d.ts",

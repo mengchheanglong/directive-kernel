@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/api-error.schema.json",
+  "title": "API Error Response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "$schema",
+    "ok",
+    "error"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/api-error.schema.json"
+    },
+    "ok": {
+      "const": false
+    },
+    "error": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

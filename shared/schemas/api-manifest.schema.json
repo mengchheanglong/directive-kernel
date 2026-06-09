@@ -11,7 +11,10 @@
   ],
   "properties": {
     "$schema": {
-      "const": "shared/schemas/api-manifest.schema.json"
+      "enum": [
+        "shared/schemas/api-manifest.schema.json",
+        "/api/schemas/api-manifest.schema.json"
+      ]
     },
     "operations": {
       "type": "array",

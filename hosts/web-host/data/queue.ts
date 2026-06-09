@@ -8,8 +8,10 @@ import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import { createStandaloneFilesystemHost } from "../../standalone-host/filesystem-host.ts";
 import {
   buildDirectiveFrontendArtifactViewPath,
+  readDirectiveFrontendNextLegalProjection,
   type FrontendCurrentHead,
 } from "./shared.ts";
+import type { NextLegalAction } from "./next-legal-actions.ts";
 
 type StoredFrontendQueueEntry = {
   candidate_id: string;
@@ -33,6 +35,7 @@ export type FrontendQueueEntry = StoredFrontendQueueEntry & {
   status_warning: string | null;
   current_case_stage: string | null;
   current_case_next_legal_step: string | null;
+  next_legal_actions: NextLegalAction[];
   current_head: FrontendCurrentHead | null;
   review_pressure: {
     guidance_kind: string;
@@ -191,6 +194,7 @@ function buildFrontendQueueEntry(input: {
       status_warning: null,
       current_case_stage: null,
       current_case_next_legal_step: null,
+      next_legal_actions: [],
       current_head: null,
       review_pressure: reviewPressure,
       runtime_summary: null,
@@ -218,6 +222,7 @@ function buildFrontendQueueEntry(input: {
         ...status,
         current_case_stage: null,
         current_case_next_legal_step: "Current case head could not be resolved from the canonical resolver.",
+        next_legal_actions: [],
         current_head: {
           artifact_path: resolutionPath,
           artifact_kind: "unknown",
@@ -236,6 +241,10 @@ function buildFrontendQueueEntry(input: {
       integrityState: focus.integrityState,
       currentStage: focus.currentStage,
       currentHeadPath: focus.currentHead.artifactPath,
+    });
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath: focus.currentHead.artifactPath,
     });
 
     return {
@@ -261,6 +270,7 @@ function buildFrontendQueueEntry(input: {
       ...status,
       current_case_stage: focus.currentStage,
       current_case_next_legal_step: focus.nextLegalStep,
+      next_legal_actions: nextLegalProjection.nextLegalActions,
       review_pressure: reviewPressure,
       current_head: {
         artifact_path: focus.currentHead.artifactPath,
@@ -288,6 +298,7 @@ function buildFrontendQueueEntry(input: {
       current_case_stage: null,
       current_case_next_legal_step:
         `Current case head could not be resolved from "${resolutionPath}": ${String((error as Error).message || error)}`,
+      next_legal_actions: [],
       review_pressure: reviewPressure,
       current_head: {
         artifact_path: resolutionPath,

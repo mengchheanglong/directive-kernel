@@ -1,4 +1,9 @@
+import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
 import { isDirectiveCurrentStageEligibleForOpening } from "../../../engine/approval-boundary.ts";
+import {
+  projectNextLegalActions,
+  type NextLegalAction,
+} from "./next-legal-actions.ts";
 
 export type FrontendCurrentHead = {
   artifact_path: string;
@@ -6,6 +11,12 @@ export type FrontendCurrentHead = {
   artifact_stage: string;
   artifact_lane: string;
   view_path: string;
+};
+
+export type FrontendNextLegalProjection = {
+  currentStage: string | null;
+  nextLegalStep: string | null;
+  nextLegalActions: NextLegalAction[];
 };
 
 function buildDirectiveFrontendArtifactViewPath(input: {
@@ -83,8 +94,51 @@ function buildDirectiveFrontendCurrentHead(input: {
   };
 }
 
+function readDirectiveFrontendNextLegalProjection(input: {
+  directiveRoot: string;
+  relativePath: string | null | undefined;
+}): FrontendNextLegalProjection {
+  const relativePath = String(input.relativePath || "").trim();
+  if (!relativePath) {
+    return {
+      currentStage: null,
+      nextLegalStep: null,
+      nextLegalActions: [],
+    };
+  }
+
+  try {
+    const focus = resolveDirectiveWorkspaceState({
+      directiveRoot: input.directiveRoot,
+      artifactPath: relativePath,
+      includeAnchors: false,
+    }).focus;
+
+    if (!focus) {
+      return {
+        currentStage: null,
+        nextLegalStep: null,
+        nextLegalActions: [],
+      };
+    }
+
+    return {
+      currentStage: focus.currentStage,
+      nextLegalStep: focus.nextLegalStep,
+      nextLegalActions: projectNextLegalActions(focus.nextLegalStep),
+    };
+  } catch {
+    return {
+      currentStage: null,
+      nextLegalStep: null,
+      nextLegalActions: [],
+    };
+  }
+}
+
 export {
   buildDirectiveFrontendArtifactViewPath,
   buildDirectiveFrontendCurrentHead,
+  readDirectiveFrontendNextLegalProjection,
   readRuntimeApprovalAllowedFromCurrentHead,
 };

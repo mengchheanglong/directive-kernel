@@ -31,7 +31,10 @@ import {
   matchesArchitectureDeepTailStagePath,
   type ArchitectureDeepTailStageId,
 } from "../../../architecture/lib/control/materialization-tail-stage-map.ts";
-import { buildDirectiveFrontendCurrentHead } from "./shared.ts";
+import {
+  buildDirectiveFrontendCurrentHead,
+  readDirectiveFrontendNextLegalProjection,
+} from "./shared.ts";
 import type {
   FrontendArchitectureConsumptionRecordDetail,
   FrontendArchitectureImplementationResultDetail,
@@ -143,7 +146,7 @@ function readDirectiveFrontendArchitectureDeepTailDetail<
     directiveRoot: string;
     relativePath: string;
     focus: NonNullable<ReturnType<typeof resolveDirectiveWorkspaceState>["focus"]>;
-  }) => Omit<TSuccess, "ok" | "relativePath" | "absolutePath" | "artifactStage" | "artifactNextLegalStep" | "currentStage" | "nextLegalStep" | "currentHead">;
+  }) => Omit<TSuccess, "ok" | "relativePath" | "absolutePath" | "artifactStage" | "artifactNextLegalStep" | "currentStage" | "nextLegalStep" | "nextLegalActions" | "currentHead">;
 }): TDetail {
   const relativePath = normalizeRelativePath(String(input.relativePath || "").trim());
   if (!relativePath) {
@@ -169,6 +172,10 @@ function readDirectiveFrontendArchitectureDeepTailDetail<
       artifactPath: relativePath,
       includeAnchors: false,
     }).focus;
+    const nextLegalProjection = readDirectiveFrontendNextLegalProjection({
+      directiveRoot: input.directiveRoot,
+      relativePath,
+    });
     const detail = input.readDetail(relativePath);
 
     if (!focus || focus.lane !== "architecture") {
@@ -181,8 +188,9 @@ function readDirectiveFrontendArchitectureDeepTailDetail<
       absolutePath: input.absolutePath(detail),
       artifactStage: focus.artifactStage,
       artifactNextLegalStep: focus.artifactNextLegalStep,
-      currentStage: focus.currentStage,
-      nextLegalStep: focus.nextLegalStep,
+      currentStage: nextLegalProjection.currentStage,
+      nextLegalStep: nextLegalProjection.nextLegalStep,
+      nextLegalActions: nextLegalProjection.nextLegalActions,
       currentHead: buildDirectiveFrontendCurrentHead(focus.currentHead),
       ...input.buildSuccess(detail, {
         directiveRoot: input.directiveRoot,

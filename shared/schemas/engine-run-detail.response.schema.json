@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/engine-run-detail.response.schema.json",
+  "title": "Engine Run Detail Response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "$schema",
+    "ok",
+    "rootPath",
+    "engineRunsRoot",
+    "snapshotAt",
+    "recordPath",
+    "reportPath",
+    "record"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/engine-run-detail.response.schema.json"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "error": {
+      "type": "string"
+    },
+    "rootPath": {
+      "type": "string"
+    },
+    "engineRunsRoot": {
+      "type": "string"
+    },
+    "snapshotAt": {
+      "type": "string"
+    },
+    "recordPath": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reportPath": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reportExcerpt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reportContent": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "gapPressure": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "record": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

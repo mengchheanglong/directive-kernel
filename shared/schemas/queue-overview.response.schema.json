@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/queue-overview.response.schema.json",
+  "title": "Queue Overview Response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "$schema",
+    "ok",
+    "rootPath",
+    "queuePath",
+    "updatedAt",
+    "totalEntries",
+    "entries"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/queue-overview.response.schema.json"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "rootPath": {
+      "type": "string"
+    },
+    "queuePath": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "totalEntries": {
+      "type": "number"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "candidate_id",
+          "candidate_name",
+          "status"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidate_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

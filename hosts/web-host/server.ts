@@ -3,6 +3,7 @@ import http, { type Server as NodeHttpServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
+import { createInMemoryTelemetry } from "../../shared/lib/telemetry.ts";
 import { createStandaloneFilesystemHost } from "../standalone-host/filesystem-host.ts";
 import { handleDirectiveUiApiRequest } from "./api-routes.ts";
 import {
@@ -46,11 +47,17 @@ export function startDirectiveUiServer(
   const host = options.host || "127.0.0.1";
   const port = options.port ?? 0;
   const runtimeHost = createStandaloneFilesystemHost({ directiveRoot });
+  const telemetry = createInMemoryTelemetry({ maxEvents: 250 });
 
   const server = http.createServer(async (req, res) => {
     const method = req.method || "GET";
     const url = new URL(req.url || "/", `http://${host}:${port || 0}`);
     const pathname = url.pathname;
+    const startedAt = Date.now();
+    telemetry.counter("web_host.requests_total");
+    if (pathname.startsWith("/api/")) {
+      telemetry.counter("web_host.api_requests_total");
+    }
 
     try {
       const apiHandled = await handleDirectiveUiApiRequest({
@@ -62,8 +69,10 @@ export function startDirectiveUiServer(
         directiveRoot,
         runtimeHost,
         uiOperatorActor: UI_OPERATOR_ACTOR,
+        telemetry,
       });
       if (apiHandled) {
+        telemetry.gauge("web_host.last_request_duration_ms", Date.now() - startedAt);
         return;
       }
 
@@ -76,23 +85,29 @@ export function startDirectiveUiServer(
         res.statusCode = 405;
         res.setHeader("allow", "GET, HEAD");
         res.end();
+        telemetry.gauge("web_host.last_request_duration_ms", Date.now() - startedAt);
         return;
       }
 
       const staticFile = pathname === "/" ? null : resolveStaticFile(UI_DIST_ROOT, pathname);
       if (staticFile) {
         writeStaticFile(res, staticFile);
+        telemetry.gauge("web_host.last_request_duration_ms", Date.now() - startedAt);
         return;
       }
 
       writeStaticFile(res, UI_INDEX_PATH);
+      telemetry.gauge("web_host.last_request_duration_ms", Date.now() - startedAt);
     } catch (error) {
+      telemetry.counter("web_host.errors_total");
       if (pathname.startsWith("/api/")) {
+        telemetry.counter("web_host.api_errors_total");
         writeJson(
           res,
           resolveApiErrorStatus(error),
           { ok: false, error: String((error as Error).message || error) },
         );
+        telemetry.gauge("web_host.last_request_duration_ms", Date.now() - startedAt);
         return;
       }
       writeHtml(
@@ -100,6 +115,7 @@ export function startDirectiveUiServer(
         500,
         `<html lang="en"><head><meta charset="utf-8" /><title>Directive Kernel UI Error</title></head><body><main><h1>Directive Kernel UI Error</h1><pre>${escapeHtml(String((error as Error).message || error))}</pre></main></body></html>`,
       );
+      telemetry.gauge("web_host.last_request_duration_ms", Date.now() - startedAt);
     }
   });
 

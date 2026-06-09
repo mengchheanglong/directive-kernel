@@ -9,6 +9,30 @@ export function writeJson(res: ServerResponse, statusCode: number, payload: unkn
   res.end(`${JSON.stringify(payload, null, 2)}\n`);
 }
 
+export function toApiSchemaPath(schemaFileName: string) {
+  return `/api/schemas/${schemaFileName}`;
+}
+
+export function writeJsonWithSchema(
+  res: ServerResponse,
+  statusCode: number,
+  schemaFileName: string,
+  payload: unknown,
+) {
+  const schemaPath = toApiSchemaPath(schemaFileName);
+  res.setHeader("link", `<${schemaPath}>; rel="describedby"`);
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    writeJson(res, statusCode, {
+      ...(payload as Record<string, unknown>),
+      $schema: schemaPath,
+    });
+    return;
+  }
+
+  writeJson(res, statusCode, payload);
+}
+
 export function writeHtml(res: ServerResponse, statusCode: number, html: string) {
   res.statusCode = statusCode;
   res.setHeader("content-type", "text/html; charset=utf-8");

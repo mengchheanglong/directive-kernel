@@ -38,7 +38,7 @@ function fetchJson(pathname: string): Promise<{
   });
 }
 
-describe("schema endpoint", () => {
+describe("glossary endpoint", () => {
   beforeAll(async () => {
     const { startDirectiveUiServer } = await import(
       "../../hosts/web-host/server.ts"
@@ -58,59 +58,42 @@ describe("schema endpoint", () => {
     }
   });
 
-  it("returns run-record.schema.json with correct $id", async () => {
-    const response = await fetchJson("/api/schemas/run-record.schema.json");
+  it("GET /api/glossary returns 200 with non-empty terms array", async () => {
+    const response = await fetchJson("/api/glossary");
 
     expect(response.statusCode).toBe(200);
     expect(String(response.headers["content-type"] ?? "")).toContain(
       "application/json",
     );
 
-    const body = response.body as Record<string, unknown>;
-    expect(body).toHaveProperty("$id");
-    expect(String(body["$id"])).toContain("run-record.schema.json");
+    const body = response.body as { terms: unknown[] };
+    expect(body.terms).toBeInstanceOf(Array);
+    expect(body.terms.length).toBeGreaterThan(0);
   });
 
-  it("returns schema_not_found for a missing schema", async () => {
-    const response = await fetchJson(
-      "/api/schemas/nonexistent.schema.json",
-    );
+  it("includes 'directive root' in the full glossary", async () => {
+    const response = await fetchJson("/api/glossary");
+    const body = response.body as { terms: { term: string }[] };
 
-    expect(response.statusCode).toBe(404);
-
-    const body = response.body as Record<string, unknown>;
-    expect(body).toEqual({
-      $schema: "/api/schemas/api-error.schema.json",
-      ok: false,
-      error: "schema_not_found",
-    });
+    const termNames = body.terms.map((t) => t.term);
+    expect(termNames).toContain("Directive root");
   });
 
-  it("returns invalid_schema_name for a name failing validation", async () => {
-    const response = await fetchJson("/api/schemas/bad name.schema.json");
+  it("GET /api/glossary?term=directive root returns exactly one matching term", async () => {
+    const response = await fetchJson("/api/glossary?term=directive%20root");
+    const body = response.body as { terms: { term: string }[] };
 
-    expect(response.statusCode).toBe(400);
-
-    const body = response.body as Record<string, unknown>;
-    expect(body).toEqual({
-      $schema: "/api/schemas/api-error.schema.json",
-      ok: false,
-      error: "invalid_schema_name",
-    });
+    expect(response.statusCode).toBe(200);
+    expect(body.terms).toBeInstanceOf(Array);
+    expect(body.terms.length).toBe(1);
+    expect(body.terms[0].term.toLowerCase()).toBe("directive root");
   });
 
-  it("returns invalid_schema_name for path traversal containing ..", async () => {
-    const response = await fetchJson(
-      "/api/schemas/%2e%2e%2fetc%2fpasswd.schema.json",
-    );
+  it("GET /api/glossary?term=not-a-real-term returns 200 with empty array", async () => {
+    const response = await fetchJson("/api/glossary?term=not-a-real-term");
+    const body = response.body as { terms: unknown[] };
 
-    expect(response.statusCode).toBe(400);
-
-    const body = response.body as Record<string, unknown>;
-    expect(body).toEqual({
-      $schema: "/api/schemas/api-error.schema.json",
-      ok: false,
-      error: "invalid_schema_name",
-    });
+    expect(response.statusCode).toBe(200);
+    expect(body.terms).toEqual([]);
   });
 });

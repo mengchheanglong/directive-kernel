@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/runtime-capabilities.response.schema.json",
+  "title": "Runtime Capabilities Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "capabilities"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/runtime-capabilities.response.schema.json"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "displayName",
+          "description",
+          "modulePath"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "modulePath": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

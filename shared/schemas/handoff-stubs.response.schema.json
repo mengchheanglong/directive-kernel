@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/handoff-stubs.response.schema.json",
+  "title": "Handoff Stub List Response",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": true,
+    "required": [
+      "kind",
+      "lane",
+      "relativePath",
+      "candidateId",
+      "title",
+      "status",
+      "startRelativePath",
+      "warning"
+    ],
+    "properties": {
+      "kind": {
+        "type": "string",
+        "minLength": 1
+      },
+      "lane": {
+        "type": "string",
+        "minLength": 1
+      },
+      "relativePath": {
+        "type": "string",
+        "minLength": 1
+      },
+      "candidateId": {
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1
+      },
+      "status": {
+        "type": "string",
+        "minLength": 1
+      },
+      "startRelativePath": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "warning": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  }
+}

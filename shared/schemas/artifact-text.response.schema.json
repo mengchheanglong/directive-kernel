@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/artifact-text.response.schema.json",
+  "title": "Artifact Text Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "relativePath",
+    "absolutePath",
+    "content"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "/api/schemas/artifact-text.response.schema.json"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "absolutePath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "content": {
+      "type": "string"
+    }
+  }
+}
