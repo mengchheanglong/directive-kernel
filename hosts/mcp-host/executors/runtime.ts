@@ -10,6 +10,25 @@ export function buildRuntimeExecutors(options: ToolRegistryOptions): ToolExecuto
   });
 
   return {
+    engine_run_replay: async (args: Record<string, unknown>) => {
+      const runId = String(args.runId ?? "");
+      const replayInput = {
+        ...(args.answers && typeof args.answers === "object"
+          ? { answers: args.answers as Record<string, unknown> }
+          : {}),
+        ...(args.missionChange && typeof args.missionChange === "object"
+          ? { missionChange: args.missionChange as Record<string, unknown> }
+          : {}),
+        ...(typeof args.receivedAt === "string" && args.receivedAt.trim().length > 0
+          ? { receivedAt: args.receivedAt.trim() }
+          : {}),
+      };
+      return runtimeHost.replayEngineRun({
+        runId,
+        replayInput,
+      });
+    },
+
     runtime_open_follow_up: async (args: Record<string, unknown>) => {
       const followUpPath = String(args.followUpPath ?? "");
       const approved = args.approved !== undefined ? Boolean(args.approved) : undefined;

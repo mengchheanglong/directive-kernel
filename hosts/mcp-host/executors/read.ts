@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { buildApiManifest } from "../../web-host/api-manifest.ts";
 import {
   readDirectiveFrontendSnapshot,
@@ -20,6 +22,9 @@ import {
   readDirectiveFrontendArchitecturePostConsumptionEvaluationDetail,
   readDirectiveFrontendArtifactText,
 } from "../../web-host/data/snapshot.ts";
+import { readDirectiveFrontendRunExplanation } from "../../web-host/data/run-explanation.ts";
+import { readGlossaryTerms } from "../../web-host/glossary.ts";
+import { readFederationSnapshot } from "../../web-host/federation.ts";
 import { buildOperatorDecisionInboxReport } from "../../../engine/orchestration/operator-decision-inbox/operator-decision-inbox.ts";
 import { summarizeKernelStorage } from "../../../engine/maintenance/archive.ts";
 import {
@@ -27,6 +32,7 @@ import {
   listMissionEvolutionHistory,
   listPendingGapFormalizationCandidates,
 } from "../../../engine/mission/index.ts";
+import { listRuntimeCapabilityMetadata } from "../../../runtime/core/capability-registry.ts";
 import type { ToolRegistryOptions, ToolExecutorMap } from "../types.ts";
 
 export function buildReadExecutors(options: ToolRegistryOptions): ToolExecutorMap {
@@ -34,6 +40,14 @@ export function buildReadExecutors(options: ToolRegistryOptions): ToolExecutorMa
 
   const executors: ToolExecutorMap = {
     manifest_get: async () => buildApiManifest(),
+
+    telemetry_snapshot_get: async () => ({
+      counters: {},
+      gauges: {},
+      events: [],
+    }),
+
+    federation_snapshot_get: async () => readFederationSnapshot(directiveRoot),
 
     snapshot_get: async () =>
       readDirectiveFrontendSnapshot({
@@ -50,6 +64,39 @@ export function buildReadExecutors(options: ToolRegistryOptions): ToolExecutorMa
       ok: true,
       storage: summarizeKernelStorage(directiveRoot),
     }),
+
+    runtime_capabilities_list: async () => ({
+      capabilities: listRuntimeCapabilityMetadata(),
+    }),
+
+    explain_get: async (args) =>
+      readDirectiveFrontendRunExplanation({
+        directiveRoot,
+        runId: String(args.runId ?? "").trim(),
+      }),
+
+    glossary_get: async (args) => {
+      const allTerms = readGlossaryTerms();
+      const filter = String(args.term ?? "").trim().toLowerCase();
+      return {
+        terms:
+          filter.length === 0
+            ? allTerms
+            : allTerms.filter((entry) => entry.term.toLowerCase() === filter),
+      };
+    },
+
+    schema_get: async (args) => {
+      const schemaName = String(args.schemaName ?? args.name ?? "").trim();
+      if (!/^[A-Za-z0-9._-]+\.schema\.json$/u.test(schemaName) || schemaName.includes("..")) {
+        return { ok: false, error: "invalid_schema_name" };
+      }
+      const schemaPath = path.resolve(process.cwd(), "shared", "schemas", schemaName);
+      if (!fs.existsSync(schemaPath)) {
+        return { ok: false, error: "schema_not_found" };
+      }
+      return JSON.parse(fs.readFileSync(schemaPath, "utf8")) as Record<string, unknown>;
+    },
 
     engine_runs_list: async () =>
       readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200 }).engineRuns,
