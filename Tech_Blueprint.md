@@ -1,516 +1,662 @@
-# Directive Kernel — Technical Blueprint
-
-> Reference document for future development, onboarding, and architectural decisions.
-> Generated from a full codebase investigation.
-
----
-
-## 1. Project Purpose
-
-Directive Kernel is a **reusable workflow kernel** for dev teams running source-driven workflows that need a structured intake → routing → decision pipeline. A host project embeds it to:
-
-1. Ingest inbound items (bug reports, incident alerts, source repos, feature requests, security advisories, customer feedback, papers).
-2. Judge each source against the host's current mission.
-3. Route useful work through a structured lifecycle.
-4. Turn results into reusable capability (Runtime) or system improvement (Architecture).
-
-The locked audience is `general-workflow-kernel`. See [`AUDIENCE.md`](./AUDIENCE.md) for the rationale and reversal conditions.
-
----
-
-## 2. High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Host Project                            │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐    │
-│  │  Goal    │  │  Operator    │  │  Project-local    │    │
-│  │  Owner   │  │  Identity    │  │  Storage/Policy   │    │
-│  └────┬─────┘  └──────┬───────┘  └─────────┬─────────┘    │
-└───────┼────────────────┼────────────────────┼──────────────┘
-        │                │                    │
-┌───────▼────────────────▼────────────────────▼──────────────┐
-│                   Directive Kernel                          │
-│                                                            │
-│  ┌──────────────────── Engine ────────────────────────┐    │
-│  │  Source → Analyze → Route → Extract → Adapt →      │    │
-│  │  Improve → Prove → Decide → Integrate + Report     │    │
-│  └────────────────────────────────────────────────────┘    │
-│                                                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌────────────────┐    │
-│  │  Discovery  │  │   Runtime   │  │  Architecture  │    │
-│  │  (intake &  │  │  (reusable  │  │  (system self- │    │
-│  │   routing)  │  │  capability)│  │  improvement)  │    │
-│  └─────────────┘  └─────────────┘  └────────────────┘    │
-│                                                            │
-│  ┌──────────┐  ┌──────────┐  ┌───────┐  ┌───────────┐    │
-│  │  Shared  │  │  Hosts   │  │  UI   │  │  Control  │    │
-│  └──────────┘  └──────────┘  └───────┘  └───────────┘    │
-└────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 3. Directory Layout
-
-| Path | Role | Contains |
-|------|------|----------|
-| `engine/` | Shared kernel core | Source processing, routing, planning, decisions, lane contracts |
-| `discovery/` | Discovery lane | `lib/` (operating code), `research-engine/` (Python provider) |
-| `runtime/` | Runtime lane | `lib/` (lifecycle), `core/` (contracts), `capabilities/` (callables), `meta/` |
-| `architecture/` | Architecture lane | `lib/` (operating code in grouped subfolders) |
-| `shared/` | Cross-lane vocabulary | `contracts/`, `schemas/`, `templates/`, `lib/` |
-| `hosts/` | Reference hosts | `standalone-host/`, `web-host/`, `integration-kit/` |
-| `ui/` | Operator UI | Vite + Lit single-page app |
-| `control/` | Control surface | `state/*.json` (machine-readable policy/status) |
-| `state/` | Reserved | Host-side runtime persistence (not shipped) |
-| `scripts/` | Dev utilities | Benchmarks, checks, UI dev runners |
-| `local/` | Scratch (gitignored) | One-off audits, test outputs |
-
-**Key rule:** Numbered folders (`01-intake/`, `02-adopted/`, etc.) are **artifact/state surfaces** created in the consuming project's `directive-root` at bootstrap time. They are NOT source-code modules.
-
----
-
-## 4. The Engine (`engine/`)
-
-### 4.1 What It Does
+# Directive Kernel - Technical Blueprint
 
-The engine is the smallest but highest-leverage layer. It orchestrates the full source-processing pipeline:
+Reference document for engineering review, onboarding, and architecture
+analysis. This file is meant to describe the repository as it exists now,
+not an earlier planning phase.
 
-```
-Source → Analyze → Route → Extract → Adapt → Improve → Prove → Decide → Integrate + Report
-```
+## 1. Purpose
 
-### 4.2 Public Entry Point
+Directive Kernel is a reusable workflow kernel that another project embeds.
+It is not the whole product. The consuming host still owns:
 
-**`DirectiveEngine`** class (`engine/directive-engine.ts`):
+- goal resolution
+- operator identity
+- external app context
+- project-local policy
+- project-local storage decisions beyond the kernel's shipped defaults
 
-| Method | Purpose |
-|--------|---------|
-| `processMinimalSource(...)` | Validates title, derives sourceRef, infers type, delegates to `processSource` |
-| `processSource(input)` | Full pipeline: normalize → fingerprint → route → plan → persist → notify |
-| `updatePlanProgress(...)` | Applies progress updates to an existing run's executable plan |
-| `reRouteWithAnswers(...)` | Folds operator answers into a fresh routing pass |
-| `previewMissionChange(...)` | Non-destructive before/after routing preview |
-| `getRun(runId)` / `listRuns()` | Store-backed reads |
+The kernel owns the bounded workflow model:
 
-### 4.3 Core Domain Types (`engine/types.ts`)
+1. accept a source
+2. judge it against the current goal
+3. route it into the correct lane
+4. record decisions and state transitions
+5. expose the resulting state through hosts, API, UI, and MCP
 
-- **Source:** `DirectiveEngineSourceItem`, supported types, integration modes
-- **Mission:** `DirectiveEngineMissionContext`, capability gaps
-- **Routing:** `DirectiveEngineRoutingAssessment` (scores, digest, gap radar, earned autonomy, narrative context)
-- **Plans:** Extraction / Adaptation / Improvement / Proof plans (structured + executable)
-- **Decision:** `hold_in_discovery` | `accept_for_architecture` | `route_to_runtime_follow_up` | `needs_human_review`
-- **Run Record:** Schema version 8, ties all above together
+The audience is the "general workflow kernel" defined in
+[AUDIENCE.md](./AUDIENCE.md).
 
-### 4.4 Lane Contract (`engine/lane.ts`)
+## 2. Core Product Boundaries
 
-Each lane implements `DirectiveEngineLaneDefinition`:
-- `laneId`, `label`, `hostDependence`, `defaultIntegrationMode`
-- Optional callbacks: `planExtraction`, `planAdaptation`, `planImprovement`, `planProof`, `planIntegration`
+The repository is organized around five product surfaces.
 
-The canonical 3-lane set (`engine/directive-workspace-lanes.ts`):
-- **discovery** — engine-only, no integration, default decision `hold_in_discovery`
-- **architecture** — engine-only, adapt integration, default decision `accept_for_architecture`
-- **runtime** — host-adapter-required, adapt integration, default decision `route_to_runtime_follow_up`
+- `engine/` is the cross-lane kernel core
+- `discovery/` is the intake and routing lane
+- `runtime/` is the reusable capability lane
+- `architecture/` is the self-improvement lane
+- `shared/` is the cross-lane contract and helper surface
+
+Supporting surfaces:
 
-### 4.5 Decision & Approval Rails
+- `hosts/` contains thin reference hosts and the integration kit
+- `ui/` contains the bounded operator workbench
+- `control/` contains machine-readable control-plane artifacts used by live code
+- `examples/` contains example consumer flows
+- `docs/` contains operational and boundary documentation
+
+Important distinction:
+
+- numbered lane folders such as `discovery/01-intake/` or
+  `runtime/03-proof/` are artifact destinations in a directive root
+- executable code lives under `engine/`, `*/lib/`, `runtime/core/`,
+  `runtime/capabilities/`, `hosts/`, `shared/lib/`, and `ui/src/`
 
-| File | Role |
-|------|------|
-| `decision-policy-ledger.ts` | Append-only ledger of routing review events + compiled suggestions |
-| `approval-boundary.ts` | Guards: explicit approval, eligible status, integrity check, stage gate |
-| `outcome-tracker.ts` | Classifies operator agreement/correction → feeds earned autonomy |
-| `workspace-truth.ts` | Frozen scope constants (proven/partiallyBuilt/notBuilt per lane) |
+## 3. System Model
+
+At a high level the system works like this:
+
+1. the host resolves a goal envelope
+2. a source enters through Discovery
+3. the engine analyzes and routes the source
+4. the resulting work is held, reviewed, or routed into Runtime or Architecture
+5. operators mutate the workflow only through bounded CLI/API seams
+6. hosts, UI, and MCP expose read and write surfaces over the same kernel logic
 
-### 4.6 Engine Subfolders
+The three lanes have fixed responsibilities:
 
-| Subfolder | Responsibility |
-|-----------|---------------|
-| `cases/` | Mirrored case substrate (event log, store, snapshot, planner) |
-| `coordination/` | Lifecycle pressure, completion slices, autonomous-lane-loop, operator inbox |
-| `execution/` | Runner state, run artifacts, evidence aggregation |
-| `mission/` | Mission defaults, health, evolution, feedback inbox, gap formalization |
-| `planning/` | Plan quality, prior-plan context, action API, decision/plan/record builders |
-| `routing/` | Routing assessment, digest, diff, quality, correction ledger, earned autonomy, gap radar, source memory/similarity/narrative |
-| `state/` | Canonical cross-lane state resolver (single source of truth for "current head") |
+- `Discovery` handles intake, queueing, routing records, and capability-gap surfacing
+- `Runtime` turns useful routed work into reusable callable capability
+- `Architecture` handles long-horizon system improvement and materialization
 
----
+The kernel intentionally keeps human review explicit. It does not claim broad
+autonomous orchestration across arbitrary projects.
 
-## 5. Discovery Lane (`discovery/`)
+## 4. Repository Layout
 
-### 5.1 Purpose
+| Path | Role |
+| --- | --- |
+| `engine/` | Cross-lane kernel logic: routing, mission, orchestration, state, case store |
+| `discovery/` | Discovery lane code plus the optional Python research engine |
+| `runtime/` | Runtime lane contracts, lifecycle code, and shipped capabilities |
+| `architecture/` | Architecture lane code |
+| `shared/` | Contracts, schemas, templates, shared helpers |
+| `hosts/` | Standalone host, web host, MCP host, integration kit |
+| `ui/` | Lit/Vite operator workbench |
+| `control/` | Live machine-readable policy/status artifacts used by engine and lane code |
+| `state/` | Reserved top-level marker surface, not the primary live state substrate |
+| `examples/` | Reference consumer flow and integration examples |
+| `docs/` | Operator docs, lineage docs, boundary docs |
+| `scripts/` | Build, validation, and local dev helpers |
+| `tests/` | Unit, integration, property, and hardening coverage |
+| `dist/` | Built JS/type output generated by `pnpm run build` |
 
-Mission-aware intake queue, routing surface, and capability-gap detector. Everything enters through Discovery first.
+Top-level entry files:
 
-### 5.2 Operating Code (`discovery/lib/`)
+- `index.ts` is the package root export
+- `package.json` defines the real public export surface
+- `STANDALONE_SURFACE.json` records the intended shipped package surface
+- `DIRECTIVE_GOAL.md` is the human-facing example goal file
 
-| Surface | Key Files |
-|---------|-----------|
-| `front-door/` | `discovery-front-door.ts` (canonical entry), coverage, projections, submission router, mission routing |
-| `intake/` | Queue writer (`intake-queue.json`), transitions, lifecycle sync |
-| `routing/` | Route opener, record writer, review resolution, effective boundary |
-| `records/` | Case record, completion record, fast-path record writers |
-| `gaps/` | Gap priority, worklist generator/selector/refresh |
+## 5. Engine
 
-### 5.3 Front Door Flow
+### 5.1 Responsibility
 
-1. Ingest `DiscoverySubmissionRequest`
-2. Normalize source type
-3. Run through `DirectiveEngine` (routing assessment)
-4. Read decision-policy + routing-correction ledgers
-5. Mirror submission via case store
-6. Write intake/triage/routing records
-7. Auto-open downstream stubs when route approval is explicit
+`engine/` is the kernel's highest-leverage surface. It owns:
 
-### 5.4 Research Engine (`discovery/research-engine/`)
+- source normalization and processing
+- routing assessment
+- mission context and mission evolution
+- case records and snapshots
+- orchestration and lifecycle pressure
+- run storage and replay
+- cross-lane current-state resolution
 
-Python sub-package (separate workspace member). Finds candidates, gathers evidence, normalizes/scores, exports DW packets. Plugs in via `discovery/importers/research-engine-discovery-import.ts`. Optional live providers: GitHub, GitLab, Tavily, Exa, Firecrawl.
+### 5.2 Public Engine Surface
 
-### 5.5 Artifact Folders (in consuming project)
+Primary exports come from:
 
-`01-intake/` → `02-triage/` → `03-routing-log/` → `04-monitor/` → `05-deferred-or-rejected/`
+- `engine/index.ts`
+- `engine/cases/index.ts`
+- `engine/orchestration/index.ts`
+- `engine/state/index.ts`
+- `engine/mission/index.ts`
+- `engine/routing/index.ts`
+- `engine/planning/index.ts`
 
----
+The main class is `DirectiveEngine` in `engine/directive-engine.ts`.
+Important methods include:
 
-## 6. Runtime Lane (`runtime/`)
+- `processMinimalSource(...)`
+- `processSource(...)`
+- `updatePlanProgress(...)`
+- `reRouteWithAnswers(...)`
+- `previewMissionChange(...)`
+- `getRun(...)`
+- `listRuns(...)`
 
-### 6.1 Purpose
+### 5.3 Engine Internal Clusters
 
-Turns extracted value into reusable callable capability with bounded proof, rollback, and host-facing packaging.
+| Path | Responsibility |
+| --- | --- |
+| `engine/cases/` | Case store, events, projections, snapshots |
+| `engine/orchestration/` | Lifecycle coordination, autonomous-loop policy, completion slices, replay, operator inbox |
+| `engine/state/` | Cross-lane state resolution and "current head" reads |
+| `engine/mission/` | Mission defaults, health, feedback, evolution, gap formalization |
+| `engine/routing/` | Lane scoring, routing assessment, earned autonomy, gap radar, correction memory |
+| `engine/planning/` | Executable plan builders and progress model |
 
-### 6.2 Code Surfaces
+### 5.4 Engine Guard Rails
 
-| Surface | Role |
-|---------|------|
-| `core/` | Contract types: source flow, usefulness levels, workspace V0 constants, callable/proof/decision contracts |
-| `capabilities/` | Concrete callables: `literature-access`, `code-normalizer`, `research-vault-source-pack` |
-| `lib/` | Lifecycle orchestration (see below) |
-| `meta/` | Baseline promotion profiles and import source policy |
+Important invariants are enforced here:
 
-### 6.3 Lifecycle Code (`runtime/lib/`)
+- `engine/approval-boundary.ts` guards mutable opens and stage correctness
+- `engine/workspace-truth.ts` defines allowed seams and bounded scope
+- `engine/decision-policy-ledger.ts` records operator review and routing corrections
+- `engine/storage.ts` enforces schema-version behavior and persistence layout
+- `engine/run-record-replay.ts` provides non-persistent replay instead of hidden rewrites
 
-| Grouped Surface | Contents |
-|-----------------|----------|
-| `openers/` | Follow-up, record-proof, capability-boundary, promotion-readiness openers |
-| `runners/` | Capability-boundary, follow-up, promotion-readiness, proof-open runners |
-| `sequences/` | Pre-canned multi-step sequences |
-| `projections/` | Read-model views for each stage |
-| `writers/` | Artifact writers for follow-up, proof, record, promotion, registry, transformation |
-| `host/` | Host callable adapter contract, selection resolution, promotion spec |
-| `control/` | Automation eligibility, loop control, registry acceptance gate |
+## 6. Discovery
 
-### 6.4 Artifact Folders (in consuming project)
+### 6.1 Responsibility
 
-`00-follow-up/` → `01-callable-integrations/` → `02-records/` → `03-proof/` → `04-capability-boundaries/` → `05-promotion-readiness/` → `06-promotion-specifications/` → `07-promotion-records/` → `08-registry/`
+Discovery is the front door. Everything enters here first.
 
----
+It owns:
 
-## 7. Architecture Lane (`architecture/`)
+- source submission
+- intake queue materialization
+- routing records
+- explicit routing review
+- handoff opening into downstream lanes
+- capability-gap surfacing and worklist generation
 
-### 7.1 Purpose
+### 6.2 Code Layout
 
-Engine self-improvement lane. Handles system-level improvements that don't fit Runtime's capability model.
+| Path | Responsibility |
+| --- | --- |
+| `discovery/lib/front-door/` | canonical submission entry and front-door flow |
+| `discovery/lib/intake/` | queue writing and intake lifecycle |
+| `discovery/lib/routing/` | routing record writing, review resolution, route opening |
+| `discovery/lib/records/` | supporting record writers |
+| `discovery/lib/gaps/` | gap worklist generation and prioritization |
+| `discovery/importers/` | importer bridges into Discovery |
 
-### 7.2 Lifecycle
+### 6.3 Optional Research Engine
 
-```
-Handoff → Bounded Closeout → Adoption → Materialization
-                                            ├── Implementation Target
-                                            ├── Implementation Result
-                                            ├── Retention
-                                            ├── Integration Record
-                                            ├── Consumption Record
-                                            └── Post-Consumption Evaluation
-```
+`discovery/research-engine/` is a separate Python workspace member. It is not
+required for baseline kernel operation. It provides optional live-provider
+research and can feed Discovery via importer code.
 
-### 7.3 Operating Code (`architecture/lib/`)
+## 7. Runtime
 
-| Grouped Surface | Responsibility |
-|-----------------|---------------|
-| `experiments/` | Handoff start, bounded closeout, reopen, lifecycle feedback, improvement candidates |
-| `adoption/` | Adoption decisions, artifacts, review resolution, cycle summaries |
-| `materialization/` | Implementation target/result, due checks, retention, integration, consumption, post-consumption evaluation |
-| `control/` | Deep-tail stage maps, linkage index, note projections, operator loop control |
+### 7.1 Responsibility
 
-### 7.4 Artifact Folders (in consuming project)
+Runtime turns useful routed work into reusable callable capability with proof,
+promotion, and registry acceptance stages.
 
-`01-experiments/` → `02-adopted/` → `03-deferred-or-rejected/` → `04-materialization/{implementation-targets, implementation-results, retained, integration-records, consumption-records, post-consumption-evaluations}`
+### 7.2 Runtime Surface Split
 
----
+This split matters and should stay clear:
 
-## 8. Shared Layer (`shared/`)
+- `runtime/core/` contains contracts and registry helpers
+- `runtime/lib/` contains lifecycle orchestration and projections
+- `runtime/capabilities/` contains shipped callable capability implementations
+- `runtime/meta/` contains policy/profile metadata
 
-### 8.1 Contracts (`shared/contracts/`)
+### 7.3 Runtime Lifecycle
 
-~50 markdown behavioral contracts. Key ones:
-- `goal-input.md` — goal envelope (goalId, goalStatement, whyNow, adoptionTarget, constraints, successSignal)
-- `host-integration-boundary.md`, `host-callable-adapter.md` — host seam contracts
-- `discovery-to-runtime.md`, `discovery-to-architecture.md` — lane handoff contracts
-- `lifecycle-transition-policy.md`, `command-class-approval-policy.md` — governance
+The shipped runtime lifecycle is expressed by code and artifact surfaces:
 
-### 8.2 Schemas (`shared/schemas/`)
+1. follow-up
+2. record
+3. proof
+4. capability boundary
+5. promotion readiness
+6. promotion specification / seam decision
+7. promotion record
+8. registry acceptance
 
-JSON Schemas for all machine-readable artifacts: engine run records, discovery queue entries, architecture decisions, capability gaps, transformation proofs, host configs, etc.
+### 7.4 Runtime Code Groups
 
-### 8.3 Templates (`shared/templates/`)
+| Path | Responsibility |
+| --- | --- |
+| `runtime/lib/openers/` | transition openers between stages |
+| `runtime/lib/runners/` | bounded execution helpers |
+| `runtime/lib/operations/` | operator-facing lifecycle operations |
+| `runtime/lib/projections/` | read-model views |
+| `runtime/lib/writers/` | artifact writers |
+| `runtime/lib/host/` | host selection and host integration helpers |
+| `runtime/lib/control/` | automation eligibility and control helpers |
+| `runtime/lib/sequences/` | grouped multi-step flows |
 
-Markdown templates used by lane writers when materializing artifacts (intake, triage, routing, experiment, proof, promotion, registry, etc.).
+### 7.5 Capability Registry and Scaffolding
 
-### 8.4 Helpers (`shared/lib/`)
+The runtime capability surface is now manifest-backed.
 
-| File | Purpose |
-|------|---------|
-| `directive-goal.ts` | Parse `DIRECTIVE_GOAL.md`, return structured envelope or graceful fallback |
-| `validation.ts` | Small string validators |
-| `directive-relative-path.ts` | Path-safety helpers |
-| `workspace-root.ts` | Directive workspace root resolution |
-| `path-normalization.ts` | Forward-slashed absolute path normalizer |
-| `file-io.ts` | `readJson`, `writeJson`, `writeJsonAtomic`, `readUtf8`, `writeUtf8`, `appendJsonLine` |
+- capability metadata is read by `runtime/core/capability-registry.ts`
+- shipped capabilities live under `runtime/capabilities/*`
+- each capability may define `manifest.json`
+- the standalone CLI can scaffold new capabilities with
+  `runtime-capability-scaffold`
+- web-host and manifest surfaces expose runtime capability metadata
 
----
+## 8. Architecture
 
-## 9. Hosts
+### 8.1 Responsibility
 
-### 9.1 Standalone Host (`hosts/standalone-host/`)
+Architecture handles self-improvement work that does not fit Runtime's
+callable-capability model.
 
-Full-featured reference filesystem host.
+### 8.2 Lifecycle
 
-**CLI commands** (`cli.ts`, run via `node --experimental-strip-types`):
-- `init` — Bootstrap a directive root with full scaffold + example payloads
-- `serve` — Start HTTP server (127.0.0.1:8787, bearer auth, access logging)
-- `discovery-submit`, `discovery-overview` — Discovery operations
-- `engine-plan-progress`, `engine-reroute` — Engine operations
-- `mission-*` — Mission feedback/preview/approve/reject/revert/history
-- `gap-*` — Gap formalize/approve/reject
-- `runtime-*` — Full runtime lifecycle commands + capability invocations
+The lane covers:
 
-**Server API** (`server.ts`):
-- `GET /health`, `/api/discovery/overview`, `/api/runtime/overview`, `/api/runtime/status`
-- `POST /api/discovery/submissions` (with `?process_with_engine=1`, `?dry_run=1`)
-- `POST /api/engine/plan-progress`, `/api/engine/reroute`
-- `POST /api/runtime/{follow-ups, records, proof-bundles, ...}`
+1. handoff start
+2. bounded closeout
+3. bounded continuation
+4. adoption
+5. implementation target
+6. implementation result
+7. retention
+8. integration record
+9. consumption record
+10. post-consumption evaluation
+11. possible reopen
 
-**Config** (`config.ts`): directive root, server host/port, auth (none | static_bearer), persistence (filesystem | filesystem_and_sqlite).
+### 8.3 Code Layout
 
-### 9.2 Web Host (`hosts/web-host/`)
+| Path | Responsibility |
+| --- | --- |
+| `architecture/lib/experiments/` | starts, closeout, reopen, experiment feedback |
+| `architecture/lib/adoption/` | adoption lifecycle and decisions |
+| `architecture/lib/materialization/` | implementation, retention, integration, consumption |
+| `architecture/lib/control/` | tail-stage maps, linkage, loop control |
 
-UI-serving host that mounts the same filesystem host + a large API surface for the Lit UI.
+One important architecture seam is
+`architecture/lib/control/materialization-tail-stage-map.ts`. The web-host
+uses it to derive deep-tail detail routes and avoid hard-coding every stage.
 
-- `cli.ts serve --directive-root <path>`
-- Serves `ui/dist/` with `index.html` fallback
-- Returns 503 with helpful "missing build" page when UI hasn't been built
-- Full API routes mirror all lane lifecycle operations
+## 9. Shared Surface
 
-### 9.3 Integration Kit (`hosts/integration-kit/`)
+### 9.1 Contracts
 
-Embedding kit for consuming projects:
-- `lib/` — Adapters, bridges (filesystem/memory), overview reader, acceptance flow
-- `cli` — `acceptance-quickstart`, `submission-memory-dry-run`, `first-integration-flow`
-- `starter/` — Copy-facing templates
-- `examples/` — Ready-to-run JSON payloads
+`shared/contracts/` contains behavioral contracts and boundary documents.
+Important examples:
 
----
+- `goal-input.md`
+- `host-integration-boundary.md`
+- `host-integration-acceptance.md`
+- `runtime-to-host.md`
+- `schema-versioning.md`
+- `data-retention.md`
+- `capability.md`
+- `read-only-federation.md`
 
-## 10. UI (`ui/`)
+### 9.2 Schemas
 
-| Aspect | Detail |
-|--------|--------|
-| Framework | Lit 3.x |
-| Bundler | Vite 8.x |
-| Package | `@directive/kernel-ui` (workspace member) |
-| Dev proxy | `/api` → `http://127.0.0.1:43128` (configurable) |
-| Role | Read-only operator view, calls host APIs, no lane logic |
+`shared/schemas/` contains JSON Schemas for persisted artifacts and now also
+for several API request/response shapes. The web host serves them through:
 
-**Key source files:**
-- `route-loader.ts` — Client-side router mapping URLs to API calls
-- `page-actions.ts` — POST mutations (mission, discovery, runtime, architecture)
-- `renderers/` — Dashboard, detail pages, discovery, execution, insight panels, workflow
-- `types/` — Typed mirrors of backend snapshot shapes
+- `GET /api/schemas/:schemaName`
 
----
+### 9.3 Templates
 
-## 11. Control & State
+`shared/templates/` contains markdown and artifact templates used by writers.
 
-### 11.1 `control/state/` (shipped with kernel)
+### 9.4 Helpers
 
-| File | Content |
-|------|---------|
-| `autonomous-lane-loop-policy.json` | Safe-by-default: all auto-* flags off. Consuming projects flip flags. |
-| `completion-status.json` | Anchor with `currentTargetId: "kernel_baseline_complete"` |
-| `completion-slices.json` | Empty items array (consuming projects own slices) |
-| `operator-simplicity-migration-status.json` | Empty migration backlog |
-| `operator-simplicity-migration-slices.json` | Empty (consuming projects own) |
+`shared/lib/` contains cross-lane helpers such as:
 
-### 11.2 `state/` (root-level, reserved)
+- file I/O
+- goal parsing
+- path normalization and path safety
+- validation helpers
+- SSRF guard and text sanitizer
+- telemetry helpers
 
-Reserved for consuming-project case and event persistence. Kernel does not ship content here.
+## 10. Hosts
 
----
+### 10.1 Standalone Host
 
-## 12. Build, Run & Tooling
+`hosts/standalone-host/` is the full filesystem reference host.
 
-### 12.1 Package Manager
+It provides:
 
-pnpm 10.32.1 with workspace members: `ui`, `discovery/research-engine`, `hosts/integration-kit`
+- directive-root bootstrap
+- full CLI mutation surface
+- bounded local workflows
+- server bootstrapping for local HTTP access
 
-### 12.2 TypeScript Configuration (`tsconfig.repo.json`)
+Key files:
 
-- Target: ES2022
-- Module: ESNext, moduleResolution: Bundler
-- Strict mode, `noEmit`, `allowImportingTsExtensions`, `verbatimModuleSyntax`
-- Includes: `engine/`, `discovery/`, `runtime/`, `architecture/`, `hosts/`, `shared/`, `scripts/`
-- Excludes: `ui/**`, `node_modules/**`, `local/**`
+- `cli.ts`
+- `server.ts`
+- `bootstrap.ts`
+- `config.ts`
+- `filesystem-host.ts`
 
-### 12.3 Execution Model
+### 10.2 Web Host
 
-All TypeScript runs directly via `node --experimental-strip-types`. No compile step for the kernel. `tsx ^4.21.0` is a dev-only fallback. The UI is the only surface that uses a bundler (Vite).
+`hosts/web-host/` is the API and UI-serving host.
 
-### 12.4 Root Scripts
+It provides:
 
-| Script | Command |
-|--------|---------|
-| `dev` | Runs UI dev server with API proxy |
-| `start` | Builds UI then starts web host |
-| `typecheck` | `tsc --noEmit` for kernel + UI |
-| `check:first-integration` | Validates first-host integration flow |
-| `check:hardening` | System hardening checks |
-| `standalone:cli` | Direct standalone host CLI access |
-| `web:serve` | Web host with directive root at `.` |
+- the API catalog in `api-manifest.ts`
+- the concrete route handler in `api-routes.ts`
+- static UI serving and missing-build behavior in `server.ts`
+- snapshot, inbox, glossary, schema, explain, telemetry, replay, and federation reads
+- bounded workflow mutation endpoints across Discovery, Runtime, Architecture, and mission/gap surfaces
 
-### 12.5 Testing
+The web host is intentionally thin. It should delegate to kernel code instead
+of inventing host-local lifecycle models.
 
-No kernel-level test runner is wired. The Python research-engine has `python -m unittest discover -s tests`.
+### 10.3 MCP Host
 
----
+`hosts/mcp-host/` exposes the kernel as an MCP server.
 
-## 13. Goal System
+It does not loop back through HTTP. It maps the same operation catalog to
+tool executors that call the same underlying logic as the web-host routes.
 
-### 13.1 Contract
+Key files:
 
-Defined in `shared/contracts/goal-input.md`:
+- `cli.ts`
+- `server.ts`
+- `tool-registry.ts`
+- `executors/`
 
-```json
-{
-  "goalId": "project-current-goal",
-  "goalStatement": "...",
-  "whyNow": "...",
-  "adoptionTarget": "runtime",
-  "constraints": ["stay bounded", "keep review explicit"],
-  "successSignal": "..."
-}
-```
+### 10.4 Integration Kit
 
-### 13.2 Resolution Chain
+`hosts/integration-kit/` is the embedding surface for another host.
 
-1. Host reads `DIRECTIVE_GOAL.md` from project root or directive root
-2. `shared/lib/directive-goal.ts` parses it into a structured envelope
-3. If missing, returns graceful fallback (`per_request_goal_input` mode)
-4. Goal is passed to Discovery before source enters the front door
+It contains:
 
-### 13.3 Fallback Behavior
+- `lib/` for executable integration helpers
+- `starter/` for copy-facing starter templates
+- `cli/` for acceptance and flow utilities
+- `examples/` for first-host patterns
 
-When no goal file exists, hosts keep Discovery in **review-first** or **queue-only** mode until an operator sets direction.
+It should be the first stop for a consuming project that does not want to use
+the reference hosts directly.
 
----
+## 11. UI
 
-## 14. Key Conventions & Gotchas
+The UI is a bounded operator workbench implemented with Lit and Vite under
+`ui/`.
 
-### Numbered folders are state, not modules
-Every `0X-*` folder is an artifact destination created at bootstrap in the consuming project's `directive-root`. Operating code always lives in `<lane>/lib/` and `engine/`.
+Important properties:
 
-### Decision-policy ledger learns from operators
-Append-only ledger at `<directiveRoot>/engine/decision-policy-ledger.json`. Each routing review emits events and recompiles suggestions (routing_bias, goal_hint, approval_boundary, gap_heuristic). These feed earned autonomy, gap radar, and source memory — the routing layer literally learns from operator outcomes.
+- it is not a second backend
+- it consumes the web-host API surface
+- it exposes bounded mutations through the same routes documented in
+  `docs/operator-cli.md`
+- it now includes telemetry and workbench surfaces, not only read-only views
 
-### Process fingerprinting prevents duplicate work
-`process-fingerprint.ts` hashes (source, mission) deterministically. `processSource` short-circuits with `deduplicated: true` on fingerprint match. WeakMap cache with hits/misses telemetry for performance debugging.
+Key source files:
 
-### Approval boundary is a runtime invariant
-`requireDirectiveIntegrityForOpening` refuses to open downstream work when `integrityState !== "ok"`. `requireDirectiveCurrentStageForOpening` additionally checks live stage against allowed-stage selectors. This is the most reused guard in lane openers.
+- `ui/src/route-loader.ts`
+- `ui/src/page-actions.ts`
+- `ui/src/renderers/`
+- `ui/src/pages/`
+- `ui/src/types/`
 
-### Workspace truth is a frozen constant
-`DIRECTIVE_WORKSPACE_PRODUCT_TRUTH` lists proven/partiallyBuilt/intentionallyMinimal/notBuilt/forbiddenScopeExpansion per lane. New work must fit `legalNextSeams`. It's a hard-coded scope statement.
+## 12. API and External Surfaces
 
-### Three runtime surfaces (don't confuse them)
-- `runtime/lib/` — lifecycle orchestration code
-- `runtime/core/` — contract types and constants
-- `runtime/capabilities/` — concrete callable implementations
-- `runtime/host-artifacts/` — artifact directory used by standalone host server (NOT a host)
+### 12.1 API Manifest
 
-### Web host "missing build" page
-`server.ts` returns 503 with a helpful page when `ui/dist/index.html` is absent. The `start` script builds UI first; `dev` proxies via Vite.
+`hosts/web-host/api-manifest.ts` is the machine-readable operation catalog.
+It is the best current source of truth for shipped HTTP operations.
 
-### Deep-tail stage registry
-`architecture-deep-tail-stage-map.ts` exports `ARCHITECTURE_DEEP_TAIL_STAGES`. The web-host API walks this array to construct detail routes — adding a new deep-tail stage is a single-file change.
+It exposes:
 
-### `local/` is scratch
-Gitignored. Used for one-off audits and test outputs. Not part of the kernel surface.
+- `operations`
+- `capabilities`
+- `schema_index`
 
----
+and is served at:
 
-## 15. Package Export Surface
+- `GET /api/manifest`
 
-The legitimate import paths for consumers (from `package.json` exports):
+### 12.2 Key Read Routes
 
-```
-@directive/kernel                          → index.ts
-@directive/kernel/engine                   → engine/index.ts
-@directive/kernel/engine/cases             → engine/cases/index.ts
-@directive/kernel/engine/orchestration    → engine/orchestration/index.ts
-@directive/kernel/engine/state             → engine/state/index.ts
-@directive/kernel/engine/mission           → engine/mission/index.ts
-@directive/kernel/engine/routing           → engine/routing/index.ts
-@directive/kernel/engine/planning          → engine/planning/index.ts
-@directive/kernel/discovery                → discovery/lib/index.ts
-@directive/kernel/discovery/gaps           → discovery/lib/gaps/index.ts
-@directive/kernel/discovery/front-door     → discovery/lib/front-door/index.ts
-@directive/kernel/discovery/intake         → discovery/lib/intake/index.ts
-@directive/kernel/discovery/routing        → discovery/lib/routing/index.ts
-@directive/kernel/discovery/records        → discovery/lib/records/index.ts
-@directive/kernel/discovery/importers      → discovery/importers/index.ts
-@directive/kernel/runtime                  → runtime/lib/index.ts
-@directive/kernel/runtime/operations       → runtime/lib/operations/index.ts
-@directive/kernel/runtime/projections      → runtime/lib/projections/index.ts
-@directive/kernel/runtime/writers          → runtime/lib/writers/index.ts
-@directive/kernel/runtime/host             → runtime/lib/host/index.ts
-@directive/kernel/runtime/control          → runtime/lib/control/index.ts
-@directive/kernel/runtime/core/...         → runtime/core/runtime-core-contract.ts
-@directive/kernel/architecture             → architecture/lib/index.ts
-@directive/kernel/architecture/control     → architecture/lib/control/index.ts
-@directive/kernel/architecture/adoption    → architecture/lib/adoption/index.ts
-@directive/kernel/architecture/materialization → architecture/lib/materialization/index.ts
-@directive/kernel/architecture/experiments → architecture/lib/experiments/index.ts
-@directive/kernel/standalone-host          → hosts/standalone-host/index.ts
-@directive/kernel/standalone-host/*        → hosts/standalone-host/*.ts
-@directive/kernel/integration-kit          → hosts/integration-kit/index.ts
-@directive/kernel/ui                       → hosts/web-host/index.ts
-@directive/kernel/shared/directive-goal    → shared/lib/directive-goal.ts
-```
+Important read routes include:
 
----
+- `GET /api/snapshot`
+- `GET /api/operator-decision-inbox`
+- `GET /api/runtime/status`
+- `GET /api/runtime/capabilities`
+- `GET /api/explain`
+- `GET /api/glossary`
+- `GET /api/schemas/:schemaName`
+- `GET /api/telemetry/snapshot`
+- `GET /api/federation/snapshot`
 
-## 16. Quick Start Reference
+### 12.3 Key Mutation Routes
+
+Important mutation families include:
+
+- Discovery submission and review
+- engine reroute and plan progress
+- engine replay
+- mission preview/approve/reject/revert
+- gap approve/reject
+- Runtime stage openers and decisions
+- Architecture stage transitions
+
+### 12.4 Package Exports
+
+The public package surface is defined in `package.json` exports. Important
+exports include:
+
+- `@directive/kernel`
+- `@directive/kernel/engine`
+- `@directive/kernel/discovery`
+- `@directive/kernel/runtime`
+- `@directive/kernel/architecture`
+- `@directive/kernel/standalone-host`
+- `@directive/kernel/integration-kit`
+- `@directive/kernel/ui`
+- `@directive/kernel/mcp-host`
+- selected sub-exports for engine, runtime, architecture, and host surfaces
+
+The source path uses the `development` export condition; built consumers use
+the `import` / `default` dist outputs.
+
+## 13. Persistence and Directive Root
+
+The directive root is the on-disk workspace the kernel reads and writes.
+
+It contains:
+
+- lane artifact folders
+- engine state and run records
+- mission and gap records
+- control-plane machine-readable files
+- optional federation config
+
+Important persistence points:
+
+- `engine/storage.ts`
+- `shared/lib/file-io.ts`
+- numbered lane artifact folders
+- `control/state/*.json`
+
+Top-level `control/` is live and should not be mistaken for dead scaffolding.
+Several engine, runtime, and architecture components read it.
+
+Top-level `state/` is a reserved marker surface and is much less active than
+`control/`.
+
+## 14. Build and Execution Model
+
+The repository now supports two execution paths.
+
+### 14.1 Source Path
+
+Used during development:
+
+- `pnpm run dev`
+- `pnpm run ui:dev`
+- `pnpm run test`
+- `pnpm run typecheck`
+- `pnpm run try`
+- `pnpm run mcp:serve -- --directive-root <path>`
+
+This path uses `tsx`, Vite, and Vitest against source.
+
+### 14.2 Built Path
+
+Used for stable production-style runs:
+
+- `pnpm run build`
+- `pnpm run start`
+- `pnpm run ui:start`
+- `pnpm run web:serve`
+- `pnpm run standalone:cli`
+
+The build emits JS, type declarations, source maps, and runtime example JSON
+into `dist/`.
+
+Important build files:
+
+- `tsconfig.build.json`
+- `scripts/copy-runtime-assets.mjs`
+- `scripts/run-with-check-build.mjs`
+
+## 15. Testing and Validation
+
+The repo has real automated coverage. It is not a doc-only or manual-only
+system.
+
+Primary test layers:
+
+- unit tests under `tests/unit/`
+- integration tests under `tests/integration/`
+- property tests under `tests/property/`
+- hardening coverage under `tests/integration/hardening/`
+
+Primary validation commands:
+
+- `pnpm run test`
+- `pnpm run typecheck`
+- `pnpm run check:build`
+- `pnpm run check:naming`
+- `pnpm run check:contracts`
+- `pnpm run check:examples`
+- `pnpm run check:first-integration`
+- `pnpm run check:hardening`
+
+## 16. Goal, Mission, and Review Model
+
+The host must provide goal context. The kernel does not own the goal source of
+truth.
+
+Inputs:
+
+- `DIRECTIVE_GOAL.md`
+- per-request goal payloads
+- host-resolved goal envelopes
+
+Mission and review surfaces now include:
+
+- mission health and mission feedback
+- mission evolution history
+- gap formalization and discovery worklist refresh
+- operator decision inbox
+- replay for audit/debug without silent writes
+
+The kernel remains review-first where explicit approval is required.
+
+## 17. Shipped Advanced Surfaces
+
+These are important because they change what the system can now prove about
+itself.
+
+### 17.1 Telemetry
+
+The web host maintains bounded in-memory telemetry and exposes it via:
+
+- `GET /api/telemetry/snapshot`
+
+The UI consumes this surface for observability.
+
+### 17.2 Explain
+
+The web host can build a derived explanation for one engine run via:
+
+- `GET /api/explain`
+
+### 17.3 Replay
+
+Replay is non-persistent by default:
+
+- CLI: `engine-replay`
+- API: `POST /api/engine-runs/:runId/replay`
+
+This returns exact-vs-approximate replay information without writing new run
+records unless a normal mutation flow is invoked later.
+
+### 17.4 Federation
+
+Federation is intentionally read-only:
+
+- config: `kernel-federation.config.json`
+- route: `GET /api/federation/snapshot`
+
+It aggregates visibility across roots without remote writes or merged workflow
+state.
+
+### 17.5 Reference Consumer
+
+`examples/reference-consumer/` is the concrete minimal consumer example. It
+shows how a real host should:
+
+- resolve a goal
+- submit a source
+- read back state
+- avoid reimplementing kernel lifecycle logic
+
+## 18. Current Operational Rules
+
+These are the most important rules for anyone modifying the repo:
+
+1. Do not write directly into numbered artifact folders by hand.
+2. Do not bypass `engine/approval-boundary.ts` for mutable opens.
+3. Do not treat `control/` as dead weight; live code depends on it.
+4. Do not invent host-local workflow models in the hosts or UI.
+5. Do not confuse `runtime/core/`, `runtime/lib/`, and `runtime/capabilities/`.
+6. Use `api-manifest.ts` and `package.json` exports as current-state truth for
+   external surfaces.
+
+## 19. Recommended Reading Order
+
+For a reviewer or another coding agent, this is the fastest accurate path:
+
+1. `README.md`
+2. `AGENTS.md`
+3. `AUDIENCE.md`
+4. `package.json`
+5. `hosts/web-host/api-manifest.ts`
+6. `engine/directive-engine.ts`
+7. `engine/workspace-truth.ts`
+8. `hosts/integration-kit/README.md`
+9. `docs/operator-cli.md`
+10. `shared/contracts/`
+
+## 20. Quick Commands
 
 ```powershell
-# Install
 pnpm install
-
-# Bootstrap a standalone directive root
-node --experimental-strip-types ./hosts/standalone-host/cli.ts init --output-root ./local/standalone
-
-# Run standalone host
-node --experimental-strip-types ./hosts/standalone-host/cli.ts serve --config ./local/standalone/standalone-host.config.json
-
-# Run web host + UI (production)
+pnpm run build
 pnpm run start
-
-# Run web host + UI (dev with hot reload)
-pnpm run dev
-
-# Type check
+pnpm run ui:dev
+pnpm run test
 pnpm run typecheck
+pnpm run standalone:cli init --output-root ./local/standalone --received-at 2026-06-10
+pnpm run mcp:serve -- --directive-root <path>
 ```
 
----
+For a full local bootstrap, read:
 
-*Last updated from codebase investigation. Refer to individual README.md files in each surface for the most current details.*
+- `README.md`
+- `hosts/integration-kit/FIRST_INTEGRATION.md`
+- `examples/reference-consumer/README.md`

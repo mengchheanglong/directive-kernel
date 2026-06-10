@@ -1,5 +1,4 @@
 import { LitElement, css, html } from "lit";
-import { customElement } from "lit/decorators.js";
 
 export interface AllowedNextStep {
   label: string;
@@ -7,7 +6,10 @@ export interface AllowedNextStep {
   docsAnchor?: string;
 }
 
-@customElement("legal-next-steps-hint")
+function operatorCliArtifactHref(anchor?: string) {
+  return `/artifacts?path=docs%2Foperator-cli.md${anchor ?? ""}`;
+}
+
 export class LegalNextStepsHint extends LitElement {
   steps: AllowedNextStep[] = [];
 
@@ -28,9 +30,13 @@ export class LegalNextStepsHint extends LitElement {
         <div class="step">
           <p>${s.label}</p>
           <pre>${s.cliInvocation}</pre>
-          ${s.docsAnchor ? html`<a href="/docs/operator-cli.md${s.docsAnchor}">Documentation &rarr;</a>` : null}
+          ${s.docsAnchor ? html`<a href=${operatorCliArtifactHref(s.docsAnchor)}>Documentation &rarr;</a>` : null}
         </div>
       `)}
     `;
   }
+}
+
+if (!customElements.get("legal-next-steps-hint")) {
+  customElements.define("legal-next-steps-hint", LegalNextStepsHint);
 }

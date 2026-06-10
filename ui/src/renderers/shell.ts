@@ -365,7 +365,7 @@ export function renderSidebar(current: string, page: any) {
     <aside class="sidebar-shell">
       <div class="sidebar-brand">
         <strong>Directive Kernel</strong>
-        <span class="muted">Research dashboard</span>
+        <span class="muted">Operator workbench</span>
       </div>
 
       <div class="sidebar-group">

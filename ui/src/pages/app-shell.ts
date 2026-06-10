@@ -198,7 +198,7 @@ class DirectiveUiApp extends LitElement {
       <aside class="sidebar-shell">
         <div class="sidebar-brand">
           <strong>Directive Kernel</strong>
-          <span class="muted">Research dashboard</span>
+          <span class="muted">Operator workbench</span>
         </div>
 
         <div class="sidebar-group">
@@ -1129,5 +1129,7 @@ class DirectiveUiApp extends LitElement {
   }
 }
 
-customElements.define("directive-ui-app", DirectiveUiApp);
+if (!customElements.get("directive-ui-app")) {
+  customElements.define("directive-ui-app", DirectiveUiApp);
+}
 

@@ -651,12 +651,40 @@ export function renderHomePage(
   const lastRequestDurationMs = telemetry.gauges["web_host.last_request_duration_ms"] ?? 0;
   const activeRunRecords = runtimeStatus.storage.activeRunRecords ?? 0;
   const archivedRunRecords = runtimeStatus.storage.archivedRunRecords ?? 0;
+  const topActionLabel = topDecision?.candidateName ?? topDecision?.candidateId ?? "No active blockers";
 
   return html`
-      <aside style="background: #f5f5f5; padding: 0.5rem; border-left: 3px solid #888;">
-        This workbench stays bounded, not passive. High-value operator mutations are executable here through the same kernel routes the CLI uses.
-        See <a href="/docs/operator-cli.md">the operator CLI reference</a> for the parallel command surface and exact subcommand shapes.
-      </aside>
+    <section class="hero-band">
+      <div class="hero-band-copy">
+        <div class="eyebrow">Bounded operator surface</div>
+        <h2>Directive Kernel stays review-first while keeping the next move explicit.</h2>
+        <p class="muted">
+          This workbench is backed by the same kernel-owned routes as the CLI. Sources, lane heads, review pressure,
+          and high-value mutations stay visible here without inventing a second workflow model.
+        </p>
+        <div class="hero-meta">
+          ${renderActionLink("/operator-inbox", "Open decision inbox", "primary")}
+          ${renderActionLink("/workflow-map", "View workflow map", "secondary")}
+          ${renderActionLink("/artifacts?path=docs%2Foperator-cli.md", "Operator CLI reference", "secondary")}
+        </div>
+      </div>
+      <div class="hero-band-aside">
+        <section class="hero-band-card">
+          <span class="eyebrow">Live posture</span>
+          <strong>${snapshot.queue.totalEntries} sources | ${inbox.summary.totalActionableEntries} decisions</strong>
+          <span class="muted">
+            ${queueReviewPressureCount} under review, ${queueConflictedCount} conflicted, ${snapshot.runtimeSummary.activeCases.length} runtime heads.
+          </span>
+        </section>
+        <section class="hero-band-card">
+          <span class="eyebrow">Next focus</span>
+          <strong>${topActionLabel}</strong>
+          <span class="muted">
+            ${topDecision?.blockReason ?? "The inbox is clear. Discovery, Runtime, and Architecture are currently idle or waiting on new source pressure."}
+          </span>
+        </section>
+      </div>
+    </section>
     <section class="dashboard-section">
       <div class="dashboard-section-heading">Active Surfaces</div>
       <div class="dashboard-focus-grid">
