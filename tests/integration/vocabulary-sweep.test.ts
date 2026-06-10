@@ -14,8 +14,6 @@ const VOCAB_LHS_TERMS = [
 
 const ALLOWLIST = new Set([
   "vocabulary-audit.csv",
-  "docs/audits/GLOSSARY_CANDIDATES.md",
-  "Fix_Plan.md",
   "shared/schemas/migrations/v8-to-v9.ts",
   "shared/schemas/directive-engine-run-record.schema.json",
 ]);
@@ -23,7 +21,7 @@ const ALLOWLIST = new Set([
 function runRg(term: string): string[] {
   try {
     const output = execSync(
-      `pnpm exec rg --files-with-matches --case-sensitive --glob '!dist/**' --glob '!ui/**' --glob '!discovery/research-engine/**' --glob '!node_modules/**' --glob '!docs/audits/GLOSSARY_CANDIDATES.md' -- "${term}"`,
+      `pnpm exec rg --files-with-matches --case-sensitive --glob '!dist/**' --glob '!ui/**' --glob '!discovery/research-engine/**' --glob '!node_modules/**' -- "${term}"`,
       {
         cwd: process.cwd(),
         encoding: "utf-8",
@@ -48,7 +46,6 @@ function isAllowlisted(filePath: string): boolean {
       return true;
     }
   }
-  if (normalized.startsWith(".kiro/")) return true;
   return false;
 }
 

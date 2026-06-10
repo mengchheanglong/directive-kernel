@@ -22,4 +22,4 @@ Files in the Append_Only_Ledger_Set (`engine/decision-policy-ledger.jsonl`, `dis
 
 ## Federation roadmap
 
-Multi-host coordination (distributed locking, quorum writes, conflict resolution) is explicitly deferred to a future Fix_Plan item. The current kernel assumes a single host process per Directive_Root.
+Multi-host coordination (distributed locking, quorum writes, conflict resolution) is explicitly deferred to future work. The current kernel assumes a single host process per Directive_Root.

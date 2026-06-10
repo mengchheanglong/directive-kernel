@@ -5,9 +5,7 @@ import * as fc from "fast-check";
 import { sanitizeText } from "../../shared/lib/text-sanitizer.ts";
 
 // Property tests for `shared/lib/text-sanitizer.ts`. Each `it` corresponds
-// to a numbered correctness property in
-// `.kiro/specs/directive-kernel-security-posture/design.md` under
-// "Correctness Properties -> Properties 5-7".
+// to a numbered security correctness property.
 
 function isStrippedControl(codePoint: number) {
   return (

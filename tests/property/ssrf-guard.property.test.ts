@@ -13,10 +13,8 @@ import {
 } from "./_arbitraries/url.ts";
 
 // Property tests for `shared/lib/ssrf-guard.ts`. Each `it` corresponds to a
-// numbered correctness property in the design document
-// (.kiro/specs/directive-kernel-security-posture/design.md →
-// "Correctness Properties → Properties 1–4"). Every property runs at
-// `{ numRuns: 100 }` per task 1.4.
+// numbered security correctness property. Every property runs at
+// `{ numRuns: 100 }`.
 
 // Public IPv4 literal used as the canonical "safe" return value from the
 // stub resolver. 93.184.216.34 was the long-standing example.com record;

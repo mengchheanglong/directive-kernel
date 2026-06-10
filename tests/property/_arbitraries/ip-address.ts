@@ -2,9 +2,8 @@ import * as fc from "fast-check";
 
 // IP-literal arbitraries used by the SSRF guard property tests
 // (see `tests/property/ssrf-guard.property.test.ts`). Every blocked range
-// listed in the Glossary of `.kiro/specs/directive-kernel-security-posture/
-// requirements.md` is represented below so that property tests cannot drift
-// past one slice of the rejection surface.
+// from the security requirements is represented below so that property tests
+// cannot drift past one slice of the rejection surface.
 //
 // All exports return raw IP literal strings (no URL framing). The property
 // tests are responsible for embedding the literal into an `http://...` URL

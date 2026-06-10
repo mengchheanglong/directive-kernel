@@ -18,7 +18,7 @@ pnpm try
 
 That runs the kernel end-to-end against a sample source in a fresh temp directive root and prints the routing decision and artifact path. No config files, no JSON to write.
 
-<!-- TODO: replace this block with a recorded terminal cast (Fix_Plan.md F3 follow-up). -->
+<!-- TODO: replace this block with a recorded terminal cast. -->
 
 ## For AI agents
 

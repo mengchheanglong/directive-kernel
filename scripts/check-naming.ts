@@ -19,7 +19,7 @@ export const DIRECTIVE_PREFIX_ALLOWLIST: ReadonlyArray<string> = [
   // engine/types.ts:DIRECTIVE_ENGINE_RUN_RECORD_SCHEMA_VERSION
   // Why: This constant gates Storage_Version_Check. Renaming it would
   // ripple through the migration framework during the v8→v9 cut.
-  // Deferred to a follow-up cut. See Fix_Plan.md F4/F7/F11 outcome paragraphs.
+  // It remains part of the compatibility surface intentionally.
   "engine/types.ts",
 ] as const;
 
@@ -132,7 +132,7 @@ export function scanForNamingViolations(
 // CLI helpers
 // ---------------------------------------------------------------------------
 
-const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".kiro", "research-engine", "generated"]);
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "research-engine", "generated"]);
 
 function walkDir(dir: string, baseDir: string): string[] {
   const results: string[] = [];
