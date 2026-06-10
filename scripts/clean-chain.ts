@@ -36,7 +36,7 @@ async function main() {
     rollback: "Delete follow-up and linked artifacts.",
     no_op_path: "Keep in Discovery.",
     review_cadence: "review after proof",
-    current_status: "follow_up_only"
+    current_status: "pending_review"
   });
   console.log(`1. Follow-up: ${(followUpResult as any).followUpPath || "OK"}`);
 
