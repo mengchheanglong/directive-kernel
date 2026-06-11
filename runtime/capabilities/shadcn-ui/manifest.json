@@ -1,0 +1,7 @@
+{
+  "displayName": "shadcn/ui",
+  "description": "Framework-agnostic React component library (116K GitHub stars). Provides accessible, customizable UI components for professional web development. This capability enables Hermes Agent to reference, compose, and deploy shadcn/ui components as part of its web development toolkit.",
+  "domain": "software-development",
+  "inputSchema": "shared/schemas/shadcn-ui-callable-input.schema.json",
+  "outputSchema": "shared/schemas/shadcn-ui-callable-output.schema.json"
+}
