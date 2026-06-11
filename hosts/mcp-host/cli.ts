@@ -12,14 +12,19 @@ function parseDirectiveRoot(): string {
       return arg.slice("--directive-root=".length);
     }
   }
-  console.error("Usage: pnpm run mcp:serve -- --directive-root <path>");
+  console.error(
+    "Error: --directive-root <path> is required\n"
+    + "Usage: pnpm run mcp:serve -- --directive-root <path>\n"
+    + "       tsx hosts/mcp-host/cli.ts --directive-root <path>",
+  );
   process.exit(1);
 }
 
+// Validate --directive-root before starting the server
 const directiveRoot = parseDirectiveRoot();
 
-if (!fs.existsSync(directiveRoot)) {
-  console.error(`Error: Directive root not found: ${directiveRoot}`);
+if (!directiveRoot || !fs.existsSync(directiveRoot)) {
+  console.error(`Error: Directive root does not exist or is inaccessible: ${directiveRoot}`);
   process.exit(1);
 }
 

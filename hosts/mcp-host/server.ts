@@ -107,21 +107,20 @@ export async function startMcpHost(directiveRoot: string): Promise<void> {
 
     // Promise that resolves when the client disconnects
     const disconnected = new Promise<void>((resolve) => {
-      // Protocol._onclose calls server.onclose when the transport chain closes
       const originalOnclose = server.onclose;
       server.onclose = () => {
         originalOnclose?.();
         if (!shuttingDown) resolve();
       };
-
-      // Detect stdin EOF and trigger the transport close chain
-      if (!process.stdin.readableEnded && !process.stdin.destroyed) {
-        process.stdin.once("end", () => {
-          transport.close().catch(() => {});
-        });
-      }
-      // If stdin is already ended/destroyed (e.g., non-pipe context),
-      // rely solely on server.onclose to detect disconnection
+      
+      // Also watch for stdin closure as a fallback disconnect detector
+      const check = setInterval(() => {
+        if (shuttingDown) { clearInterval(check); resolve(); }
+        if (process.stdin.readableEnded || process.stdin.destroyed) {
+          clearInterval(check);
+          if (!shuttingDown) resolve();
+        }
+      }, 500);
     });
 
     // Connect transport to server
