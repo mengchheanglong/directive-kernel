@@ -1,0 +1,7 @@
+{
+  "displayName": "React Bits",
+  "description": "Animated interactive React components for memorable interfaces and motion-rich UI patterns.",
+  "domain": "software-development",
+  "inputSchema": "shared/schemas/react-bits-callable-input.schema.json",
+  "outputSchema": "shared/schemas/react-bits-callable-output.schema.json"
+}

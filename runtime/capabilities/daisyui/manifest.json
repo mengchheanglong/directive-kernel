@@ -1,0 +1,7 @@
+{
+  "displayName": "daisyUI",
+  "description": "Tailwind CSS component library with themeable semantic class-based components for rapid UI development.",
+  "domain": "software-development",
+  "inputSchema": "shared/schemas/daisyui-callable-input.schema.json",
+  "outputSchema": "shared/schemas/daisyui-callable-output.schema.json"
+}
