@@ -24,79 +24,117 @@ export async function startMcpHost(directiveRoot: string): Promise<void> {
     throw new Error(`Directive root not found: ${directiveRoot}`);
   }
 
-  // Acquire process lock
-  const lockResult = acquireDirectiveRootLock(directiveRoot);
-  const releaseLock = () => releaseDirectiveRootLock(directiveRoot);
+  // Acquire process lock once on startup — released only on shutdown
+  acquireDirectiveRootLock(directiveRoot);
 
-  // Release lock on exit
-  const cleanup = () => {
-    releaseLock();
+  let shuttingDown = false;
+
+  // Clean shutdown on signals: release lock and exit
+  const shutdown = () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    releaseDirectiveRootLock(directiveRoot);
     process.exit(0);
   };
-  process.on("SIGINT", cleanup);
-  process.on("SIGTERM", cleanup);
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 
-  // Build tool registry
-  const tools = buildToolRegistry({ directiveRoot });
+  // Keep-alive mechanism to prevent event loop drain between connections
+  // (active interval ref keeps Node.js from exiting when stdin closes)
+  const keepAlive = setInterval(() => {}, 60_000);
 
-  // Create MCP server
-  const server = new Server(
-    { name: SERVER_NAME, version: SERVER_VERSION },
-    { capabilities: { tools: {} } },
-  );
+  while (!shuttingDown) {
+    // Build fresh tool registry on each connection — no stale state
+    const tools = buildToolRegistry({ directiveRoot });
 
-  // tools/list handler
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
-    return {
-      tools: tools.map((t) => ({
-        name: t.name,
-        description: t.description,
-        inputSchema: t.inputSchema,
-      })),
-    };
-  });
+    // Create MCP server
+    const server = new Server(
+      { name: SERVER_NAME, version: SERVER_VERSION },
+      { capabilities: { tools: {} } },
+    );
 
-  // tools/call handler
-  const ajv = new Ajv2020({ strict: false });
-  addFormats(ajv);
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const toolName = request.params.name;
-    const tool = tools.find((t) => t.name === toolName);
-
-    if (!tool) {
-      throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${toolName}`);
-    }
-
-    // Validate input against tool's inputSchema
-    const inputArgs = request.params.arguments ?? {};
-    const validate = ajv.compile(tool.inputSchema as Record<string, unknown>);
-    const valid = validate(inputArgs);
-    if (!valid) {
-      const details = validate.errors
-        ?.map((e) => `${e.instancePath} ${e.message}`)
-        .join("; ");
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Invalid input for tool ${toolName}: ${details ?? "validation failed"}`,
-      );
-    }
-
-    // Execute
-    try {
-      const result = await tool.execute(inputArgs);
+    // tools/list handler
+    server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
-        content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+        tools: tools.map((t) => ({
+          name: t.name,
+          description: t.description,
+          inputSchema: t.inputSchema,
+        })),
       };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return {
-        content: [{ type: "text" as const, text: JSON.stringify({ error: message }) }],
-        isError: true,
-      };
-    }
-  });
+    });
 
-  // Connect transport
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+    // tools/call handler
+    const ajv = new Ajv2020({ strict: false });
+    addFormats(ajv);
+    server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      const toolName = request.params.name;
+      const tool = tools.find((t) => t.name === toolName);
+
+      if (!tool) {
+        throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${toolName}`);
+      }
+
+      const inputArgs = request.params.arguments ?? {};
+      const validate = ajv.compile(tool.inputSchema as Record<string, unknown>);
+      const valid = validate(inputArgs);
+      if (!valid) {
+        const details = validate.errors
+          ?.map((e) => `${e.instancePath} ${e.message}`)
+          .join("; ");
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `Invalid input for tool ${toolName}: ${details ?? "validation failed"}`,
+        );
+      }
+
+      try {
+        const result = await tool.execute(inputArgs);
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify({ error: message }) }],
+          isError: true,
+        };
+      }
+    });
+
+    // Create transport
+    const transport = new StdioServerTransport();
+
+    // Promise that resolves when the client disconnects
+    const disconnected = new Promise<void>((resolve) => {
+      // Protocol._onclose calls server.onclose when the transport chain closes
+      const originalOnclose = server.onclose;
+      server.onclose = () => {
+        originalOnclose?.();
+        if (!shuttingDown) resolve();
+      };
+
+      // Detect stdin EOF and trigger the transport close chain
+      if (!process.stdin.readableEnded && !process.stdin.destroyed) {
+        process.stdin.once("end", () => {
+          transport.close().catch(() => {});
+        });
+      }
+      // If stdin is already ended/destroyed (e.g., non-pipe context),
+      // rely solely on server.onclose to detect disconnection
+    });
+
+    // Connect transport to server
+    await server.connect(transport);
+    console.error(`[MCP] Client connected (${tools.length} tools available)`);
+
+    // Wait until the client disconnects or we shut down
+    await disconnected;
+
+    if (!shuttingDown) {
+      console.error("[MCP] Client disconnected, waiting for reconnection...");
+    }
+  }
+
+  clearInterval(keepAlive);
 }
