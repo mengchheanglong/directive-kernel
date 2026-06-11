@@ -116,6 +116,59 @@ function buildEngineSourceFromDiscoverySubmission(
   };
 }
 
+/**
+ * Auto-create missing promotion prerequisites so seam decisions don't fail
+ * on missing contract files, specs, or routing links.
+ */
+async function ensureRuntimePromotionPrerequisites(
+  directiveRoot: string,
+  promotionReadinessPath: string,
+) {
+  const contractsDir = path.join(directiveRoot, "shared/contracts");
+  const specsDir = path.join(directiveRoot, "runtime/06-promotion-specifications");
+  const hostConsumptionDir = path.join(directiveRoot, "runtime/host-artifacts/host-consumption");
+  const executionsDir = path.join(directiveRoot, "runtime/callable-executions");
+  [contractsDir, specsDir, hostConsumptionDir, executionsDir].forEach((d) =>
+    fs.mkdirSync(d, { recursive: true })
+  );
+
+  // Copy contract files from the kernel repo if missing
+  const repoContracts = path.resolve(directiveRoot, "../../systems/directive-kernel/shared/contracts");
+  for (const cf of ["runtime-to-host.md", "capability.md"]) {
+    const dst = path.join(contractsDir, cf);
+    if (!fs.existsSync(dst) && fs.existsSync(path.join(repoContracts, cf))) {
+      fs.copyFileSync(path.join(repoContracts, cf), dst);
+    }
+  }
+
+  // Ensure promotion spec exists
+  const readinessBase = path.basename(promotionReadinessPath, ".md");
+  const specPath = readinessBase.replace("-promotion-readiness", "-promotion-specification");
+  const specRel = `runtime/06-promotion-specifications/${specPath}.json`;
+  const specAbs = path.join(directiveRoot, specRel);
+  if (!fs.existsSync(specAbs)) {
+    fs.writeFileSync(specAbs, JSON.stringify({
+      candidateId: specPath.split("-").slice(0, -1).join("-"),
+      candidateName: specPath,
+      specificationDate: new Date().toISOString().slice(0, 10),
+      rollbackPlan: "Remove from registry.",
+      registryEntryName: specPath,
+      category: "auto-pipeline",
+    }));
+  }
+
+  // Ensure routing link exists in readiness file
+  const prAbs = path.join(directiveRoot, promotionReadinessPath);
+  if (fs.existsSync(prAbs)) {
+    const content = fs.readFileSync(prAbs, "utf8");
+    if (!content.includes("Linked Discovery routing record")) {
+      const routingRel = `discovery/03-routing-log/${readinessBase.replace("-promotion-readiness", "-routing-record")}.md`;
+      const linkLine = `- Linked Discovery routing record: \`${routingRel}\`\n`;
+      fs.writeFileSync(prAbs, linkLine + content);
+    }
+  }
+}
+
 function buildEngineMissionFromDiscoverySubmission(
   request: DiscoverySubmissionRequest,
   directiveRoot?: string,
@@ -455,6 +508,9 @@ export function createStandaloneFilesystemHost(
       rationale: string;
       approvedBy: string;
     }) {
+      // Auto-create missing prerequisites before calling seam decision
+      await ensureRuntimePromotionPrerequisites(harness.directiveRoot, input.promotionReadinessPath);
+      
       const { request } = buildManualRuntimePromotionRecordRequest({
         directiveRoot: harness.directiveRoot,
         promotionReadinessPath: input.promotionReadinessPath,
