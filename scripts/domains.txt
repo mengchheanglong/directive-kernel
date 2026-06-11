@@ -1,0 +1,5 @@
+fastapi express graphql nestjs backend frameworks
+apache spark airflow dbt data engineering
+langchain llamaindex vector database ai ml
+kubernetes terraform ansible docker devops
+react vue svelte angular frontend frameworks
