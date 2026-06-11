@@ -1,0 +1,58 @@
+{
+  "mission_id": "hermes-webdev-capability-discovery",
+  "objective": "Find reusable open-source systems, component libraries, starter kits, testing toolchains, deployment helpers, and documentation sources that improve Hermes Agent's professional web development capability across React, Next.js, Tailwind CSS, TypeScript, testing, dashboards, and frontend architecture.",
+  "planning_preset": "balanced-discovery",
+  "required_track_ids": [],
+  "excluded_track_ids": [],
+  "required_query_types_by_track": {},
+  "excluded_query_types_by_track": {},
+  "track_provider_preferences": {
+    "webdev-components": ["exa", "tavily", "firecrawl"],
+    "webdev-docs": ["tavily", "exa", "firecrawl"]
+  },
+  "subsystem_gap": "Need a bounded web-development source-intelligence subsystem that feeds Directive Kernel discovery with high-signal reusable frontend and web architecture capabilities.",
+  "known_baseline_names": [
+    "shadcn/ui",
+    "daisyUI",
+    "React Bootstrap",
+    "Tremor",
+    "React Bits"
+  ],
+  "known_candidate_anchor_names": [
+    "tailwind css",
+    "next.js",
+    "react",
+    "vitest",
+    "storybook"
+  ],
+  "exclusion_rules": [
+    "Reject generic AI wrapper repos with no web-development substance.",
+    "Reject abandoned UI kits with low maintenance signals.",
+    "Reject consumer-only template bundles with no reusable capability value."
+  ],
+  "constraints": {
+    "exclude_domains": [],
+    "exclude_keywords": [
+      "consumer chat",
+      "general-purpose agent shell",
+      "crypto",
+      "meme"
+    ],
+    "time_budget_minutes": 20,
+    "max_queries": 6,
+    "max_candidates": 8,
+    "max_fetches": 12,
+    "max_requests": 120,
+    "per_provider_max_requests": {
+      "exa": 20,
+      "tavily": 20,
+      "firecrawl": 10
+    }
+  },
+  "trust_preferences": {
+    "policy_preset": "balanced-discovery",
+    "prefer_official_docs": true,
+    "prefer_active_repos": true,
+    "prefer_self_hostable": true
+  }
+}
