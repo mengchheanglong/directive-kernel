@@ -1,5 +1,6 @@
-fastapi express graphql nestjs backend frameworks
-apache spark airflow dbt data engineering
-langchain llamaindex vector database ai ml
-kubernetes terraform ansible docker devops
-react vue svelte angular frontend frameworks
+cybersecurity tools stars:>5000
+devops infrastructure stars:>5000
+machine learning framework stars:>5000
+data engineering pipeline stars:>5000
+monitoring observability stars:>5000
+backend api framework stars:>5000
