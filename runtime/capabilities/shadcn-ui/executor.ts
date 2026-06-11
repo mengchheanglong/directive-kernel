@@ -62,7 +62,7 @@ const REQUIRED_THEME_VARS = [
 // --- Validation ---
 
 function validateInput(tool: string, input: Record<string, unknown>): string | null {
-  const validTools = TOOLS.map((t) => t.tool);
+  const validTools: readonly string[] = TOOLS.map((t) => t.tool);
   if (!validTools.includes(tool)) {
     return `Unknown tool: ${tool}. Available: ${validTools.join(", ")}`;
   }
@@ -218,7 +218,7 @@ export async function execute(
 export function createShadcnUiCallableCapability(): CallableCapability {
   const descriptor: CallableCapabilityDescriptor = {
     capabilityId: CAPABILITY_ID,
-    status: "callable",
+    status: disabled ? "disabled" : "callable",
     form: FORM,
     title: TITLE,
     toolCount: TOOLS.length,
@@ -242,4 +242,12 @@ export function createShadcnUiCallableCapability(): CallableCapability {
   }
 
   return capability;
+}
+
+// --- Public re-exports matching the Runtime capability naming convention ---
+
+export { execute as executeShadcnUiTool };
+
+export function listShadcnUiTools() {
+  return [...TOOLS];
 }

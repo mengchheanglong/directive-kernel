@@ -1,5 +1,9 @@
 ﻿import { resolveDirectiveWorkspaceState } from "../../../engine/state/index.ts";
-import { runDirectiveRuntimeCallableExecution } from "../../../runtime/core/callable-execution.ts";
+import {
+  runDirectiveCallableCapabilityWithExecutionSurface,
+  runDirectiveRuntimeCallableExecution,
+} from "../../../runtime/core/callable-execution.ts";
+import { createShadcnUiCallableCapability } from "../../../runtime/capabilities/shadcn-ui/index.ts";
 import {
   buildDescriptorOnlyHostCallableAdapterDescriptor,
   buildRuntimeCallableExecutionHostAdapterDescriptor,
@@ -767,5 +771,26 @@ export function readStandaloneLiveMiniSweAgentDescriptor(input: {
       "promotion-specification reader for the approved Runtime-owned capability",
       "host-visible summary of current Runtime truth and linked artifacts",
     ],
+  };
+}
+
+// --- shadcn/ui capability registration ---
+
+export function readStandaloneShadcnUiDescriptor(_input: {
+  directiveRoot: string;
+}) {
+  const capability = createShadcnUiCallableCapability();
+  return {
+    capabilityId: capability.descriptor.capabilityId,
+    title: capability.descriptor.title,
+    hostSurface: "Directive Kernel standalone host CLI descriptor",
+    form: capability.descriptor.form,
+    status: capability.descriptor.status,
+    toolCount: capability.descriptor.toolCount,
+    tools: [...capability.descriptor.tools],
+    defaultTimeoutMs: capability.descriptor.defaultTimeoutMs,
+    maxTimeoutMs: capability.descriptor.maxTimeoutMs,
+    isEnabled: capability.isEnabled(),
+    availableTools: capability.listTools(),
   };
 }
