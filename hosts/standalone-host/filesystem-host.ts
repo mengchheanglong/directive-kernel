@@ -1,4 +1,5 @@
 ﻿import path from "node:path";
+import fs from "node:fs";
 import { normalizeAbsolutePath } from "../../shared/lib/path-normalization.ts";
 
 import type { DiscoverySubmissionRequest } from "../../discovery/lib/front-door/submission-router.ts";
@@ -117,10 +118,59 @@ function buildEngineSourceFromDiscoverySubmission(
 
 function buildEngineMissionFromDiscoverySubmission(
   request: DiscoverySubmissionRequest,
+  directiveRoot?: string,
 ): EngineMissionInput {
   const currentObjective =
     request.mission_alignment?.trim()
     || `Assess ${request.candidate_name} for Directive Kernel usefulness.`;
+
+  let activeMissionMarkdown: string | undefined;
+  let goalConstraints: string[] | undefined;
+  let goalSuccessSignal: string | undefined;
+  let goalAdoptionTarget: string | undefined;
+  let goalCapabilityLanes: string[] | undefined;
+
+  if (directiveRoot) {
+    const goalPath = path.join(directiveRoot, "DIRECTIVE_GOAL.md");
+    try {
+      const goalText = fs.readFileSync(goalPath, "utf8");
+      activeMissionMarkdown = goalText;
+
+      const constraintsMatch = goalText.match(/## Constraints\n([\s\S]*?)(?=\n## |$)/i);
+      if (constraintsMatch) {
+        const constraints = constraintsMatch[1]
+          .split(/\n/)
+          .map((line) => line.replace(/^\s*- /, "").trim())
+          .filter((line) => line.length > 0 && !/not provided/i.test(line));
+        if (constraints.length > 0) goalConstraints = constraints;
+      }
+
+      const successMatch = goalText.match(/## Success Signal\n([\s\S]*?)(?=\n## |$)/i);
+      if (successMatch) {
+        const signal = successMatch[1].trim();
+        if (signal && !/not provided/i.test(signal)) goalSuccessSignal = signal;
+      }
+
+      const adoptionMatch = goalText.match(/## Adoption Target\n([\s\S]*?)(?=\n## |$)/i);
+      if (adoptionMatch) {
+        const target = adoptionMatch[1].split(/\n/)[0]?.trim();
+        if (target && !/not provided/i.test(target)) goalAdoptionTarget = target;
+      }
+
+      // Parse Primary Lane for capabilityLanes
+      const laneMatch = goalText.match(/## Primary Lane\n([\s\S]*?)(?=\n## |$)/i);
+      if (laneMatch) {
+        const laneText = laneMatch[1].toLowerCase();
+        const parsedLanes: string[] = [];
+        if (laneText.includes("runtime")) parsedLanes.push("runtime");
+        if (laneText.includes("discovery")) parsedLanes.push("discovery");
+        if (laneText.includes("architecture")) parsedLanes.push("architecture");
+        if (parsedLanes.length > 0) goalCapabilityLanes = parsedLanes;
+      }
+    } catch {
+      // Goal file not found — use defaults
+    }
+  }
 
   return {
     missionId: null,
@@ -129,11 +179,15 @@ function buildEngineMissionFromDiscoverySubmission(
       "mission-relevant usefulness",
       "safe routing through Discovery, Runtime, or Architecture",
     ],
-    capabilityLanes: [
+    capabilityLanes: goalCapabilityLanes ?? [
       "Discovery lane intake and routing",
       "Architecture lane engine self-improvement",
       "Runtime lane runtime usefulness conversion",
     ],
+    constraints: goalConstraints,
+    successSignal: goalSuccessSignal,
+    adoptionTarget: goalAdoptionTarget,
+    activeMissionMarkdown,
   };
 }
 
@@ -457,7 +511,7 @@ export function createStandaloneFilesystemHost(
         const engine = createEngine();
         const engineResult = await engine.processSource({
           source: buildEngineSourceFromDiscoverySubmission(request),
-          mission: buildEngineMissionFromDiscoverySubmission(request),
+          mission: buildEngineMissionFromDiscoverySubmission(request, harness.directiveRoot),
           receivedAt: normalizeStandaloneHostReceivedAt(
             options.receivedAt ?? harness.bridge.receivedAt,
           ),
