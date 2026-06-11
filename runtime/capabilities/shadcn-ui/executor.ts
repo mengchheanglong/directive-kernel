@@ -121,6 +121,7 @@ function executeGetInstallationGuide() {
       "npx shadcn-ui@latest add button card dialog",
       "Import components from @/components/ui/<name>",
       "Customize CSS variables in globals.css",
+      "Run your dev server and verify components render",
     ],
     dependencies: ["tailwindcss", "clsx", "tailwind-merge", "class-variance-authority"],
     frameworks: ["Next.js", "Vite", "Remix", "Astro", "Laravel"],
