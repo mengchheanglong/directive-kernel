@@ -7,5 +7,6 @@ export * from "./follow-up-questions.ts";
 export * from "./source-memory.ts";
 export * from "./source-similarity.ts";
 export * from "./source-narrative-threading.ts";
+export * from "./source-operationalization.ts";
 export * from "./gap-radar.ts";
 export * from "./earned-autonomy.ts";
