@@ -19,6 +19,7 @@
     "host": { "type": "string", "minLength": 1 },
     "runtime_surface": { "type": "string" },
     "runtime_status": { "type": "string", "minLength": 1 },
+    "verification": { "type": "string", "enum": ["verified", "claimed", "placeholder"] },
     "proof_path": { "type": "string" },
     "last_validated_by": { "type": "string" },
     "last_validation_date": { "type": "string", "format": "date" },
