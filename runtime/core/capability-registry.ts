@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 
 import {
   readValidatedEvidence,
@@ -16,6 +18,13 @@ export interface RuntimeCapabilityManifestExample {
   match: "exact" | { invariantFields: string[] };
 }
 
+export interface RuntimeCapabilityManifestVerifyBlock {
+  command: string;
+  fixtures?: string[];
+  assertions: Array<{ type: "regex" | "jsonpath" | "schema"; value: string }>;
+  timeoutMs: number;
+}
+
 export type RuntimeCapabilityManifest = {
   displayName: string;
   description: string;
@@ -23,6 +32,7 @@ export type RuntimeCapabilityManifest = {
   verification?: RuntimeCapabilityVerification;
   inputSchema?: string;
   outputSchema?: string;
+  verify?: RuntimeCapabilityManifestVerifyBlock;
   examples?: RuntimeCapabilityManifestExample[];
   contract?: RuntimeCapabilityContract;
 };
@@ -82,6 +92,22 @@ function parseRuntimeCapabilityManifest(
   manifestPath: string,
 ): RuntimeCapabilityManifest {
   const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Partial<RuntimeCapabilityManifest & { examples?: unknown[] }>;
+
+  // Validate against the JSON Schema — failure flags contract as "missing" but still returns a valid manifest
+  const ajv = new Ajv2020({ strict: false });
+  addFormats(ajv);
+  const schemaPath = path.resolve(process.cwd(), "shared/schemas/capability-manifest.schema.json");
+  let schemaValid = true;
+  if (fs.existsSync(schemaPath)) {
+    try {
+      const manifestSchema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
+      const validate = ajv.compile(manifestSchema);
+      schemaValid = validate(parsed);
+    } catch {
+      schemaValid = false;
+    }
+  }
+
   if (parsed.domain !== "runtime") {
     throw new Error(`invalid_runtime_capability_manifest: ${manifestPath} must declare domain "runtime"`);
   }
@@ -126,6 +152,42 @@ function parseRuntimeCapabilityManifest(
     }
   }
 
+  // Parse verify block if present
+  let verify: RuntimeCapabilityManifestVerifyBlock | undefined;
+  const rawVerify = (parsed as Record<string, unknown>).verify;
+  if (typeof rawVerify === "object" && rawVerify !== null) {
+    const v = rawVerify as Record<string, unknown>;
+    const assertions = Array.isArray(v.assertions) ? v.assertions as Array<{ type: unknown; value: unknown }> : [];
+    const validAssertions = assertions.filter(
+      (a) => typeof a === "object" && a !== null &&
+        (a.type === "regex" || a.type === "jsonpath" || a.type === "schema") &&
+        typeof a.value === "string"
+    ).map((a) => ({ type: a.type as "regex" | "jsonpath" | "schema", value: a.value as string }));
+    if (typeof v.command === "string" && validAssertions.length > 0) {
+      verify = {
+        command: v.command,
+        ...(Array.isArray(v.fixtures) ? { fixtures: v.fixtures as string[] } : {}),
+        assertions: validAssertions,
+        timeoutMs: typeof v.timeoutMs === "number" && v.timeoutMs >= 1000 ? v.timeoutMs : 30000,
+      };
+    }
+  }
+
+  // Schema validation failure overrides contract to "missing"
+  if (!schemaValid) {
+    return {
+      displayName: parsed.displayName,
+      description: parsed.description,
+      domain: parsed.domain,
+      ...(verification ? { verification } : {}),
+      ...(parsed.inputSchema ? { inputSchema: parsed.inputSchema } : {}),
+      ...(parsed.outputSchema ? { outputSchema: parsed.outputSchema } : {}),
+      ...(examples ? { examples } : {}),
+      ...(verify ? { verify } : {}),
+      contract: "missing",
+    };
+  }
+
   // Contract grade: complete = inputSchema + outputSchema + examples
   // partial = has some contract fields but not all
   // missing = no contract fields at all
@@ -147,6 +209,7 @@ function parseRuntimeCapabilityManifest(
     ...(parsed.inputSchema ? { inputSchema: parsed.inputSchema } : {}),
     ...(parsed.outputSchema ? { outputSchema: parsed.outputSchema } : {}),
     ...(examples ? { examples } : {}),
+    ...(verify ? { verify } : {}),
     contract,
   };
 }

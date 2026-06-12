@@ -569,19 +569,10 @@ function deriveGoalCopilotAssessment(mission: EngineMissionContext) {
     laneClarityScore,
     warnings,
     rationale,
-    suggestedObjective: overallScore >= 85 ? null : buildSuggestedObjective({
-      mission,
-      focusLane,
-    }),
-    suggestedConstraints: buildSuggestedConstraints(mission),
-    suggestedUsefulnessSignals: buildSuggestedUsefulnessSignals({
-      mission,
-      focusLane,
-    }),
-    suggestedCapabilityLanes: buildSuggestedCapabilityLanes({
-      mission,
-      focusLane,
-    }),
+    suggestedObjective: null,
+    suggestedConstraints: [],
+    suggestedUsefulnessSignals: [],
+    suggestedCapabilityLanes: [],
   };
 }
 

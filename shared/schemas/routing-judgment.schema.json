@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/routing-judgment.schema.json",
+  "title": "Routing Judgment",
+  "description": "A structured routing judgment from an LLM or human operator that overrides the keyword-based routing prior.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "judgmentId", "judgedAt", "judge", "laneId", "confidence", "rationale", "citedEvidence"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "judgmentId": {
+      "type": "string",
+      "pattern": "^rj-[a-z0-9]{8,}$"
+    },
+    "judgedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "judge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "identifier"],
+      "properties": {
+        "kind": {
+          "enum": ["llm_operator", "human_operator"]
+        },
+        "identifier": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string"
+        }
+      }
+    },
+    "laneId": {
+      "enum": ["discovery", "architecture", "runtime"]
+    },
+    "confidence": {
+      "enum": ["low", "medium", "high"]
+    },
+    "recordShape": {
+      "enum": ["fast_path", "standard"]
+    },
+    "needsHumanReview": {
+      "type": "boolean"
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 50
+    },
+    "citedEvidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "excerpt"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "excerpt": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "rejectedLanes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["laneId", "reason"],
+        "properties": {
+          "laneId": {
+            "enum": ["discovery", "architecture", "runtime"]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10
+          }
+        }
+      }
+    }
+  }
+}

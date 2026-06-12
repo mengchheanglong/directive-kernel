@@ -704,6 +704,30 @@ export async function handleDirectiveUiApiRequest(input: {
     });
     return true;
   }
+  if (method === "POST" && pathname === "/api/runtime/capability-recall") {
+    const payload = parseJsonBody<{ query: string }>(await readBody(req));
+    if (!payload.query || !payload.query.trim()) {
+      writeJson(res, 400, { ok: false, error: "query is required" });
+      return true;
+    }
+    const { buildCapabilityRecallExecutors } = await import("../mcp-host/executors/capability-recall.js");
+    const executors = buildCapabilityRecallExecutors({ directiveRoot });
+    const result = await executors.find_capability(payload);
+    writeJsonWithSchema(res, 200, "capability-recall.response.schema.json", result);
+    return true;
+  }
+  if (method === "POST" && pathname === "/api/runtime/capability-outcomes") {
+    const payload = parseJsonBody<{ capability_id: string; outcome: string; description?: string }>(await readBody(req));
+    if (!payload.capability_id || !payload.outcome) {
+      writeJson(res, 400, { ok: false, error: "capability_id and outcome are required" });
+      return true;
+    }
+    const { buildCapabilityRecallExecutors } = await import("../mcp-host/executors/capability-recall.js");
+    const executors = buildCapabilityRecallExecutors({ directiveRoot });
+    const result = await executors.report_outcome(payload);
+    writeJson(res, 200, result);
+    return true;
+  }
   if (method === "POST" && pathname === "/api/architecture/handoff-start") {
     const payload = parseJsonBody<{ handoffPath: string }>(await readBody(req));
     writeJson(res, 200, startDirectiveArchitectureFromHandoff({

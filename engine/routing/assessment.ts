@@ -1,7 +1,9 @@
 import type {
   EngineCapabilityGap,
+  EngineLaneId,
   EngineMissionContext,
   EngineRoutingAssessment,
+  EngineRoutingConfidence,
   EngineRunRecord,
   EngineSourceItem,
 } from "../types.ts";
@@ -53,6 +55,8 @@ import {
   deriveRecommendedLane,
   rankLaneScores,
 } from "./shared.ts";
+import type { RoutingJudgment, Disagreement } from "./judgment.ts";
+import { validateRoutingJudgment, applyRoutingJudgment } from "./judgment.ts";
 
 export function assessEngineRouting(input: {
   source: EngineSourceItem;
@@ -62,6 +66,7 @@ export function assessEngineRouting(input: {
   policyEvents?: DecisionPolicyEvent[];
   existingRuns?: EngineRunRecord[];
   receivedAt?: string | null;
+  judgment?: RoutingJudgment;
 }): EngineRoutingAssessment {
   const existingRuns = [...(input.existingRuns ?? [])];
   const policyEvents = [...(input.policyEvents ?? [])];
@@ -200,8 +205,8 @@ export function assessEngineRouting(input: {
     ambiguityPenalty * 4;
   const missionPriorityScore = Math.max(0, Math.min(100, Math.round(total)));
   const routeConflict = conflictingSignalFamilies.length > 0;
-  const confidence = deriveConfidence(topLaneScore, ambiguityPenalty, routeConflict);
-  const recommendedLaneId = shouldFallbackLowConfidenceRouteToDiscovery({
+  let confidence = deriveConfidence(topLaneScore, ambiguityPenalty, routeConflict);
+  let recommendedLaneId = shouldFallbackLowConfidenceRouteToDiscovery({
     confidence,
     matchedGap,
     source: input.source,
@@ -228,7 +233,7 @@ export function assessEngineRouting(input: {
     }))
     .filter((entry) => entry.proportion >= 25)
     .slice(0, 2);
-  const recommendedRecordShape = deriveRecommendedRecordShape({
+  let recommendedRecordShape = deriveRecommendedRecordShape({
     recommendedLaneId,
     confidence,
     matchedGap,
@@ -274,8 +279,45 @@ export function assessEngineRouting(input: {
     policyEvents,
     corrections,
   });
-  const needsHumanReview =
+  let needsHumanReview =
     baseNeedsHumanReview && !earnedAutonomy.approvalReductionApplied;
+
+  // ── Routing Judgment Override ──────────────────────────────────────
+  let routingDisagreement: Disagreement | null = null;
+  let priorLaneId = recommendedLaneId;
+  let priorConfidence = confidence;
+  if (input.judgment) {
+    priorLaneId = recommendedLaneId;
+    priorConfidence = confidence;
+    const priorNeedsHumanReview = needsHumanReview;
+    const priorLaneScores = {
+      discovery: laneScores.discovery,
+      architecture: laneScores.architecture,
+      runtime: laneScores.runtime,
+    };
+
+    const validation = validateRoutingJudgment(input.judgment, input.source);
+    if (!validation.ok) {
+      throw new Error(
+        `Routing judgment failed anti-hallucination check: ${validation.errors.join("; ")}`,
+      );
+    }
+    const applied = applyRoutingJudgment(
+      {
+        recommendedLaneId: priorLaneId,
+        confidence: priorConfidence,
+        needsHumanReview: priorNeedsHumanReview,
+        laneScores: priorLaneScores,
+      },
+      input.judgment,
+    );
+    recommendedLaneId = applied.assessment.recommendedLaneId as "discovery" | "architecture" | "runtime";
+    confidence = applied.assessment.confidence as "high" | "medium" | "low";
+    needsHumanReview = applied.assessment.needsHumanReview;
+    recommendedRecordShape = applied.assessment.recommendedRecordShape;
+    routingDisagreement = applied.disagreement;
+  }
+
   const sourceSimilarity = deriveSourceSimilarityAssessment({
     source: input.source,
     sourceText,
@@ -624,6 +666,16 @@ export function assessEngineRouting(input: {
     matchedGapId: matchedGap?.gapId ?? null,
     matchedGapRank,
     explicitRouteDestination: null,
+    routingPrior: input.judgment
+      ? {
+          recommendedLaneId: priorLaneId,
+          confidence: priorConfidence as "high" | "medium" | "low",
+          laneScores: { discovery: laneScores.discovery, architecture: laneScores.architecture, runtime: laneScores.runtime },
+          signalWinner: scoreWinnerLaneId,
+        }
+      : undefined,
+    routingJudgment: input.judgment ? (input.judgment as unknown as Record<string, unknown>) : undefined,
+    routingDisagreement: routingDisagreement ?? undefined,
     routeConflict,
     needsHumanReview,
     missionSpecificityWarning,

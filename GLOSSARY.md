@@ -133,8 +133,15 @@ readable companion to that audit.
 - **Readiness**: The runtime promotion-readiness state that gates whether
   an artifact can be promoted. See
   [`runtime/lib/operations/promotion-readiness.ts`](./runtime/lib/operations/promotion-readiness.ts).
+- **Recall**: The find_capability operation that ranks capabilities by semantic
+  match × reliability × freshness × trust. See
+  [`runtime/lib/projections/capability-reliability.ts`](./runtime/lib/projections/capability-reliability.ts).
 - **Record**: A persisted JSON artifact at rest in a directive root. See
   [`engine/storage.ts`](./engine/storage.ts).
+- **Reliability projection**: A Laplace-smoothed reliability score (0–1) derived
+  from capability_outcome events, with 30-day exponential freshness decay.
+  Used by find_capability to rank results by observed performance. See
+  [`runtime/lib/projections/capability-reliability.ts`](./runtime/lib/projections/capability-reliability.ts).
 - **Registry**: Runtime's registry of accepted capabilities that the
   kernel exposes to hosts. See
   [`shared/schemas/checker-definition-registry.schema.json`](./shared/schemas/checker-definition-registry.schema.json).

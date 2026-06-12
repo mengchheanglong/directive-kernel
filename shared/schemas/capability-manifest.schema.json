@@ -2,13 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "shared/schemas/capability-manifest.schema.json",
   "title": "Capability Manifest Contract",
-  "description": "Defines the contract for a Runtime capability: its input/output schemas and golden examples for contract-grade verification.",
+  "description": "Defines the contract for a Runtime capability: input/output schemas, verification block, and golden examples for contract-grade verification.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "displayName",
     "description",
-    "domain"
+    "domain",
+    "verification",
+    "inputSchema",
+    "outputSchema",
+    "verify"
   ],
   "properties": {
     "displayName": {
@@ -41,9 +45,53 @@
       "minLength": 1,
       "description": "Relative path to a JSON Schema file defining valid outputs (e.g. shared/schemas/my-cap-output.schema.json)."
     },
+    "verify": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "assertions", "timeoutMs"],
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "Shell command to execute for verification."
+        },
+        "fixtures": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional fixture file paths needed by the verification command."
+        },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "value"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["regex", "jsonpath", "schema"],
+                "description": "Assertion type: regex matches output text, jsonpath extracts JSON values, schema validates against a JSON Schema."
+              },
+              "value": {
+                "type": "string",
+                "description": "The assertion pattern, JSONPath expression, or path to a JSON Schema file."
+              }
+            }
+          },
+          "description": "Assertions to validate verification output."
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "description": "Maximum execution time in milliseconds."
+        }
+      },
+      "description": "Verification block defining how to verify this capability at runtime."
+    },
     "examples": {
       "type": "array",
       "minItems": 1,
+      "maxItems": 3,
       "description": "Golden examples for contract-grade verification. Each example defines an input, the expected output, and how to validate the match.",
       "items": {
         "type": "object",
@@ -90,7 +138,7 @@
     "contract": {
       "type": "string",
       "enum": ["complete", "partial", "missing"],
-      "description": "Contract completeness: 'complete' = has input+output schemas + examples; 'partial' = has some but not all; 'missing' = no contract fields. Set by the registry parser, not in the manifest file itself."
+      "description": "Contract completeness: 'complete' = has input+output schemas + examples + verify; 'partial' = has some but not all; 'missing' = no contract fields. Set by the registry parser, not in the manifest file itself."
     }
   }
 }
