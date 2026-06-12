@@ -90,11 +90,13 @@ for (const file of registryFiles) {
 const real = results.filter((r) => r.realExecution);
 const synthetic = results.filter((r) => !r.realExecution);
 const rate = results.length > 0 ? ((real.length / results.length) * 100).toFixed(1) : "0";
+const filterPrecision = results.length > 0 ? real.length / results.length : 0;
 
 console.log("=== Capability Health Report ===\n");
 console.log(`Total:     ${results.length}`);
 console.log(`Verified:  ${real.length} (${rate}%)`);
-console.log(`Synthetic: ${synthetic.length}\n`);
+console.log(`Synthetic: ${synthetic.length}`);
+console.log(`Filter precision (verified / filter-passed): ${filterPrecision.toFixed(3)}\n`);
 
 if (real.length > 0) {
   console.log("✓ Real execution:");
