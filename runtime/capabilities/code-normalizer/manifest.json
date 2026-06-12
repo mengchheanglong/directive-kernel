@@ -1,5 +1,45 @@
 {
   "displayName": "Code Normalizer",
   "description": "Normalizes source code artifacts into a standardized representation for downstream processing.",
-  "domain": "runtime"
+  "domain": "runtime",
+  "inputSchema": "shared/schemas/code-normalizer-callable-input.schema.json",
+  "outputSchema": "shared/schemas/code-normalizer-callable-output.schema.json",
+  "verification": "placeholder",
+  "examples": [
+    {
+      "name": "Normalize code with blank line collapse and trailing whitespace removal",
+      "input": {
+        "code": "  hello  \n\nworld  ",
+        "transforms": {
+          "collapseBlankLines": true,
+          "normalizeTrailingWhitespace": true
+        }
+      },
+      "output": {
+        "ok": true,
+        "normalizedCode": "hello\nworld",
+        "preservationProof": {
+          "inputLines": 3,
+          "outputLines": 1,
+          "inputNonBlankLines": 2,
+          "outputNonBlankLines": 2,
+          "transformsApplied": [
+            {
+              "name": "collapseBlankLines",
+              "description": "Collapse consecutive blank lines into one"
+            },
+            {
+              "name": "normalizeTrailingWhitespace",
+              "description": "Strip trailing whitespace from lines"
+            }
+          ],
+          "behaviorPreserved": true,
+          "preservationReason": "Only whitespace normalization applied; program semantics unchanged"
+        }
+      },
+      "match": {
+        "invariantFields": ["ok"]
+      }
+    }
+  ]
 }

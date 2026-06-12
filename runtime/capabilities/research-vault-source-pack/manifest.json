@@ -1,5 +1,30 @@
 {
   "displayName": "Research Vault Source Pack",
   "description": "Packages research vault sources into consumable bundles for the kernel intake pipeline.",
-  "domain": "runtime"
+  "domain": "runtime",
+  "inputSchema": "shared/schemas/research-vault-source-pack-callable-input.schema.json",
+  "outputSchema": "shared/schemas/research-vault-source-pack-callable-output.schema.json",
+  "verification": "placeholder",
+  "examples": [
+    {
+      "name": "Query security sources",
+      "input": {
+        "query": "security",
+        "includeEvidence": true,
+        "maxItems": 5
+      },
+      "output": {
+        "ok": true,
+        "query": "security",
+        "sourcePackId": "sp_001",
+        "candidateId": "cand_001",
+        "sourceDerivedBehavior": "static_source_pack_query",
+        "matchedSections": [],
+        "stopLine": "END"
+      },
+      "match": {
+        "invariantFields": ["ok"]
+      }
+    }
+  ]
 }

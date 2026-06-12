@@ -8,6 +8,7 @@ import { buildArchitectureExecutors } from "./executors/architecture.ts";
 import { buildMissionExecutors } from "./executors/mission.ts";
 import { buildReadExecutors } from "./executors/read.ts";
 import { buildInvokeExecutors } from "./executors/invoke.ts";
+import { buildProjectedCapabilityTools } from "./executors/capability-projection.ts";
 
 export function buildToolRegistry(options: ToolRegistryOptions): McpTool[] {
   const dispatch = {
@@ -19,13 +20,12 @@ export function buildToolRegistry(options: ToolRegistryOptions): McpTool[] {
     ...buildInvokeExecutors(options),
   };
 
-  const tools: McpTool[] = ROUTE_TABLE.map((entry) => {
+  const coreTools: McpTool[] = ROUTE_TABLE.map((entry) => {
     const executor = dispatch[entry.name];
     if (!executor) {
       throw new Error(`No executor mapped for operation: ${entry.name}`);
     }
 
-    // Build description from manifest
     const descriptionParts = [entry.summary];
     if (entry.prerequisites && entry.prerequisites.length > 0) {
       descriptionParts.push(`Prerequisites: ${entry.prerequisites.join(", ")}`);
@@ -38,7 +38,6 @@ export function buildToolRegistry(options: ToolRegistryOptions): McpTool[] {
     }
     const description = descriptionParts.join("\n");
 
-    // Load input schema from disk if declared
     let inputSchema: Record<string, unknown> = { type: "object", properties: {} };
     if (entry.input_schema) {
       const schemaPath = path.resolve(process.cwd(), entry.input_schema);
@@ -57,8 +56,14 @@ export function buildToolRegistry(options: ToolRegistryOptions): McpTool[] {
     };
   });
 
-  // Deterministic sort by name
-  tools.sort((left, right) => left.name.localeCompare(right.name));
+  // Project verified+contracted capabilities as first-class MCP tools
+  const { tools: projectedTools, executors: projectedExecutors } =
+    buildProjectedCapabilityTools(options);
+  // Merge projected executors into dispatch for tools/call resolution
+  Object.assign(dispatch, projectedExecutors);
 
-  return tools;
+  const allTools = [...coreTools, ...projectedTools];
+  allTools.sort((left, right) => left.name.localeCompare(right.name));
+
+  return allTools;
 }

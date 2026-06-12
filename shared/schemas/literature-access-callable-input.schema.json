@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/literature-access-callable-input.schema.json",
+  "title": "Literature Access Callable Input",
+  "description": "Input for accessing academic and technical literature through the Scientify research bundle.",
+  "type": "object",
+  "required": ["tool"],
+  "properties": {
+    "tool": {
+      "type": "string",
+      "enum": ["arxiv-search", "arxiv-download", "openalex-search", "unpaywall-download"],
+      "description": "Literature access tool to invoke"
+    },
+    "query": {
+      "type": "string",
+      "description": "Search query string"
+    },
+    "max_results": {
+      "type": "integer",
+      "description": "Maximum number of results to return",
+      "minimum": 1
+    },
+    "arxiv_ids": {
+      "type": "array",
+      "description": "arXiv paper IDs for download",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dois": {
+      "type": "array",
+      "description": "DOI identifiers for download",
+      "items": {
+        "type": "string"
+      }
+    },
+    "output_dir": {
+      "type": "string",
+      "description": "Output directory for downloaded files"
+    },
+    "date_from": {
+      "type": "string",
+      "description": "Date filter start (YYYY-MM-DD)"
+    },
+    "sort_by": {
+      "type": "string",
+      "description": "Sort field for results"
+    },
+    "filter": {
+      "type": "string",
+      "description": "Filter expression"
+    },
+    "sort": {
+      "type": "string",
+      "description": "Sort order"
+    }
+  },
+  "additionalProperties": false
+}

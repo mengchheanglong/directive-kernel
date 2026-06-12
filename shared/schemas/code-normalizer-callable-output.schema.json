@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/code-normalizer-callable-output.schema.json",
+  "title": "Code Normalizer Callable Output",
+  "description": "Output from normalizing source code artifacts into a standardized representation.",
+  "type": "object",
+  "oneOf": [
+    {
+      "title": "Success",
+      "type": "object",
+      "required": ["ok", "normalizedCode", "preservationProof"],
+      "properties": {
+        "ok": {
+          "const": true,
+          "description": "Indicates successful normalization"
+        },
+        "normalizedCode": {
+          "type": "string",
+          "description": "Normalized source code output"
+        },
+        "preservationProof": {
+          "type": "object",
+          "description": "Proof that behavior was preserved during normalization",
+          "required": [
+            "inputLines",
+            "outputLines",
+            "inputNonBlankLines",
+            "outputNonBlankLines",
+            "transformsApplied",
+            "behaviorPreserved",
+            "preservationReason"
+          ],
+          "properties": {
+            "inputLines": {
+              "type": "integer",
+              "description": "Number of lines in the input code"
+            },
+            "outputLines": {
+              "type": "integer",
+              "description": "Number of lines in the output code"
+            },
+            "inputNonBlankLines": {
+              "type": "integer",
+              "description": "Number of non-blank lines in the input"
+            },
+            "outputNonBlankLines": {
+              "type": "integer",
+              "description": "Number of non-blank lines in the output"
+            },
+            "transformsApplied": {
+              "type": "array",
+              "description": "Transforms that were applied during normalization",
+              "items": {
+                "type": "object",
+                "required": ["name", "description"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the transform"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of what the transform does"
+                  }
+                }
+              }
+            },
+            "behaviorPreserved": {
+              "type": "boolean",
+              "description": "Whether program behavior was preserved"
+            },
+            "preservationReason": {
+              "type": "string",
+              "description": "Explanation of why behavior was or was not preserved"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "Error",
+      "type": "object",
+      "required": ["ok", "error", "message"],
+      "properties": {
+        "ok": {
+          "const": false,
+          "description": "Indicates normalization failure"
+        },
+        "error": {
+          "type": "string",
+          "description": "Machine-readable error code"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error message"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

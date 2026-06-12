@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/research-vault-source-pack-callable-output.schema.json",
+  "title": "Research Vault Source Pack Callable Output",
+  "description": "Output from packaging research vault sources into consumable bundles.",
+  "type": "object",
+  "oneOf": [
+    {
+      "title": "Success",
+      "type": "object",
+      "required": [
+        "ok",
+        "query",
+        "sourcePackId",
+        "candidateId",
+        "sourceDerivedBehavior",
+        "matchedSections",
+        "stopLine"
+      ],
+      "properties": {
+        "ok": {
+          "const": true,
+          "description": "Indicates successful source packaging"
+        },
+        "query": {
+          "type": "string",
+          "description": "The query used for source selection"
+        },
+        "sourcePackId": {
+          "type": "string",
+          "description": "Unique identifier for the source pack"
+        },
+        "candidateId": {
+          "type": "string",
+          "description": "Candidate identifier for the pipeline"
+        },
+        "sourceDerivedBehavior": {
+          "const": "static_source_pack_query",
+          "description": "Fixed behavior tag for source pack queries"
+        },
+        "matchedSections": {
+          "type": "array",
+          "description": "Sections that matched the query",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "score", "summary"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Section identifier"
+              },
+              "title": {
+                "type": "string",
+                "description": "Section title"
+              },
+              "score": {
+                "type": "number",
+                "description": "Relevance score"
+              },
+              "summary": {
+                "type": "string",
+                "description": "Section summary"
+              }
+            }
+          }
+        },
+        "stopLine": {
+          "type": "string",
+          "description": "Stop line marker indicating the end of the pack"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "Error",
+      "type": "object",
+      "required": ["ok", "error", "message"],
+      "properties": {
+        "ok": {
+          "const": false,
+          "description": "Indicates packaging failure"
+        },
+        "error": {
+          "type": "string",
+          "description": "Machine-readable error code"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error message"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

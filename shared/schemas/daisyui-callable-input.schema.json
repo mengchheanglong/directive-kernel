@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/daisyui-callable-input.schema.json",
+  "title": "daisyUI Callable Input",
+  "description": "Input for daisyUI Tailwind CSS component library operations.",
+  "type": "object",
+  "required": ["tool"],
+  "properties": {
+    "tool": {
+      "type": "string",
+      "enum": ["list-components", "get-component-doc", "validate-config", "get-installation-guide"],
+      "description": "daisyUI tool to invoke"
+    },
+    "component": {
+      "type": "string",
+      "description": "Component name for documentation lookup"
+    },
+    "config": {
+      "type": "object",
+      "description": "Configuration object for validation"
+    }
+  },
+  "additionalProperties": false
+}

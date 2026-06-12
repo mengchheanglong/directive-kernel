@@ -23,9 +23,8 @@ import {
   verificationFromEvidence,
 } from "../../../shared/lib/execution-evidence.ts";
 import { readDecisionPolicyLedger, appendDecisionPolicyEvent } from "../../../engine/decision-policy-ledger.ts";
-import { deriveEngineEarnedAutonomyAssessment } from "../../../engine/routing/earned-autonomy.ts";
+import { deriveCapabilityTrust } from "../../../engine/routing/capability-trust.ts";
 import type { ToolExecutor } from "../types.ts";
-import type { EngineSourceItem, EngineRoutingConfidence } from "../../../engine/types.ts";
 
 // ── Trust gate ─────────────────────────────────────────────────────
 
@@ -35,6 +34,11 @@ interface TrustGateResult {
   requiresOperatorConfirmation: boolean;
   autoApprovalEligible: boolean;
   verification: string;
+  trust?: {
+    sampleSize: number;
+    successRate: number;
+    demoted: boolean;
+  };
 }
 
 function evaluateTrustGate(input: {
@@ -58,44 +62,22 @@ function evaluateTrustGate(input: {
     };
   }
 
-  // Gate 2: Earned Autonomy check
-  const ledger = readDecisionPolicyLedger(input.directiveRoot, { lookback: "all" });
-  const policyEvents = ledger.events.filter((e) => e.source === "discovery_routing_review");
-
-  // Build a minimal synthetic source for autonomy assessment
-  const syntheticSource: EngineSourceItem = {
-    sourceType: "internal-signal",
-    sourceRef: `cap-invoke-${input.capabilityId}`,
-    title: `Capability invocation: ${input.capabilityId}`,
-    summary: `Operator requesting invocation of capability ${input.capabilityId}`,
-    sourceId: `cap-invoke-${input.capabilityId}`,
-  };
-
-  const recommendedLaneId = "runtime";
-  const confidence: EngineRoutingConfidence = "medium";
-
-  const autonomy = deriveEngineEarnedAutonomyAssessment({
-    source: syntheticSource,
-    recommendedLaneId,
-    recommendedRecordShape: "fast_path",
-    confidence,
-    routeConflict: false,
-    baseNeedsHumanReview: true,
-    existingRuns: [],
-    policyEvents,
-    corrections: [],
-  });
-
-  const autoApprovalEligible = autonomy.autoApprovalEligible;
+  // Gate 2: Per-capability trust check (replaces synthetic earned-autonomy hack)
+  const trust = deriveCapabilityTrust(input.capabilityId, input.directiveRoot);
+  const autoApprovalEligible = trust.autoApprovalEligible;
 
   // If not auto-approve eligible and no confirmation provided, require it
   if (!autoApprovalEligible && !input.operatorConfirmationId) {
     return {
       allowed: false,
-      reason: `Operator has not earned autonomy for this route class (score: ${autonomy.overallScore}/100). ` +
-        `Evidence count: ${autonomy.evidenceCount}. Provide operator_confirmation_id from the decision inbox to proceed.`,
+      reason: trust.reason,
       requiresOperatorConfirmation: true,
       autoApprovalEligible: false,
+      trust: {
+        sampleSize: trust.sampleSize,
+        successRate: trust.successRate,
+        demoted: trust.demoted,
+      },
       verification,
     };
   }
@@ -103,7 +85,7 @@ function evaluateTrustGate(input: {
   return {
     allowed: true,
     reason: autoApprovalEligible
-      ? `Auto-approved (earned autonomy score: ${autonomy.overallScore}/100, verification: ${verification})`
+      ? `Auto-approved (${trust.successCount}/${trust.sampleSize} successes, trust: ${(trust.successRate * 100).toFixed(0)}%, verification: ${verification})`
       : `Operator-confirmed (confirmation: ${input.operatorConfirmationId}, verification: ${verification})`,
     requiresOperatorConfirmation: false,
     autoApprovalEligible,

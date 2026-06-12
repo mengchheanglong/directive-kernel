@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/literature-access-callable-output.schema.json",
+  "title": "Literature Access Callable Output",
+  "description": "Output from accessing academic and technical literature through the Scientify research bundle.",
+  "type": "object",
+  "required": ["ok", "tool", "status", "result"],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "Whether the operation succeeded"
+    },
+    "tool": {
+      "type": "string",
+      "description": "The literature access tool that was invoked"
+    },
+    "status": {
+      "type": "string",
+      "description": "Status of the operation"
+    },
+    "result": {
+      "type": "object",
+      "description": "Tool-specific result data"
+    }
+  },
+  "additionalProperties": false
+}
