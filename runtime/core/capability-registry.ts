@@ -1,10 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 
+export type RuntimeCapabilityVerification = "verified" | "claimed" | "placeholder";
+
 export type RuntimeCapabilityManifest = {
   displayName: string;
   description: string;
   domain: "runtime";
+  verification?: RuntimeCapabilityVerification;
   inputSchema?: string;
   outputSchema?: string;
 };
@@ -14,6 +17,7 @@ export type RuntimeCapabilityMetadata = {
   displayName: string;
   description: string;
   modulePath: string;
+  verification: RuntimeCapabilityVerification;
 };
 
 export type RuntimeCapabilityScaffoldFile = {
@@ -68,10 +72,17 @@ function parseRuntimeCapabilityManifest(
   if (!parsed.displayName || !parsed.description) {
     throw new Error(`invalid_runtime_capability_manifest: ${manifestPath} must declare displayName and description`);
   }
+  const verification =
+    parsed.verification === "verified"
+    || parsed.verification === "claimed"
+    || parsed.verification === "placeholder"
+      ? parsed.verification
+      : undefined;
   return {
     displayName: parsed.displayName,
     description: parsed.description,
     domain: parsed.domain,
+    ...(verification ? { verification } : {}),
     ...(parsed.inputSchema ? { inputSchema: parsed.inputSchema } : {}),
     ...(parsed.outputSchema ? { outputSchema: parsed.outputSchema } : {}),
   };
@@ -121,11 +132,13 @@ export function listRuntimeCapabilityMetadata(): RuntimeCapabilityMetadata[] {
       const displayName = manifest?.displayName ?? toDisplayName(entry.name);
       const description = manifest?.description
         ?? `Describe the bounded Runtime value exposed by ${displayName}.`;
+      const verification = manifest?.verification ?? "placeholder";
       return {
         id: entry.name,
         displayName,
         description,
         modulePath: `runtime/capabilities/${entry.name}/index.ts`,
+        verification,
       } satisfies RuntimeCapabilityMetadata;
     })
     .sort((a, b) => a.id.localeCompare(b.id));

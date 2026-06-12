@@ -27,6 +27,7 @@ import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/fol
 import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/proof-bundle-writer.ts";
 import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/promotion-record-writer.ts";
 import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/registry-entry-writer.ts";
+import { migrateRegistryEntryVerification } from "../../shared/schemas/migrations/registry-entry-verification.ts";
 import type { RuntimeRecordRequest } from "../../runtime/lib/writers/record-writer.ts";
 import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/transformation-proof-writer.ts";
 import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/transformation-record-writer.ts";
@@ -967,7 +968,9 @@ async function main() {
     acquireDirectiveRootLock(directiveRoot);
     const host = createRuntimeHostFromFlags(flags, runtimeConfig);
     try {
-      const request = readJson<RuntimeRegistryEntryRequest>(inputJsonPath);
+      const request = migrateRegistryEntryVerification(
+        readJson<RuntimeRegistryEntryRequest>(inputJsonPath),
+      );
       const result = await host.writeRuntimeRegistryEntry(request);
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } finally {

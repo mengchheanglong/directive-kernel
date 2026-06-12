@@ -71,8 +71,10 @@ describe("process-lock", () => {
     const lockPath = path.join(tmpRoot, "engine", ".lock");
     fs.mkdirSync(path.dirname(lockPath), { recursive: true });
 
+    // Use a self-PID that is guaranteed alive on this OS.
+    // PID 1 is not portable (Windows has no guaranteed-alive PID 1).
     const freshBody: ProcessLockBody = {
-      pid: 1,
+      pid: process.pid,
       startedAt: new Date().toISOString(),
       host: os.hostname(),
     };

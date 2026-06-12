@@ -6,6 +6,7 @@
   "host": "directive-workspace-standalone-host",
   "runtime_surface": "bounded local runtime artifact lifecycle",
   "runtime_status": "reference_live",
+  "verification": "claimed",
   "proof_path": "runtime/03-proof/2026-03-23-standalone-runtime-example-proof-checklist.md",
   "last_validated_by": "check:directive-standalone-runtime-host",
   "last_validation_date": "2026-03-23",

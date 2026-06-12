@@ -25,6 +25,9 @@
   "exclude": [
     "ui/**",
     "node_modules/**",
-    "local/**"
+    "local/**",
+    "scripts/fresh-pipeline.ts",
+    "scripts/hermes-advance.ts",
+    "scripts/oneshot.ts"
   ]
 }

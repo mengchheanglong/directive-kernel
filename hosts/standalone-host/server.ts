@@ -1,4 +1,4 @@
-﻿import http, {
+import http, {
   type IncomingMessage,
   type Server as NodeHttpServer,
   type ServerResponse,
@@ -23,6 +23,7 @@ import type { RuntimeFollowUpRecordRequest } from "../../runtime/lib/writers/fol
 import type { RuntimeProofBundleRequest } from "../../runtime/lib/writers/proof-bundle-writer.ts";
 import type { RuntimePromotionRecordRequest } from "../../runtime/lib/writers/promotion-record-writer.ts";
 import type { RuntimeRegistryEntryRequest } from "../../runtime/lib/writers/registry-entry-writer.ts";
+import { migrateRegistryEntryVerification } from "../../shared/schemas/migrations/registry-entry-verification.ts";
 import type { RuntimeRecordRequest } from "../../runtime/lib/writers/record-writer.ts";
 import type { RuntimeTransformationProofRequest } from "../../runtime/lib/writers/transformation-proof-writer.ts";
 import type { RuntimeTransformationRecordRequest } from "../../runtime/lib/writers/transformation-record-writer.ts";
@@ -698,7 +699,9 @@ export function startStandaloneHostServer(
       if (method === "POST" && pathname === "/api/runtime/registry-entries") {
         routeId = "runtime_registry_entry_write";
         const rawBody = await readBody(req);
-        const request = parseSanitizedJsonBody(rawBody) as RuntimeRegistryEntryRequest;
+        const request = migrateRegistryEntryVerification(
+          parseSanitizedJsonBody(rawBody) as RuntimeRegistryEntryRequest,
+        );
         const result = await standaloneHost.writeRuntimeRegistryEntry(request);
         writeJson(res, 200, result);
         return;

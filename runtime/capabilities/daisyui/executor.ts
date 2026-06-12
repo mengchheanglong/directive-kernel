@@ -43,7 +43,7 @@ const COMPONENTS = [
 
 function validateInput(tool: string, input: Record<string, unknown>): string | null {
   const validTools = TOOLS.map((t) => t.tool);
-  if (!validTools.includes(tool)) {
+  if (!(validTools as readonly string[]).includes(tool)) {
     return `Unknown tool: ${tool}. Available: ${validTools.join(", ")}`;
   }
   if (tool === "get-component-doc" && typeof input.component !== "string") {

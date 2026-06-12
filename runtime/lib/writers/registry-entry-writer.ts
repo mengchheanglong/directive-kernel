@@ -18,6 +18,7 @@ export type RuntimeRegistryEntryRequest = {
   host: string;
   runtime_surface: string;
   runtime_status: string;
+  verification?: "verified" | "claimed" | "placeholder" | null;
   proof_path: string;
   last_validated_by: string;
   last_validation_date: string;
@@ -104,6 +105,7 @@ ${renderRuntimeWriterList(normalizeRuntimeWriterList(acceptanceGate.notes), { bu
 - Host: ${host}
 - Runtime surface: ${runtimeSurface}
 - Runtime status: ${runtimeStatus}
+- Verification: ${request.verification ?? "placeholder"}
 - Proof path: \`${proofPath}\`
 - Last validated by: ${lastValidatedBy}
 - Last validation date: ${lastValidationDate}

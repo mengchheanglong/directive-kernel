@@ -85,6 +85,8 @@
   }
   .badge-verified { background: rgba(16,185,129,0.15); color: var(--verified); }
   .badge-lane { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .badge-placeholder { background: rgba(245,158,11,0.12); color: var(--warning); }
+  .card[data-verified="false"] { opacity: 0.55; }
   .card-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
   .card-meta { display: flex; gap: 16px; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 10px; }
   .card-meta span { display: flex; align-items: center; gap: 4px; }
@@ -120,10 +122,10 @@
 </div>
 
 <div class="filter-bar" id="filters">
-  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="all">All</button>
   <button class="filter-btn" data-filter="runtime">Runtime</button>
   <button class="filter-btn" data-filter="architecture">Architecture</button>
-  <button class="filter-btn" data-filter="verified">Verified</button>
+  <button class="filter-btn active" data-filter="verified">Verified</button>
   <span class="filter-count" id="filterCount"></span>
 </div>
 
@@ -175,19 +177,30 @@ async function load() {
       return descData.default || '';
     }
 
-    grid.innerHTML = entries.map(e => {
+    function isVerifiedEntry(e) {
+      const name = e.candidate_name || e.candidate_id || 'Unknown';
+      const cid = e.candidate_id || '';
+      return verifiedList.some(k => (name + ' ' + cid).toLowerCase().includes(k));
+    }
+
+    // Verified-first: demote unverified capabilities below verified ones.
+    const sortedEntries = entries.slice().sort(
+      (a, b) => Number(isVerifiedEntry(b)) - Number(isVerifiedEntry(a)),
+    );
+
+    grid.innerHTML = sortedEntries.map(e => {
       const lane = e.routing_target || 'discovery';
       const name = e.candidate_name || e.candidate_id || 'Unknown';
       const desc = findDesc(name, e.candidate_id || '');
       const url = e.source_reference || '';
       const cid = e.candidate_id || '';
-      const isVerified = verifiedList.some(k => (name + ' ' + cid).toLowerCase().includes(k));
+      const isVerified = isVerifiedEntry(e);
 
       return `<div class="card ${lane}" data-lane="${lane}" data-verified="${isVerified}">
         <div class="card-header">
           <span class="card-name">${esc(name)}</span>
           <div class="card-badges">
-            ${isVerified ? '<span class="badge badge-verified">verified</span>' : ''}
+            ${isVerified ? '<span class="badge badge-verified">verified</span>' : '<span class="badge badge-placeholder">placeholder</span>'}
             <span class="badge badge-lane">${lane}</span>
           </div>
         </div>
@@ -199,7 +212,8 @@ async function load() {
       </div>`;
     }).join('');
 
-    count.textContent = `${entries.length} sources`;
+    const activeFilter = document.querySelector('.filter-btn.active');
+    applyFilter(activeFilter ? activeFilter.dataset.filter : 'verified');
   } catch (err) {
     grid.className = '';
     grid.innerHTML = `<div class="empty">Failed to load: ${esc(err.message)}</div>`;
@@ -208,11 +222,9 @@ async function load() {
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
 
-document.getElementById('filters').addEventListener('click', e => {
-  if (!e.target.classList.contains('filter-btn')) return;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
-  const filter = e.target.dataset.filter;
+function applyFilter(filter) {
+  document.querySelectorAll('.filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.filter === filter));
   let visible = 0;
   document.querySelectorAll('#grid .card').forEach(card => {
     if (filter === 'all') { card.style.display = ''; visible++; return; }
@@ -225,6 +237,11 @@ document.getElementById('filters').addEventListener('click', e => {
     else card.style.display = 'none';
   });
   document.getElementById('filterCount').textContent = `${visible} sources`;
+}
+
+document.getElementById('filters').addEventListener('click', e => {
+  if (!e.target.classList.contains('filter-btn')) return;
+  applyFilter(e.target.dataset.filter);
 });
 
 load();
