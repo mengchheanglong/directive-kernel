@@ -12,7 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
-import { readRuntimeCapabilityManifest } from "../../runtime/core/capability-registry.ts";
+import { readRuntimeCapabilityManifest, deriveProjectionReadiness } from "../../runtime/core/capability-registry.ts";
 
 let tmpDir: string;
 
@@ -137,14 +137,11 @@ describe("capability manifest contract validation v2", () => {
   });
 });
 
-describe("capability manifest projection metadata (schema acceptance)", () => {
-  // Note: The runtime capability-registry parser does not yet forward the new
-  // projection fields to RuntimeCapabilityManifest (that is Slice 2 work).
-  // These tests verify the schema itself accepts the new optional fields without
-  // rejecting valid manifests. Schema validation passes (contract is not
-  // "missing") even when the parser doesn't expose the new fields yet.
+describe("capability manifest projection metadata (parser forwarding)", () => {
+  // The registry parser now forwards optional projection fields.
+  // These tests verify the full round-trip: schema accepts them + parser exposes them.
 
-  it("schema accepts optional whenToUse and failureModes without rejecting manifest", () => {
+  it("parser forwards whenToUse and failureModes from manifest", () => {
     writeManifest("with-when-to-use", {
       displayName: "With WhenToUse",
       description: "Has projection metadata.",
@@ -159,18 +156,27 @@ describe("capability manifest projection metadata (schema acceptance)", () => {
       },
       whenToUse: "Use this when you need to convert HTML to Markdown.",
       failureModes: ["Rate-limited by upstream API", "Fails on malformed HTML"],
+      examples: [{
+        name: "test-example",
+        input: { q: "test" },
+        expectedOutput: { ok: true },
+        match: { invariantFields: ["ok"] },
+      }],
     });
 
     const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "with-when-to-use" });
     expect(manifest).not.toBeNull();
-    // Schema validation must NOT reject this as "missing" — optional fields are allowed
-    expect(manifest!.contract).not.toBe("missing");
-    // Core fields still parse correctly
-    expect(manifest!.displayName).toBe("With WhenToUse");
-    expect(manifest!.verification).toBe("verified");
+    expect(manifest!.contract).toBe("complete");
+    // Parser now forwards projection metadata
+    expect(manifest!.whenToUse).toBe("Use this when you need to convert HTML to Markdown.");
+    expect(manifest!.failureModes).toEqual(["Rate-limited by upstream API", "Fails on malformed HTML"]);
+
+    // deriveProjectionReadiness: still not ready (no projection block yet)
+    const readiness = deriveProjectionReadiness(manifest!);
+    expect(readiness.projectionReady).toBe(false);
   });
 
-  it("schema accepts optional projection block with valid kind enum", () => {
+  it("parser forwards projection block with valid kind", () => {
     writeManifest("with-projection", {
       displayName: "With Projection",
       description: "Has projection block.",
@@ -189,16 +195,29 @@ describe("capability manifest projection metadata (schema acceptance)", () => {
         invocation: "cap_html_to_md",
       },
       costNotes: "Free tier: 1000 req/month.",
+      whenToUse: "Use when converting HTML.",
+      failureModes: ["Rate limit"],
+      examples: [{
+        name: "test-example",
+        input: { q: "test" },
+        expectedOutput: { ok: true },
+        match: { invariantFields: ["ok"] },
+      }],
     });
 
     const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "with-projection" });
     expect(manifest).not.toBeNull();
-    // Schema must not reject due to unknown projection fields
-    expect(manifest!.contract).not.toBe("missing");
-    expect(manifest!.displayName).toBe("With Projection");
+    expect(manifest!.contract).toBe("complete");
+    expect(manifest!.projection).toBeDefined();
+    expect(manifest!.projection?.kind).toBe("mcp_tool");
+    expect(manifest!.costNotes).toBe("Free tier: 1000 req/month.");
+
+    // Now has all requirements: verified + complete + projection + whenToUse + failureModes
+    const readiness = deriveProjectionReadiness(manifest!);
+    expect(readiness.projectionReady).toBe(true);
   });
 
-  it("legacy manifest without projection fields still validates as before", () => {
+  it("legacy manifest without projection fields still validates", () => {
     writeManifest("legacy-no-projection", {
       displayName: "Legacy Cap",
       description: "No projection metadata.",
@@ -215,12 +234,18 @@ describe("capability manifest projection metadata (schema acceptance)", () => {
 
     const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "legacy-no-projection" });
     expect(manifest).not.toBeNull();
-    // Legacy entry without new optional fields still validates fully
     expect(manifest!.displayName).toBe("Legacy Cap");
-    expect(manifest!.contract).not.toBe("missing");
+    // Legacy entries without new optional fields — parser returns undefined
+    expect(manifest!.whenToUse).toBeUndefined();
+    expect(manifest!.failureModes).toBeUndefined();
+    expect(manifest!.projection).toBeUndefined();
+
+    // Not projectionReady — missing projection metadata
+    const readiness = deriveProjectionReadiness(manifest!);
+    expect(readiness.projectionReady).toBe(false);
   });
 
-  it("schema accepts verificationEvidence and costNotes without rejecting", () => {
+  it("parser forwards verificationEvidence", () => {
     writeManifest("with-evidence", {
       displayName: "With Evidence",
       description: "Has verification evidence ref.",
@@ -240,12 +265,11 @@ describe("capability manifest projection metadata (schema acceptance)", () => {
 
     const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "with-evidence" });
     expect(manifest).not.toBeNull();
-    // Optional fields must not cause schema rejection
-    expect(manifest!.contract).not.toBe("missing");
-    expect(manifest!.displayName).toBe("With Evidence");
+    expect(manifest!.verificationEvidence).toBe("execution-evidence/cap-123.json");
+    expect(manifest!.whenToUse).toBe("When you need verified behavior.");
   });
 
-  it("manifest with projection metadata and examples remains 'complete'", () => {
+  it("full projection manifest is projectionReady", () => {
     writeManifest("full-projection", {
       displayName: "Full Projection Cap",
       description: "Everything: contract fields + projection metadata.",
@@ -277,8 +301,12 @@ describe("capability manifest projection metadata (schema acceptance)", () => {
 
     const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "full-projection" });
     expect(manifest).not.toBeNull();
-    // Contract stays "complete" even with extra optional fields — schema must not reject them
     expect(manifest!.contract).toBe("complete");
-    expect(manifest!.displayName).toBe("Full Projection Cap");
+    expect(manifest!.whenToUse).toBeDefined();
+    expect(manifest!.failureModes).toHaveLength(1);
+    expect(manifest!.projection?.kind).toBe("hermes_skill");
+
+    const readiness = deriveProjectionReadiness(manifest!);
+    expect(readiness.projectionReady).toBe(true);
   });
 });

@@ -23,7 +23,9 @@
           "description",
           "modulePath",
           "verification",
-          "contract"
+          "contract",
+          "entryClass",
+          "projectionReady"
         ],
         "properties": {
           "id": {
@@ -58,6 +60,49 @@
               "partial",
               "missing"
             ]
+          },
+          "entryClass": {
+            "type": "string",
+            "enum": [
+              "verified_capability",
+              "candidate",
+              "placeholder",
+              "note_only",
+              "rejected",
+              "architecture_experiment"
+            ],
+            "description": "Jarvis capability kernel: the classification of this registry entry."
+          },
+          "projectionKind": {
+            "type": "string",
+            "enum": [
+              "mcp_tool",
+              "hermes_skill",
+              "cli_wrapper",
+              "cron_job",
+              "handoff_prompt",
+              "obsidian_note"
+            ],
+            "description": "The Hermes projection mechanism, if present."
+          },
+          "whenToUse": {
+            "type": "string",
+            "description": "When Hermes should use this capability."
+          },
+          "failureModes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Known failure modes."
+          },
+          "projectionReady": {
+            "type": "boolean",
+            "description": "Whether this capability is ready for Hermes projection (verified + complete contract + valid projection metadata)."
+          },
+          "notUsableReason": {
+            "type": "string",
+            "description": "If not projectionReady, the reason why."
           }
         }
       }

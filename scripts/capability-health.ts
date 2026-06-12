@@ -1,11 +1,13 @@
 /**
  * Capability Health Report — audits all registry entries for harness-verified
- * vs placeholder evidence. Also provides UI consistency checking and regeneration.
+ * vs placeholder evidence. Also provides UI consistency checking and regeneration,
+ * plus Jarvis capability kernel readiness grouping.
  *
  * Usage:
  *   npx tsx scripts/capability-health.ts [--root <directive-root>]
  *   npx tsx scripts/capability-health.ts --check-ui [--root <directive-root>]
  *   npx tsx scripts/capability-health.ts --write-ui [--root <directive-root>]
+ *   npx tsx scripts/capability-health.ts --jarvis [--root <directive-root>]
  *
  * Modes:
  *   (default)  Health report: registry entries vs evidence, verification rates
@@ -13,6 +15,8 @@
  *               array against evidence-derived classification. Exits 1 on mismatch.
  *   --write-ui  Regenerates ui/source-descriptions.json verified array from evidence
  *               files on disk.
+ *   --jarvis    Jarvis readiness report: groups capabilities by entry class and
+ *               projection readiness using RuntimeCapabilityMetadata.
  */
  
 import fs from "node:fs";
@@ -27,6 +31,11 @@ import {
   isExecutionEvidenceShape,
 } from "../shared/lib/execution-evidence.ts";
 
+import {
+  listRuntimeCapabilityMetadata,
+  type RuntimeCapabilityMetadata,
+} from "../runtime/core/capability-registry.ts";
+
 // ── Configuration ──────────────────────────────────────────────────
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -35,7 +44,7 @@ const DEFAULT_ROOT = "C:/Users/User/AppData/Local/hermes/directive-root/directiv
 
 interface ParsedArgs {
   root: string;
-  mode: "health" | "check-ui" | "write-ui";
+  mode: "health" | "check-ui" | "write-ui" | "jarvis";
 }
 
 function parseArgs(): ParsedArgs {
@@ -50,6 +59,8 @@ function parseArgs(): ParsedArgs {
       mode = "check-ui";
     } else if (args[i] === "--write-ui") {
       mode = "write-ui";
+    } else if (args[i] === "--jarvis") {
+      mode = "jarvis";
     }
   }
   return { root: path.resolve(root).replace(/\\/g, "/"), mode };
@@ -376,6 +387,83 @@ function runUIWrite(root: string, kernelRoot: string) {
   console.log(`Timestamp: ${uiData._meta.lastVerified}`);
 }
 
+// ── Jarvis capability kernel readiness report ──────────────────────
+
+function runJarvisReport(_root: string) {
+  const capabilities = listRuntimeCapabilityMetadata();
+
+  const verifiedProjectionReady = capabilities.filter((c) => c.projectionReady && c.entryClass === "verified_capability");
+  const verifiedMissingProjection = capabilities.filter((c) => c.verification === "verified" && !c.projectionReady);
+  const claimed = capabilities.filter((c) => c.verification === "claimed");
+  const placeholder = capabilities.filter((c) => c.entryClass === "placeholder");
+  const candidates = capabilities.filter((c) => c.entryClass === "candidate");
+  const noteOnly = capabilities.filter((c) => c.entryClass === "note_only");
+  const rejected = capabilities.filter((c) => c.entryClass === "rejected");
+  const archExp = capabilities.filter((c) => c.entryClass === "architecture_experiment");
+
+  const total = capabilities.length;
+  const projectionReadyRate = total > 0 ? ((verifiedProjectionReady.length / total) * 100).toFixed(1) : "0";
+
+  console.log("=== Jarvis Capability Kernel Readiness Report ===\n");
+  console.log(`Total capabilities:    ${total}`);
+  console.log();
+
+  console.log("── Power-ready ──");
+  console.log(`verified projection-ready:  ${verifiedProjectionReady.length} (${projectionReadyRate}%)  ← Hermes can use these`);
+  if (verifiedProjectionReady.length > 0) {
+    for (const cap of verifiedProjectionReady) {
+      console.log(`  ✓ ${cap.id} — ${cap.displayName}`);
+      if (cap.whenToUse) console.log(`    whenToUse: ${cap.whenToUse}`);
+      if (cap.failureModes?.length) console.log(`    failureModes: [${cap.failureModes.join(", ")}]`);
+    }
+  }
+
+  console.log();
+  console.log("── Verified but not projection-ready ──");
+  console.log(`verified missing projection: ${verifiedMissingProjection.length}`);
+  if (verifiedMissingProjection.length > 0) {
+    for (const cap of verifiedMissingProjection) {
+      console.log(`  ⚠ ${cap.id} — ${cap.displayName}`);
+      if (cap.notUsableReason) console.log(`    reason: ${cap.notUsableReason}`);
+    }
+  }
+
+  console.log();
+  console.log("── Candidate / unverified ──");
+  console.log(`candidates:              ${candidates.length}`);
+  if (candidates.length > 0) {
+    for (const cap of candidates) {
+      console.log(`  ◦ ${cap.id} — ${cap.displayName} | verification=${cap.verification} | contract=${cap.contract}`);
+    }
+  }
+  console.log(`claimed:                 ${claimed.length}`);
+  console.log(`placeholder:             ${placeholder.length}`);
+
+  console.log();
+  console.log("── Other classes ──");
+  console.log(`note_only:               ${noteOnly.length}`);
+  console.log(`rejected:                ${rejected.length}`);
+  console.log(`architecture_experiment: ${archExp.length}`);
+  console.log();
+
+  // Print non-projection-ready reasons
+  const nonReady = capabilities.filter((c) => !c.projectionReady);
+  if (nonReady.length > 0) {
+    console.log("── Why not projection-ready ──");
+    for (const cap of nonReady) {
+      console.log(`  ${cap.id}: ${cap.notUsableReason ?? "no reason recorded"}`);
+    }
+    console.log();
+  }
+
+  console.log("Key:");
+  console.log("  ✓ = Hermes-usable power (verified + contract=complete + projection + whenToUse + failureModes)");
+  console.log("  ⚠ = verified but blocked (missing contract/projection/metadata)");
+  console.log("  ◦ = candidate/claimed — not yet verified");
+  console.log();
+  console.log(`Registry growth is not success. Hermes getting new reliable powers is success.`);
+}
+
 // ── Main ───────────────────────────────────────────────────────────
 
 function main() {
@@ -388,6 +476,10 @@ function main() {
     }
     case "write-ui": {
       runUIWrite(root, KERNEL_ROOT);
+      process.exit(0);
+    }
+    case "jarvis": {
+      runJarvisReport(root);
       process.exit(0);
     }
     case "health":
