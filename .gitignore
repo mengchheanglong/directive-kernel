@@ -61,3 +61,4 @@ archive/
 *.cpuprofile
 snapshot.json
 graphify-out/
+.hermes/
