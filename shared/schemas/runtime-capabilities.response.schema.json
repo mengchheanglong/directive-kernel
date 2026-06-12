@@ -22,7 +22,8 @@
           "displayName",
           "description",
           "modulePath",
-          "verification"
+          "verification",
+          "contract"
         ],
         "properties": {
           "id": {
@@ -46,7 +47,16 @@
             "enum": [
               "verified",
               "claimed",
-              "placeholder"
+              "placeholder",
+              "runs_unverified_contract"
+            ]
+          },
+          "contract": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "partial",
+              "missing"
             ]
           }
         }

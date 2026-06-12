@@ -1,5 +1,30 @@
 {
   "displayName": "Literature Access",
   "description": "Provides access to academic and technical literature through the Scientify research bundle.",
-  "domain": "runtime"
+  "domain": "runtime",
+  "inputSchema": "shared/schemas/literature-access-callable-input.schema.json",
+  "outputSchema": "shared/schemas/literature-access-callable-output.schema.json",
+  "verification": "placeholder",
+  "examples": [
+    {
+      "name": "ArXiv search for React papers",
+      "input": {
+        "tool": "arxiv-search",
+        "query": "react",
+        "max_results": 1
+      },
+      "output": {
+        "ok": true,
+        "tool": "arxiv-search",
+        "status": "completed",
+        "result": {
+          "total_results": 1,
+          "papers": []
+        }
+      },
+      "match": {
+        "invariantFields": ["ok"]
+      }
+    }
+  ]
 }

@@ -5,6 +5,15 @@
  * The harness (scripts/execution-harness.ts) produces signed evidence records.
  * This module provides the reader and validator that reject hand-written files.
  *
+ * Contract-grade verification (v2):
+ *   - Evidence records may carry an optional `examples` array with per-example
+ *     pass/fail results.
+ *   - `contractVerification: "full"` means all examples passed AND exit code is 0.
+ *     This is the only path to `"verified"`.
+ *   - `contractVerification: "exit_only"` means exit code is 0 but no examples
+ *     were run (legacy evidence). These downgrade to `"runs_unverified_contract"`.
+ *   - Records without `examples` are treated as `contractVerification: "exit_only"`.
+ *
  * Security model:
  *   - Evidence records carry an HMAC-SHA256 signature over all fields except `signature`.
  *   - The HMAC key is a constant embedded in this module (not a secret — it prevents
@@ -18,6 +27,13 @@ import path from "node:path";
 
 // ── Types ──────────────────────────────────────────────────────────
 
+export interface EvidenceExample {
+  name: string;
+  input: Record<string, unknown>;
+  passed: boolean;
+  error?: string;
+}
+
 export interface ExecutionEvidence {
   schemaVersion: number;
   capabilityId: string;
@@ -30,6 +46,10 @@ export interface ExecutionEvidence {
   timestamp: string;
   harnessVersion: string;
   signature: string;
+  /** Contract-grade verification: per-example pass/fail results. */
+  examples?: EvidenceExample[];
+  /** How this evidence was verified: "full" = all examples passed, "exit_only" = only exit code checked. */
+  contractVerification?: "full" | "exit_only";
 }
 
 /** Fields that are signed, in canonical order. */
@@ -44,6 +64,7 @@ const SIGNED_FIELDS: (keyof ExecutionEvidence)[] = [
   "environmentFingerprint",
   "timestamp",
   "harnessVersion",
+  "contractVerification",
 ];
 
 // ── HMAC key ───────────────────────────────────────────────────────
@@ -195,18 +216,36 @@ export function isExecutionEvidenceShape(value: unknown): value is ExecutionEvid
     typeof r.harnessVersion === "string" &&
     typeof r.signature === "string"
   );
+  // Note: examples and contractVerification are optional fields
+  // added in v2 — their absence is handled by verificationFromEvidence.
 }
 
 /**
  * Determine verification status from a validated evidence record.
- * Returns "verified" only when a signed harness record exists with exit code 0.
+ *
+ * Contract-grade verification (v2):
+ *   - `"verified"`: contractVerification is "full" AND exit code is 0
+ *     (all examples passed). This is the ONLY path to verified.
+ *   - `"runs_unverified_contract"`: exit code is 0 but contractVerification
+ *     is "exit_only" (legacy evidence without examples, or examples missing).
+ *   - `"claimed"`: evidence exists but exit code is non-zero, or no evidence.
  */
-export function verificationFromEvidence(evidence: ExecutionEvidence | null): "verified" | "claimed" {
-  if (evidence && evidence.exitCode === 0) {
-    return "verified";
-  }
-  if (evidence && evidence.exitCode !== 0) {
+export function verificationFromEvidence(
+  evidence: ExecutionEvidence | null,
+): "verified" | "claimed" | "runs_unverified_contract" {
+  if (!evidence) {
     return "claimed";
   }
-  return "claimed";
+  if (evidence.exitCode !== 0) {
+    return "claimed";
+  }
+  // exitCode === 0: check contract grade
+  if (evidence.contractVerification === "full") {
+    const allExamplesPassed = evidence.examples
+      ? evidence.examples.every((ex) => ex.passed)
+      : false;
+    return allExamplesPassed ? "verified" : "runs_unverified_contract";
+  }
+  // contractVerification is "exit_only" or missing — legacy evidence
+  return "runs_unverified_contract";
 }

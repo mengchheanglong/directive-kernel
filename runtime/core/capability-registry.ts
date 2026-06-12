@@ -6,7 +6,15 @@ import {
   verificationFromEvidence,
 } from "../../shared/lib/execution-evidence.ts";
 
-export type RuntimeCapabilityVerification = "verified" | "claimed" | "placeholder";
+export type RuntimeCapabilityVerification = "verified" | "claimed" | "placeholder" | "runs_unverified_contract";
+export type RuntimeCapabilityContract = "complete" | "partial" | "missing";
+
+export interface RuntimeCapabilityManifestExample {
+  name: string;
+  input: Record<string, unknown>;
+  expectedOutput: unknown;
+  match: "exact" | { invariantFields: string[] };
+}
 
 export type RuntimeCapabilityManifest = {
   displayName: string;
@@ -15,6 +23,8 @@ export type RuntimeCapabilityManifest = {
   verification?: RuntimeCapabilityVerification;
   inputSchema?: string;
   outputSchema?: string;
+  examples?: RuntimeCapabilityManifestExample[];
+  contract?: RuntimeCapabilityContract;
 };
 
 export type RuntimeCapabilityMetadata = {
@@ -23,6 +33,7 @@ export type RuntimeCapabilityMetadata = {
   description: string;
   modulePath: string;
   verification: RuntimeCapabilityVerification;
+  contract: RuntimeCapabilityContract;
 };
 
 export type RuntimeCapabilityScaffoldFile = {
@@ -70,7 +81,7 @@ function resolveCapabilityManifestPath(capabilitiesRoot: string, id: string) {
 function parseRuntimeCapabilityManifest(
   manifestPath: string,
 ): RuntimeCapabilityManifest {
-  const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Partial<RuntimeCapabilityManifest>;
+  const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Partial<RuntimeCapabilityManifest & { examples?: unknown[] }>;
   if (parsed.domain !== "runtime") {
     throw new Error(`invalid_runtime_capability_manifest: ${manifestPath} must declare domain "runtime"`);
   }
@@ -83,6 +94,51 @@ function parseRuntimeCapabilityManifest(
     || parsed.verification === "placeholder"
       ? parsed.verification
       : undefined;
+
+  // Parse examples array
+  let examples: RuntimeCapabilityManifestExample[] | undefined;
+  if (Array.isArray(parsed.examples) && parsed.examples.length > 0) {
+    const parsedExamples: RuntimeCapabilityManifestExample[] = [];
+    for (const ex of parsed.examples) {
+      if (typeof ex !== "object" || ex === null) continue;
+      const example = ex as unknown as Record<string, unknown>;
+      if (typeof example.name !== "string" || !example.name) continue;
+      if (typeof example.input !== "object" || example.input === null) continue;
+      const match = example.match;
+      if (match === "exact") {
+        parsedExamples.push({
+          name: example.name,
+          input: example.input as Record<string, unknown>,
+          expectedOutput: example.expectedOutput,
+          match: "exact",
+        });
+      } else if (typeof match === "object" && match !== null && Array.isArray((match as Record<string, unknown>).invariantFields)) {
+        parsedExamples.push({
+          name: example.name,
+          input: example.input as Record<string, unknown>,
+          expectedOutput: example.expectedOutput,
+          match: { invariantFields: (match as Record<string, unknown>).invariantFields as string[] },
+        });
+      }
+    }
+    if (parsedExamples.length > 0) {
+      examples = parsedExamples;
+    }
+  }
+
+  // Contract grade: complete = inputSchema + outputSchema + examples
+  // partial = has some contract fields but not all
+  // missing = no contract fields at all
+  let contract: RuntimeCapabilityContract = "missing";
+  const hasInput = typeof parsed.inputSchema === "string" && parsed.inputSchema.length > 0;
+  const hasOutput = typeof parsed.outputSchema === "string" && parsed.outputSchema.length > 0;
+  const hasExamples = examples && examples.length > 0;
+  if (hasInput && hasOutput && hasExamples) {
+    contract = "complete";
+  } else if (hasInput || hasOutput || hasExamples) {
+    contract = "partial";
+  }
+
   return {
     displayName: parsed.displayName,
     description: parsed.description,
@@ -90,6 +146,8 @@ function parseRuntimeCapabilityManifest(
     ...(verification ? { verification } : {}),
     ...(parsed.inputSchema ? { inputSchema: parsed.inputSchema } : {}),
     ...(parsed.outputSchema ? { outputSchema: parsed.outputSchema } : {}),
+    ...(examples ? { examples } : {}),
+    contract,
   };
 }
 
@@ -175,12 +233,14 @@ export function listRuntimeCapabilityMetadata(
         manifest?.verification,
         entry.name,
       );
+      const contract = manifest?.contract ?? "missing";
       return {
         id: entry.name,
         displayName,
         description,
         modulePath: `runtime/capabilities/${entry.name}/index.ts`,
         verification,
+        contract,
       } satisfies RuntimeCapabilityMetadata;
     })
     .sort((a, b) => a.id.localeCompare(b.id));

@@ -4,5 +4,23 @@
   "domain": "runtime",
   "inputSchema": "shared/schemas/shadcn-ui-callable-input.schema.json",
   "outputSchema": "shared/schemas/shadcn-ui-callable-output.schema.json",
-  "verification": "placeholder"
+  "verification": "placeholder",
+  "examples": [
+    {
+      "name": "List available components",
+      "input": {
+        "tool": "list-components"
+      },
+      "output": {
+        "ok": true,
+        "tool": "list-components",
+        "data": {
+          "components": []
+        }
+      },
+      "match": {
+        "invariantFields": ["ok", "tool"]
+      }
+    }
+  ]
 }

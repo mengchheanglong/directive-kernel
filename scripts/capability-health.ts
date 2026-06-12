@@ -60,7 +60,7 @@ function parseArgs(): ParsedArgs {
 interface CapabilityHealth {
   candidateId: string;
   name: string;
-  verification: "verified" | "claimed" | "placeholder";
+  verification: "verified" | "claimed" | "placeholder" | "runs_unverified_contract";
   harnessSigned: boolean;
   exitCode: number | null;
   wallTimeMs: number | null;

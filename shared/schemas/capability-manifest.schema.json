@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/capability-manifest.schema.json",
+  "title": "Capability Manifest Contract",
+  "description": "Defines the contract for a Runtime capability: its input/output schemas and golden examples for contract-grade verification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "displayName",
+    "description",
+    "domain"
+  ],
+  "properties": {
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable name for the capability."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Bounded description of what the capability exposes."
+    },
+    "domain": {
+      "type": "string",
+      "const": "runtime",
+      "description": "Must be 'runtime' for all Runtime capabilities."
+    },
+    "verification": {
+      "type": "string",
+      "enum": ["verified", "claimed", "placeholder"],
+      "description": "Verification status from the trust gate."
+    },
+    "inputSchema": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path to a JSON Schema file defining valid inputs (e.g. shared/schemas/my-cap-input.schema.json)."
+    },
+    "outputSchema": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path to a JSON Schema file defining valid outputs (e.g. shared/schemas/my-cap-output.schema.json)."
+    },
+    "examples": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Golden examples for contract-grade verification. Each example defines an input, the expected output, and how to validate the match.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "input", "expectedOutput", "match"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short descriptive name for this example (e.g. 'search-for-react')."
+          },
+          "input": {
+            "type": "object",
+            "description": "Input payload matching the capability's inputSchema. Passed as-is to the executor."
+          },
+          "expectedOutput": {
+            "description": "Expected output to validate against. For exact match, this is the full expected result. For invariantField match, only the listed fields are checked."
+          },
+          "match": {
+            "description": "Validation mode: 'exact' checks deep equality; { invariantFields: [...] } checks only the listed top-level fields.",
+            "oneOf": [
+              {
+                "type": "string",
+                "const": "exact"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["invariantFields"],
+                "properties": {
+                  "invariantFields": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string" },
+                    "description": "Top-level fields that must match the expected output exactly. Other fields may vary."
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "contract": {
+      "type": "string",
+      "enum": ["complete", "partial", "missing"],
+      "description": "Contract completeness: 'complete' = has input+output schemas + examples; 'partial' = has some but not all; 'missing' = no contract fields. Set by the registry parser, not in the manifest file itself."
+    }
+  }
+}

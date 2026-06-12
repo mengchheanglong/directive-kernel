@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/shadcn-ui-callable-input.schema.json",
+  "title": "shadcn/ui Callable Input",
+  "description": "Input for shadcn/ui component library operations.",
+  "type": "object",
+  "required": ["tool"],
+  "properties": {
+    "tool": {
+      "type": "string",
+      "enum": ["list-components", "get-component-doc", "validate-theme", "get-installation-guide"],
+      "description": "shadcn/ui tool to invoke"
+    },
+    "component": {
+      "type": "string",
+      "description": "Component name for documentation lookup"
+    },
+    "themeVars": {
+      "type": "object",
+      "description": "Theme variables for validation"
+    }
+  },
+  "additionalProperties": false
+}
