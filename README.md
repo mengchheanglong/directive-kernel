@@ -1,13 +1,13 @@
 # Directive Kernel
 
-Directive Kernel is a reusable system you can add to another project.
+Directive Kernel is Hermes's capability kernel. It is the digestive and verification system that turns selected sources, repos, papers, workflows, and task failures into verified Hermes-usable capabilities or honestly-classified notes.
 
 Use it when you want your project to:
-- bring outside sources into your own workflow
-- decide which sources are worth keeping
-- route useful work into the right next step
-- turn useful results into something reusable
-- see the current state in a simple host or UI
+- classify inbound sources into operationalization decisions
+- prove capabilities work before exposing them as powers
+- route system-improvement ideas into measured experiments
+- turn verified results into Hermes-usable projections
+- learn from outcomes to improve trust and recall
 
 ## Try It
 
@@ -33,33 +33,50 @@ The first version is read-only. It aggregates remote `/api/snapshot`,
 `/api/operator-decision-inbox`, and `/api/runtime/status` responses per root.
 All writes remain scoped to each root's own host.
 
-## What This Repo Is For
+## What This Repo Is For (current branch)
 
-Directive Kernel is for **dev teams running source-driven workflows that need a structured intake → routing → decision pipeline.**
+Directive Kernel is **Hermes's capability acquisition, verification, and self-improvement kernel.** Its purpose is compounding assistant capability over time:
 
-You have a stream of inbound items — bug reports, incident alerts, source repos to evaluate, feature requests, security advisories, customer feedback, papers worth tracking — and each needs the same kind of decision: *what do we do with this?* The kernel takes that source, judges it against your current mission, routes it to the right next step, and records the decision so later work has provenance.
+```text
+Every accepted source must become exactly one of:
+1. verified Hermes capability (callable power with evidence),
+2. measured Architecture experiment (system improvement with kill criteria),
+3. Obsidian/note-only memory (useful but not a callable power),
+4. rejected/skipped item with rationale.
+```
 
-Your team gets a **mission-conditioned routing pass,** a **structured intake queue + lifecycle,** a **decision-policy ledger** for audit and replay, and a **bounded operator workbench** for visibility and explicit workflow mutations.
+Registry growth is not success. **Hermes getting new reliable powers is success.**
 
-Two flagship example consumers ship with the kernel:
+The kernel provides:
+- a **source operationalization classifier** — every source receives a decision (capability candidate, architecture experiment, note-only, training-lab-only, fine-tune later, or reject) before pipeline advancement
+- a **verified-only capability registry** — only capabilities with real execution evidence and a usable Hermes projection (MCP tool, skill, CLI wrapper, handoff prompt) surface as powers
+- a **capability recall and trust loop** — Hermes can ask for relevant capabilities, use them, and report outcomes that feed back into reliability scores
+- a **decision-policy ledger** — every routing and outcome decision is recorded with provenance
+- a **bounded operator dashboard** — Jarvis readiness surfaced as verified powers, candidates, gaps, and recent failures
+
+### Historical lineage (secondary)
+
+The `general-workflow-kernel` positioning — dev teams running source-driven workflows with bug-report triage, incident triage, and feature-request triage — is the kernel's historical public packaging. It is **not the current local north star** for this branch. Two flagship example consumers ship with the kernel as secondary lineage:
 - **[Bug-report triage](hosts/integration-kit/examples/bug-report-triage/README.md)** — GitHub issue → routing decision (`fix-now`, `backlog`, `wontfix`, `duplicate`)
 - **[Incident triage](hosts/integration-kit/examples/incident-triage/README.md)** — alert webhook → routing decision (`page-on-call`, `monitor-only`, `auto-resolve`, `noise`)
 
-See [`AUDIENCE.md`](./AUDIENCE.md) for the full rationale behind this framing and the conditions under which we'd revisit it.
+See [`AUDIENCE.md`](./AUDIENCE.md) for the full rationale behind the Jarvis capability kernel pivot.
+
+> **Warning:** Registry count is not a success metric. Ten verified working powers beat one hundred placeholder capabilities. Claimed/placeholder entries must never be projected as Hermes-usable tools.
 
 ## How It Works
 
-1. your project gives Kernel the current goal
-2. sources enter through Discovery
-3. Discovery decides whether to hold, review, or route the source
-4. Runtime turns useful routed work into reusable capability
-5. Architecture handles system-improvement work
-6. the host and UI show the current state and artifact detail
+1. Hermes encounters a need, failure, or new source (paper, repo, tool, task failure)
+2. Sources enter through Discovery's front door
+3. Discovery classifies the source into an operationalization decision: capability candidate, architecture experiment, note-only, training-lab-only, fine-tune later, or reject
+4. Capability candidates enter Runtime for proof, verification, and projection into Hermes-usable powers
+5. Architecture experiments test system-improvement hypotheses with kill criteria
+6. The host and UI show Jarvis readiness: verified powers, candidates, gaps, recent failures, and trust state
 
 The three main lanes are:
-- `Discovery` for intake and routing
-- `Runtime` for reusable capability work
-- `Architecture` for system improvement work
+- `Discovery` for source classification and operationalization decisions
+- `Runtime` for verified capability production and projection
+- `Architecture` for system-improvement experiments
 
 ## Main Parts
 

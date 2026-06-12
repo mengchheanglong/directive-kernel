@@ -1,6 +1,8 @@
 # Research curation lineage
 
-The Directive Kernel was built originally for a research curation workflow (literature discovery, intake queue, routing to a research workspace). It was generalized later into the general-workflow kernel it is today. This document captures the surfaces that support research curation and where an adopter who wants that flavor can find them.
+The Directive Kernel was built originally for a research curation workflow (literature discovery, intake queue, routing to a research workspace). It was generalized into a general-workflow kernel, and has now been pivoted (on this branch) into **Hermes's capability acquisition, verification, and self-improvement kernel** — a Jarvis-style system that compounds assistant capability over time.
+
+This document captures the research-curation surfaces retained in the kernel, which now serve the capability kernel: research sources that produce callable tools or measurable system-level experiments feed the verified-capability pipeline; research sources that are purely informational become note-only items.
 
 ## What the kernel supports for research curation today
 
@@ -20,4 +22,4 @@ The following surfaces all ship and work:
 
 - **Live providers** — see [`discovery/research-engine/README.md`](../discovery/research-engine/README.md) for the current list of live research-engine providers.
 
-Research curation is **one supported domain**, not the kernel's primary audience. The primary audience is dev teams running general source-driven workflows (see [`AUDIENCE.md`](../AUDIENCE.md)). The research surfaces above are retained so that any adopter who needs a literature-aware intake pipeline can use them without the kernel's core engineering changing.
+Research curation is **one supported domain**, not the kernel's primary audience. The primary audience on this branch is Hermes capability compounding (see [`AUDIENCE.md`](../AUDIENCE.md)). The research surfaces above are retained so that the capability kernel can ingest paper/repo sources through the literature-aware intake pipeline and classify them as capability candidates, architecture experiments, note-only items, or training-lab-only research.

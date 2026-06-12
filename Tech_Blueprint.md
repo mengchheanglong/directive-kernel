@@ -6,25 +6,39 @@ not an earlier planning phase.
 
 ## 1. Purpose
 
-Directive Kernel is a reusable workflow kernel that another project embeds.
-It is not the whole product. The consuming host still owns:
+Directive Kernel is **Hermes's capability acquisition, verification, and self-improvement kernel.** It turns selected sources, repos, papers, workflows, and task failures into verified Hermes-usable capabilities or honestly-classified notes.
 
-- goal resolution
-- operator identity
+The consuming host (Hermes) still owns:
+
+- goal resolution and intent framing
+- operator identity and conversation context
 - external app context
 - project-local policy
 - project-local storage decisions beyond the kernel's shipped defaults
 
-The kernel owns the bounded workflow model:
+The kernel owns the capability compounding model:
 
 1. accept a source
-2. judge it against the current goal
-3. route it into the correct lane
-4. record decisions and state transitions
-5. expose the resulting state through hosts, API, UI, and MCP
+2. classify it into an operationalization decision (capability candidate, architecture experiment, note-only, training-lab-only, fine-tune later, or reject)
+3. route capability candidates through proof, verification, and projection
+4. route system-improvement ideas into measured architecture experiments
+5. record decisions, outcomes, and trust updates
+6. expose verified powers and Jarvis readiness through hosts, API, UI, and MCP
 
-The audience is the "general workflow kernel" defined in
-[AUDIENCE.md](./AUDIENCE.md).
+The current-branch north star is the Jarvis capability kernel. The historical `general-workflow-kernel` audience described in [AUDIENCE.md](./AUDIENCE.md) is retained as secondary/public lineage.
+
+### Core vocabulary
+
+| Term | Meaning |
+| --- | --- |
+| **Operationalization decision** | The decision about what DK should do with a source: `reject`, `note_only`, `capability_candidate`, `architecture_experiment`, `training_lab_only`, or `fine_tune_later`. |
+| **Capability candidate** | A source that may become a Hermes-usable capability after verification and projection. |
+| **Verified capability** | A capability with real execution/evaluation evidence and a usable Hermes projection. |
+| **Hermes projection** | An MCP tool, skill, CLI wrapper, handoff prompt, cron job, or Obsidian note that makes a capability usable by Hermes. |
+| **Architecture experiment** | A bounded system-improvement hypothesis with measurable expected benefit and kill criteria. |
+| **Note-only** | Useful information that belongs in Obsidian/wiki but not as a Runtime capability. |
+| **Training-lab-only** | A source requiring model architecture/pretraining/fine-tuning beyond local system-layer changes. |
+| **Registry entry class** | The classification of a registry entry: `verified_capability`, `candidate`, `placeholder`, `note_only`, `rejected`, or `architecture_experiment`. |
 
 ## 2. Core Product Boundaries
 
@@ -53,20 +67,22 @@ Important distinction:
 
 ## 3. System Model
 
-At a high level the system works like this:
+At a high level the capability compounding loop works like this:
 
-1. the host resolves a goal envelope
-2. a source enters through Discovery
-3. the engine analyzes and routes the source
-4. the resulting work is held, reviewed, or routed into Runtime or Architecture
-5. operators mutate the workflow only through bounded CLI/API seams
-6. hosts, UI, and MCP expose read and write surfaces over the same kernel logic
+1. Hermes encounters a need, failure, or new source (paper, repo, tool, task failure)
+2. the source enters through Discovery's front door
+3. Discovery classifies the source into an operationalization decision
+4. capability candidates are routed into Runtime for proof, verification, and projection
+5. system-improvement ideas are routed into Architecture as measured experiments
+6. verified capabilities are projected as Hermes-usable powers (MCP tools, skills, CLI wrappers, handoff prompts)
+7. Hermes uses capabilities and reports outcomes; trust and reliability scores update
+8. hosts, UI, and MCP expose Jarvis readiness views over the same kernel logic
 
 The three lanes have fixed responsibilities:
 
-- `Discovery` handles intake, queueing, routing records, and capability-gap surfacing
-- `Runtime` turns useful routed work into reusable callable capability
-- `Architecture` handles long-horizon system improvement and materialization
+- `Discovery` handles source classification, operationalization decisions, intake queueing, routing records, and capability-gap surfacing
+- `Runtime` turns capability candidates into verified, projection-ready Hermes powers with proof, promotion, and registry acceptance
+- `Architecture` handles bounded system-improvement experiments with measurable hypotheses and kill criteria; does not accept training-lab-only ideas
 
 The kernel intentionally keeps human review explicit. It does not claim broad
 autonomous orchestration across arbitrary projects.
@@ -159,11 +175,12 @@ Important invariants are enforced here:
 
 ### 6.1 Responsibility
 
-Discovery is the front door. Everything enters here first.
+Discovery is the source digestion front door. Every source enters here and receives an operationalization decision before downstream action.
 
 It owns:
 
 - source submission
+- source operationalization classification
 - intake queue materialization
 - routing records
 - explicit routing review
@@ -191,8 +208,7 @@ research and can feed Discovery via importer code.
 
 ### 7.1 Responsibility
 
-Runtime turns useful routed work into reusable callable capability with proof,
-promotion, and registry acceptance stages.
+Runtime is the verified assistant power lane. It turns capability candidates into verified, projection-ready Hermes powers with proof, promotion, and registry acceptance stages. Only verified capabilities with a valid Hermes projection are eligible for MCP tool projection and capability recall ranking.
 
 ### 7.2 Runtime Surface Split
 
@@ -244,8 +260,9 @@ The runtime capability surface is now manifest-backed.
 
 ### 8.1 Responsibility
 
-Architecture handles self-improvement work that does not fit Runtime's
-callable-capability model.
+Architecture is the paper-to-experiment and system-improvement lane. It handles bounded experiments with measurable hypotheses and kill criteria. Every architecture experiment requires source reference, claim/hypothesis, expected benefit, measurement command, and rollback plan.
+
+It does **not** accept training-lab-only ideas (model architecture/pretraining/tokenizer redesign) or speculative papers without local eval.
 
 ### 8.2 Lifecycle
 

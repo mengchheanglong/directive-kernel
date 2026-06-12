@@ -12,6 +12,19 @@ readable companion to that audit.
 
 - **Adopter**: A consuming project that embeds or calls the kernel. See
   [`shared/contracts/standalone-host-runtime-profile.md`](./shared/contracts/standalone-host-runtime-profile.md).
+- **Architecture experiment**: A bounded system-improvement hypothesis routed to the Architecture lane. Requires source reference, claim/hypothesis, expected benefit, measurement command, kill criteria, and rollback plan. See
+  [`architecture/lib/experiments/`](./architecture/lib/experiments/).
+- **Capability candidate**: A source that may become a Hermes-usable capability after verification and projection. Accepted by Runtime for the capability pipeline but is not yet a verified power. See
+  [`shared/schemas/runtime-registry-entry.schema.json`](./shared/schemas/runtime-registry-entry.schema.json).
+- **Capability compounding**: The core loop: Hermes encounters a need or failure → DK classifies the source → candidate enters proof/verification → verified capability is projected as a usable power → Hermes uses it → outcome feedback updates trust. Registry growth is not the goal; new reliable Hermes powers are.
+- **Hermes projection**: An MCP tool, skill, CLI wrapper, handoff prompt, cron job, or Obsidian note that makes a capability usable by Hermes. A capability without a projection is not yet a Hermes power. See
+  [`shared/schemas/hermes-projection.schema.json`](./shared/schemas/hermes-projection.schema.json).
+- **Note-only**: A source classification for useful information that belongs in Obsidian/wiki but should not become a Runtime capability. See the source operationalization decision schema.
+- **Operationalization decision**: The classification produced for every source before pipeline advancement. One of: `reject`, `note_only`, `capability_candidate`, `architecture_experiment`, `training_lab_only`, or `fine_tune_later`. See
+  [`shared/schemas/source-operationalization-decision.schema.json`](./shared/schemas/source-operationalization-decision.schema.json).
+- **Registry entry class**: The classification of a Runtime registry entry: `verified_capability`, `candidate`, `placeholder`, `note_only`, `rejected`, or `architecture_experiment`. Only `verified_capability` entries with a valid Hermes projection can be projected as Hermes powers.
+- **Training-lab-only**: A source classification for items requiring model architecture changes, pretraining, tokenizer redesign, or large-scale post-training beyond local system-layer changes. These cannot enter Runtime as capabilities but may be kept as notes or a `fine_tune_later` backlog item.
+- **Verified capability**: A capability with real execution/evaluation evidence, a complete contract, and a usable Hermes projection. The only registry entry class eligible for MCP tool projection and capability recall ranking.
 - **Adoption**: The lifecycle stage where an architecture experiment is
   formally adopted into the codebase. See
   [`architecture/lib/adoption/`](./architecture/lib/adoption/).
