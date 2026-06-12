@@ -1,9 +1,13 @@
 import { startDirectiveUiServer } from "./server.ts";
+import { readDirectiveFrontendSnapshot } from "./data/snapshot.ts";
+import { buildOperatorDecisionInboxReport } from "../../engine/orchestration/operator-decision-inbox/operator-decision-inbox.ts";
 import {
   acquireDirectiveRootLock,
   releaseDirectiveRootLock,
 } from "../../shared/lib/process-lock.ts";
 import { archiveRunRecords, rotateDecisionPolicyLedger, summarizeKernelStorage } from "../../engine/maintenance/archive.ts";
+import fs from "node:fs";
+import path from "node:path";
 
 function printUsage() {
   process.stdout.write(`Directive Kernel UI CLI
@@ -139,6 +143,44 @@ async function main() {
     process.stderr.write(`${String((error as Error).message || error)}\n`);
     process.exit(1);
   }
+
+  // Pre-compute static snapshot so the dashboard loads instantly
+  const UI_DIR = path.resolve(directiveRoot, "..", "..", "systems", "directive-kernel", "ui");
+  const SNAPSHOT_PATH = path.join(UI_DIR, "snapshot.json");
+  const REFRESH_MS = 60_000;
+
+  function refreshSnapshot() {
+    try {
+      const full = readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200, maxQueueEntries: 500, maxHandoffs: 250 });
+      // Only keep what the dashboard uses — strip handoffStubs (huge) and keep queue + runtime/architecture summaries
+      const light = {
+        queue: {
+          totalEntries: full.queue.totalEntries,
+          entries: (full.queue.entries || []).map((e: any) => ({
+            candidate_id: e.candidate_id,
+            candidate_name: e.candidate_name,
+            routing_target: e.routing_target,
+            source_reference: e.source_reference,
+            status: e.status,
+          })),
+        },
+        runtimeSummary: { activeCases: (full.runtimeSummary?.activeCases || []).map((c: any) => ({
+          candidate_name: c.candidate_name, candidate_id: c.candidate_id,
+        })) },
+        architectureSummary: { activeCases: (full.architectureSummary?.activeCases || []).map((c: any) => ({
+          candidate_name: c.candidate_name, candidate_id: c.candidate_id,
+        })) },
+      };
+      fs.mkdirSync(path.dirname(SNAPSHOT_PATH), { recursive: true });
+      fs.writeFileSync(SNAPSHOT_PATH, JSON.stringify(light));
+    } catch (err) {
+      process.stderr.write(`[snapshot] error: ${(err as Error).message}\n`);
+    }
+  }
+
+  refreshSnapshot();
+  // No auto-refresh — snapshot is static until server restart.
+  // The 60s recompute blocks the event loop for 60-90s.
 
   const handle = await startDirectiveUiServer({
     directiveRoot,

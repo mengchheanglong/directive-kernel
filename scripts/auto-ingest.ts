@@ -183,16 +183,45 @@ async function main() {
     `[filter] ${qualified.length}/${repos.length} repos have >= ${MIN_STARS.toLocaleString()} stars`,
   );
 
-  if (qualified.length === 0) {
-    console.log("\nNo qualifying repos found. Exiting.");
+  // 3b. Filter by callability — only ingest packages, CLI tools, and frameworks
+  // Skip: documentation, awesome-lists, reference implementations, research papers
+  const CALLABLE_KEYWORDS = [
+    "cli", "tool", "framework", "library", "sdk", "package",
+    "engine", "server", "daemon", "scraper", "browser", "agent",
+    "compiler", "runtime", "parser", "generator", "converter",
+  ];
+  const SKIP_PATTERNS = [
+    /awesome/i, /interview/i, /checklist/i, /roadmap/i,
+    /tutorial/i, /guide/i, /handbook/i, /paper/i, /survey/i,
+    /course/i, /book/i, /notes/i, /wiki/i, /list/i,
+    /resources/i, /exercises/i, /reference/i,
+  ];
+
+  const callable = qualified.filter((r) => {
+    const desc = (r.description || "").toLowerCase();
+    const name = r.full_name.toLowerCase();
+    // Must have at least one callable keyword
+    const hasCallableKeyword = CALLABLE_KEYWORDS.some((kw) => desc.includes(kw) || name.includes(kw));
+    // Must not match any skip pattern
+    const isSkipPattern = SKIP_PATTERNS.some((pat) => pat.test(desc) || pat.test(name));
+    return hasCallableKeyword && !isSkipPattern;
+  });
+
+  const skippedNonCallable = qualified.length - callable.length;
+  if (skippedNonCallable > 0) {
+    console.log(`[callable] ${callable.length}/${qualified.length} repos are callable (skipped ${skippedNonCallable} docs/lists/references)`);
+  }
+
+  if (callable.length === 0) {
+    console.log("\nNo callable repos found. Exiting.");
     process.exit(0);
   }
 
   // 4. Deduplicate
-  const newRepos = qualified.filter(
+  const newRepos = callable.filter(
     (r) => !knownUrls.has(r.html_url.toLowerCase()),
   );
-  const skipped = qualified.length - newRepos.length;
+  const skipped = callable.length - newRepos.length;
   if (skipped > 0) {
     console.log(`[dedup] Skipped ${skipped} duplicate(s)`);
   }
@@ -243,6 +272,7 @@ async function main() {
   console.log(`Query:          ${query}`);
   console.log(`Repos found:    ${repos.length}`);
   console.log(`After ≥${MIN_STARS.toLocaleString()}★ filter: ${qualified.length}`);
+  console.log(`Callable:       ${callable.length} (skipped ${qualified.length - callable.length} docs/lists)`);
   console.log(`Duplicates skipped: ${skipped}`);
   console.log(`Submitted:      ${newRepos.length}`);
   console.log(`Registered:     ${registered}`);

@@ -10,6 +10,7 @@ import { createStandaloneFilesystemHost } from "../hosts/standalone-host/filesys
 import { renderDiscoveryRoutingRecord } from "../discovery/lib/routing/record-writer.ts";
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 
 const ROOT = "C:/Users/User/AppData/Local/hermes/directive-root/directive-root";
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -227,6 +228,29 @@ async function main() {
     console.log(`\nPipeline complete for: ${name}`);
     console.log(`  Source: ${cid}`);
     console.log(`  Registry: ${r6.relativePath || r6.path || "OK"}`);
+
+    // 14. Real execution verification (if manifest exists)
+    console.log("\n13. Real execution check...");
+    try {
+      const verifyScript = path.join(__dirname, "verify-execution.ts");
+      if (fs.existsSync(verifyScript)) {
+        // Quick check: does a manifest exist for this capability?
+        const manifestCheck = execSync(
+          `npx tsx ${verifyScript} ${cid} 2>&1`,
+          { encoding: "utf8", timeout: 30_000 }
+        );
+        if (manifestCheck.includes("✓ VERIFIED")) {
+          console.log("   ✓ Real execution verified!");
+        } else if (manifestCheck.includes("No execution manifest")) {
+          console.log("   ⚠ No verification manifest yet. Add one to scripts/verify-execution.ts");
+          console.log("   Evidence is synthetic until verified.");
+        } else {
+          console.log("   ⚠ Verification attempted but failed. See output above.");
+        }
+      }
+    } catch {
+      console.log("   ⚠ Verification skipped (script error). Evidence is synthetic.");
+    }
   } else {
     console.log(`   FAILED: ${r6.error || JSON.stringify(r6)}`);
   }

@@ -37,7 +37,7 @@ export type FrontendServerHandle = UiServerHandle;
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const UI_APP_ROOT = path.resolve(MODULE_DIR, "..", "..", "ui");
-const UI_DIST_ROOT = path.join(UI_APP_ROOT, "dist");
+const UI_DIST_ROOT = UI_APP_ROOT; // serve directly from ui/ (no build step — plain HTML)
 const UI_INDEX_PATH = path.join(UI_DIST_ROOT, "index.html");
 const UI_OPERATOR_ACTOR = "directive-ui-operator";
 

@@ -1,12 +1,233 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Directive Operator Dashboard</title>
-    <script type="module" src="/src/main.ts"></script>
-  </head>
-  <body>
-    <div id="app"></div>
-  </body>
-  </html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Directive Kernel</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface-raised: rgba(255,255,255,0.04);
+    --border: #2a2a2a;
+    --text: #e0e0e0;
+    --text-muted: rgba(255,255,255,0.45);
+    --lane-runtime: #10b981;
+    --lane-architecture: #7c3aed;
+    --lane-discovery: #3b82f6;
+    --verified: #10b981;
+    --warning: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 14px; line-height: 1.5; min-height: 100vh;
+  }
+  header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  header h1 { font-size: 1rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* Stats */
+  .pulse-bar {
+    max-width: 1200px; margin: 0 auto; padding: 16px 28px 0;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  }
+  .pulse-card {
+    padding: 14px 16px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--surface-raised);
+  }
+  .pulse-value { font-size: 1.4rem; font-weight: 700; }
+  .pulse-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .pulse-card.runtime .pulse-value { color: var(--lane-runtime); }
+  .pulse-card.architecture .pulse-value { color: var(--lane-architecture); }
+  .pulse-card.verified .pulse-value { color: var(--verified); }
+  .pulse-card.discovery .pulse-value { color: var(--lane-discovery); }
+
+  /* Filters */
+  .filter-bar {
+    max-width: 1200px; margin: 0 auto; padding: 14px 28px 0;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .filter-btn {
+    font-size: 0.7rem; padding: 4px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-muted); cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--text-muted); color: var(--text); }
+  .filter-btn.active { background: rgba(255,255,255,0.08); }
+  .filter-count { font-size: 0.65rem; color: var(--text-muted); margin-left: auto; }
+
+  /* Grid */
+  main {
+    max-width: 1200px; margin: 0 auto; padding: 20px 28px 40px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px;
+  }
+  .card {
+    background: var(--surface-raised); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px 20px;
+    border-left: 3px solid var(--border); transition: border-color 150ms;
+  }
+  .card:hover { border-color: var(--text-muted); }
+  .card.runtime { border-left-color: var(--lane-runtime); }
+  .card.architecture { border-left-color: var(--lane-architecture); }
+  .card.discovery { border-left-color: var(--lane-discovery); }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .card-name { font-size: 0.95rem; font-weight: 600; word-break: break-word; }
+  .card-badges { display: flex; gap: 6px; flex-shrink: 0; margin-left: 12px; }
+  .badge {
+    font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .badge-verified { background: rgba(16,185,129,0.15); color: var(--verified); }
+  .badge-lane { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .card-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
+  .card-meta { display: flex; gap: 16px; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 10px; }
+  .card-meta span { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .dot-runtime { background: var(--lane-runtime); }
+  .dot-architecture { background: var(--lane-architecture); }
+  .dot-discovery { background: var(--lane-discovery); }
+  .source-link { color: var(--text-muted); text-decoration: none; font-size: 0.7rem; margin-left: auto; }
+  .source-link:hover { color: var(--text); }
+
+  /* Skeleton */
+  .skeleton { animation: pulse 1.8s ease-in-out infinite; border-radius: 6px; background: var(--surface-raised); }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
+  .loading .card-name { height: 18px; }
+  .loading .card-desc { height: 14px; width: 80%; }
+  .loading .card-meta { height: 12px; width: 60%; }
+  .skeleton-pulse { height: 28px; margin-bottom: 6px; }
+  .skeleton-pulse-sm { height: 14px; width: 60%; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Directive Kernel</h1>
+</header>
+
+<div class="pulse-bar" id="pulse">
+  <div class="pulse-card discovery"><span class="skeleton skeleton-pulse"></span><div class="pulse-label">Sources</div></div>
+  <div class="pulse-card runtime"><span class="skeleton skeleton-pulse"></span><div class="pulse-label">Runtime</div></div>
+  <div class="pulse-card architecture"><span class="skeleton skeleton-pulse"></span><div class="pulse-label">Architecture</div></div>
+  <div class="pulse-card verified"><span class="skeleton skeleton-pulse"></span><div class="pulse-label">Verified</div></div>
+</div>
+
+<div class="filter-bar" id="filters">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="runtime">Runtime</button>
+  <button class="filter-btn" data-filter="architecture">Architecture</button>
+  <button class="filter-btn" data-filter="verified">Verified</button>
+  <span class="filter-count" id="filterCount"></span>
+</div>
+
+<main id="grid"></main>
+
+<script>
+const API = '/snapshot.json';  // pre-computed static file, refreshed every 60s
+const DESC_URL = '/source-descriptions.json';
+
+async function load() {
+  const grid = document.getElementById('grid');
+  const pulse = document.getElementById('pulse');
+  const count = document.getElementById('filterCount');
+
+  grid.className = 'loading';
+  grid.innerHTML = Array(8).fill(0).map(() =>
+    '<div class="card"><div class="card-name skeleton"></div><div class="card-desc skeleton"></div><div class="card-meta skeleton"></div></div>'
+  ).join('');
+
+  try {
+    const [res, descRes] = await Promise.all([fetch(API), fetch(DESC_URL)]);
+    const data = await res.json();
+    const descData = await descRes.json();
+    const descriptions = descData.descriptions || {};
+    const verifiedList = descData.verified || [];
+
+    const entries = data.queue?.entries || [];
+    const runtime = entries.filter(e => e.routing_target === 'runtime').length;
+    const arch = entries.filter(e => e.routing_target === 'architecture').length;
+
+    // Pulse
+    pulse.innerHTML = `
+      <div class="pulse-card discovery"><div class="pulse-value">${entries.length}</div><div class="pulse-label">Sources</div></div>
+      <div class="pulse-card runtime"><div class="pulse-value">${runtime}</div><div class="pulse-label">Runtime</div></div>
+      <div class="pulse-card architecture"><div class="pulse-value">${arch}</div><div class="pulse-label">Architecture</div></div>
+      <div class="pulse-card verified"><div class="pulse-value">${verifiedList.length}</div><div class="pulse-label">Verified</div></div>`;
+
+    grid.className = '';
+    if (!entries.length) {
+      grid.innerHTML = '<div class="empty">No sources ingested yet. Run the pipeline to add one.</div>';
+      return;
+    }
+
+    function findDesc(name, cid) {
+      const n = (name + ' ' + cid).toLowerCase();
+      for (const [k, d] of Object.entries(descriptions)) {
+        if (n.includes(k)) return d;
+      }
+      return descData.default || '';
+    }
+
+    grid.innerHTML = entries.map(e => {
+      const lane = e.routing_target || 'discovery';
+      const name = e.candidate_name || e.candidate_id || 'Unknown';
+      const desc = findDesc(name, e.candidate_id || '');
+      const url = e.source_reference || '';
+      const cid = e.candidate_id || '';
+      const isVerified = verifiedList.some(k => (name + ' ' + cid).toLowerCase().includes(k));
+
+      return `<div class="card ${lane}" data-lane="${lane}" data-verified="${isVerified}">
+        <div class="card-header">
+          <span class="card-name">${esc(name)}</span>
+          <div class="card-badges">
+            ${isVerified ? '<span class="badge badge-verified">verified</span>' : ''}
+            <span class="badge badge-lane">${lane}</span>
+          </div>
+        </div>
+        <div class="card-desc">${esc(desc)}</div>
+        <div class="card-meta">
+          <span><span class="dot dot-${lane}"></span>${lane}</span>
+          ${url && url.startsWith('http') ? `<a href="${esc(url)}" target="_blank" class="source-link">↗ source</a>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    count.textContent = `${entries.length} sources`;
+  } catch (err) {
+    grid.className = '';
+    grid.innerHTML = `<div class="empty">Failed to load: ${esc(err.message)}</div>`;
+  }
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+document.getElementById('filters').addEventListener('click', e => {
+  if (!e.target.classList.contains('filter-btn')) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  const filter = e.target.dataset.filter;
+  let visible = 0;
+  document.querySelectorAll('#grid .card').forEach(card => {
+    if (filter === 'all') { card.style.display = ''; visible++; return; }
+    if (filter === 'verified') {
+      if (card.dataset.verified === 'true') { card.style.display = ''; visible++; }
+      else card.style.display = 'none';
+      return;
+    }
+    if (card.dataset.lane === filter) { card.style.display = ''; visible++; }
+    else card.style.display = 'none';
+  });
+  document.getElementById('filterCount').textContent = `${visible} sources`;
+});
+
+load();
+</script>
+</body>
+</html>

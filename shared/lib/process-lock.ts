@@ -23,9 +23,12 @@ function isPidAlive(pid: number): boolean {
 
 function isFresh(body: ProcessLockBody): boolean {
   const ageMs = Date.now() - new Date(body.startedAt).getTime();
-  if (ageMs > STALE_LOCK_TTL_MS) {
-    return body.host === os.hostname() && isPidAlive(body.pid);
-  }
+  // Always verify the holder PID is alive, not just for old locks.
+  // A process killed within 30s leaves a fresh-looking lock with a dead PID.
+  if (!isPidAlive(body.pid)) return false;
+  // Stale TTL: locks older than 30s on the same host are suspicious.
+  // Allow recovery if the holder is on the same machine (likely a crash).
+  if (ageMs > STALE_LOCK_TTL_MS && body.host === os.hostname()) return false;
   return true;
 }
 

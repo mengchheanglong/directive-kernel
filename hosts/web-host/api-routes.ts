@@ -78,6 +78,14 @@ import { readDirectiveFrontendRunExplanation } from "./data/run-explanation.ts";
 import { listRuntimeCapabilityMetadata } from "../../runtime/core/capability-registry.ts";
 import type { TelemetrySink } from "../../shared/lib/telemetry.ts";
 import { readFederationSnapshot } from "./federation.ts";
+
+// ── Snapshot cache ──────────────────────────────────────────────
+let snapshotCache: { data: ReturnType<typeof readDirectiveFrontendSnapshot>; ts: number } | null = null;
+const SNAPSHOT_CACHE_TTL_MS = 60_000; // 60s — snapshot is expensive (200+ files)
+
+// ── Inbox cache ─────────────────────────────────────────────────
+let inboxCache: { data: ReturnType<typeof buildOperatorDecisionInboxReport>; ts: number } | null = null;
+const INBOX_CACHE_TTL_MS = 60_000;
 import {
   parseJsonBody,
   readBody,
@@ -165,21 +173,23 @@ export async function handleDirectiveUiApiRequest(input: {
   }
 
   if (method === "GET" && pathname === "/api/snapshot") {
-    writeJsonWithSchema(
-      res,
-      200,
-      "snapshot.response.schema.json",
-      readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200, maxQueueEntries: 500, maxHandoffs: 250 }),
-    );
+    if (!snapshotCache || Date.now() - snapshotCache.ts > SNAPSHOT_CACHE_TTL_MS) {
+      snapshotCache = {
+        data: readDirectiveFrontendSnapshot({ directiveRoot, maxRuns: 200, maxQueueEntries: 500, maxHandoffs: 250 }),
+        ts: Date.now(),
+      };
+    }
+    writeJsonWithSchema(res, 200, "snapshot.response.schema.json", snapshotCache.data);
     return true;
   }
   if (method === "GET" && pathname === "/api/operator-decision-inbox") {
-    writeJsonWithSchema(
-      res,
-      200,
-      "operator-decision-inbox.response.schema.json",
-      buildOperatorDecisionInboxReport({ directiveRoot }),
-    );
+    if (!inboxCache || Date.now() - inboxCache.ts > INBOX_CACHE_TTL_MS) {
+      inboxCache = {
+        data: buildOperatorDecisionInboxReport({ directiveRoot }),
+        ts: Date.now(),
+      };
+    }
+    writeJsonWithSchema(res, 200, "operator-decision-inbox.response.schema.json", inboxCache.data);
     return true;
   }
   if (method === "GET" && pathname === "/api/mission/feedback") {
