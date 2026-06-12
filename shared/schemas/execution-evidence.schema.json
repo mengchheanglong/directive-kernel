@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/execution-evidence.schema.json",
+  "title": "Execution Evidence Record",
+  "description": "Sandboxed execution evidence produced by the harness. Hand-written files are rejected via HMAC signature validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "capabilityId",
+    "command",
+    "exitCode",
+    "stdoutHash",
+    "stderrHash",
+    "wallTimeMs",
+    "environmentFingerprint",
+    "timestamp",
+    "harnessVersion",
+    "signature"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "capabilityId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The capability identifier (e.g. pipe-microsoft-markitdown-mq9jdf6o)"
+    },
+    "command": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The CLI command that was executed"
+    },
+    "exitCode": {
+      "type": "integer",
+      "description": "Process exit code (0 = success)"
+    },
+    "stdoutHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hex digest of stdout"
+    },
+    "stderrHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hex digest of stderr"
+    },
+    "wallTimeMs": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Wall-clock duration of the command in milliseconds"
+    },
+    "environmentFingerprint": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Concatenated os type, arch, and node version (e.g. 'win32-x64-v22.14.0')"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of when the evidence was recorded"
+    },
+    "harnessVersion": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Semver string of the harness that produced this record"
+    },
+    "signature": {
+      "type": "string",
+      "minLength": 1,
+      "description": "HMAC-SHA256 signature over the rest of the record (hand-written files lack this)"
+    }
+  }
+}

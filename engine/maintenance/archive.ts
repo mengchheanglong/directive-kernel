@@ -103,12 +103,26 @@ export async function rotateDecisionPolicyLedger(
   return result;
 }
 
+import {
+  readDecisionPolicyLedger,
+} from "../decision-policy-ledger.ts";
+
 export interface KernelStorageSummary {
   activeRunRecords: number;
   archivedRunRecords: number;
   activeLedgerBytes: number;
   rotatedLedgerBytes: number;
   rotatedLedgerSegments: number;
+  invocationCounts?: CapabilityInvocationCounts;
+}
+
+export interface CapabilityInvocationCounts {
+  totalInvocations: number;
+  successCount: number;
+  failureCount: number;
+  thisWeek: number;
+  lastWeek: number;
+  perCapability: Record<string, { total: number; success: number; failure: number }>;
 }
 
 export function summarizeKernelStorage(directiveRoot: string): KernelStorageSummary {
@@ -150,5 +164,55 @@ export function summarizeKernelStorage(directiveRoot: string): KernelStorageSumm
     }
   }
 
-  return { activeRunRecords, archivedRunRecords, activeLedgerBytes, rotatedLedgerBytes, rotatedLedgerSegments };
+  // Capability invocation counts from decision-policy ledger
+  let invocationCounts: KernelStorageSummary["invocationCounts"] = undefined;
+  try {
+    const ledger = readDecisionPolicyLedger(directiveRoot, { lookback: "active-only" });
+    const invocations = ledger.events.filter((e) => e.source === "capability_invocation");
+    if (invocations.length > 0) {
+      const now = new Date();
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+      const thisWeek = invocations.filter((e) => new Date(e.recordedAt) >= weekAgo).length;
+      const lastWeek = invocations.filter((e) => {
+        const d = new Date(e.recordedAt);
+        return d >= twoWeeksAgo && d < weekAgo;
+      }).length;
+
+      const perCapability: Record<string, { total: number; success: number; failure: number }> = {};
+      for (const inv of invocations) {
+        const cid = inv.candidateId;
+        if (!perCapability[cid]) {
+          perCapability[cid] = { total: 0, success: 0, failure: 0 };
+        }
+        perCapability[cid].total++;
+        if (inv.rationale.includes("success")) {
+          perCapability[cid].success++;
+        } else {
+          perCapability[cid].failure++;
+        }
+      }
+
+      invocationCounts = {
+        totalInvocations: invocations.length,
+        successCount: invocations.filter((e) => e.rationale.includes("success")).length,
+        failureCount: invocations.filter((e) => !e.rationale.includes("success")).length,
+        thisWeek,
+        lastWeek,
+        perCapability,
+      };
+    }
+  } catch {
+    // ledger read may fail — return without counts
+  }
+
+  return {
+    activeRunRecords,
+    archivedRunRecords,
+    activeLedgerBytes,
+    rotatedLedgerBytes,
+    rotatedLedgerSegments,
+    ...(invocationCounts ? { invocationCounts } : {}),
+  };
 }

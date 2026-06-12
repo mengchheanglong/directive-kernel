@@ -107,7 +107,7 @@ function compileGoalHintSuggestions(events: DecisionPolicyEvent[]) {
 
   const vagueObjectiveEvents = events.filter((event) =>
     Boolean(event.missionSpecificityWarning)
-    || event.followUpRequestedFields.includes("mission.currentObjective")
+    || (event.followUpRequestedFields ?? []).includes("mission.currentObjective")
   );
   if (vagueObjectiveEvents.length > 0) {
     suggestions.push(buildSuggestion({
@@ -122,7 +122,7 @@ function compileGoalHintSuggestions(events: DecisionPolicyEvent[]) {
   }
 
   const weakConstraintEvents = events.filter((event) =>
-    event.goalCopilotWarnings.some((warning) => /constraint/i.test(warning))
+    (event.goalCopilotWarnings ?? []).some((warning) => /constraint/i.test(warning))
   );
   if (weakConstraintEvents.length > 0) {
     suggestions.push(buildSuggestion({
@@ -137,8 +137,8 @@ function compileGoalHintSuggestions(events: DecisionPolicyEvent[]) {
   }
 
   const laneAmbiguityEvents = events.filter((event) =>
-    event.goalCopilotWarnings.some((warning) => /lane|target|ownership/i.test(warning))
-    || event.followUpRequestedFields.includes("source.primaryAdoptionTarget")
+    (event.goalCopilotWarnings ?? []).some((warning) => /lane|target|ownership/i.test(warning))
+    || (event.followUpRequestedFields ?? []).includes("source.primaryAdoptionTarget")
   );
   if (laneAmbiguityEvents.length > 0) {
     suggestions.push(buildSuggestion({
@@ -165,7 +165,8 @@ function compileApprovalBoundarySuggestions(events: DecisionPolicyEvent[]) {
   const groups = new Map<string, DecisionPolicyEvent[]>();
 
   for (const event of autoClearCandidates) {
-    groups.set(event.resolvedLaneId, [...(groups.get(event.resolvedLaneId) ?? []), event]);
+    const lane = event.resolvedLaneId ?? "unknown";
+    groups.set(lane, [...(groups.get(lane) ?? []), event]);
   }
 
   return [...groups.entries()].map(([laneId, groupEvents]) =>

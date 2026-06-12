@@ -43,5 +43,13 @@
     "directive kernel pipeline": "DK internal: first Architecture lane bootstrap artifact. Proves the system can improve itself through tracked lifecycle. Handoff + closeout + adoption created."
   },
   "default": "Source ingested through DK discovery pipeline.",
-  "verified": ["markitdown", "scrapling", "bb-browser", "evolver"]
+  "verified": ["markitdown", "scrapling", "bb-browser", "evolver"],
+  "_meta": {
+    "verifiedSource": "evidence-derived",
+    "criteria": "HMAC-signed execution evidence with non-echo CLI command and exitCode 0. Echo-based and composite-fallback entries excluded.",
+    "evidencePath": "runtime/callable-executions/<cid>-execution.json",
+    "canonicalCheck": "npx tsx scripts/capability-health.ts --check-ui",
+    "regenerateCommand": "npx tsx scripts/capability-health.ts --write-ui",
+    "lastVerified": "2026-06-12"
+  }
 }

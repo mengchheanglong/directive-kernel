@@ -1,79 +1,43 @@
-import fs from "node:fs";
+/**
+ * Dev server entry point — starts the directive-kernel API host for local
+ * development. The UI is static HTML served by the web host; no Vite or
+ * separate frontend build step is needed.
+ *
+ * Usage: npx tsx ./scripts/run-ui-dev.ts
+ *
+ * Equivalent to: pnpm run ui:start
+ */
+
 import { spawn, type ChildProcess } from "node:child_process";
-import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DIRECTIVE_ROOT = path.resolve(SCRIPT_DIR, "..");
-const UI_ROOT = path.join(DIRECTIVE_ROOT, "ui");
-const VITE_BIN = path.join(DIRECTIVE_ROOT, "ui", "node_modules", "vite", "bin", "vite.js");
 const TSX_BIN = path.join(DIRECTIVE_ROOT, "node_modules", "tsx", "dist", "cli.mjs");
 
-function readEnv(name: string, legacyName: string, fallback: string) {
-  return process.env[name] || process.env[legacyName] || fallback;
-}
-
-const DEV_HOST = readEnv("DIRECTIVE_UI_DEV_HOST", "DIRECTIVE_FRONTEND_DEV_HOST", "127.0.0.1");
-const DEV_PORT = Number(readEnv("DIRECTIVE_UI_DEV_PORT", "DIRECTIVE_FRONTEND_DEV_PORT", "4173"));
-const API_PORT = Number(readEnv("DIRECTIVE_UI_API_PORT", "DIRECTIVE_FRONTEND_API_PORT", "43128"));
-function spawnChild(command: string, args: string[], options?: {
-  env?: NodeJS.ProcessEnv;
-  cwd?: string;
-}): ChildProcess {
+function spawnChild(command: string, args: string[]): ChildProcess {
   return spawn(command, args, {
-    cwd: options?.cwd || DIRECTIVE_ROOT,
+    cwd: DIRECTIVE_ROOT,
     stdio: "inherit",
-    env: {
-      ...process.env,
-      ...options?.env,
-    },
     windowsHide: true,
   });
 }
 
-async function isPortFree(host: string, port: number) {
-  return await new Promise<boolean>((resolve) => {
-    const tester = net.createServer();
-    tester.once("error", () => resolve(false));
-    tester.once("listening", () => {
-      tester.close(() => resolve(true));
-    });
-    tester.listen(port, host);
-  });
-}
-
-async function resolveOpenPort(host: string, preferredPort: number, label: string) {
-  for (let port = preferredPort; port < preferredPort + 50; port += 1) {
-    if (await isPortFree(host, port)) {
-      return port;
-    }
-  }
-  throw new Error(`Unable to find an open ${label} port starting from ${preferredPort}`);
-}
-
 async function stopChild(child: ChildProcess | null) {
-  if (!child || child.killed || child.exitCode !== null) {
-    return;
-  }
-
+  if (!child || child.killed || child.exitCode !== null) return;
   if (process.platform === "win32") {
     const killer = spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
       stdio: "ignore",
       windowsHide: true,
     });
-    await new Promise<void>((resolve) => {
-      killer.once("exit", () => resolve());
-    });
+    await new Promise<void>((resolve) => killer.once("exit", () => resolve()));
     return;
   }
-
   child.kill("SIGTERM");
   await new Promise<void>((resolve) => {
     const timer = setTimeout(() => {
-      if (child.exitCode === null) {
-        child.kill("SIGKILL");
-      }
+      if (child.exitCode === null) child.kill("SIGKILL");
       resolve();
     }, 5000);
     child.once("exit", () => {
@@ -84,77 +48,29 @@ async function stopChild(child: ChildProcess | null) {
 }
 
 async function main() {
-  if (!Number.isInteger(DEV_PORT) || DEV_PORT < 1 || DEV_PORT > 65535) {
-    throw new Error("Invalid DIRECTIVE_UI_DEV_PORT");
-  }
-  if (!Number.isInteger(API_PORT) || API_PORT < 1 || API_PORT > 65535) {
-    throw new Error("Invalid DIRECTIVE_UI_API_PORT");
-  }
-  if (!fs.existsSync(VITE_BIN)) {
-    throw new Error("Missing UI dev dependency: vite. Run `pnpm install` from the repo root.");
-  }
-  if (!fs.existsSync(TSX_BIN)) {
-    throw new Error("Missing root dev dependency: tsx. Run `pnpm install` from the repo root.");
-  }
-
-  const resolvedApiPort = await resolveOpenPort(DEV_HOST, API_PORT, "ui API");
-  const resolvedDevPort = await resolveOpenPort(DEV_HOST, DEV_PORT, "ui dev");
-  const apiOrigin = `http://${DEV_HOST}:${resolvedApiPort}`;
-  const appOrigin = `http://${DEV_HOST}:${resolvedDevPort}`;
+  const host = process.env.DIRECTIVE_UI_HOST || "127.0.0.1";
+  const port = process.env.DIRECTIVE_UI_PORT || "43127";
 
   const hostProcess = spawnChild(process.execPath, [
     TSX_BIN,
-    "./scripts/start-ui.ts",
-    "--host",
-    DEV_HOST,
-    "--port",
-    String(resolvedApiPort),
+    "./hosts/web-host/cli.ts",
+    "serve",
+    "--directive-root",
+    ".",
   ]);
 
-  const viteProcess = spawnChild(
-    process.execPath,
-    [
-      VITE_BIN,
-      "--host",
-      DEV_HOST,
-      "--port",
-      String(resolvedDevPort),
-      "--strictPort",
-    ],
-    {
-      cwd: UI_ROOT,
-      env: {
-        DIRECTIVE_UI_API_ORIGIN: apiOrigin,
-      },
-    },
-  );
-
-  process.stdout.write(
-    `Directive Kernel dev stack\nui: ${appOrigin}\napi-host: ${apiOrigin}\n`,
-  );
+  process.stdout.write(`Directive Kernel dev server\nAPI host: http://${host}:${port}\n`);
 
   let shuttingDown = false;
   const shutdown = async (code = 0) => {
-    if (shuttingDown) {
-      return;
-    }
+    if (shuttingDown) return;
     shuttingDown = true;
-    await Promise.all([
-      stopChild(viteProcess),
-      stopChild(hostProcess),
-    ]);
+    await stopChild(hostProcess);
     process.exit(code);
   };
 
   hostProcess.once("exit", (code) => {
-    if (!shuttingDown) {
-      void shutdown(code ?? 1);
-    }
-  });
-  viteProcess.once("exit", (code) => {
-    if (!shuttingDown) {
-      void shutdown(code ?? 1);
-    }
+    if (!shuttingDown) void shutdown(code ?? 1);
   });
 
   process.on("SIGINT", () => void shutdown(0));

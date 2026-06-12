@@ -4,8 +4,8 @@
 //
 // Why a Node script instead of `cross-env`: the repo already uses Node helpers
 // for cross-platform problems (scripts/copy-runtime-assets.mjs,
-// scripts/run-ui-dev.ts), and adding a one-line env-var helper as a new dep
-// is more weight than a 20-line script for the same effect.
+// scripts/run-ui-dev.ts as a dev-server launcher), and adding a one-line
+// env-var helper as a new dep is more weight than a 20-line script.
 
 import { spawn } from "node:child_process";
 import path from "node:path";

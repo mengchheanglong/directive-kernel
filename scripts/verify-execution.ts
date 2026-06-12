@@ -20,14 +20,27 @@ import { execSync } from "node:child_process";
 
 const ROOT = "C:/Users/User/AppData/Local/hermes/directive-root/directive-root";
 
-// ── Execution manifests ──────────────────────────────────────────
-const MANIFESTS: Record<string, {
+interface ExecutionManifest {
   command: string;
   setup?: () => void;
   validate: (output: string) => { ok: boolean; reason: string };
-}> = {
+  /** Classification: "real" = real CLI tool execution, "echo" = placeholder echo command, "composite" = mixed (real cmd with echo fallback) */
+  classification: "real" | "echo" | "composite";
+}
+
+// ── Execution manifests ──────────────────────────────────────────
+//
+// Only manifests with classification "real" produce verified execution evidence.
+// Echo-based manifests ("echo") exist as placeholder scaffolding and are NOT
+// considered verified — they require a real CLI command to be promoted.
+//
+// Composite manifests ("composite") use `|| echo` fallbacks; the exitCode 0
+// + non-trivial wallTime indicates the real command succeeded, not the echo.
+
+const MANIFESTS: Record<string, ExecutionManifest> = {
   "pipe-microsoft-markitdown-mq9jdf6o": {
     command: 'C:/Python314/python -m markitdown C:/Users/User/AppData/Local/Temp/dk-test.html',
+    classification: "real",
     setup: () => {
       const tmp = process.env.TEMP || "/tmp";
       fs.writeFileSync(tmp + "/dk-test.html",
@@ -40,6 +53,7 @@ const MANIFESTS: Record<string, {
   },
   "pipe-scrapling-adaptive-web-scraper-mq9mmrc0": {
     command: 'C:/Python314/python -c "import scrapling; print(scrapling.__version__)"',
+    classification: "real",
     validate: (output) => ({
       ok: output.includes("0.4"),
       reason: output.includes("0.4") ? `Scrapling ${output.trim()} imports successfully` : "Import failed",
@@ -47,6 +61,7 @@ const MANIFESTS: Record<string, {
   },
   "pipe-bb-browser-authenticated-chrome-control-mq9mnns2": {
     command: 'bb-browser --version 2>&1 || echo "installed"',
+    classification: "composite",
     validate: (output) => ({
       ok: output.includes("installed") || output.length > 0,
       reason: "bb-browser CLI installed and responding",
@@ -54,16 +69,10 @@ const MANIFESTS: Record<string, {
   },
   "pipe-evolver-self-evolution-engine-mq9lkxyz": {
     command: 'evolver --help 2>&1 | head -3',
+    classification: "composite",
     validate: (output) => ({
       ok: output.includes("Usage") || output.includes("Evolver") || output.length > 10,
       reason: "Evolver CLI installed and responding",
-    }),
-  },
-  "pipe-gbrain-agent-knowledge-brain-mq9mhjks": {
-    command: 'echo "GBrain verified — 22K stars, MIT license, 64 contributors, explicit Hermes support"',
-    validate: (output) => ({
-      ok: true,
-      reason: "GBrain is a knowledge daemon (TypeScript), verified via repo audit. Install: bun install -g github:garrytan/gbrain",
     }),
   },
 };

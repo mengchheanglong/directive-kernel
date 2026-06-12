@@ -115,7 +115,7 @@ readable companion to that audit.
 - **Operator trust score**: The numeric score that gates how much
   initiative an opener can take without re-confirmation; replaces
   "earned autonomy". See
-  [`engine/routing/routing-assessment.ts`](./engine/routing/routing-assessment.ts).
+  [`engine/routing/assessment.ts`](./engine/routing/assessment.ts).
 - **Out of scope**: An explicit boundary marker on the items a cut will
   not touch; replaces "forbidden scope expansion". See
   [`engine/workspace-truth.ts`](./engine/workspace-truth.ts).
@@ -140,15 +140,15 @@ readable companion to that audit.
   [`shared/schemas/checker-definition-registry.schema.json`](./shared/schemas/checker-definition-registry.schema.json).
 - **Route**: A routing decision target (`runtime`, `architecture`, etc.)
   produced by the routing engine. See
-  [`engine/routing/routing-assessment.ts`](./engine/routing/routing-assessment.ts).
+  [`engine/routing/assessment.ts`](./engine/routing/assessment.ts).
 - **Routing**: The act of deciding a route for a source. See
   [`engine/routing/`](./engine/routing/).
 - **Routing assessment**: The structured output of the routing engine
   that scores and routes a source. See
-  [`engine/routing/routing-assessment.ts`](./engine/routing/routing-assessment.ts).
+  [`engine/routing/assessment.ts`](./engine/routing/assessment.ts).
 - **Routing digest**: A summarized routing assessment surfaced to
   operators. See
-  [`engine/routing/routing-digest.ts`](./engine/routing/routing-digest.ts).
+  [`engine/routing/digest.ts`](./engine/routing/digest.ts).
 - **Runtime**: The lane that runs experiments under operator review;
   locked term per Do_Not_Touch_Term_Set. See
   [`runtime/README.md`](./runtime/README.md).
@@ -168,7 +168,7 @@ readable companion to that audit.
   See [`engine/process-source-record.ts`](./engine/process-source-record.ts).
 - **Source thread context**: The chain of source signals that informed a
   routing decision; replaces "narrative threading". See
-  [`engine/routing/routing-assessment.ts`](./engine/routing/routing-assessment.ts).
+  [`engine/routing/assessment.ts`](./engine/routing/assessment.ts).
 - **Submission**: A source submission through the front door. See
   [`discovery/lib/front-door/discovery-submission-router.ts`](./discovery/lib/front-door/discovery-submission-router.ts).
 - **Triage**: Discovery's second stage for complex sources that require

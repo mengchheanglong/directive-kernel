@@ -36,14 +36,14 @@ source and contracts. Each term is sourced from
   as a repo, alert, issue, advisory, or paper. See
   `engine/process-source-record.ts`.
 - **[Route](./GLOSSARY.md#terms)** - A routing decision target produced by
-  the routing engine. See `engine/routing/routing-assessment.ts`.
+  the routing engine. See `engine/routing/assessment.ts`.
 - **[Submission](./GLOSSARY.md#terms)** - A source submission through the
   front door. See `discovery/lib/front-door/submission-router.ts`.
 - **[Intake](./GLOSSARY.md#terms)** - Discovery's first stage for ingesting
   raw sources. See `discovery/lib/intake/`.
 - **[Operator trust score](./GLOSSARY.md#terms)** - The score that gates
   how much initiative an opener can take without reconfirmation. See
-  `engine/routing/routing-assessment.ts`.
+  `engine/routing/assessment.ts`.
 - **[Allowed next steps](./GLOSSARY.md#terms)** - The valid next-step seam
   options available at a lifecycle stage. See `engine/workspace-truth.ts`.
 - **[Closeout](./GLOSSARY.md#terms)** - The terminal lifecycle stage of an
