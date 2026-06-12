@@ -1,13 +1,15 @@
 /**
  * Dynamic MCP Tool Projection
  *
- * Enumerates verified+contracted capabilities from runtime/capabilities/
+ * Enumerates verified+projection-ready capabilities from runtime/capabilities/
  * and projects each as a first-class MCP tool: cap_<capability-id>.
  *
  * Rules:
- *   - Only capabilities with verification="verified" AND contract="complete"
- *     are projected.
+ *   - Only capabilities with projectionReady=true are projected.
+ *     This requires: verification="verified", contract="complete",
+ *     valid projection block, whenToUse, and failureModes.
  *   - Placeholder/claimed/runs_unverified_contract: never projected.
+ *   - Verified but missing projection metadata: never projected.
  *   - Each projected tool uses the capability's inputSchema/outputSchema
  *     for validation.
  *   - Execution validates input BEFORE and output AFTER.
@@ -35,7 +37,7 @@ export function buildProjectedCapabilityTools(options: {
   const capabilities = listRuntimeCapabilityMetadata(options.directiveRoot);
 
   const eligible = capabilities.filter(
-    (cap) => cap.verification === "verified" && cap.contract === "complete",
+    (cap) => cap.projectionReady,
   );
 
   const projectedTools: McpTool[] = [];
@@ -262,7 +264,7 @@ function buildProjectedExecutor(
 export function getProjectedCapabilityIds(directiveRoot: string): string[] {
   const capabilities = listRuntimeCapabilityMetadata(directiveRoot);
   return capabilities
-    .filter((cap) => cap.verification === "verified" && cap.contract === "complete")
+    .filter((cap) => cap.projectionReady)
     .map((cap) => cap.id)
     .sort();
 }

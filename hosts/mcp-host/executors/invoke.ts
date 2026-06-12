@@ -4,11 +4,14 @@
  * Trust-gated capability invocation through the MCP surface.
  *
  * Gate order:
- *  1. Verification: the capability must have harness-verified evidence (exit 0).
+ *  1. Projection-ready: the capability must be in the projection-ready list
+ *     (verified + contract=complete + projection + whenToUse + failureModes).
+ *     Placeholder/claimed/non-projection-ready capabilities are rejected.
+ *  2. Verification: the capability must have harness-verified evidence (exit 0).
  *     If not, refuse with a structured reason listing the verification status.
- *  2. Earned Autonomy: if the operator does not have autoApprovalEligible
+ *  3. Earned Autonomy: if the operator does not have autoApprovalEligible
  *     status for the relevant route class, require operator_confirmation_id.
- *  3. Execute: run the capability, record outcome.
+ *  4. Execute: run the capability, record outcome.
  *
  * Every invocation outcome appends to the decision-policy ledger.
  */
@@ -18,6 +21,7 @@ import path from "node:path";
 
 import { listDirectiveRuntimeCallableCapabilities } from "../../../runtime/core/callable-execution.ts";
 import type { RuntimeCallableExecutionInput } from "../../../runtime/core/callable-execution.ts";
+import { listRuntimeCapabilityMetadata } from "../../../runtime/core/capability-registry.ts";
 import {
   readValidatedEvidence,
   verificationFromEvidence,
@@ -47,6 +51,23 @@ function evaluateTrustGate(input: {
   operatorConfirmationId?: string;
 }): TrustGateResult {
   const callableExecutionsDir = path.join(input.directiveRoot, "runtime", "callable-executions");
+
+  // Gate 0: Projection-ready check — must be a verified, projection-ready capability
+  const capabilities = listRuntimeCapabilityMetadata(input.directiveRoot);
+  const metadata = capabilities.find((c) => c.id === input.capabilityId);
+
+  if (!metadata || !metadata.projectionReady) {
+    const reason = metadata
+      ? `Capability "${input.capabilityId}" is not projection-ready (status: ${metadata.entryClass}). ${metadata.notUsableReason ?? "No projection metadata available."}`
+      : `Capability "${input.capabilityId}" is not in the capability registry.`;
+    return {
+      allowed: false,
+      reason,
+      requiresOperatorConfirmation: true,
+      autoApprovalEligible: false,
+      verification: metadata?.verification ?? "unknown",
+    };
+  }
 
   // Gate 1: Verification check
   const evidence = readValidatedEvidence(input.capabilityId, callableExecutionsDir);

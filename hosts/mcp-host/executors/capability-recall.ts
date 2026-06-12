@@ -2,7 +2,12 @@
  * MCP Executors: find_capability + report_outcome
  *
  * find_capability: Search for capabilities matching a natural-language query.
- *   Ranks by: semantic token match × reliability × freshness × trust.
+ *   Ranks by: projection-ready status × semantic token match × reliability
+ *   × freshness × trust.
+ *
+ *   Default: only returns projection-ready capabilities (Hermes-usable).
+ *   include_candidates=true: also returns candidates, clearly labeled as
+ *   not-usable with entryClass, projectionReady=false, and notUsableReason.
  *
  * report_outcome: Record operator feedback after using a capability.
  */
@@ -47,6 +52,16 @@ interface CapabilityRecallResult {
   description: string;
   verification: string;
   contract: string;
+  /** Entry class from Jarvis capability kernel: verified_capability, candidate, placeholder, etc. */
+  entryClass: string;
+  /** Whether this capability is ready for Hermes projection. */
+  projectionReady: boolean;
+  /** If not projectionReady, the reason why. */
+  notUsableReason?: string;
+  /** When Hermes should use this capability. */
+  whenToUse?: string;
+  /** Known failure modes for this capability. */
+  failureModes?: string[];
   /** Semantic match score 0–1 */
   matchScore: number;
   /** Reliability score 0–1 (Laplace-smoothed from outcomes) */
@@ -67,27 +82,39 @@ interface CapabilityRecallResult {
 function rankCapabilities(
   query: string,
   directiveRoot: string,
+  includeCandidates = false,
 ): CapabilityRecallResult[] {
   const capabilities = listRuntimeCapabilityMetadata(directiveRoot);
 
-  return capabilities
-    .filter((c) => c.verification !== "placeholder")
+  // Default: only projection-ready (Hermes-usable) capabilities
+  // include_candidates=true: also include non-projection-ready with demotion
+  const candidates = includeCandidates
+    ? capabilities
+    : capabilities.filter((c) => c.projectionReady);
+
+  return candidates
     .map((cap) => {
       const manifest = readRuntimeCapabilityManifest({ id: cap.id });
       const capabilityText = [
         cap.displayName,
         cap.description,
         manifest?.description ?? "",
+        cap.whenToUse ?? "",
       ].join(" ");
 
       const matchScore = semanticMatch(query, capabilityText);
       const reliability = deriveCapabilityReliability(cap.id, directiveRoot);
       const trust = deriveCapabilityTrust(cap.id, directiveRoot);
 
-      // rank = match × (0.5 + 0.5 × reliability) × (0.75 + 0.25 × freshness)
+      // Projection-ready multiplier: 1.0 for ready, 0.3 for non-ready candidates
+      // This ensures non-usable entries are always demoted far below usable ones
+      const projectionMultiplier = cap.projectionReady ? 1.0 : 0.3;
+
+      // rank = projection × match × (0.5 + 0.5 × reliability) × (0.75 + 0.25 × freshness)
       // × (trust.autoApprovalEligible ? 1.0 : 0.6)
       const trustMultiplier = trust.autoApprovalEligible ? 1.0 : 0.6;
-      const rankScore = matchScore
+      const rankScore = projectionMultiplier
+        * matchScore
         * (0.5 + 0.5 * reliability.reliability)
         * (0.75 + 0.25 * reliability.freshness)
         * trustMultiplier;
@@ -98,6 +125,11 @@ function rankCapabilities(
         description: cap.description,
         verification: cap.verification,
         contract: cap.contract,
+        entryClass: cap.entryClass,
+        projectionReady: cap.projectionReady,
+        ...(cap.notUsableReason ? { notUsableReason: cap.notUsableReason } : {}),
+        ...(cap.whenToUse ? { whenToUse: cap.whenToUse } : {}),
+        ...(cap.failureModes ? { failureModes: cap.failureModes } : {}),
         matchScore: Math.round(matchScore * 1000) / 1000,
         reliability: Math.round(reliability.reliability * 1000) / 1000,
         freshness: Math.round(reliability.freshness * 1000) / 1000,
@@ -109,7 +141,7 @@ function rankCapabilities(
       };
     })
     .filter((r) => r.matchScore > 0 || r.outcomeCount > 0) // Must have some relevance
-    .sort((a, b) => b.rankScore - a.rankScore);
+    .sort((a, b) => b.rankScore - a.rankScore); // projectionReady naturally sorts first due to multiplier
 }
 
 // ── Executors ──────────────────────────────────────────────────
@@ -123,11 +155,13 @@ export function buildCapabilityRecallExecutors(options: {
       return { ok: false, error: "query is required", results: [] };
     }
 
-    const results = rankCapabilities(query, options.directiveRoot);
+    const includeCandidates = args.include_candidates === true;
+    const results = rankCapabilities(query, options.directiveRoot, includeCandidates);
 
     return {
       ok: true,
       query,
+      includeCandidates,
       results: results.slice(0, 10),
       totalCount: results.length,
     };

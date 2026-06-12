@@ -16,6 +16,11 @@ import os from "node:os";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import { deriveCapabilityTrust } from "../../engine/routing/capability-trust.ts";
 import { appendDecisionPolicyEvent } from "../../engine/decision-policy-ledger.ts";
+import {
+  deriveEntryClass,
+  deriveProjectionReadiness,
+  type RuntimeCapabilityManifest,
+} from "../../runtime/core/capability-registry.ts";
 
 let tmpDir: string;
 
@@ -152,5 +157,74 @@ describe("capability trust derivation", () => {
     expect(trust.demoted).toBe(true);
     expect(trust.autoApprovalEligible).toBe(false);
     expect(trust.reason).toContain("1 more consecutive successes");
+  });
+});
+
+describe("invoke projection gate — placeholder/claimed never invocable", () => {
+  function makeManifest(overrides: Partial<RuntimeCapabilityManifest>): RuntimeCapabilityManifest {
+    return {
+      displayName: "Gate Test",
+      description: "Test.",
+      domain: "runtime",
+      ...overrides,
+    };
+  }
+
+  it("placeholder manifest → not projectionReady → invoke gate blocks", () => {
+    const m = makeManifest({ verification: "placeholder" });
+    const ec = deriveEntryClass(m);
+    const { projectionReady, notUsableReason } = deriveProjectionReadiness(m);
+    expect(ec).toBe("placeholder");
+    expect(projectionReady).toBe(false);
+    expect(notUsableReason).toContain("placeholder");
+  });
+
+  it("claimed manifest → not projectionReady → invoke gate blocks", () => {
+    const m = makeManifest({ verification: "claimed" });
+    const { projectionReady, notUsableReason } = deriveProjectionReadiness(m);
+    expect(projectionReady).toBe(false);
+    expect(notUsableReason).toContain("claimed");
+  });
+
+  it("verified without contract → not projectionReady → invoke gate blocks", () => {
+    const m = makeManifest({ verification: "verified", contract: "partial" });
+    const { projectionReady, notUsableReason } = deriveProjectionReadiness(m);
+    expect(projectionReady).toBe(false);
+    expect(notUsableReason).toContain("contract");
+  });
+
+  it("verified + complete + projection + metadata → projectionReady → gate passes", () => {
+    const m = makeManifest({
+      verification: "verified",
+      contract: "complete",
+      projection: { kind: "mcp_tool", id: "test", invocation: "cap_test" },
+      whenToUse: "When testing.",
+      failureModes: ["Timeout"],
+    });
+    const { projectionReady, notUsableReason } = deriveProjectionReadiness(m);
+    expect(projectionReady).toBe(true);
+    expect(notUsableReason).toBeUndefined();
+  });
+
+  it("deriveEntryClass correctly labels verified+projection as verified_capability", () => {
+    const m = makeManifest({
+      verification: "verified",
+      contract: "complete",
+      projection: { kind: "mcp_tool", id: "test", invocation: "cap_test" },
+      whenToUse: "When testing.",
+      failureModes: ["Timeout"],
+    });
+    expect(deriveEntryClass(m)).toBe("verified_capability");
+  });
+
+  it("deriveEntryClass correctly labels verified-without-projection as candidate", () => {
+    const m = makeManifest({
+      verification: "verified",
+      contract: "complete",
+    });
+    // Verified but no projection = candidate, not placeholder
+    expect(deriveEntryClass(m)).toBe("candidate");
+    const { projectionReady } = deriveProjectionReadiness(m);
+    expect(projectionReady).toBe(false);
   });
 });
