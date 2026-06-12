@@ -1,7 +1,8 @@
 {
   "displayName": "React Bootstrap",
   "description": "Bootstrap 5 components rebuilt for React with production-proven responsive layout and accessibility patterns.",
-  "domain": "software-development",
+  "domain": "runtime",
   "inputSchema": "shared/schemas/react-bootstrap-callable-input.schema.json",
-  "outputSchema": "shared/schemas/react-bootstrap-callable-output.schema.json"
+  "outputSchema": "shared/schemas/react-bootstrap-callable-output.schema.json",
+  "verification": "placeholder"
 }

@@ -1,7 +1,8 @@
 {
   "displayName": "Tremor",
   "description": "React chart and dashboard component system for analytics, KPI cards, and data-rich interfaces.",
-  "domain": "software-development",
+  "domain": "runtime",
   "inputSchema": "shared/schemas/tremor-callable-input.schema.json",
-  "outputSchema": "shared/schemas/tremor-callable-output.schema.json"
+  "outputSchema": "shared/schemas/tremor-callable-output.schema.json",
+  "verification": "placeholder"
 }
