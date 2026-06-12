@@ -694,6 +694,16 @@ export async function handleDirectiveUiApiRequest(input: {
     }));
     return true;
   }
+  if (method === "POST" && pathname === "/api/runtime/capabilities/invoke") {
+    // invoke_capability is an MCP-only operation.
+    // HTTP callers receive a redirect to the MCP surface.
+    writeJson(res, 200, {
+      ok: true,
+      message: "invoke_capability is available through the MCP interface. Connect via pnpm run mcp:serve -- --directive-root <path>",
+      mcp_tool: "invoke_capability",
+    });
+    return true;
+  }
   if (method === "POST" && pathname === "/api/architecture/handoff-start") {
     const payload = parseJsonBody<{ handoffPath: string }>(await readBody(req));
     writeJson(res, 200, startDirectiveArchitectureFromHandoff({

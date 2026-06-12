@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/mcp-invoke-capability-input.schema.json",
+  "title": "Invoke Capability Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capability_id"],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The capability identifier to invoke (e.g. dw-source-scientify-research-workflow-plugin-2026-03-27)"
+    },
+    "params": {
+      "type": "object",
+      "description": "Optional parameters to pass to the capability invocation"
+    },
+    "operator_confirmation_id": {
+      "type": "string",
+      "description": "Required when earned-autonomy does not grant auto-approval. The ID of a confirmed operator decision from the inbox."
+    }
+  }
+}

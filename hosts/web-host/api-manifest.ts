@@ -226,6 +226,11 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
     side_effects: ["writes runtime registry acceptance decision", "may write runtime registry entry"],
     prerequisites: ["runtime promotion record exists", "operator rationale present"],
   }),
+  op("POST", "invoke_capability", "/api/runtime/capabilities/invoke", "Invoke a capability through trust-gated execution (requires verified evidence and earned autonomy).", {
+    input_schema: "shared/schemas/mcp-invoke-capability-input.schema.json",
+    side_effects: ["executes capability", "appends to decision-policy ledger"],
+    prerequisites: ["capability verified by harness", "operator trust score sufficient"],
+  }),
   op("POST", "architecture_handoff_start", "/api/architecture/handoff-start", "Start an architecture experiment from a handoff artifact.", {
     side_effects: ["writes architecture start artifact"],
     prerequisites: ["handoff artifact exists"],

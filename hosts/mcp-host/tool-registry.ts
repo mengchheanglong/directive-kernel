@@ -7,6 +7,7 @@ import { buildRuntimeExecutors } from "./executors/runtime.ts";
 import { buildArchitectureExecutors } from "./executors/architecture.ts";
 import { buildMissionExecutors } from "./executors/mission.ts";
 import { buildReadExecutors } from "./executors/read.ts";
+import { buildInvokeExecutors } from "./executors/invoke.ts";
 
 export function buildToolRegistry(options: ToolRegistryOptions): McpTool[] {
   const dispatch = {
@@ -15,6 +16,7 @@ export function buildToolRegistry(options: ToolRegistryOptions): McpTool[] {
     ...buildArchitectureExecutors(options),
     ...buildMissionExecutors(options),
     ...buildReadExecutors(options),
+    ...buildInvokeExecutors(options),
   };
 
   const tools: McpTool[] = ROUTE_TABLE.map((entry) => {

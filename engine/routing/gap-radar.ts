@@ -100,7 +100,7 @@ export function compileGapRadarSuggestions(input: {
     (event.resolvedLaneId === "architecture" || event.resolvedLaneId === "runtime")
     && (
       !event.matchedGapId
-      || event.followUpRequestedFields.includes("source.capabilityGapId")
+      || (event.followUpRequestedFields ?? []).includes("source.capabilityGapId")
       || event.originalLaneId !== event.resolvedLaneId
     )
   );
@@ -139,7 +139,7 @@ export function compileGapRadarSuggestions(input: {
       tokenCounts.set(token, (tokenCounts.get(token) ?? 0) + 1);
     }
     clusters.push({
-      laneId: event.resolvedLaneId,
+      laneId: event.resolvedLaneId ?? "unknown",
       events: [event],
       tokenCounts,
     });

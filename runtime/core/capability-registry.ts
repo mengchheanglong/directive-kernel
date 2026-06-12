@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import {
+  readValidatedEvidence,
+  verificationFromEvidence,
+} from "../../shared/lib/execution-evidence.ts";
+
 export type RuntimeCapabilityVerification = "verified" | "claimed" | "placeholder";
 
 export type RuntimeCapabilityManifest = {
@@ -116,7 +121,40 @@ export function normalizeRuntimeCapabilityId(value: string) {
   return normalized;
 }
 
-export function listRuntimeCapabilityMetadata(): RuntimeCapabilityMetadata[] {
+/**
+ * Resolve the effective verification status for a capability by
+ * checking signed execution evidence.
+ *
+ * Promotion rule: a capability flips to "verified" ONLY when a current,
+ * signed evidence record exists AND its exit code is success (0).
+ * Hand-written evidence files without a valid harness signature are
+ * rejected — they cannot promote a capability to "verified".
+ *
+ * @param directiveRoot - Path to the directive root (used to locate
+ *   runtime/callable-executions/). If omitted, evidence is not checked
+ *   and only the manifest value is used.
+ * @param manifestVerification - The verification field from manifest.json
+ *   (or undefined for capabilities without one).
+ * @param capabilityId - The capability folder name.
+ */
+export function resolveCapabilityVerification(
+  directiveRoot: string | undefined,
+  manifestVerification: RuntimeCapabilityVerification | undefined,
+  capabilityId: string,
+): RuntimeCapabilityVerification {
+  if (directiveRoot) {
+    const evDir = path.join(directiveRoot, "runtime", "callable-executions");
+    const evidence = readValidatedEvidence(capabilityId, evDir);
+    if (evidence) {
+      return verificationFromEvidence(evidence);
+    }
+  }
+  return manifestVerification ?? "placeholder";
+}
+
+export function listRuntimeCapabilityMetadata(
+  directiveRoot?: string,
+): RuntimeCapabilityMetadata[] {
   const capabilitiesRoot = resolveRuntimeCapabilitiesRoot();
   if (!fs.existsSync(capabilitiesRoot)) {
     return [];
@@ -132,7 +170,11 @@ export function listRuntimeCapabilityMetadata(): RuntimeCapabilityMetadata[] {
       const displayName = manifest?.displayName ?? toDisplayName(entry.name);
       const description = manifest?.description
         ?? `Describe the bounded Runtime value exposed by ${displayName}.`;
-      const verification = manifest?.verification ?? "placeholder";
+      const verification = resolveCapabilityVerification(
+        directiveRoot,
+        manifest?.verification,
+        entry.name,
+      );
       return {
         id: entry.name,
         displayName,
