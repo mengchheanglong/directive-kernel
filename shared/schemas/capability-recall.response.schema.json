@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/capability-recall.response.schema.json",
+  "title": "Capability Recall Response",
+  "type": "object",
+  "required": ["ok", "query", "results"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "query": { "type": "string" },
+    "totalCount": { "type": "integer" },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["capabilityId", "displayName", "rankScore"],
+        "properties": {
+          "capabilityId": { "type": "string" },
+          "displayName": { "type": "string" },
+          "description": { "type": "string" },
+          "verification": { "type": "string" },
+          "contract": { "type": "string" },
+          "matchScore": { "type": "number" },
+          "reliability": { "type": "number" },
+          "freshness": { "type": "number" },
+          "trustAutoApproval": { "type": "boolean" },
+          "rankScore": { "type": "number" },
+          "outcomeCount": { "type": "integer" },
+          "outcomeTags": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

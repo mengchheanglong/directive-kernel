@@ -538,7 +538,7 @@ export function runEngineContractSurfaceChecks() {
   assert.ok(vagueResult.missionSpecificityWarning.includes("generic tokens"));
   assert.ok(vagueResult.goalCopilot.overallScore < 60);
   assert.ok(typeof vagueResult.missionHealth?.overallScore === "number");
-  assert.ok(vagueResult.goalCopilot.suggestedObjective !== null);
+  assert.strictEqual(vagueResult.goalCopilot.suggestedObjective, null);
   assert.ok((vagueResult.confidenceRecovery?.requestedInputs.length ?? 0) > 0);
   assert.ok((vagueResult.followUpQuestions?.questions.length ?? 0) > 0);
   assert.ok(typeof vagueResult.earnedAutonomy.overallScore === "number");

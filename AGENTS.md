@@ -73,71 +73,84 @@ query `/api/glossary`.
 
 ## Top operations
 
-These are the most frequently invoked operator actions. Prefer the CLI
-where it exists today. API-only operations are labeled explicitly.
+These are the most frequently invoked operator actions, organized around
+the daily capability-recall loop. Operationalize a source from Discovery
+through capability invocation, then feed outcomes back into the system.
 
-### 1. Submit a source
+### Daily loop
+
+```
+submit_source → verify_capability → find_capability → cap_ → report_outcome → get_snapshot
+```
+
+#### 1. Submit a source
 Submit a source through the Discovery front door.
 
 - **CLI:** `pnpm run standalone:cli discovery-submit --directive-root <path> --input-json-path <path> [--process-with-engine]`
 - **API:** `POST /api/discovery/submissions`
+- **MCP:** `discovery_submit`
 - **Contract:** [shared/contracts/goal-input.md](./shared/contracts/goal-input.md)
 
-### 2. See current state
+#### 2. Find the right capability
+Query capabilities by what you need them to do.
+
+- **MCP:** `find_capability { query: "convert html to markdown" }`
+- **API:** `POST /api/runtime/capability-recall`
+- Returns ranked results: semantic match × reliability × freshness × trust.
+
+#### 3. Invoke a capability
+Run a verified capability directly through its projected MCP tool.
+
+- **MCP:** `cap_<capability-id> { ...inputs per manifest schema }`
+- Fallback: `invoke_capability { capability_id, params }` (deprecated)
+
+#### 4. Report outcome
+After using a capability, report success/failure/partial.
+
+- **MCP:** `report_outcome { capability_id, outcome, description }`
+- **API:** `POST /api/runtime/capability-outcomes`
+- Feeds back into reliability, trust, and recall ranking.
+
+#### 5. See current state
 Inspect queue entries, engine runs, handoffs, and summary state.
 
 - **API:** `GET /api/snapshot`
+- **MCP:** `snapshot_get`
 - **API:** `GET /api/operator-decision-inbox`
-- No standalone CLI command for state overview exists today.
+- **MCP:** `operator_decision_inbox_get`
 
-### 3. Reroute with answers
+### Architecture lane operations
+
+#### 6. Reroute with answers
 Fold operator answers into a fresh routing pass for an existing engine run.
 
 - **CLI:** `pnpm run standalone:cli engine-reroute --directive-root <path> --run-id <id> --answers-json-path <path>`
 - **API:** `POST /api/engine-runs/:runId/reroute`
+- **MCP:** `engine_run_reroute`
 - **Contract:** [shared/schemas/run-record.schema.json](./shared/schemas/run-record.schema.json)
 
-### 4. Write decision (promotion seam)
-Resolve a Runtime promotion-seam decision.
+#### 7. Resolve decisions
+Write operator decisions for Runtime promotion seams, host selection, and registry acceptance.
 
-- **CLI:** `pnpm run standalone:cli runtime-promotion-seam-resolve --directive-root <path> --promotion-readiness-path <path> --rationale <text>`
-- **API:** `POST /api/runtime/promotion-seam-decisions`
+- **Promotion seam:** `runtime_promotion_seam_decisions`
+- **Host selection:** `runtime_selection_resolutions`
+- **Registry accept:** `runtime_registry_acceptance_decisions`
 
-### 5. Write decision (host selection)
-Resolve a Runtime host-selection decision.
-
-- **CLI:** `pnpm run standalone:cli runtime-host-selection-resolve --directive-root <path> --promotion-readiness-path <path> --decision <select_standalone|select_web|confirm_inferred|override|defer> --rationale <text>`
-- **API:** `POST /api/runtime/selection-resolutions`
-
-### 6. Write decision (registry acceptance)
-Accept a Runtime promotion record into the registry.
-
-- **CLI:** `pnpm run standalone:cli runtime-registry-accept --directive-root <path> --promotion-record-path <path> --rationale <text>`
-- **API:** `POST /api/runtime/registry-acceptance-decisions`
-
-### 7. Formalize a gap
+#### 8. Formalize a gap
 Approve or reject a capability-gap formalization.
 
 - **CLI:** `pnpm run standalone:cli gap-approve --directive-root <path> --formalization-id <id> --priority <high|medium|low> --rationale <text>`
 - **API:** `POST /api/gaps/approve`
-- **Contract:** [shared/schemas/capability-gap-entry.schema.json](./shared/schemas/capability-gap-entry.schema.json)
+- **MCP:** `gaps_approve`
 
-### 8. Edit mission
+#### 9. Edit mission
 Preview, approve, reject, revert, or inspect mission evolution.
 
-- **CLI:** `pnpm run standalone:cli mission-feedback --directive-root <path>`
-- **CLI:** `pnpm run standalone:cli mission-preview --directive-root <path> --feedback-id <id>`
 - **CLI:** `pnpm run standalone:cli mission-approve --directive-root <path> --feedback-id <id> --rationale <text>`
-- **API:** `POST /api/mission/preview`, `POST /api/mission/approve`, `POST /api/mission/reject`, `POST /api/mission/revert`
-- **Contract:** [shared/contracts/goal-input.md](./shared/contracts/goal-input.md)
+- **API:** `POST /api/mission/approve`
+- **MCP:** `mission_approve`
 
-### 9. Open runtime follow-up
-Write a Runtime follow-up artifact from a prior run record.
-
-- **CLI:** `pnpm run standalone:cli runtime-followup-write --directive-root <path> --input-json-path <path>`
-- **API-only** for opening from an existing run record.
-
-### 10. Run maintenance
+#### 10. Run maintenance
 Archive old run records and rotate the decision-policy ledger.
 
 - **CLI:** `pnpm run standalone:cli maintenance archive --directive-root <path> [--max-age-days <n>] [--rotate-ledger|--no-rotate-ledger] [--dry-run]`

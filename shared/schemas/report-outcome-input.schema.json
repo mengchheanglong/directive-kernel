@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Report Outcome Input",
+  "type": "object",
+  "required": ["capability_id", "outcome"],
+  "properties": {
+    "capability_id": { "type": "string", "minLength": 1 },
+    "outcome": { "type": "string", "enum": ["success", "failure", "partial"] },
+    "description": { "type": "string" }
+  }
+}

@@ -9,6 +9,7 @@ import { buildMissionExecutors } from "./executors/mission.ts";
 import { buildReadExecutors } from "./executors/read.ts";
 import { buildInvokeExecutors } from "./executors/invoke.ts";
 import { buildProjectedCapabilityTools } from "./executors/capability-projection.ts";
+import { buildCapabilityRecallExecutors } from "./executors/capability-recall.ts";
 
 export function buildToolRegistry(options: ToolRegistryOptions): McpTool[] {
   const dispatch = {
@@ -18,6 +19,7 @@ export function buildToolRegistry(options: ToolRegistryOptions): McpTool[] {
     ...buildMissionExecutors(options),
     ...buildReadExecutors(options),
     ...buildInvokeExecutors(options),
+    ...buildCapabilityRecallExecutors(options),
   };
 
   const coreTools: McpTool[] = ROUTE_TABLE.map((entry) => {

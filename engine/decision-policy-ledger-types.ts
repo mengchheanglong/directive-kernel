@@ -1,6 +1,6 @@
 export type DecisionPolicyEvent = {
   recordedAt: string;
-  source: "discovery_routing_review" | "capability_invocation";
+  source: "discovery_routing_review" | "capability_invocation" | "capability_outcome";
   candidateId: string;
   sourceType?: string;
   decision?: string;

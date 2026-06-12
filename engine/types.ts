@@ -148,6 +148,22 @@ export type EngineRoutingAssessment = {
   matchedGapId: string | null;
   matchedGapRank: number | null;
   explicitRouteDestination: EngineLaneId | null;
+  routingPrior?: {
+    recommendedLaneId: EngineLaneId;
+    confidence: EngineRoutingConfidence;
+    laneScores: Record<EngineLaneId, number>;
+    signalWinner: EngineLaneId;
+  };
+  routingJudgment?: Record<string, unknown>;
+  routingDisagreement?: {
+    kind: "lane" | "confidence" | "review" | "none";
+    priorLaneId: string;
+    judgmentLaneId: string;
+    priorConfidence: string;
+    judgmentConfidence: string;
+    priorLaneScores: Record<string, number>;
+    resolution: "judgment_wins";
+  } | null;
   routeConflict: boolean;
   needsHumanReview: boolean;
   ambiguitySummary: {

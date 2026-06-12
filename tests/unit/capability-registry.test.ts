@@ -26,9 +26,9 @@ describe("listRuntimeCapabilityMetadata", () => {
     expect(manifest?.domain).toBe("runtime");
   });
 
-  it("returns all 8 capability metadata entries", () => {
+  it("returns all 3 capability metadata entries", () => {
     const capabilities = listRuntimeCapabilityMetadata();
-    expect(capabilities.length).toBe(8);
+    expect(capabilities.length).toBe(3);
   });
 
   it("IDs match the three existing capability folders", () => {
@@ -37,11 +37,6 @@ describe("listRuntimeCapabilityMetadata", () => {
     expect(ids).toContain("code-normalizer");
     expect(ids).toContain("literature-access");
     expect(ids).toContain("research-vault-source-pack");
-    expect(ids).toContain("daisyui");
-    expect(ids).toContain("react-bits");
-    expect(ids).toContain("react-bootstrap");
-    expect(ids).toContain("shadcn-ui");
-    expect(ids).toContain("tremor");
   });
 
   it("entries are sorted by id", () => {

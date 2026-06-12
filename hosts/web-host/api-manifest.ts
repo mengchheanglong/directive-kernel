@@ -231,6 +231,17 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
     side_effects: ["executes capability", "appends to decision-policy ledger"],
     prerequisites: ["capability verified by harness", "operator trust score sufficient"],
   }),
+  op("POST", "find_capability", "/api/runtime/capability-recall", "Search for capabilities matching a natural-language query. Ranks by semantic match, reliability, freshness, and trust.", {
+    input_schema: "shared/schemas/find-capability-input.schema.json",
+    output_schema: "shared/schemas/capability-recall.response.schema.json",
+    side_effects: ["reads capability registry", "reads ledger outcomes"],
+    prerequisites: [],
+  }),
+  op("POST", "report_outcome", "/api/runtime/capability-outcomes", "Record operator feedback after using a capability. Appends capability_outcome to the decision-policy ledger.", {
+    input_schema: "shared/schemas/report-outcome-input.schema.json",
+    side_effects: ["writes capability_outcome event to decision-policy ledger"],
+    prerequisites: [],
+  }),
   op("POST", "architecture_handoff_start", "/api/architecture/handoff-start", "Start an architecture experiment from a handoff artifact.", {
     side_effects: ["writes architecture start artifact"],
     prerequisites: ["handoff artifact exists"],
