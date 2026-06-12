@@ -21,7 +21,8 @@
           "id",
           "displayName",
           "description",
-          "modulePath"
+          "modulePath",
+          "verification"
         ],
         "properties": {
           "id": {
@@ -39,6 +40,14 @@
           "modulePath": {
             "type": "string",
             "minLength": 1
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "claimed",
+              "placeholder"
+            ]
           }
         }
       }
