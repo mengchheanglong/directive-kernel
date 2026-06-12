@@ -43,16 +43,5 @@
     "directive kernel pipeline": "DK internal: first Architecture lane bootstrap artifact. Proves the system can improve itself through tracked lifecycle. Handoff + closeout + adoption created."
   },
   "default": "Source ingested through DK discovery pipeline.",
-  "verified": [
-    "markitdown",
-    "scrapling",
-    "bb-browser",
-    "evolver",
-    "gbrain",
-    "genericagent",
-    "shadcn-ui",
-    "daisyui",
-    "auto-prune",
-    "directive kernel pipeline"
-  ]
+  "verified": ["markitdown", "scrapling", "bb-browser", "evolver"]
 }
