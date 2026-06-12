@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/source-operationalization-decision",
+  "title": "Source Operationalization Decision",
+  "description": "The operationalization classification produced for every source before any pipeline advancement. One of: reject, note_only, capability_candidate, architecture_experiment, training_lab_only, fine_tune_later.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "source_type",
+    "decision",
+    "classification",
+    "rationale",
+    "actionability_score",
+    "community_signal_score",
+    "hermes_relevance_score",
+    "requires_model_training",
+    "requires_external_service",
+    "recommended_lane"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the source being classified."
+    },
+    "source_type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Source kind: paper, repo, blog, issue, alert, user_failure, note_candidate, etc."
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "reject",
+        "note_only",
+        "capability_candidate",
+        "architecture_experiment",
+        "training_lab_only",
+        "fine_tune_later"
+      ],
+      "description": "The operationalization decision for this source."
+    },
+    "classification": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable classification label summarizing the decision."
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why this decision was made. Required for audit and operator review."
+    },
+    "actionability_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "How actionable this source is at the system/workflow layer. 0 = purely theoretical, 100 = immediately callable/deployable."
+    },
+    "community_signal_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Community interest or adoption signal. 0 = no signal, 100 = widely adopted/starred."
+    },
+    "hermes_relevance_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "How relevant this source is to Hermes's current capability gaps and mission."
+    },
+    "requires_model_training": {
+      "type": "boolean",
+      "description": "True if the source requires model architecture changes, pretraining, fine-tuning, or tokenizer redesign beyond local system-layer changes."
+    },
+    "requires_external_service": {
+      "type": "boolean",
+      "description": "True if the source requires a paid external API, cloud service, or non-local dependency."
+    },
+    "recommended_lane": {
+      "type": "string",
+      "enum": ["discovery", "runtime", "architecture", "external"],
+      "description": "The recommended downstream lane: discovery (hold/review), runtime (capability pipeline), architecture (experiment pipeline), or external (Obsidian/other)."
+    },
+    "next_artifact": {
+      "type": "string",
+      "description": "Suggested next artifact path or action in the recommended lane."
+    },
+    "kill_criteria": {
+      "type": "string",
+      "description": "Required for architecture_experiment decisions. Defines when the experiment should be killed."
+    },
+    "note_target": {
+      "type": "string",
+      "description": "Optional target vault or note path for note_only decisions."
+    }
+  }
+}

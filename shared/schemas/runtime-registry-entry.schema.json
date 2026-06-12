@@ -25,6 +25,76 @@
     "last_validation_date": { "type": "string", "format": "date" },
     "active_risks": { "type": "array", "items": { "type": "string" } },
     "rollback_path": { "type": "string" },
-    "notes": { "type": "array", "items": { "type": "string" } }
+    "notes": { "type": "array", "items": { "type": "string" } },
+    "entry_class": {
+      "type": "string",
+      "enum": ["verified_capability", "candidate", "placeholder", "note_only", "rejected", "architecture_experiment"],
+      "description": "Jarvis capability kernel: the classification of this registry entry. Only 'verified_capability' entries with a valid Hermes projection can be projected as Hermes powers. Missing entry_class on legacy entries defaults conservatively based on verification and projection evidence."
+    },
+    "projection_kind": {
+      "type": "string",
+      "enum": ["mcp_tool", "hermes_skill", "cli_wrapper", "cron_job", "handoff_prompt", "obsidian_note"],
+      "description": "The Hermes projection mechanism for this capability, if projection-ready."
+    },
+    "projection_ref": {
+      "type": "string",
+      "description": "Reference to the Hermes projection manifest or artifact for this capability."
+    },
+    "when_to_use": {
+      "type": "string",
+      "description": "Description of when Hermes should use this capability. Required for projection-ready entries."
+    },
+    "failure_modes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Known failure modes for this capability."
+    },
+    "verification_ref": {
+      "type": "string",
+      "description": "Path to verification evidence artifact for this capability."
+    },
+    "trust_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Current trust/reliability state for this capability, derived from structured outcomes.",
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Trust score 0-1."
+        },
+        "success_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of successful invocations."
+        },
+        "partial_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of partially successful invocations."
+        },
+        "failure_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of failed invocations."
+        },
+        "contract_failure_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of contract_failure invocations."
+        },
+        "last_outcome": {
+          "type": "string",
+          "enum": ["success", "partial", "failure", "contract_failure"],
+          "description": "The most recent outcome for this capability."
+        },
+        "last_outcome_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of the most recent outcome."
+        }
+      }
+    }
   }
 }

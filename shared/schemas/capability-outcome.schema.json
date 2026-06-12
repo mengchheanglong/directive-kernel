@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/capability-outcome",
+  "title": "Capability Outcome",
+  "description": "Structured outcome record reported after a capability is invoked. Replaces fragile rationale string parsing. Must not count the word 'success' inside a failure context as success.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "capability_id",
+    "outcome",
+    "task_description",
+    "reported_by",
+    "reported_at"
+  ],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the capability that was invoked."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "success",
+        "partial",
+        "failure",
+        "contract_failure"
+      ],
+      "description": "The invocation outcome. 'success' = worked as expected; 'partial' = worked but with issues; 'failure' = did not produce expected result; 'contract_failure' = input/output contract was violated."
+    },
+    "task_description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What task Hermes was trying to accomplish with this capability."
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optional invocation duration in milliseconds."
+    },
+    "cost_estimate": {
+      "type": "string",
+      "description": "Optional cost estimate or token usage notes."
+    },
+    "error_class": {
+      "type": "string",
+      "description": "Optional error classification for failures: timeout, schema_mismatch, rate_limit, unexpected_output, internal_error, etc."
+    },
+    "operator_notes": {
+      "type": "string",
+      "description": "Optional human-readable notes from the operator about this outcome."
+    },
+    "reported_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Who or what reported this outcome: operator id, 'hermes', or system component."
+    },
+    "reported_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when this outcome was reported."
+    }
+  }
+}

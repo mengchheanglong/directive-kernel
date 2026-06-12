@@ -136,3 +136,149 @@ describe("capability manifest contract validation v2", () => {
     expect(manifest!.verify).toBeDefined();
   });
 });
+
+describe("capability manifest projection metadata (schema acceptance)", () => {
+  // Note: The runtime capability-registry parser does not yet forward the new
+  // projection fields to RuntimeCapabilityManifest (that is Slice 2 work).
+  // These tests verify the schema itself accepts the new optional fields without
+  // rejecting valid manifests. Schema validation passes (contract is not
+  // "missing") even when the parser doesn't expose the new fields yet.
+
+  it("schema accepts optional whenToUse and failureModes without rejecting manifest", () => {
+    writeManifest("with-when-to-use", {
+      displayName: "With WhenToUse",
+      description: "Has projection metadata.",
+      domain: "runtime",
+      verification: "verified",
+      inputSchema: "shared/schemas/x.schema.json",
+      outputSchema: "shared/schemas/y.schema.json",
+      verify: {
+        command: "echo projection",
+        assertions: [{ type: "regex", value: "projection" }],
+        timeoutMs: 5000,
+      },
+      whenToUse: "Use this when you need to convert HTML to Markdown.",
+      failureModes: ["Rate-limited by upstream API", "Fails on malformed HTML"],
+    });
+
+    const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "with-when-to-use" });
+    expect(manifest).not.toBeNull();
+    // Schema validation must NOT reject this as "missing" — optional fields are allowed
+    expect(manifest!.contract).not.toBe("missing");
+    // Core fields still parse correctly
+    expect(manifest!.displayName).toBe("With WhenToUse");
+    expect(manifest!.verification).toBe("verified");
+  });
+
+  it("schema accepts optional projection block with valid kind enum", () => {
+    writeManifest("with-projection", {
+      displayName: "With Projection",
+      description: "Has projection block.",
+      domain: "runtime",
+      verification: "verified",
+      inputSchema: "shared/schemas/x.schema.json",
+      outputSchema: "shared/schemas/y.schema.json",
+      verify: {
+        command: "echo proj",
+        assertions: [{ type: "regex", value: "proj" }],
+        timeoutMs: 5000,
+      },
+      projection: {
+        kind: "mcp_tool",
+        id: "html-to-md",
+        invocation: "cap_html_to_md",
+      },
+      costNotes: "Free tier: 1000 req/month.",
+    });
+
+    const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "with-projection" });
+    expect(manifest).not.toBeNull();
+    // Schema must not reject due to unknown projection fields
+    expect(manifest!.contract).not.toBe("missing");
+    expect(manifest!.displayName).toBe("With Projection");
+  });
+
+  it("legacy manifest without projection fields still validates as before", () => {
+    writeManifest("legacy-no-projection", {
+      displayName: "Legacy Cap",
+      description: "No projection metadata.",
+      domain: "runtime",
+      verification: "verified",
+      inputSchema: "shared/schemas/a.schema.json",
+      outputSchema: "shared/schemas/b.schema.json",
+      verify: {
+        command: "echo legacy",
+        assertions: [{ type: "regex", value: "legacy" }],
+        timeoutMs: 5000,
+      },
+    });
+
+    const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "legacy-no-projection" });
+    expect(manifest).not.toBeNull();
+    // Legacy entry without new optional fields still validates fully
+    expect(manifest!.displayName).toBe("Legacy Cap");
+    expect(manifest!.contract).not.toBe("missing");
+  });
+
+  it("schema accepts verificationEvidence and costNotes without rejecting", () => {
+    writeManifest("with-evidence", {
+      displayName: "With Evidence",
+      description: "Has verification evidence ref.",
+      domain: "runtime",
+      verification: "verified",
+      inputSchema: "shared/schemas/x.schema.json",
+      outputSchema: "shared/schemas/y.schema.json",
+      verify: {
+        command: "echo evidence",
+        assertions: [{ type: "regex", value: "evidence" }],
+        timeoutMs: 5000,
+      },
+      verificationEvidence: "execution-evidence/cap-123.json",
+      whenToUse: "When you need verified behavior.",
+      failureModes: ["None known"],
+    });
+
+    const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "with-evidence" });
+    expect(manifest).not.toBeNull();
+    // Optional fields must not cause schema rejection
+    expect(manifest!.contract).not.toBe("missing");
+    expect(manifest!.displayName).toBe("With Evidence");
+  });
+
+  it("manifest with projection metadata and examples remains 'complete'", () => {
+    writeManifest("full-projection", {
+      displayName: "Full Projection Cap",
+      description: "Everything: contract fields + projection metadata.",
+      domain: "runtime",
+      verification: "verified",
+      inputSchema: "shared/schemas/x.schema.json",
+      outputSchema: "shared/schemas/y.schema.json",
+      verify: {
+        command: "echo full",
+        assertions: [{ type: "regex", value: "full" }],
+        timeoutMs: 5000,
+      },
+      examples: [{
+        name: "test-example",
+        input: { q: "test" },
+        expectedOutput: { ok: true },
+        match: { invariantFields: ["ok"] },
+      }],
+      whenToUse: "Use for full contract validation with projection metadata.",
+      failureModes: ["Timeout on large inputs"],
+      projection: {
+        kind: "hermes_skill",
+        id: "full-skill",
+        invocation: "skill_full_cap",
+      },
+      costNotes: "None",
+      verificationEvidence: "execution-evidence/full.json",
+    });
+
+    const manifest = readRuntimeCapabilityManifest({ capabilitiesRoot: tmpDir, id: "full-projection" });
+    expect(manifest).not.toBeNull();
+    // Contract stays "complete" even with extra optional fields — schema must not reject them
+    expect(manifest!.contract).toBe("complete");
+    expect(manifest!.displayName).toBe("Full Projection Cap");
+  });
+});
