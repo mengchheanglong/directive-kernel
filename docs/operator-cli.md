@@ -208,3 +208,70 @@ POST /api/architecture/handoff-start
 **CLI status:** not yet exposed on the standalone CLI. Architecture handoffs are currently started through the web-host API.
 
 **Contract.** [architecture-artifact-lifecycle.md](../shared/contracts/architecture-artifact-lifecycle.md)
+
+## MCP Tool Profiles
+
+The MCP server exposes two tool profiles to control the tool surface visible to
+AI agent consumers. The engine keeps all 67 operations; profiles change only
+what agents see.
+
+### Core profile (default)
+
+~15 task-level tools suitable for most operator workflows. This is the default
+when no `--profile` flag is supplied.
+
+```
+pnpm run mcp:serve -- --directive-root <path>
+```
+
+| Tool | Purpose |
+|------|---------|
+| `discovery_submit` | Submit a new source through Discovery |
+| `snapshot_get` | Read current dashboard snapshot |
+| `operator_decision_inbox_get` | Read operator decision inbox |
+| `engine_run_reroute` | Reroute an engine run with operator answers |
+| `runtime_selection_resolutions` | Resolve host selection for a promotion |
+| `runtime_promotion_seam_decisions` | Resolve whether a promotion seam is satisfied |
+| `runtime_registry_acceptance_decisions` | Accept a promotion record into the registry |
+| `gaps_approve` | Approve a capability gap formalization |
+| `mission_preview` | Preview the effect of a mission feedback entry |
+| `mission_approve` | Approve a mission feedback entry |
+| `mission_reject` | Reject a mission feedback entry |
+| `mission_revert` | Revert to the previous mission evolution |
+| `glossary_get` | Query canonical Directive Kernel glossary terms |
+| `invoke_capability` | Invoke a capability through trust-gated execution |
+| `maintenance_archive` | Archive old engine runs and rotate the ledger |
+
+### Full profile (opt-in)
+
+All 67+ operations, including deep-tail read routes and architecture lifecycle
+operations. Use when an agent needs full surface access.
+
+```
+pnpm run mcp:serve -- --directive-root <path> --profile full
+```
+
+### Profile selection rules
+
+- Default: `core` (15 tools)
+- Explicit `--profile full`: all registered tools (67+)
+- Unknown profile value: server exits with a validation error
+
+### Maintenance archive (MCP-only tool)
+
+The `maintenance_archive` tool wraps the `pnpm run standalone:cli maintenance
+archive` CLI command for MCP consumers. It archives old engine run records and
+rotates the decision-policy ledger.
+
+**Input schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "max_age_days": {
+      "type": "number",
+      "description": "Archive records older than this many days (default: 90)"
+    }
+  }
+}
+```

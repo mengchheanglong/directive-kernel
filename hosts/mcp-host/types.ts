@@ -5,7 +5,7 @@ export type McpTool = {
   execute: (args: Record<string, unknown>) => Promise<unknown>;
 };
 
-export type ToolRegistryOptions = { directiveRoot: string; };
+export type ToolRegistryOptions = { directiveRoot: string; profile?: string; };
 
 export type ToolExecutor = (args: Record<string, unknown>) => Promise<unknown>;
 

@@ -18,7 +18,7 @@ import { buildToolRegistry } from "./tool-registry.ts";
 const SERVER_NAME = "@directive/kernel-mcp";
 const SERVER_VERSION = "0.2.0";
 
-export async function startMcpHost(directiveRoot: string): Promise<void> {
+export async function startMcpHost(directiveRoot: string, profile: string = "core"): Promise<void> {
   // Validate directiveRoot
   if (!fs.existsSync(directiveRoot)) {
     throw new Error(`Directive root not found: ${directiveRoot}`);
@@ -45,7 +45,7 @@ export async function startMcpHost(directiveRoot: string): Promise<void> {
 
   while (!shuttingDown) {
     // Build fresh tool registry on each connection — no stale state
-    const tools = buildToolRegistry({ directiveRoot });
+    const tools = buildToolRegistry({ directiveRoot, profile });
 
     // Create MCP server
     const server = new Server(
@@ -125,7 +125,7 @@ export async function startMcpHost(directiveRoot: string): Promise<void> {
 
     // Connect transport to server
     await server.connect(transport);
-    console.error(`[MCP] Client connected (${tools.length} tools available)`);
+    console.error(`[MCP] Client connected (${tools.length} tools available, profile: ${profile})`);
 
     // Wait until the client disconnects or we shut down
     await disconnected;

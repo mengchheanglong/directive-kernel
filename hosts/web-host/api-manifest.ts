@@ -10,6 +10,9 @@ export type OperationEntry = {
   method: "GET" | "POST";
   path: string;
   summary: string;
+  /** MCP tool profiles this operation belongs to. "core" = default agent-facing surface.
+   *  Untagged operations are only included in the "full" (opt-in) profile. */
+  profiles?: string[];
   input_schema?: string;
   output_schema?: string;
   side_effects?: string[];
@@ -68,16 +71,19 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
     output_schema: "shared/schemas/runtime-capabilities.response.schema.json",
   }),
   op("GET", "snapshot_get", "/api/snapshot", "Read the current dashboard snapshot of queue, runs, and handoffs.", {
+    profiles: ["core"],
     output_schema: "shared/schemas/snapshot.response.schema.json",
   }),
   op("GET", "explain_get", "/api/explain", "Read a derived explanation for one engine run by run id.", {
     output_schema: "shared/schemas/run-explanation.response.schema.json",
   }),
   op("GET", "glossary_get", "/api/glossary", "Read canonical Directive Kernel glossary terms.", {
+    profiles: ["core"],
     output_schema: "shared/schemas/glossary.response.schema.json",
   }),
   op("GET", "schema_get", "/api/schemas/:schemaName", "Read one JSON schema file served from shared/schemas."),
   op("GET", "operator_decision_inbox_get", "/api/operator-decision-inbox", "Read pending operator-facing review and approval work.", {
+    profiles: ["core"],
     output_schema: "shared/schemas/operator-decision-inbox.response.schema.json",
   }),
   op("GET", "mission_feedback_list", "/api/mission/feedback", "List pending mission feedback entries.", {
@@ -100,6 +106,7 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
     prerequisites: ["engine run exists"],
   }),
   op("POST", "engine_run_reroute", "/api/engine-runs/:runId/reroute", "Re-run routing for an engine run with operator answers.", {
+    profiles: ["core"],
     side_effects: ["writes engine run record", "writes routing assessment"],
     prerequisites: ["engine run exists", "answers payload present"],
   }),
@@ -148,27 +155,33 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
     output_schema: "shared/schemas/artifact-text.response.schema.json",
   }),
   op("POST", "discovery_submit", "/api/discovery/submissions", "Submit a source through the Discovery front door for routing.", {
+    profiles: ["core"],
     input_schema: "shared/schemas/discovery-submission-request.schema.json",
     side_effects: ["writes intake record", "writes routing record", "may write engine run record"],
     prerequisites: ["directive root initialized", "goal envelope present"],
     allowed_after: ["engine_run_reroute", "discovery_open_route", "discovery_resolve_routing_review"],
   }),
   op("POST", "mission_preview", "/api/mission/preview", "Preview the effect of a mission feedback entry.", {
+    profiles: ["core"],
     prerequisites: ["mission feedback entry exists"],
   }),
   op("POST", "mission_approve", "/api/mission/approve", "Approve a mission feedback entry and write a new mission evolution.", {
+    profiles: ["core"],
     side_effects: ["writes mission evolution record", "may update engine runs through bounded cascade"],
     prerequisites: ["mission feedback entry exists", "operator rationale present"],
   }),
   op("POST", "mission_reject", "/api/mission/reject", "Reject a mission feedback entry.", {
+    profiles: ["core"],
     side_effects: ["writes mission feedback resolution"],
     prerequisites: ["mission feedback entry exists", "operator rationale present"],
   }),
   op("POST", "mission_revert", "/api/mission/revert", "Revert to the previous mission evolution.", {
+    profiles: ["core"],
     side_effects: ["writes mission evolution record"],
     prerequisites: ["mission history exists", "operator rationale present"],
   }),
   op("POST", "gaps_approve", "/api/gaps/approve", "Approve a gap formalization candidate and refresh the gap worklist.", {
+    profiles: ["core"],
     side_effects: ["writes gap formalization record", "writes capability gap entry", "writes discovery gap worklist"],
     prerequisites: ["formalization candidate exists", "operator rationale present"],
   }),
@@ -213,20 +226,24 @@ const STATIC_ROUTE_TABLE: OperationEntry[] = [
     allowed_after: ["runtime_selection_resolutions", "runtime_promotion_seam_decisions"],
   }),
   op("POST", "runtime_selection_resolutions", "/api/runtime/selection-resolutions", "Resolve runtime host selection for a promotion-readiness artifact.", {
+    profiles: ["core"],
     side_effects: ["writes runtime host-selection resolution"],
     prerequisites: ["promotion-readiness artifact exists", "operator rationale present"],
     allowed_after: ["runtime_promotion_seam_decisions", "runtime_registry_acceptance_decisions"],
   }),
   op("POST", "runtime_promotion_seam_decisions", "/api/runtime/promotion-seam-decisions", "Resolve whether a runtime promotion seam is satisfied.", {
+    profiles: ["core"],
     side_effects: ["writes runtime promotion record"],
     prerequisites: ["promotion-readiness artifact exists", "operator rationale present"],
     allowed_after: ["runtime_registry_acceptance_decisions"],
   }),
   op("POST", "runtime_registry_acceptance_decisions", "/api/runtime/registry-acceptance-decisions", "Accept a runtime promotion record into the registry.", {
+    profiles: ["core"],
     side_effects: ["writes runtime registry acceptance decision", "may write runtime registry entry"],
     prerequisites: ["runtime promotion record exists", "operator rationale present"],
   }),
   op("POST", "invoke_capability", "/api/runtime/capabilities/invoke", "Invoke a capability through trust-gated execution (requires verified evidence and earned autonomy).", {
+    profiles: ["core"],
     input_schema: "shared/schemas/mcp-invoke-capability-input.schema.json",
     side_effects: ["executes capability", "appends to decision-policy ledger"],
     prerequisites: ["capability verified by harness", "operator trust score sufficient"],

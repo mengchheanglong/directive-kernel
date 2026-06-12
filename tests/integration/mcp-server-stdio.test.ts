@@ -112,7 +112,7 @@ describe("MCP server stdio integration", () => {
 
     child = spawn(
       process.execPath,
-      ["--import", "tsx", MCP_CLI_RELATIVE, "--directive-root", directiveRoot],
+      ["--import", "tsx", MCP_CLI_RELATIVE, "--directive-root", directiveRoot, "--profile", "full"],
       {
         cwd: REPO_ROOT,
         stdio: ["pipe", "pipe", "pipe"],
