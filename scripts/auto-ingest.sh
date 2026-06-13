@@ -3,12 +3,13 @@
 # run them through the Hermes capability pipeline.
 #
 # Usage:
-#   bash scripts/auto-ingest.sh "<search-query>"       # single domain
-#   bash scripts/auto-ingest.sh                         # batch: reads scripts/domains.txt
+#   bash scripts/auto-ingest.sh "<search-query>"              # single domain
+#   bash scripts/auto-ingest.sh "<search-query>" --dry-run    # preview decisions
+#   bash scripts/auto-ingest.sh                               # batch: reads scripts/domains.txt
 #
 # Examples:
-#   bash scripts/auto-ingest.sh "top open source devops tools github 2025"
-#   bash scripts/auto-ingest.sh
+#   bash scripts/auto-ingest.sh "developer tools stars:>5000"
+#   bash scripts/auto-ingest.sh "developer tools stars:>5000" --dry-run
 
 set -euo pipefail
 
@@ -18,16 +19,23 @@ DOMAINS_FILE="$SCRIPT_DIR/domains.txt"
 
 cd "$PROJECT_DIR"
 
-# ── Single-domain mode (existing behavior preserved) ──
+# ── Single-domain mode ──
 if [ $# -ge 1 ]; then
   QUERY="$1"
+  DRY_FLAG=""
+  if [ "${2:-}" = "--dry-run" ]; then
+    DRY_FLAG="--dry-run"
+  fi
 
   echo "=== Hermes Auto-Ingest (single) ==="
   echo "Project dir: $PROJECT_DIR"
   echo "Query:       $QUERY"
+  if [ -n "$DRY_FLAG" ]; then
+    echo "Mode:        DRY-RUN (preview only)"
+  fi
   echo ""
 
-  npx tsx scripts/auto-ingest.ts "$QUERY"
+  npx tsx scripts/auto-ingest.ts "$QUERY" $DRY_FLAG
   exit $?
 fi
 

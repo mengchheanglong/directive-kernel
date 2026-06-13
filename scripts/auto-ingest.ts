@@ -1,8 +1,11 @@
 /**
- * Auto-Ingest: domain → GitHub search → filter → pipeline → registry
+ * Auto-Ingest: domain → GitHub search → filter → operationalization check → pipeline → registry
  *
- * Usage: npx tsx scripts/auto-ingest.ts "<search-query>"
+ * Usage: npx tsx scripts/auto-ingest.ts "<search-query>" [--dry-run]
  * Example: npx tsx scripts/auto-ingest.ts "top open source cybersecurity tools github 2025"
+ *
+ * --dry-run: Preview operationalization decisions without running pipeline.
+ *             Prints all matching repos with their decision classification.
  */
 
 import { spawn } from "node:child_process";
@@ -30,7 +33,7 @@ interface IntakeQueue {
 interface PipelineResult {
   name: string;
   url: string;
-  status: "registered" | "failed" | "skipped";
+  status: "registered" | "previewed" | "failed" | "skipped";
   reason?: string;
 }
 
@@ -81,9 +84,11 @@ async function searchGitHub(query: string): Promise<GhRepo[]> {
 function spawnPipeline(
   name: string,
   url: string,
+  dryRun = false,
 ): Promise<PipelineResult> {
   return new Promise((resolve) => {
-    const cmd = `npx tsx scripts/pipeline.ts "${name}" "${url}" github-repo`;
+    const dryFlag = dryRun ? " --dry-run" : "";
+    const cmd = `npx tsx scripts/pipeline.ts "${name}" "${url}" github-repo${dryFlag}`;
     console.log(`[pipeline] ${cmd}`);
 
     const child = spawn(cmd, {
@@ -109,7 +114,9 @@ function spawnPipeline(
 
     child.on("close", (code) => {
       const combined = stdout + stderr;
-      if (code === 0 && combined.includes("REGISTERED")) {
+      if (dryRun && code === 0) {
+        resolve({ name, url, status: "previewed" });
+      } else if (code === 0 && combined.includes("REGISTERED")) {
         resolve({ name, url, status: "registered" });
       } else if (code === 0) {
         resolve({
@@ -144,16 +151,19 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function main() {
-  const query = process.argv.slice(2).join(" ");
+  const rawArgs = process.argv.slice(2);
+  const dryRun = rawArgs.includes("--dry-run");
+  const query = rawArgs.filter((a) => a !== "--dry-run").join(" ");
   if (!query) {
-    console.error("Usage: npx tsx scripts/auto-ingest.ts \"<search-query>\"");
+    console.error("Usage: npx tsx scripts/auto-ingest.ts \"<search-query>\" [--dry-run]");
     console.error(
       'Example: npx tsx scripts/auto-ingest.ts "top open source devops tools github 2025"',
     );
     process.exit(1);
   }
 
-  console.log(`=== Hermes Auto-Ingest ===`);
+  const runMode = dryRun ? "DRY-RUN (preview only)" : "LIVE";
+  console.log(`=== Hermes Auto-Ingest (${runMode}) ===`);
   console.log(`Domain: ${query}`);
   console.log(`Minimum stars: ${MIN_STARS.toLocaleString()}\n`);
 
@@ -232,11 +242,13 @@ async function main() {
   }
 
   // 5. Run pipeline for each
+  const modeLabel = dryRun ? "previewing" : "Processing";
   console.log(
-    `\n[pipeline] Processing ${newRepos.length} new repo(s)...\n`,
+    `\n[pipeline] ${modeLabel} ${newRepos.length} new repo(s)...\n`,
   );
 
   let registered = 0;
+  let previewed = 0;
   let failed = 0;
 
   for (let i = 0; i < newRepos.length; i++) {
@@ -249,11 +261,14 @@ async function main() {
     console.log(`  ${label}`);
     console.log(`  ${repo.html_url}`);
 
-    const result = await spawnPipeline(repo.full_name, repo.html_url);
+    const result = await spawnPipeline(repo.full_name, repo.html_url, dryRun);
 
     if (result.status === "registered") {
       registered++;
       console.log(`  ✓ REGISTERED`);
+    } else if (result.status === "previewed") {
+      previewed++;
+      console.log(`  ✓ PREVIEWED`);
     } else {
       failed++;
       console.log(`  ✗ FAILED: ${result.reason ?? "unknown"}`);
@@ -266,17 +281,25 @@ async function main() {
   }
 
   // 6. Summary
+  const summaryTitle = dryRun ? "AUTO-INGEST SUMMARY (DRY-RUN)" : "AUTO-INGEST SUMMARY";
   console.log("\n══════════════════════════════════════════════");
-  console.log("  AUTO-INGEST SUMMARY");
+  console.log(`  ${summaryTitle}`);
   console.log("══════════════════════════════════════════════");
+  console.log(`Mode:           ${dryRun ? "DRY-RUN — no pipelines executed" : "LIVE"}`);
   console.log(`Query:          ${query}`);
   console.log(`Repos found:    ${repos.length}`);
   console.log(`After ≥${MIN_STARS.toLocaleString()}★ filter: ${qualified.length}`);
   console.log(`Callable:       ${callable.length} (skipped ${qualified.length - callable.length} docs/lists)`);
   console.log(`Duplicates skipped: ${skipped}`);
   console.log(`Submitted:      ${newRepos.length}`);
-  console.log(`Registered:     ${registered}`);
-  console.log(`Failed:         ${failed}`);
+  if (!dryRun) {
+    console.log(`Registered:     ${registered}`);
+    console.log(`Failed:         ${failed}`);
+  } else {
+    console.log(`Previewed:      ${previewed}`);
+    console.log(`Failed:         ${failed}`);
+    console.log(`Decision previewed for all ${newRepos.length} repos (see pipeline output above).`);
+  }
 }
 
 main().catch((err) => {
