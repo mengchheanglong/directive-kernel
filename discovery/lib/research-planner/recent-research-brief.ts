@@ -591,3 +591,13 @@ export {
   type RecentResearchWebSearchAdapter,
   type RecentResearchWebSearchResult,
 } from "./recent-research-brief-evidence.ts";
+
+export {
+  buildRecentResearchBriefReport,
+  validateRecentResearchSynthesis,
+  type RecentResearchBriefReport,
+  type RecentResearchEvidenceCluster,
+  type RecentResearchReportOptions,
+  type RecentResearchSynthesisDraft,
+  type RecentResearchSynthesisValidation,
+} from "./recent-research-brief-report.ts";
