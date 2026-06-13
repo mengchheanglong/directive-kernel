@@ -99,6 +99,7 @@ export interface RecentResearchBriefRunResult {
   warnings: string[];
   degradedSources: RecentResearchEvidenceReport["degradedSources"];
   ok: boolean;
+  usefulEvidenceFound: boolean;
 }
 
 const SAFE_SOURCE_SYNONYMS: Record<string, ResearchSource> = {
@@ -641,6 +642,7 @@ export async function runRecentResearchBrief(
   const validation = options.validateSynthesis
     ? options.validateSynthesis(report)
     : validateRecentResearchSynthesis(report);
+  const usefulEvidenceFound = evidenceReport.evidence.length > 0 && report.clusters.length > 0;
 
   return {
     schemaVersion: "1.0.0",
@@ -659,6 +661,7 @@ export async function runRecentResearchBrief(
     ]),
     degradedSources: report.degradedSources,
     ok: validation.ok,
+    usefulEvidenceFound,
   };
 }
 
@@ -668,10 +671,12 @@ const markdownList = (items: string[]): string[] =>
 const renderCitations = (urls: string[]): string => urls.length ? urls.join(", ") : "no citations";
 
 export function renderRecentResearchBriefMarkdown(result: RecentResearchBriefRunResult): string {
+  const status = result.ok ? "OK" : "validation failed";
+  const usefulness = result.usefulEvidenceFound ? "useful evidence found" : "no useful evidence found";
   const lines: string[] = [
     `# Recent Research Brief: ${result.topic}`,
     "",
-    `Status: ${result.ok ? "OK" : "validation failed"}`,
+    `Status: ${status} - ${usefulness}`,
   ];
 
   if (result.warnings.length > 0 || result.degradedSources.length > 0) {

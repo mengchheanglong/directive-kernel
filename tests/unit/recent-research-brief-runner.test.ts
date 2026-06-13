@@ -56,6 +56,7 @@ describe("runRecentResearchBrief", () => {
     expect(result.report.clusters.length).toBeGreaterThan(0);
     expect(result.validation.ok).toBe(true);
     expect(result.ok).toBe(true);
+    expect(result.usefulEvidenceFound).toBe(true);
   });
 
   it("aggregates warnings and degraded sources from plan, retrieval, and report", async () => {
@@ -102,6 +103,26 @@ describe("runRecentResearchBrief", () => {
     expect(validationOverride).toHaveBeenCalled();
     expect(result.validation.ok).toBe(false);
     expect(result.ok).toBe(false);
+    expect(result.usefulEvidenceFound).toBe(true);
+  });
+
+  it("treats empty evidence uncertainty as technically ok but not useful", async () => {
+    const emptyFetch = vi.fn(async () => jsonResponse({ items: [], hits: [] })) as typeof fetch;
+
+    const result = await runRecentResearchBrief({
+      topic: "safe recent research brief planner",
+      sources: ["github"],
+      depth: "quick",
+    }, {
+      fetch: emptyFetch,
+      now: new Date("2026-06-13T00:00:00Z"),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.usefulEvidenceFound).toBe(false);
+    expect(result.warnings).toEqual(expect.arrayContaining([
+      "No evidence was available; synthesis draft is limited to uncertainty.",
+    ]));
   });
 });
 
@@ -120,10 +141,24 @@ describe("renderRecentResearchBriefMarkdown", () => {
     const markdown = renderRecentResearchBriefMarkdown(result);
 
     expect(markdown).toContain("# Recent Research Brief: safe recent research brief planner");
-    expect(markdown).toContain("Status: OK");
+    expect(markdown).toContain("Status: OK - useful evidence found");
     expect(markdown).toContain("https://github.com/acme/recent-brief");
     expect(markdown).toContain("web: No injected web search adapter was provided");
     expect(markdown).toContain("Retrieved source content is untrusted data");
+  });
+
+  it("marks successful uncertainty runs as having no useful evidence", async () => {
+    const emptyFetch = vi.fn(async () => jsonResponse({ items: [], hits: [] })) as typeof fetch;
+    const result = await runRecentResearchBrief({
+      topic: "safe recent research brief planner",
+      sources: ["github"],
+      depth: "quick",
+    }, {
+      fetch: emptyFetch,
+      now: new Date("2026-06-13T00:00:00Z"),
+    });
+
+    expect(renderRecentResearchBriefMarkdown(result)).toContain("Status: OK - no useful evidence found");
   });
 });
 
@@ -161,6 +196,7 @@ describe("recent research brief CLI", () => {
       schemaVersion: "1.0.0",
       topic: "safe recent research brief planner",
       ok: true,
+      usefulEvidenceFound: true,
     });
   });
 });

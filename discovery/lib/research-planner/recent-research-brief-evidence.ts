@@ -96,6 +96,8 @@ const DEFAULT_PER_SOURCE_LIMIT = 3;
 const DEFAULT_TOTAL_LIMIT = 12;
 const MAX_PER_SOURCE_LIMIT = 10;
 const MAX_TOTAL_LIMIT = 30;
+const MIN_USEFUL_RELEVANCE = 0.05;
+const MIN_USEFUL_FINAL_SCORE = 0.1;
 
 const SOURCE_QUALITY: Record<ResearchSource, number> = {
   github: 0.9,
@@ -312,6 +314,10 @@ const normalizeEvidence = (
   unsafeContentWarning: true,
   scores: scoreEvidence(raw.source, context.plan, context.subquery, raw, context.now),
 });
+
+const isUsefulEvidence = (item: RecentResearchEvidenceItem): boolean =>
+  item.scores.relevance >= MIN_USEFUL_RELEVANCE
+  && item.scores.finalLocalScore >= MIN_USEFUL_FINAL_SCORE;
 
 const normalizeGithubRepository = (value: unknown): RawEvidence[] => {
   const record = getRecord(value);
@@ -553,8 +559,12 @@ export async function retrieveRecentResearchEvidence(
           })
           .slice(0, limit)
           .map((item, index) => normalizeEvidence(item, { ...contextBase, signal: new AbortController().signal }, index));
-        evidence.push(...normalized);
-        perSourceCounts.set(source, usedForSource + normalized.length);
+        const useful = normalized.filter(isUsefulEvidence);
+        if (normalized.length > 0 && useful.length === 0) {
+          warnings.push(`${source} retrieval returned only low-relevance evidence for ${subquery.label}.`);
+        }
+        evidence.push(...useful);
+        perSourceCounts.set(source, usedForSource + useful.length);
       } catch (error) {
         const reason = error instanceof Error ? error.message : "Unknown adapter failure";
         degradedSources.push({ source, reason, subqueryLabel: subquery.label });

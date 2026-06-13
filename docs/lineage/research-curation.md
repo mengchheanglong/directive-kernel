@@ -24,6 +24,21 @@ The following surfaces all ship and work:
 
 Research curation is **one supported domain**, not the kernel's primary audience. The primary audience on this branch is Hermes capability compounding (see [`AUDIENCE.md`](../AUDIENCE.md)). The research surfaces above are retained so that the capability kernel can ingest paper/repo sources through the literature-aware intake pipeline and classify them as capability candidates, architecture experiments, note-only items, or training-lab-only research.
 
+## Current Hermes/DK research routing policy
+
+This is an operator routing policy, not a standalone research router.
+
+- Broad or current web questions: use Hermes `web_search`, then `web_extract`
+  on selected URLs.
+- Exact GitHub repo or source-candidate questions: use
+  `recent_research_brief` or the direct public GitHub evidence path.
+- DK source-candidate discovery and artifact packets: use the Python
+  `discovery/research-engine` workspace.
+- Page extraction and parsing experiments: use Firecrawl today, or Scrapling
+  as a future extraction substrate.
+- `last30days`: source material only; direct install, run, or import remains
+  blocked.
+
 ## Migration note for research-curation history
 
 When auditing older research-driven registry artifacts, use the Jarvis migration

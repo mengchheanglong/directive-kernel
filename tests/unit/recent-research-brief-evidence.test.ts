@@ -222,6 +222,98 @@ describe("retrieveRecentResearchEvidence", () => {
     });
   });
 
+  it("filters low-relevance Hacker News noise without degrading the source", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("hn.algolia.com/api/v1/search")) {
+        return jsonResponse({
+          hits: [
+            {
+              objectID: "hn-onetone",
+              title: "Show HN: Onetone - A full-stack framework with custom C interpreter",
+              url: "https://github.com/onetoneframework/framework",
+              author: "bob",
+              created_at: "2025-01-01T00:00:00Z",
+              points: 0,
+              num_comments: 0,
+            },
+            {
+              objectID: "hn-scrapling",
+              title: "Scrapling: Fast, Adaptive Web Scraping for Python",
+              url: "https://github.com/D4Vinci/Scrapling",
+              author: "alice",
+              created_at: "2026-06-10T00:00:00Z",
+              points: 42,
+              num_comments: 7,
+            },
+          ],
+        });
+      }
+      return jsonResponse({ items: [] });
+    }) as typeof fetch;
+
+    const report = await retrieveRecentResearchEvidence(makePlan({
+      topic: "scrapling python web scraping GitHub",
+      sources: ["hackernews"],
+      depth: "quick",
+      lookbackDays: 90,
+    }), {
+      fetch: fetchMock,
+      now: new Date("2026-06-13T00:00:00Z"),
+      perSourceLimit: 3,
+      totalLimit: 5,
+    });
+
+    expect(report.evidence.map((item) => item.url)).not.toContain("https://github.com/onetoneframework/framework");
+    expect(report.evidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        source: "hackernews",
+        title: "Scrapling: Fast, Adaptive Web Scraping for Python",
+        url: "https://github.com/D4Vinci/Scrapling",
+      }),
+    ]));
+    expect(report.evidence.every((item) => item.scores.relevance > 0)).toBe(true);
+    expect(report.degradedSources).toEqual([]);
+  });
+
+  it("filters fresh high-engagement Hacker News hits with zero query-token overlap", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("hn.algolia.com/api/v1/search")) {
+        return jsonResponse({
+          hits: [{
+            objectID: "hn-ai-dashboard",
+            title: "Show HN: Popular AI Benchmark Dashboard",
+            url: "https://example.com/ai-benchmark-dashboard",
+            author: "carol",
+            created_at: "2026-06-13T00:00:00Z",
+            points: 600,
+            num_comments: 1200,
+          }],
+        });
+      }
+      return jsonResponse({ items: [] });
+    }) as typeof fetch;
+
+    const report = await retrieveRecentResearchEvidence(makePlan({
+      topic: "scrapling python web scraping GitHub",
+      sources: ["hackernews"],
+      depth: "quick",
+      lookbackDays: 90,
+    }), {
+      fetch: fetchMock,
+      now: new Date("2026-06-13T00:00:00Z"),
+      perSourceLimit: 3,
+      totalLimit: 5,
+    });
+
+    expect(report.evidence).toEqual([]);
+    expect(report.degradedSources).toEqual([]);
+    expect(report.warnings).toEqual(expect.arrayContaining([
+      expect.stringContaining("hackernews retrieval returned only low-relevance evidence"),
+    ]));
+  });
+
   it("invokes Polymarket only when the plan includes polymarket", async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);
@@ -320,9 +412,9 @@ describe("retrieveRecentResearchEvidence", () => {
     const fetchMock = vi.fn(async () => jsonResponse({
       items: [{
         id: 1,
-        full_name: "acme/source",
-        html_url: "https://github.com/acme/source",
-        description: "source evidence",
+        full_name: "acme/deterministic-planner",
+        html_url: "https://github.com/acme/deterministic-planner",
+        description: "deterministic research planner source evidence",
         updated_at: "2026-06-13T00:00:00Z",
         stargazers_count: 1_000_000,
         forks_count: 1_000_000,
@@ -353,9 +445,9 @@ describe("retrieveRecentResearchEvidence", () => {
       throw new Error("first-party adapters should not be called");
     }) as typeof fetch;
     const webSearchAdapter: RecentResearchWebSearchAdapter = vi.fn(async ({ subquery }) => [{
-      title: "Injected web result",
+      title: "Injected acme/planner web result",
       url: "https://example.com/result",
-      snippet: "web-only fallback evidence",
+      snippet: "acme planner web-only fallback evidence",
       publishedAt: "2026-06-12T00:00:00Z",
       author: "Example",
       container: subquery.label,
