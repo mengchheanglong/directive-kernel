@@ -159,9 +159,9 @@ Before embedding the kernel in another host, review the security boundary:
 
 The kernel has two execution paths.
 
-**Source path (no build required).** These commands run directly against TypeScript source through `tsx` and Vite/Vitest. Use them while you are working in the repo. Do not run `pnpm run build` first.
+**Source path (no build required).** These commands run directly against TypeScript source through `tsx` and Vitest. Use them while you are working in the repo. Do not run `pnpm run build` first.
 
-- `pnpm dev` — Vite dev server plus the UI host, all from source
+- `pnpm dev` — source-mode web host and static UI helper, all from source
 - `pnpm ui:dev` — alias of `pnpm dev`
 - `pnpm typecheck` — type-check only, no emit
 - `pnpm test` — Vitest run against source
@@ -262,6 +262,40 @@ pnpm run standalone:cli runtime-capability-scaffold --name "Example Capability"
 This writes `manifest.json`, `index.ts`, and `executor.ts` under
 `runtime/capabilities/<capability-id>/`. The registry and
 `GET /api/runtime/capabilities` then read the same manifest-backed metadata.
+
+## Jarvis Migration Audit
+
+Use the migration audit before changing any live directive root semantics:
+
+```powershell
+npx tsx scripts/migrate-jarvis-capability-kernel.ts
+npx tsx scripts/migrate-jarvis-capability-kernel.ts --dry-run
+npx tsx scripts/capability-health.ts
+```
+
+Important rules:
+
+- The migration script is dry-run safe by default. Running it with no flags does not rewrite or delete registry entries.
+- This branch intentionally does not apply registry rewrites from the migration script yet. Do not treat historical registry acceptance as proof of a usable Hermes power.
+- `verified projection-ready` means verified execution plus complete contract plus complete Hermes projection metadata.
+- `verified but missing projection` is still blocked. It is not a usable power until projection metadata is complete.
+- `candidate`, `claimed`, and `placeholder` entries stay non-usable.
+
+Rollback guidance:
+
+- Dry-run mode writes nothing, so rollback is a no-op.
+- For committed slice rollback, use normal git revert on the slice commit.
+- If a future applied migration is introduced, require explicit backups before writes and stop the web host first to avoid directive-root locks.
+
+Final verification commands for this refactor branch:
+
+```powershell
+pnpm run test
+npx tsx scripts/migrate-jarvis-capability-kernel.ts --dry-run
+npx tsx scripts/capability-health.ts
+python -m graphify . --update
+python -m graphify cluster-only .
+```
 
 ## Replay Engine Runs
 

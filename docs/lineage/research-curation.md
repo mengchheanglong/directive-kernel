@@ -23,3 +23,29 @@ The following surfaces all ship and work:
 - **Live providers** — see [`discovery/research-engine/README.md`](../discovery/research-engine/README.md) for the current list of live research-engine providers.
 
 Research curation is **one supported domain**, not the kernel's primary audience. The primary audience on this branch is Hermes capability compounding (see [`AUDIENCE.md`](../AUDIENCE.md)). The research surfaces above are retained so that the capability kernel can ingest paper/repo sources through the literature-aware intake pipeline and classify them as capability candidates, architecture experiments, note-only items, or training-lab-only research.
+
+## Migration note for research-curation history
+
+When auditing older research-driven registry artifacts, use the Jarvis migration
+audit in dry-run mode:
+
+```powershell
+npx tsx scripts/migrate-jarvis-capability-kernel.ts
+npx tsx scripts/capability-health.ts
+```
+
+Interpretation rules:
+
+- a paper or source list does not become a verified capability just because it
+  exists in historical intake or registry artifacts
+- verified projection-ready still requires verified execution, complete
+  contract metadata, and complete Hermes projection metadata
+- research artifacts with only informational value should remain note-only
+- system-level paper ideas with measurable local experiments belong in
+  Architecture, not Runtime
+
+Rollback guidance:
+
+- the migration audit is dry-run safe by default and does not mutate the live
+  directive root
+- this slice does not enable `--apply`

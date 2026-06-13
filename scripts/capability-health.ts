@@ -32,9 +32,10 @@ import {
 } from "../shared/lib/execution-evidence.ts";
 
 import {
-  listRuntimeCapabilityMetadata,
-  type RuntimeCapabilityMetadata,
-} from "../runtime/core/capability-registry.ts";
+  deriveJarvisMigrationInventory,
+  printJarvisMigrationSummary,
+  summarizeJarvisMigrationInventory,
+} from "./migrate-jarvis-capability-kernel.ts";
 
 // ── Configuration ──────────────────────────────────────────────────
 
@@ -200,6 +201,18 @@ function runHealthReport(root: string) {
   console.log(`  1. Add a test spec to TEST_SPECS in scripts/execution-harness.ts`);
   console.log(`  2. Run: npx tsx scripts/execution-harness.ts <capability-id>`);
   console.log(`\nRoot: ${root}`);
+
+  const migrationInventory = deriveJarvisMigrationInventory({ root });
+  const migrationCounts = summarizeJarvisMigrationInventory(migrationInventory);
+  console.log("\n=== Jarvis Migration Category Summary ===\n");
+  console.log(`verified projection-ready:      ${migrationCounts.verified_projection_ready}`);
+  console.log(`verified but missing projection: ${migrationCounts.verified_missing_projection}`);
+  console.log(`candidate:                       ${migrationCounts.candidate}`);
+  console.log(`claimed:                         ${migrationCounts.claimed}`);
+  console.log(`placeholder:                     ${migrationCounts.placeholder}`);
+  console.log(`note_only:                       ${migrationCounts.note_only}`);
+  console.log(`rejected:                        ${migrationCounts.rejected}`);
+  console.log(`architecture_experiment:         ${migrationCounts.architecture_experiment}`);
 }
 
 // ── Evidence-derived classification ────────────────────────────────
@@ -390,78 +403,11 @@ function runUIWrite(root: string, kernelRoot: string) {
 // ── Jarvis capability kernel readiness report ──────────────────────
 
 function runJarvisReport(_root: string) {
-  const capabilities = listRuntimeCapabilityMetadata();
-
-  const verifiedProjectionReady = capabilities.filter((c) => c.projectionReady && c.entryClass === "verified_capability");
-  const verifiedMissingProjection = capabilities.filter((c) => c.verification === "verified" && !c.projectionReady);
-  const claimed = capabilities.filter((c) => c.verification === "claimed");
-  const placeholder = capabilities.filter((c) => c.entryClass === "placeholder");
-  const candidates = capabilities.filter((c) => c.entryClass === "candidate");
-  const noteOnly = capabilities.filter((c) => c.entryClass === "note_only");
-  const rejected = capabilities.filter((c) => c.entryClass === "rejected");
-  const archExp = capabilities.filter((c) => c.entryClass === "architecture_experiment");
-
-  const total = capabilities.length;
-  const projectionReadyRate = total > 0 ? ((verifiedProjectionReady.length / total) * 100).toFixed(1) : "0";
-
-  console.log("=== Jarvis Capability Kernel Readiness Report ===\n");
-  console.log(`Total capabilities:    ${total}`);
-  console.log();
-
-  console.log("── Power-ready ──");
-  console.log(`verified projection-ready:  ${verifiedProjectionReady.length} (${projectionReadyRate}%)  ← Hermes can use these`);
-  if (verifiedProjectionReady.length > 0) {
-    for (const cap of verifiedProjectionReady) {
-      console.log(`  ✓ ${cap.id} — ${cap.displayName}`);
-      if (cap.whenToUse) console.log(`    whenToUse: ${cap.whenToUse}`);
-      if (cap.failureModes?.length) console.log(`    failureModes: [${cap.failureModes.join(", ")}]`);
-    }
-  }
-
-  console.log();
-  console.log("── Verified but not projection-ready ──");
-  console.log(`verified missing projection: ${verifiedMissingProjection.length}`);
-  if (verifiedMissingProjection.length > 0) {
-    for (const cap of verifiedMissingProjection) {
-      console.log(`  ⚠ ${cap.id} — ${cap.displayName}`);
-      if (cap.notUsableReason) console.log(`    reason: ${cap.notUsableReason}`);
-    }
-  }
-
-  console.log();
-  console.log("── Candidate / unverified ──");
-  console.log(`candidates:              ${candidates.length}`);
-  if (candidates.length > 0) {
-    for (const cap of candidates) {
-      console.log(`  ◦ ${cap.id} — ${cap.displayName} | verification=${cap.verification} | contract=${cap.contract}`);
-    }
-  }
-  console.log(`claimed:                 ${claimed.length}`);
-  console.log(`placeholder:             ${placeholder.length}`);
-
-  console.log();
-  console.log("── Other classes ──");
-  console.log(`note_only:               ${noteOnly.length}`);
-  console.log(`rejected:                ${rejected.length}`);
-  console.log(`architecture_experiment: ${archExp.length}`);
-  console.log();
-
-  // Print non-projection-ready reasons
-  const nonReady = capabilities.filter((c) => !c.projectionReady);
-  if (nonReady.length > 0) {
-    console.log("── Why not projection-ready ──");
-    for (const cap of nonReady) {
-      console.log(`  ${cap.id}: ${cap.notUsableReason ?? "no reason recorded"}`);
-    }
-    console.log();
-  }
-
-  console.log("Key:");
-  console.log("  ✓ = Hermes-usable power (verified + contract=complete + projection + whenToUse + failureModes)");
-  console.log("  ⚠ = verified but blocked (missing contract/projection/metadata)");
-  console.log("  ◦ = candidate/claimed — not yet verified");
-  console.log();
-  console.log(`Registry growth is not success. Hermes getting new reliable powers is success.`);
+  const inventory = deriveJarvisMigrationInventory({ root: _root });
+  printJarvisMigrationSummary({
+    inventory,
+    modeLabel: "read-only health report",
+  });
 }
 
 // ── Main ───────────────────────────────────────────────────────────

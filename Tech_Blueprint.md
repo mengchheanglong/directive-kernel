@@ -63,7 +63,7 @@ Important distinction:
 - numbered lane folders such as `discovery/01-intake/` or
   `runtime/03-proof/` are artifact destinations in a directive root
 - executable code lives under `engine/`, `*/lib/`, `runtime/core/`,
-  `runtime/capabilities/`, `hosts/`, `shared/lib/`, and `ui/src/`
+  `runtime/capabilities/`, `hosts/`, `shared/lib/`, and `ui/`
 
 ## 3. System Model
 
@@ -97,7 +97,7 @@ autonomous orchestration across arbitrary projects.
 | `architecture/` | Architecture lane code |
 | `shared/` | Contracts, schemas, templates, shared helpers |
 | `hosts/` | Standalone host, web host, MCP host, integration kit |
-| `ui/` | Lit/Vite operator workbench |
+| `ui/` | Static HTML/CSS/JS operator workbench served by the web host |
 | `control/` | Live machine-readable policy/status artifacts used by engine and lane code |
 | `state/` | Reserved top-level marker surface, not the primary live state substrate |
 | `examples/` | Reference consumer flow and integration examples |
@@ -397,8 +397,8 @@ the reference hosts directly.
 
 ## 11. UI
 
-The UI is a bounded operator workbench implemented with Lit and Vite under
-`ui/`.
+The UI is a bounded operator workbench implemented as a static HTML/CSS/JS
+surface under `ui/`, served directly by the web host.
 
 Important properties:
 
@@ -406,15 +406,13 @@ Important properties:
 - it consumes the web-host API surface
 - it exposes bounded mutations through the same routes documented in
   `docs/operator-cli.md`
-- it now includes telemetry and workbench surfaces, not only read-only views
+- it keeps the dashboard architecture simple: no framework build step is
+  required for the shipped readiness view
 
 Key source files:
 
-- `ui/src/route-loader.ts`
-- `ui/src/page-actions.ts`
-- `ui/src/renderers/`
-- `ui/src/pages/`
-- `ui/src/types/`
+- `ui/index.html`
+- `ui/source-descriptions.json`
 
 ## 12. API and External Surfaces
 
@@ -518,7 +516,7 @@ Used during development:
 - `pnpm run try`
 - `pnpm run mcp:serve -- --directive-root <path>`
 
-This path uses `tsx`, Vite, and Vitest against source.
+This path uses `tsx` and Vitest against source.
 
 ### 14.2 Built Path
 
@@ -561,6 +559,44 @@ Primary validation commands:
 - `pnpm run check:examples`
 - `pnpm run check:first-integration`
 - `pnpm run check:hardening`
+
+### 15.1 Jarvis migration verification
+
+The branch now ships a read-only migration audit for the Jarvis capability
+kernel pivot:
+
+```powershell
+npx tsx scripts/migrate-jarvis-capability-kernel.ts
+npx tsx scripts/migrate-jarvis-capability-kernel.ts --dry-run
+npx tsx scripts/capability-health.ts
+```
+
+Rules:
+
+- the migration script is dry-run safe by default
+- it does not delete registry entries
+- historical registry acceptance does not imply a projection-ready Hermes power
+- verified-but-missing-projection entries remain blocked until projection
+  metadata is complete
+- this slice does not enable `--apply`; any future apply mode must require
+  explicit backups and an explicit operator decision
+
+Rollback guidance:
+
+- dry-run migration writes nothing, so rollback is a no-op
+- committed slice rollback should use git revert
+- if a future apply mode is added, stop the web host first and restore from
+  the migration backup set before reopening the directive root
+
+Final refactor verification commands:
+
+```powershell
+pnpm run test
+npx tsx scripts/migrate-jarvis-capability-kernel.ts --dry-run
+npx tsx scripts/capability-health.ts
+python -m graphify . --update
+python -m graphify cluster-only .
+```
 
 ## 16. Goal, Mission, and Review Model
 
