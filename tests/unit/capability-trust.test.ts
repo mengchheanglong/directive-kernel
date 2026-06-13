@@ -83,7 +83,7 @@ describe("structured outcomes and capability reliability", () => {
       operator_notes: "Output contained the word success but violated schema.",
       reported_by: "hermes",
       reported_at: "2026-06-13T00:00:00.000Z",
-    });
+    }) as { ok: boolean };
 
     expect(result.ok).toBe(true);
 

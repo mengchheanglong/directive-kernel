@@ -335,7 +335,7 @@ function deriveJarvisReadinessSnapshot(input: {
     .map((entry) => ({
       candidateId: entry.event.candidateId,
       recordedAt: entry.event.recordedAt,
-      outcome: entry.outcome?.outcome === "contract_failure" ? "contract_failure" : "failure",
+      outcome: (entry.outcome?.outcome === "contract_failure" ? "contract_failure" : "failure") as "failure" | "contract_failure",
       rationale: entry.outcome?.taskDescription || entry.event.rationale,
       sourceSignalTokens: entry.event.sourceSignalTokens,
     }));
