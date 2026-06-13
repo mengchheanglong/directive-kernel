@@ -1,0 +1,52 @@
+{
+  "displayName": "Microsoft MarkItDown",
+  "description": "Convert supported documents and HTML content into Markdown for Hermes research, notes, specs, and source operationalization workflows.",
+  "domain": "runtime",
+  "verification": "verified",
+  "inputSchema": "shared/schemas/markitdown-callable-input.schema.json",
+  "outputSchema": "shared/schemas/markitdown-callable-output.schema.json",
+  "verify": {
+    "command": "C:/Python314/python -m markitdown C:/Users/User/AppData/Local/Temp/dk-test.html",
+    "assertions": [
+      {
+        "type": "regex",
+        "value": "Hello DK"
+      }
+    ],
+    "timeoutMs": 30000
+  },
+  "examples": [
+    {
+      "name": "convert-inline-html",
+      "input": {
+        "html": "<h1>Hello DK</h1><p>This is a <strong>test</strong> document.</p><ul><li>Item 1</li><li>Item 2</li></ul>"
+      },
+      "expectedOutput": {
+        "ok": true,
+        "markdown": "# Hello DK\n\nThis is a **test** document.\n\n* Item 1\n* Item 2"
+      },
+      "match": {
+        "invariantFields": [
+          "ok",
+          "markdown"
+        ]
+      }
+    }
+  ],
+  "whenToUse": "Invoke when Hermes needs to convert HTML or supported document content into Markdown for research notes, specs, source operationalization, or archival memory.",
+  "failureModes": [
+    "MarkItDown is not installed in the configured Python environment.",
+    "The input file is unsupported, corrupt, or unreadable by MarkItDown.",
+    "The provided sourcePath does not exist or cannot be read.",
+    "The conversion exceeds the bounded timeout.",
+    "The returned payload does not satisfy the output schema."
+  ],
+  "projection": {
+    "kind": "mcp_tool",
+    "id": "markitdown",
+    "invocation": "cap_pipe-microsoft-markitdown-mq9jdf6o",
+    "inputContract": "shared/schemas/markitdown-callable-input.schema.json",
+    "outputContract": "shared/schemas/markitdown-callable-output.schema.json"
+  },
+  "verificationEvidence": "runtime/callable-executions/pipe-microsoft-markitdown-mq9jdf6o-execution.json"
+}

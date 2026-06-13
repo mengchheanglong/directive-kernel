@@ -139,6 +139,9 @@ export function deriveEntryClass(
   if (v === "verified") {
     return "candidate"; // verified but not projection-ready
   }
+  if (v === "runs_unverified_contract") {
+    return "candidate";
+  }
   if (v === "claimed") {
     return "candidate";
   }
@@ -493,14 +496,21 @@ export function resolveCapabilityVerification(
   manifestVerification: RuntimeCapabilityVerification | undefined,
   capabilityId: string,
 ): RuntimeCapabilityVerification {
-  if (directiveRoot) {
-    const evDir = path.join(directiveRoot, "runtime", "callable-executions");
-    const evidence = readValidatedEvidence(capabilityId, evDir);
-    if (evidence) {
-      return verificationFromEvidence(evidence);
-    }
+  if (!directiveRoot) {
+    return manifestVerification ?? "placeholder";
   }
-  return manifestVerification ?? "placeholder";
+
+  const evDir = path.join(directiveRoot, "runtime", "callable-executions");
+  const evidence = readValidatedEvidence(capabilityId, evDir);
+  if (evidence) {
+    return verificationFromEvidence(evidence);
+  }
+
+  if (manifestVerification === "claimed" || manifestVerification === "placeholder") {
+    return manifestVerification;
+  }
+
+  return "placeholder";
 }
 
 export function listRuntimeCapabilityMetadata(
@@ -527,13 +537,19 @@ export function listRuntimeCapabilityMetadata(
         entry.name,
       );
       const contract = manifest?.contract ?? "missing";
+      const effectiveManifest = manifest
+        ? {
+            ...manifest,
+            verification,
+          }
+        : null;
 
       // Derive Jarvis capability kernel metadata
-      const entryClass = manifest ? deriveEntryClass(manifest) : "placeholder";
-      const { projectionReady, notUsableReason } = manifest
-        ? deriveProjectionReadiness(manifest)
+      const entryClass = effectiveManifest ? deriveEntryClass(effectiveManifest) : "placeholder";
+      const { projectionReady, notUsableReason } = effectiveManifest
+        ? deriveProjectionReadiness(effectiveManifest)
         : { projectionReady: false, notUsableReason: "no manifest" };
-      const projectionKind = manifest ? resolveProjectionKind(manifest) : undefined;
+      const projectionKind = effectiveManifest ? resolveProjectionKind(effectiveManifest) : undefined;
 
       return {
         id: entry.name,

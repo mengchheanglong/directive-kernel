@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
+import { attachHarnessSignature } from "../../shared/lib/execution-evidence.ts";
 import {
   readRuntimeCapabilityManifest,
   deriveEntryClass,
@@ -52,6 +53,40 @@ function writeCapability(id: string, manifest: Record<string, unknown>) {
   fs.writeFileSync(
     path.join(capRoot, "executor.ts"),
     `export const DUMMY = 1;\n`,
+    "utf8",
+  );
+}
+
+function writeSchema(relativePath: string, schema: Record<string, unknown>) {
+  const target = path.join(tmpDir, relativePath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, JSON.stringify(schema, null, 2), "utf8");
+}
+
+function writeSignedEvidence(capabilityId: string) {
+  const evidenceDir = path.join(tmpDir, "runtime", "callable-executions");
+  fs.mkdirSync(evidenceDir, { recursive: true });
+  const evidence = attachHarnessSignature({
+    schemaVersion: 1,
+    capabilityId,
+    command: "C:/Python314/python -m markitdown C:/tmp/example.html",
+    exitCode: 0,
+    stdoutHash: "stdout-hash",
+    stderrHash: "stderr-hash",
+    wallTimeMs: 200,
+    environmentFingerprint: "win32-x64-v24.14.0",
+    timestamp: new Date().toISOString(),
+    harnessVersion: "1.0.0",
+    contractVerification: "full",
+    examples: [{
+      name: "convert-inline-html",
+      input: { html: "<h1>Hello DK</h1>" },
+      passed: true,
+    }],
+  });
+  fs.writeFileSync(
+    path.join(evidenceDir, `${capabilityId}-execution.json`),
+    JSON.stringify(evidence, null, 2),
     "utf8",
   );
 }
@@ -385,6 +420,7 @@ describe("capability recall projection gates", () => {
         verify: { command: "echo candidate", assertions: [{ type: "regex", value: "candidate" }], timeoutMs: 5000 },
         examples: [{ name: "test", input: { q: "x" }, expectedOutput: { ok: true }, match: { invariantFields: ["ok"] } }],
       });
+      writeSignedEvidence("recall-ready-only");
 
       vi.resetModules();
       const { buildCapabilityRecallExecutors } = await import("../../hosts/mcp-host/executors/capability-recall.ts");
@@ -428,6 +464,7 @@ describe("capability recall projection gates", () => {
         outputSchema: "shared/schemas/y.schema.json",
         verify: { command: "echo ph", assertions: [{ type: "regex", value: "ph" }], timeoutMs: 5000 },
       });
+      writeSignedEvidence("rank-ready");
 
       vi.resetModules();
       const { buildCapabilityRecallExecutors } = await import("../../hosts/mcp-host/executors/capability-recall.ts");
@@ -447,6 +484,66 @@ describe("capability recall projection gates", () => {
       expect(placeholder!.entryClass).toBe("placeholder");
       expect(placeholder!.notUsableReason).toContain("placeholder");
       expect(result.results[0].rankScore).toBeGreaterThan(placeholder!.rankScore);
+    });
+  });
+
+  it("default recall surfaces MarkItDown as usable for convert html to markdown", async () => {
+    await withTempRootAsync(async () => {
+      writeSchema("shared/schemas/markitdown-callable-input.schema.json", {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        properties: {
+          sourcePath: { type: "string" },
+          html: { type: "string" },
+        },
+        anyOf: [{ required: ["sourcePath"] }, { required: ["html"] }],
+      });
+      writeSchema("shared/schemas/markitdown-callable-output.schema.json", {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        required: ["ok"],
+        properties: { ok: { type: "boolean" } },
+      });
+      writeCapability("pipe-microsoft-markitdown-mq9jdf6o", {
+        displayName: "Microsoft MarkItDown",
+        description: "Convert HTML and documents into Markdown.",
+        domain: "runtime",
+        verification: "verified",
+        inputSchema: "shared/schemas/markitdown-callable-input.schema.json",
+        outputSchema: "shared/schemas/markitdown-callable-output.schema.json",
+        verify: {
+          command: "C:/Python314/python -m markitdown C:/tmp/example.html",
+          assertions: [{ type: "regex", value: "Hello DK" }],
+          timeoutMs: 30000,
+        },
+        examples: [{
+          name: "convert-inline-html",
+          input: { html: "<h1>Hello DK</h1>" },
+          expectedOutput: { ok: true, markdown: "# Hello DK" },
+          match: { invariantFields: ["ok", "markdown"] },
+        }],
+        whenToUse: "Use when Hermes needs to convert HTML or document content into Markdown.",
+        failureModes: ["Missing MarkItDown install", "Timeout", "Unsupported input"],
+        projection: {
+          kind: "mcp_tool",
+          id: "markitdown",
+          invocation: "cap_pipe-microsoft-markitdown-mq9jdf6o",
+        },
+      });
+      writeSignedEvidence("pipe-microsoft-markitdown-mq9jdf6o");
+
+      vi.resetModules();
+      const { buildCapabilityRecallExecutors } = await import("../../hosts/mcp-host/executors/capability-recall.ts");
+      const executors = buildCapabilityRecallExecutors({ directiveRoot: tmpDir });
+      const result = await executors.find_capability({ query: "convert html to markdown" }) as {
+        ok: boolean;
+        results: Array<{ capabilityId: string; projectionReady: boolean; entryClass: string; notUsableReason?: string }>;
+      };
+      expect(result.ok).toBe(true);
+      expect(result.results[0]?.capabilityId).toBe("pipe-microsoft-markitdown-mq9jdf6o");
+      expect(result.results[0]?.projectionReady).toBe(true);
+      expect(result.results[0]?.entryClass).toBe("verified_capability");
+      expect(result.results[0]?.notUsableReason).toBeUndefined();
     });
   });
 });

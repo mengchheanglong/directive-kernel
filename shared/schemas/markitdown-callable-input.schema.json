@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/markitdown-callable-input.schema.json",
+  "title": "MarkItDown Callable Input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sourcePath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Absolute or relative path to a local file to convert with MarkItDown."
+    },
+    "html": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Inline HTML content to write to a temporary fixture and convert."
+    }
+  },
+  "anyOf": [
+    {
+      "required": ["sourcePath"]
+    },
+    {
+      "required": ["html"]
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/markitdown-callable-output.schema.json",
+  "title": "MarkItDown Callable Output",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "ok",
+    "tool",
+    "status",
+    "result",
+    "metadata"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "tool": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "result": {},
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "if": {
+    "properties": {
+      "ok": {
+        "const": true
+      }
+    },
+    "required": ["ok"]
+  },
+  "then": {
+    "properties": {
+      "result": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "markdown",
+          "sourceType",
+          "command"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "sourcePath": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": ["file", "html"]
+          },
+          "command": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { attachHarnessSignature } from "../../shared/lib/execution-evidence.ts";
 import {
   buildRuntimeCapabilityScaffold,
   readRuntimeCapabilityManifest,
@@ -30,17 +31,18 @@ describe("listRuntimeCapabilityMetadata", () => {
     expect(manifest?.domain).toBe("runtime");
   });
 
-  it("returns all 3 capability metadata entries", () => {
+  it("returns all 4 capability metadata entries", () => {
     const capabilities = listRuntimeCapabilityMetadata();
-    expect(capabilities.length).toBe(3);
+    expect(capabilities.length).toBe(4);
   });
 
-  it("IDs match the three existing capability folders", () => {
+  it("IDs match the existing capability folders", () => {
     const capabilities = listRuntimeCapabilityMetadata();
     const ids = capabilities.map((c) => c.id);
     expect(ids).toContain("code-normalizer");
     expect(ids).toContain("literature-access");
     expect(ids).toContain("research-vault-source-pack");
+    expect(ids).toContain("pipe-microsoft-markitdown-mq9jdf6o");
   });
 
   it("entries are sorted by id", () => {
@@ -112,9 +114,9 @@ describe("metadata exposes Jarvis fields for shipped capabilities", () => {
     for (const cap of capabilities) {
       expect(cap.entryClass).toBeDefined();
       expect(typeof cap.projectionReady).toBe("boolean");
-      // All shipped manifests are placeholder — none should be projectionReady
-      expect(cap.projectionReady).toBe(false);
-      expect(cap.notUsableReason).toBeDefined();
+      if (!cap.projectionReady) {
+        expect(cap.notUsableReason).toBeDefined();
+      }
     }
   });
 
@@ -127,14 +129,142 @@ describe("metadata exposes Jarvis fields for shipped capabilities", () => {
     }
   });
 
-  it("shipped capabilities are honestly labeled as placeholder or candidate", () => {
+  it("shipped capabilities are honestly labeled by readiness state", () => {
     const capabilities = listRuntimeCapabilityMetadata();
     for (const cap of capabilities) {
-      // All 3 shipped manifests are verification=placeholder, no projection
-      // code-normalizer + literature-access + research-vault-source-pack should be placeholder
-      expect(["placeholder", "candidate"]).toContain(cap.entryClass);
-      // None should be projectionReady
-      expect(cap.projectionReady).toBe(false);
+      expect(["placeholder", "candidate", "verified_capability"]).toContain(cap.entryClass);
+      if (cap.id !== "pipe-microsoft-markitdown-mq9jdf6o") {
+        expect(cap.projectionReady).toBe(false);
+      }
+    }
+  });
+});
+
+describe("effective verification uses signed evidence when directiveRoot is provided", () => {
+  function writeCapability(tempRoot: string, manifest: Record<string, unknown>) {
+    const capabilityRoot = path.join(tempRoot, "runtime", "capabilities", "pipe-microsoft-markitdown-mq9jdf6o");
+    fs.mkdirSync(capabilityRoot, { recursive: true });
+    fs.mkdirSync(path.join(tempRoot, "runtime", "callable-executions"), { recursive: true });
+    fs.writeFileSync(path.join(capabilityRoot, "manifest.json"), JSON.stringify(manifest, null, 2), "utf8");
+    fs.writeFileSync(path.join(capabilityRoot, "index.ts"), "export {};\n", "utf8");
+    fs.writeFileSync(path.join(capabilityRoot, "executor.ts"), "export {};\n", "utf8");
+  }
+
+  function writeSignedEvidence(tempRoot: string, exitCode = 0) {
+    const evidence = attachHarnessSignature({
+      schemaVersion: 1,
+      capabilityId: "pipe-microsoft-markitdown-mq9jdf6o",
+      command: "C:/Python314/python -m markitdown C:/tmp/example.html",
+      exitCode,
+      stdoutHash: "stdout-hash",
+      stderrHash: "stderr-hash",
+      wallTimeMs: 123,
+      environmentFingerprint: "win32-x64-v24.14.0",
+      timestamp: new Date().toISOString(),
+      harnessVersion: "1.0.0",
+      contractVerification: "full",
+      examples: [{
+        name: "convert-inline-html",
+        input: { html: "<h1>Hello DK</h1>" },
+        passed: exitCode === 0,
+      }],
+    });
+    fs.writeFileSync(
+      path.join(tempRoot, "runtime", "callable-executions", "pipe-microsoft-markitdown-mq9jdf6o-execution.json"),
+      JSON.stringify(evidence, null, 2),
+      "utf8",
+    );
+  }
+
+  it("does not become projection-ready without signed evidence even if the manifest says verified", () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "directive-markitdown-registry-"));
+    tempDirs.push(tempRoot);
+    const restore = process.cwd;
+
+    try {
+      process.cwd = () => tempRoot;
+      writeCapability(tempRoot, {
+        displayName: "Microsoft MarkItDown",
+        description: "Convert HTML and documents into Markdown.",
+        domain: "runtime",
+        verification: "verified",
+        inputSchema: "shared/schemas/markitdown-callable-input.schema.json",
+        outputSchema: "shared/schemas/markitdown-callable-output.schema.json",
+        verify: {
+          command: "C:/Python314/python -m markitdown C:/tmp/example.html",
+          assertions: [{ type: "regex", value: "Hello DK" }],
+          timeoutMs: 30000,
+        },
+        examples: [{
+          name: "convert-inline-html",
+          input: { html: "<h1>Hello DK</h1>" },
+          expectedOutput: { ok: true, markdown: "# Hello DK" },
+          match: { invariantFields: ["ok", "markdown"] },
+        }],
+        whenToUse: "Convert HTML into Markdown.",
+        failureModes: ["Timeout"],
+        projection: {
+          kind: "mcp_tool",
+          id: "markitdown",
+          invocation: "cap_pipe-microsoft-markitdown-mq9jdf6o",
+        },
+      });
+
+      const [metadata] = listRuntimeCapabilityMetadata(tempRoot)
+        .filter((capability) => capability.id === "pipe-microsoft-markitdown-mq9jdf6o");
+      expect(metadata).toBeDefined();
+      expect(metadata.verification).toBe("placeholder");
+      expect(metadata.entryClass).toBe("placeholder");
+      expect(metadata.projectionReady).toBe(false);
+    } finally {
+      process.cwd = restore;
+    }
+  });
+
+  it("becomes projection-ready with signed contract-grade evidence and complete metadata", () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "directive-markitdown-registry-"));
+    tempDirs.push(tempRoot);
+    const restore = process.cwd;
+
+    try {
+      process.cwd = () => tempRoot;
+      writeCapability(tempRoot, {
+        displayName: "Microsoft MarkItDown",
+        description: "Convert HTML and documents into Markdown.",
+        domain: "runtime",
+        verification: "verified",
+        inputSchema: "shared/schemas/markitdown-callable-input.schema.json",
+        outputSchema: "shared/schemas/markitdown-callable-output.schema.json",
+        verify: {
+          command: "C:/Python314/python -m markitdown C:/tmp/example.html",
+          assertions: [{ type: "regex", value: "Hello DK" }],
+          timeoutMs: 30000,
+        },
+        examples: [{
+          name: "convert-inline-html",
+          input: { html: "<h1>Hello DK</h1>" },
+          expectedOutput: { ok: true, markdown: "# Hello DK" },
+          match: { invariantFields: ["ok", "markdown"] },
+        }],
+        whenToUse: "Convert HTML into Markdown for Hermes workflows.",
+        failureModes: ["Timeout", "Unsupported input"],
+        projection: {
+          kind: "mcp_tool",
+          id: "markitdown",
+          invocation: "cap_pipe-microsoft-markitdown-mq9jdf6o",
+        },
+      });
+      writeSignedEvidence(tempRoot);
+
+      const [metadata] = listRuntimeCapabilityMetadata(tempRoot)
+        .filter((capability) => capability.id === "pipe-microsoft-markitdown-mq9jdf6o");
+      expect(metadata).toBeDefined();
+      expect(metadata.verification).toBe("verified");
+      expect(metadata.entryClass).toBe("verified_capability");
+      expect(metadata.projectionReady).toBe(true);
+      expect(metadata.whenToUse).toContain("Hermes");
+    } finally {
+      process.cwd = restore;
     }
   });
 });

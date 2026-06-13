@@ -52,6 +52,12 @@ interface HarnessTestSpec {
   setup?: (tmpDir: string) => void;
   /** Timeout override in ms (default: 30s). */
   timeoutMs?: number;
+  /** Optional: contract-grade example checks. */
+  examples?: Array<{
+    name: string;
+    input: Record<string, unknown>;
+    assert: (output: { stdout: string; stderr: string; exitCode: number }) => boolean;
+  }>;
 }
 
 const TEST_SPECS: Record<string, HarnessTestSpec> = {
@@ -64,6 +70,18 @@ const TEST_SPECS: Record<string, HarnessTestSpec> = {
         "<h1>Hello DK</h1><p>This is a <strong>test</strong> document.</p><ul><li>Item 1</li><li>Item 2</li></ul>",
       );
     },
+    examples: [{
+      name: "convert-inline-html",
+      input: {
+        html: "<h1>Hello DK</h1><p>This is a <strong>test</strong> document.</p><ul><li>Item 1</li><li>Item 2</li></ul>",
+      },
+      assert: ({ stdout, exitCode }) =>
+        exitCode === 0
+        && stdout.includes("# Hello DK")
+        && stdout.includes("**test**")
+        && stdout.includes("* Item 1")
+        && stdout.includes("* Item 2"),
+    }],
   },
   "pipe-scrapling-adaptive-web-scraper-mq9mmrc0": {
     command: 'C:/Python314/python -c "import scrapling; print(scrapling.__version__)"',
@@ -176,6 +194,11 @@ async function main() {
   }
 
   const wallTimeMs = Date.now() - start;
+  const exampleResults = spec.examples?.map((example) => ({
+    name: example.name,
+    input: example.input,
+    passed: example.assert({ stdout, stderr, exitCode }),
+  }));
 
   // Build unsigned evidence
   const unsigned: Omit<ExecutionEvidence, "signature"> = {
@@ -189,6 +212,12 @@ async function main() {
     environmentFingerprint: buildEnvironmentFingerprint(),
     timestamp: new Date().toISOString(),
     harnessVersion: HARNESS_VERSION,
+    ...(exampleResults
+      ? {
+          contractVerification: "full" as const,
+          examples: exampleResults,
+        }
+      : {}),
   };
 
   // Sign
