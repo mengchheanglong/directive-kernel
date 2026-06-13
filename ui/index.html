@@ -47,6 +47,90 @@
   .pulse-card.verified .pulse-value { color: var(--verified); }
   .pulse-card.discovery .pulse-value { color: var(--lane-discovery); }
 
+  /* Readiness */
+  .readiness {
+    max-width: 1200px;
+    margin: 0 auto 12px;
+    padding: 0 28px;
+  }
+  .section-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .readiness-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+  }
+  .readiness-card {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--lane-discovery);
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: var(--surface-raised);
+  }
+  .readiness-card-title {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .readiness-card-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .readiness-card-subtitle {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+  .readiness-panels {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .readiness-panel {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-raised);
+    padding: 12px 14px;
+  }
+  .panel-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .readiness-list {
+    list-style: none;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    display: grid;
+    gap: 6px;
+  }
+  .readiness-list li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+  }
+  .readiness-list li:first-child { border-top: none; padding-top: 0; }
+  .readiness-meta {
+    color: var(--text-muted);
+    font-size: 0.66rem;
+  }
+  .readiness-empty {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+  }
+
   /* Filters */
   .filter-bar {
     max-width: 1200px; margin: 0 auto; padding: 14px 28px 0;
@@ -121,6 +205,22 @@
   <div class="pulse-card verified"><span class="skeleton skeleton-pulse"></span><div class="pulse-label">Verified</div></div>
 </div>
 
+<section class="readiness" id="readiness">
+  <h2 class="section-title">Jarvis readiness</h2>
+  <div class="readiness-grid" id="readinessCards">
+    <div class="readiness-card"><span class="skeleton skeleton-pulse"></span><span class="skeleton-pulse-sm"></span></div>
+    <div class="readiness-card"><span class="skeleton skeleton-pulse"></span><span class="skeleton-pulse-sm"></span></div>
+    <div class="readiness-card"><span class="skeleton skeleton-pulse"></span><span class="skeleton-pulse-sm"></span></div>
+    <div class="readiness-card"><span class="skeleton skeleton-pulse"></span><span class="skeleton-pulse-sm"></span></div>
+    <div class="readiness-card"><span class="skeleton skeleton-pulse"></span><span class="skeleton-pulse-sm"></span></div>
+  </div>
+  <div class="readiness-panels" id="readinessPanels">
+    <div class="readiness-panel"><div class="panel-title">Top 5 recent capability failures</div><div class="readiness-empty">Loading...</div></div>
+    <div class="readiness-panel"><div class="panel-title">Open capability gaps</div><div class="readiness-empty">Loading...</div></div>
+    <div class="readiness-panel"><div class="panel-title">Source decisions by class</div><div class="readiness-empty">Loading...</div></div>
+  </div>
+</section>
+
 <div class="filter-bar" id="filters">
   <button class="filter-btn" data-filter="all">All</button>
   <button class="filter-btn" data-filter="runtime">Runtime</button>
@@ -132,55 +232,85 @@
 <main id="grid"></main>
 
 <script>
-const API = '/snapshot.json';  // pre-computed static file, refreshed every 60s
+const SNAPSHOT_ENDPOINTS = [
+  '/api/snapshot',
+  '/snapshot.json',
+];
 const DESC_URL = '/source-descriptions.json';
+
+let descriptionsSnapshot = {};
+let verifiedListRef = [];
+let defaultDescription = '';
 
 async function load() {
   const grid = document.getElementById('grid');
   const pulse = document.getElementById('pulse');
   const count = document.getElementById('filterCount');
+  const readinessCards = document.getElementById('readinessCards');
+  const readinessPanels = document.getElementById('readinessPanels');
+
+  count.textContent = '';
 
   grid.className = 'loading';
   grid.innerHTML = Array(8).fill(0).map(() =>
     '<div class="card"><div class="card-name skeleton"></div><div class="card-desc skeleton"></div><div class="card-meta skeleton"></div></div>'
   ).join('');
+  readinessCards.innerHTML = Array(5).fill(0).map(() =>
+    '<div class="readiness-card"><span class="skeleton skeleton-pulse"></span><span class="skeleton-pulse-sm"></span></div>'
+  ).join('');
+  readinessPanels.innerHTML = `
+    <div class="readiness-panel"><div class="panel-title">Top 5 recent capability failures</div><div class="readiness-empty">Loading...</div></div>
+    <div class="readiness-panel"><div class="panel-title">Open capability gaps</div><div class="readiness-empty">Loading...</div></div>
+    <div class="readiness-panel"><div class="panel-title">Source decisions by class</div><div class="readiness-empty">Loading...</div></div>
+  `;
 
   try {
-    const [res, descRes] = await Promise.all([fetch(API), fetch(DESC_URL)]);
-    const data = await res.json();
-    const descData = await descRes.json();
-    const descriptions = descData.descriptions || {};
-    const verifiedList = descData.verified || [];
+    const [data, descData] = await Promise.all([fetchSnapshot(), loadSourceDescriptions()]);
+    normalizeReadinessState(descData);
+
+    const descriptions = descriptionsSnapshot;
+    const verifiedList = verifiedListRef;
 
     const entries = data.queue?.entries || [];
     const runtime = entries.filter(e => e.routing_target === 'runtime').length;
     const arch = entries.filter(e => e.routing_target === 'architecture').length;
+    const verifiedCandidates = data?.jarvisReadiness?.capabilityProjection?.verifiedProjectionReady ??
+      verifiedList.length;
 
     // Pulse
     pulse.innerHTML = `
       <div class="pulse-card discovery"><div class="pulse-value">${entries.length}</div><div class="pulse-label">Sources</div></div>
       <div class="pulse-card runtime"><div class="pulse-value">${runtime}</div><div class="pulse-label">Runtime</div></div>
       <div class="pulse-card architecture"><div class="pulse-value">${arch}</div><div class="pulse-label">Architecture</div></div>
-      <div class="pulse-card verified"><div class="pulse-value">${verifiedList.length}</div><div class="pulse-label">Verified</div></div>`;
+      <div class="pulse-card verified"><div class="pulse-value">${verifiedCandidates}</div><div class="pulse-label">Verified</div></div>`;
+
+    renderReadiness({
+      jarvisReadiness: data.jarvisReadiness,
+      queueEntries: entries,
+    });
 
     grid.className = '';
     if (!entries.length) {
       grid.innerHTML = '<div class="empty">No sources ingested yet. Run the pipeline to add one.</div>';
+      count.textContent = '0 sources';
       return;
     }
 
     function findDesc(name, cid) {
       const n = (name + ' ' + cid).toLowerCase();
       for (const [k, d] of Object.entries(descriptions)) {
-        if (n.includes(k)) return d;
+        if (n.includes(k)) {
+          return d;
+        }
       }
-      return descData.default || '';
+      return defaultDescription || '';
     }
 
     function isVerifiedEntry(e) {
       const name = e.candidate_name || e.candidate_id || 'Unknown';
       const cid = e.candidate_id || '';
-      return verifiedList.some(k => (name + ' ' + cid).toLowerCase().includes(k));
+      const normalized = (name + ' ' + cid).toLowerCase();
+      return verifiedList.some(k => normalized.includes(k));
     }
 
     // Verified-first: demote unverified capabilities below verified ones.
@@ -193,7 +323,6 @@ async function load() {
       const name = e.candidate_name || e.candidate_id || 'Unknown';
       const desc = findDesc(name, e.candidate_id || '');
       const url = e.source_reference || '';
-      const cid = e.candidate_id || '';
       const isVerified = isVerifiedEntry(e);
 
       return `<div class="card ${lane}" data-lane="${lane}" data-verified="${isVerified}">
@@ -207,7 +336,7 @@ async function load() {
         <div class="card-desc">${esc(desc)}</div>
         <div class="card-meta">
           <span><span class="dot dot-${lane}"></span>${lane}</span>
-          ${url && url.startsWith('http') ? `<a href="${esc(url)}" target="_blank" class="source-link">↗ source</a>` : ''}
+          ${url && url.startsWith('http') ? `<a href="${esc(url)}" target="_blank" class="source-link">↳ source</a>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -217,10 +346,115 @@ async function load() {
   } catch (err) {
     grid.className = '';
     grid.innerHTML = `<div class="empty">Failed to load: ${esc(err.message)}</div>`;
+    renderReadiness({ jarvisReadiness: null, queueEntries: [] });
   }
 }
 
-function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+function renderReadiness({ jarvisReadiness, queueEntries }) {
+  const projection = jarvisReadiness?.capabilityProjection;
+  const failures = jarvisReadiness?.topRecentCapabilityFailures || [];
+  const openGaps = jarvisReadiness?.openCapabilityGaps || null;
+  const decisionClasses = jarvisReadiness?.sourceDecisionsByClass || [];
+  const architecturePending = jarvisReadiness?.architectureExperimentsPendingEvaluation ??
+    countArchitecturePendingFromQueue(queueEntries);
+  const totalProjections = projection?.total ?? null;
+
+  document.getElementById('readinessCards').innerHTML = `
+    <div class="readiness-card">
+      <div class="readiness-card-title">Verified Projection-Ready</div>
+      <div class="readiness-card-value">${numberOrDash(projection?.verifiedProjectionReady)}</div>
+      <div class="readiness-card-subtitle">Projection-ready verified capabilities${totalProjections != null ? ` of ${numberOrDash(totalProjections)} total` : ''}</div>
+    </div>
+    <div class="readiness-card">
+      <div class="readiness-card-title">Verified Missing Projection</div>
+      <div class="readiness-card-value">${numberOrDash(projection?.verifiedMissingProjection)}</div>
+      <div class="readiness-card-subtitle">Verified entries without projection</div>
+    </div>
+    <div class="readiness-card">
+      <div class="readiness-card-title">Claimed</div>
+      <div class="readiness-card-value">${numberOrDash(projection?.claimed)}</div>
+      <div class="readiness-card-subtitle">Candidate-capability entries</div>
+    </div>
+    <div class="readiness-card">
+      <div class="readiness-card-title">Placeholder / Note / Rejected</div>
+      <div class="readiness-card-value">${numberOrDash(projection?.placeholder)}</div>
+      <div class="readiness-card-subtitle">Unverified capability metadata classes</div>
+    </div>
+    <div class="readiness-card">
+      <div class="readiness-card-title">Architecture Pending Evaluation</div>
+      <div class="readiness-card-value">${numberOrDash(architecturePending)}</div>
+      <div class="readiness-card-subtitle">Architecture entries still open</div>
+    </div>
+  `;
+
+  const panelNodes = Array.from(document.getElementById('readinessPanels').querySelectorAll('.readiness-panel'));
+
+  if (panelNodes[0]) {
+    if (failures.length) {
+      const failureItems = failures.map(item => {
+        const rationale = truncateText(item.rationale || '', 140);
+        return `<li><span>${esc(item.candidateId || 'unknown')} <span class="readiness-meta">(${esc(item.outcome)}) ${esc(formatTimestamp(item.recordedAt))}</span></span><span class="readiness-meta">${esc(rationale)}</span></li>`;
+      });
+      panelNodes[0].innerHTML = `<div class="panel-title">Top 5 recent capability failures</div><ul class="readiness-list">${failureItems.join('')}</ul>`;
+    } else {
+      panelNodes[0].innerHTML = '<div class="panel-title">Top 5 recent capability failures</div><div class="readiness-empty">No recent capability failures found.</div>';
+    }
+  }
+
+  if (panelNodes[1]) {
+    if (openGaps) {
+      const examples = openGaps.examples || [];
+      const exampleItems = examples.map((item) => `<li><span>${esc(item)}</span></li>`);
+      panelNodes[1].innerHTML = `<div class="panel-title">Open capability gaps</div><div class="readiness-meta">Open gaps: ${numberOrDash(openGaps.total)}</div>${exampleItems.length ? `<ul class="readiness-list">${exampleItems.join('')}</ul>` : '<div class="readiness-empty">No open capability gaps reported.</div>'}`;
+    } else {
+      panelNodes[1].innerHTML = '<div class="panel-title">Open capability gaps</div><div class="readiness-empty">No open capability gap data available.</div>';
+    }
+  }
+
+  if (panelNodes[2]) {
+    if (decisionClasses.length) {
+      const decisionItems = decisionClasses.map((row) =>
+        `<li><span>${esc(row.decisionClass || 'unknown')}</span><span class="readiness-meta">${row.count}</span></li>`,
+      );
+      panelNodes[2].innerHTML = `<div class="panel-title">Source decisions by class</div><ul class="readiness-list">${decisionItems.join('')}</ul>`;
+    } else {
+      panelNodes[2].innerHTML = '<div class="panel-title">Source decisions by class</div><div class="readiness-empty">No source decision data available.</div>';
+    }
+  }
+}
+
+function numberOrDash(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : '—';
+}
+
+function normalizeReadinessState(data) {
+  descriptionsSnapshot = data.descriptions || {};
+  verifiedListRef = data.verified || [];
+  defaultDescription = data.default || '';
+}
+
+function formatTimestamp(value) {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf())) return value;
+  return parsed.toLocaleString();
+}
+
+function truncateText(value, maxLength) {
+  const text = String(value || '');
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}…`;
+}
+
+function countArchitecturePendingFromQueue(entries) {
+  return (entries || []).filter(entry => {
+    const lane = String(entry?.routing_target || '').toLowerCase();
+    const status = String(entry?.status_effective || '').toLowerCase();
+    return lane === 'architecture' && !status.includes('completed');
+  }).length;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
 function applyFilter(filter) {
   document.querySelectorAll('.filter-btn').forEach(b =>
@@ -237,6 +471,34 @@ function applyFilter(filter) {
     else card.style.display = 'none';
   });
   document.getElementById('filterCount').textContent = `${visible} sources`;
+}
+
+async function fetchSnapshot() {
+  let lastErr = null;
+  for (const endpoint of SNAPSHOT_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Failed to fetch ${endpoint}: ${res.status}`);
+      return await res.json();
+    } catch (error) {
+      lastErr = error;
+    }
+  }
+  throw lastErr || new Error('No snapshot source could be reached');
+}
+
+async function loadSourceDescriptions() {
+  try {
+    const descRes = await fetch(DESC_URL, { cache: 'no-store' });
+    if (!descRes.ok) throw new Error(`Failed to fetch ${DESC_URL}: ${descRes.status}`);
+    return await descRes.json();
+  } catch {
+    return {
+      descriptions: {},
+      verified: [],
+      default: '',
+    };
+  }
 }
 
 document.getElementById('filters').addEventListener('click', e => {

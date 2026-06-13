@@ -77,6 +77,12 @@ import {
   deriveDirectiveEarnedAutonomySnapshotSummary,
   readDirectiveGapRadarSnapshotSummary,
 } from "./snapshot-learning.ts";
+import { listRuntimeCapabilityMetadata } from "../../../runtime/core/capability-registry.ts";
+import { listPendingGapFormalizationCandidates } from "../../../engine/mission/gap-formalization.ts";
+import {
+  extractCapabilityOutcomeSignal,
+  readDecisionPolicyLedger,
+} from "../../../engine/decision-policy-ledger.ts";
 import {
   deriveLegacyRuntimeFollowUpCandidateId,
   deriveLegacyRuntimeFollowUpCandidateName,
@@ -122,6 +128,31 @@ type FrontendNextLegalRead = {
 export type FrontendSnapshot = {
   engineRuns: EngineRunsOverview;
   queue: FrontendQueueOverview;
+  jarvisReadiness?: {
+    capabilityProjection: {
+      verifiedProjectionReady: number;
+      verifiedMissingProjection: number;
+      claimed: number;
+      placeholder: number;
+      total: number;
+    };
+    topRecentCapabilityFailures: Array<{
+      candidateId: string;
+      recordedAt: string;
+      outcome: "failure" | "contract_failure";
+      rationale: string;
+      sourceSignalTokens: string[];
+    }>;
+    openCapabilityGaps: {
+      total: number;
+      examples: string[];
+    };
+    sourceDecisionsByClass: Array<{
+      decisionClass: string;
+      count: number;
+    }>;
+    architectureExperimentsPendingEvaluation: number;
+  };
   learningSummary: {
     gapRadar: {
       generatedAt: string | null;
@@ -202,6 +233,127 @@ export type FrontendSnapshot = {
   handoffStubs: FrontendHandoffStub[];
   handoffWarnings: string[];
 };
+
+type JarvisReadinessDecisionCount = {
+  [decisionClass: string]: number;
+};
+
+function deriveJarvisReadinessSnapshot(input: {
+  queue: FrontendQueueOverview;
+  directiveRoot: string;
+}) {
+  const capabilityMetadata = listRuntimeCapabilityMetadata(input.directiveRoot);
+  const capabilityProjection = {
+    verifiedProjectionReady: 0,
+    verifiedMissingProjection: 0,
+    claimed: 0,
+    placeholder: 0,
+    total: capabilityMetadata.length,
+  };
+
+  for (const item of capabilityMetadata) {
+    if (item.verification === "verified") {
+      if (item.projectionReady) {
+        capabilityProjection.verifiedProjectionReady += 1;
+      } else {
+        capabilityProjection.verifiedMissingProjection += 1;
+      }
+      continue;
+    }
+
+    if (item.verification === "claimed" || item.verification === "runs_unverified_contract") {
+      capabilityProjection.claimed += 1;
+      continue;
+    }
+
+    capabilityProjection.placeholder += 1;
+  }
+
+  const decisionCounts: JarvisReadinessDecisionCount = {};
+  for (const entry of input.queue.entries) {
+    let decisionClass = "unknown";
+
+    if (entry.routing_record_path) {
+      try {
+        const routing = readDirectiveDiscoveryRoutingArtifact({
+          directiveRoot: input.directiveRoot,
+          routingPath: entry.routing_record_path,
+        });
+        if (routing.earnedAutonomy?.routeClass) {
+          decisionClass = routing.earnedAutonomy.routeClass;
+        } else if (routing.decisionState) {
+          decisionClass = routing.decisionState;
+        }
+      } catch {
+        if (entry.routing_target) {
+          decisionClass = entry.routing_target;
+        } else if (entry.status_effective) {
+          decisionClass = entry.status_effective;
+        }
+      }
+    } else if (entry.routing_target) {
+      decisionClass = entry.routing_target;
+    } else if (entry.status_effective) {
+      decisionClass = entry.status_effective;
+    }
+
+    const normalized = String(decisionClass || "unknown").trim() || "unknown";
+    decisionCounts[normalized] = (decisionCounts[normalized] ?? 0) + 1;
+  }
+
+  const sourceDecisionsByClass = Object.entries(decisionCounts)
+    .map(([decisionClass, count]) => ({ decisionClass, count }))
+    .sort((left, right) => {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+      return left.decisionClass.localeCompare(right.decisionClass);
+    });
+
+  const openGaps = listPendingGapFormalizationCandidates({ directiveRoot: input.directiveRoot });
+  const openCapabilityGaps = {
+    total: openGaps.length,
+    examples: openGaps
+      .slice(0, 4)
+      .map((gap) => {
+        const summary = gap.radarSummary?.trim() || "Untitled gap";
+        const confidence = gap.radarConfidence ? ` (${gap.radarConfidence})` : "";
+        return `${summary}${confidence}`;
+      }),
+  };
+
+  const recentOutcomeEvents = readDecisionPolicyLedger(input.directiveRoot, { lookback: "all" })
+    .events
+    .map((event) => ({ event, outcome: extractCapabilityOutcomeSignal(event) }))
+    .filter((entry) =>
+      entry.outcome
+      && (entry.outcome.outcome === "failure" || entry.outcome.outcome === "contract_failure"));
+
+  const topRecentCapabilityFailures = [...recentOutcomeEvents]
+    .sort((left, right) => right.event.recordedAt.localeCompare(left.event.recordedAt))
+    .slice(0, 5)
+    .map((entry) => ({
+      candidateId: entry.event.candidateId,
+      recordedAt: entry.event.recordedAt,
+      outcome: entry.outcome?.outcome === "contract_failure" ? "contract_failure" : "failure",
+      rationale: entry.outcome?.taskDescription || entry.event.rationale,
+      sourceSignalTokens: entry.event.sourceSignalTokens,
+    }));
+
+  const architectureExperimentsPendingEvaluation = input.queue.entries
+    .filter((entry) =>
+      entry.routing_target === "architecture"
+      && !/completed/i.test(String(entry.status_effective || "").toLowerCase())
+    ).length;
+
+  return {
+    capabilityProjection,
+    topRecentCapabilityFailures,
+    openCapabilityGaps,
+    sourceDecisionsByClass,
+    architectureExperimentsPendingEvaluation,
+  };
+}
 
 export type FrontendHandoffDetail =
   | {
@@ -1080,6 +1232,10 @@ export function readDirectiveFrontendSnapshot(input: {
       next_legal_actions: [...entry.next_legal_actions],
       current_head: entry.current_head,
     }));
+  const jarvisReadiness = deriveJarvisReadinessSnapshot({
+    directiveRoot: input.directiveRoot,
+    queue,
+  });
   const engineRuns = readEngineRunsOverview({
     directiveRoot: input.directiveRoot,
     maxRuns: input.maxRuns ?? 8,
@@ -1088,6 +1244,7 @@ export function readDirectiveFrontendSnapshot(input: {
   return {
     engineRuns,
     queue,
+    jarvisReadiness,
     learningSummary: {
       gapRadar: readDirectiveGapRadarSnapshotSummary(input.directiveRoot),
       earnedAutonomy: deriveDirectiveEarnedAutonomySnapshotSummary(engineRuns),
