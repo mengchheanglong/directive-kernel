@@ -581,3 +581,13 @@ export function deriveRecentResearchBriefPlan(rawInput: RecentResearchBriefInput
     requireCitations: input.requireCitations,
   };
 }
+
+export {
+  retrieveRecentResearchEvidence,
+  type RecentResearchEvidenceItem,
+  type RecentResearchEvidenceReport,
+  type RecentResearchEvidenceScores,
+  type RecentResearchRetrievalOptions,
+  type RecentResearchWebSearchAdapter,
+  type RecentResearchWebSearchResult,
+} from "./recent-research-brief-evidence.ts";
