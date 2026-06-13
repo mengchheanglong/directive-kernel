@@ -1,3 +1,16 @@
+import {
+  retrieveRecentResearchEvidence,
+  type RecentResearchEvidenceReport,
+  type RecentResearchRetrievalOptions,
+  type RecentResearchWebSearchAdapter,
+} from "./recent-research-brief-evidence.ts";
+import {
+  buildRecentResearchBriefReport,
+  validateRecentResearchSynthesis,
+  type RecentResearchBriefReport,
+  type RecentResearchSynthesisValidation,
+} from "./recent-research-brief-report.ts";
+
 export type ResearchBriefIntent =
   | "auto"
   | "factual"
@@ -63,6 +76,29 @@ export interface RecentResearchBriefPlan {
   clarifyingQuestions: string[];
   reframe?: string;
   requireCitations: boolean;
+}
+
+export interface RecentResearchBriefRunOptions {
+  fetch?: typeof fetch;
+  now?: Date;
+  timeoutMs?: number;
+  perSourceLimit?: number;
+  totalLimit?: number;
+  webSearchAdapter?: RecentResearchWebSearchAdapter;
+  maxClusters?: number;
+  validateSynthesis?: (report: RecentResearchBriefReport) => RecentResearchSynthesisValidation;
+}
+
+export interface RecentResearchBriefRunResult {
+  schemaVersion: "1.0.0";
+  topic: string;
+  plan: RecentResearchBriefPlan;
+  evidenceReport: RecentResearchEvidenceReport;
+  report: RecentResearchBriefReport;
+  validation: RecentResearchSynthesisValidation;
+  warnings: string[];
+  degradedSources: RecentResearchEvidenceReport["degradedSources"];
+  ok: boolean;
 }
 
 const SAFE_SOURCE_SYNONYMS: Record<string, ResearchSource> = {
@@ -582,22 +618,125 @@ export function deriveRecentResearchBriefPlan(rawInput: RecentResearchBriefInput
   };
 }
 
-export {
-  retrieveRecentResearchEvidence,
-  type RecentResearchEvidenceItem,
-  type RecentResearchEvidenceReport,
-  type RecentResearchEvidenceScores,
-  type RecentResearchRetrievalOptions,
-  type RecentResearchWebSearchAdapter,
-  type RecentResearchWebSearchResult,
+const uniqueStrings = (values: string[]): string[] => [...new Set(values.filter((value) => value.trim().length > 0))];
+
+export async function runRecentResearchBrief(
+  input: RecentResearchBriefInput,
+  options: RecentResearchBriefRunOptions = {},
+): Promise<RecentResearchBriefRunResult> {
+  const plan = deriveRecentResearchBriefPlan(input);
+  const retrievalOptions: RecentResearchRetrievalOptions = {
+    fetch: options.fetch,
+    now: options.now,
+    timeoutMs: options.timeoutMs,
+    perSourceLimit: options.perSourceLimit,
+    totalLimit: options.totalLimit,
+    webSearchAdapter: options.webSearchAdapter,
+  };
+  const evidenceReport = await retrieveRecentResearchEvidence(plan, retrievalOptions);
+  const report = buildRecentResearchBriefReport(evidenceReport, {
+    now: options.now,
+    maxClusters: options.maxClusters,
+  });
+  const validation = options.validateSynthesis
+    ? options.validateSynthesis(report)
+    : validateRecentResearchSynthesis(report);
+
+  return {
+    schemaVersion: "1.0.0",
+    topic: plan.topic,
+    plan,
+    evidenceReport,
+    report,
+    validation,
+    warnings: uniqueStrings([
+      ...plan.warnings,
+      ...evidenceReport.warnings,
+      ...report.warnings,
+      ...validation.issues
+        .filter((issue) => issue.severity === "warning")
+        .map((issue) => `${issue.code}: ${issue.message}`),
+    ]),
+    degradedSources: report.degradedSources,
+    ok: validation.ok,
+  };
+}
+
+const markdownList = (items: string[]): string[] =>
+  items.length === 0 ? ["- None"] : items.map((item) => `- ${item}`);
+
+const renderCitations = (urls: string[]): string => urls.length ? urls.join(", ") : "no citations";
+
+export function renderRecentResearchBriefMarkdown(result: RecentResearchBriefRunResult): string {
+  const lines: string[] = [
+    `# Recent Research Brief: ${result.topic}`,
+    "",
+    `Status: ${result.ok ? "OK" : "validation failed"}`,
+  ];
+
+  if (result.warnings.length > 0 || result.degradedSources.length > 0) {
+    lines.push("", "## Warnings and Degraded Sources");
+    lines.push(...markdownList(result.warnings));
+    for (const degraded of result.degradedSources) {
+      const scope = degraded.subqueryLabel ? ` (${degraded.subqueryLabel})` : "";
+      lines.push(`- ${degraded.source}: ${degraded.reason}${scope}`);
+    }
+  }
+
+  lines.push(
+    "",
+    "## Plan Summary",
+    `- Intent: ${result.plan.intent} (requested: ${result.plan.requestedIntent})`,
+    `- Sources: ${result.plan.sourceWeights.map((entry) => entry.source).join(", ") || "none"}`,
+    `- Subqueries: ${result.plan.subqueries.length}`,
+  );
+
+  lines.push("", "## Top Clusters");
+  if (result.report.clusters.length === 0) {
+    lines.push("- None");
+  } else {
+    for (const cluster of result.report.clusters.slice(0, 5)) {
+      lines.push(`- ${cluster.label} (score ${cluster.score}): ${renderCitations(cluster.sourceUrls)}`);
+    }
+  }
+
+  lines.push("", "## Synthesis Draft");
+  for (const paragraph of result.report.synthesisDraft.paragraphs) {
+    const citations = renderCitations(paragraph.citationUrls);
+    lines.push(`- ${paragraph.kind}: ${paragraph.text} [${citations}]`);
+  }
+
+  if (result.validation.issues.length > 0) {
+    lines.push("", "## Validation Issues");
+    for (const issue of result.validation.issues) {
+      lines.push(`- ${issue.severity}: ${issue.code} - ${issue.message}`);
+    }
+  }
+
+  lines.push(
+    "",
+    "## Untrusted Content Boundary",
+    result.report.synthesisDraft.unsafeContentBoundary,
+  );
+
+  return `${lines.join("\n")}\n`;
+}
+
+export { retrieveRecentResearchEvidence } from "./recent-research-brief-evidence.ts";
+export type {
+  RecentResearchEvidenceItem,
+  RecentResearchEvidenceReport,
+  RecentResearchEvidenceScores,
+  RecentResearchRetrievalOptions,
+  RecentResearchWebSearchAdapter,
+  RecentResearchWebSearchResult,
 } from "./recent-research-brief-evidence.ts";
 
-export {
-  buildRecentResearchBriefReport,
-  validateRecentResearchSynthesis,
-  type RecentResearchBriefReport,
-  type RecentResearchEvidenceCluster,
-  type RecentResearchReportOptions,
-  type RecentResearchSynthesisDraft,
-  type RecentResearchSynthesisValidation,
+export { buildRecentResearchBriefReport, validateRecentResearchSynthesis } from "./recent-research-brief-report.ts";
+export type {
+  RecentResearchBriefReport,
+  RecentResearchEvidenceCluster,
+  RecentResearchReportOptions,
+  RecentResearchSynthesisDraft,
+  RecentResearchSynthesisValidation,
 } from "./recent-research-brief-report.ts";

@@ -66,6 +66,12 @@ describe("retrieveRecentResearchEvidence", () => {
       totalLimit: 5,
     });
 
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("api.github.com/search/repositories"),
+      expect.objectContaining({
+        headers: { accept: "application/vnd.github+json" },
+      }),
+    );
     expect(report.schemaVersion).toBe("1.0.0");
     expect(report.evidence).toHaveLength(1);
     expect(report.evidence[0]).toMatchObject({
@@ -79,6 +85,104 @@ describe("retrieveRecentResearchEvidence", () => {
       unsafeContentWarning: true,
     });
     assertScoreComponents(report.evidence[0].scores);
+  });
+
+  it("uses the direct GitHub repo endpoint for repo-shaped planner queries", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url === "https://api.github.com/repos/microsoft/markitdown") {
+        return jsonResponse({
+          full_name: "microsoft/markitdown",
+          html_url: "https://github.com/microsoft/markitdown",
+          description: "Python tool for converting files and office documents to Markdown.",
+          owner: { login: "microsoft" },
+          created_at: "2024-11-18T00:00:00Z",
+          updated_at: "2026-06-05T00:00:00Z",
+          stargazers_count: 67000,
+          forks_count: 3200,
+          open_issues_count: 220,
+        });
+      }
+      return jsonResponse({ items: [] });
+    }) as typeof fetch;
+
+    const report = await retrieveRecentResearchEvidence(makePlan({
+      topic: "github.com/microsoft/markitdown",
+      sources: ["github"],
+      lookbackDays: 365,
+    }), {
+      fetch: fetchMock,
+      now: new Date("2026-06-13T00:00:00Z"),
+      perSourceLimit: 1,
+      totalLimit: 1,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.github.com/repos/microsoft/markitdown",
+      expect.objectContaining({
+        headers: { accept: "application/vnd.github+json" },
+      }),
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("api.github.com/search/repositories"),
+      expect.any(Object),
+    );
+    expect(report.evidence).toHaveLength(1);
+    expect(report.evidence[0]).toMatchObject({
+      source: "github",
+      title: "microsoft/markitdown",
+      url: "https://github.com/microsoft/markitdown",
+      author: "microsoft",
+      snippet: "Python tool for converting files and office documents to Markdown.",
+      publishedAt: "2026-06-05T00:00:00Z",
+      dateConfidence: "exact",
+      engagement: {
+        stars: 67000,
+        forks: 3200,
+        openIssues: 220,
+      },
+    });
+  });
+
+  it("keeps generic GitHub queries on repository search", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("api.github.com/search/repositories")) {
+        return jsonResponse({
+          items: [{
+            full_name: "acme/generic-planner",
+            html_url: "https://github.com/acme/generic-planner",
+            description: "Generic planner repository result",
+            owner: { login: "acme" },
+            updated_at: "2026-06-02T00:00:00Z",
+          }],
+        });
+      }
+      return jsonResponse({});
+    }) as typeof fetch;
+
+    const report = await retrieveRecentResearchEvidence(makePlan({
+      topic: "generic planner library",
+      sources: ["github"],
+    }), {
+      fetch: fetchMock,
+      now: new Date("2026-06-13T00:00:00Z"),
+      perSourceLimit: 1,
+      totalLimit: 1,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("api.github.com/search/repositories"),
+      expect.any(Object),
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("api.github.com/repos/"),
+      expect.any(Object),
+    );
+    expect(report.evidence[0]).toMatchObject({
+      source: "github",
+      title: "acme/generic-planner",
+    });
   });
 
   it("normalizes mocked Hacker News hits and falls back from url to story_url honestly", async () => {

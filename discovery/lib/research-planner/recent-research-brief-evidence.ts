@@ -163,6 +163,28 @@ const json = async (response: Response): Promise<unknown> => {
 const getRecord = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 
+const trimRepoToken = (value: string): string => value.replace(/[),.;:]+$/g, "");
+
+const detectGithubRepoQuery = (query: string): { owner: string; repo: string } | null => {
+  const patterns = [
+    /\brepo:([A-Za-z0-9-]+)\/([A-Za-z0-9_.-]+)/i,
+    /(?:https?:\/\/)?github\.com\/([A-Za-z0-9-]+)\/([A-Za-z0-9_.-]+)/i,
+    /\b([A-Za-z0-9-]+)\/([A-Za-z0-9_.-]+)\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = query.match(pattern);
+    if (!match?.[1] || !match[2]) {
+      continue;
+    }
+    return {
+      owner: trimRepoToken(match[1]),
+      repo: trimRepoToken(match[2]),
+    };
+  }
+  return null;
+};
+
 const withTimeout = async <T>(
   timeoutMs: number,
   action: (signal: AbortSignal) => Promise<T>,
@@ -291,7 +313,44 @@ const normalizeEvidence = (
   scores: scoreEvidence(raw.source, context.plan, context.subquery, raw, context.now),
 });
 
+const normalizeGithubRepository = (value: unknown): RawEvidence[] => {
+  const record = getRecord(value);
+  const owner = getRecord(record.owner);
+  const title = text(record.full_name) ?? text(record.name);
+  const url = text(record.html_url);
+  if (!title || !url) {
+    return [];
+  }
+  return [{
+    source: "github",
+    title,
+    url,
+    author: text(owner.login),
+    container: "GitHub repository",
+    publishedAt: text(record.updated_at) ?? text(record.created_at),
+    dateConfidence: text(record.updated_at) || text(record.created_at) ? "exact" : "unknown",
+    snippet: text(record.description) ?? "GitHub repository result",
+    engagement: {
+      stars: numberValue(record.stargazers_count),
+      forks: numberValue(record.forks_count),
+      openIssues: numberValue(record.open_issues_count),
+    },
+  }];
+};
+
 const githubAdapter = async (context: AdapterContext): Promise<RawEvidence[]> => {
+  const repoQuery = detectGithubRepoQuery(context.subquery.searchQuery);
+  if (repoQuery) {
+    const owner = encodeURIComponent(repoQuery.owner);
+    const repo = encodeURIComponent(repoQuery.repo);
+    const url = `https://api.github.com/repos/${owner}/${repo}`;
+    const payload = await json(await context.fetchFn(url, {
+      headers: { accept: "application/vnd.github+json" },
+      signal: context.signal,
+    }));
+    return normalizeGithubRepository(payload).slice(0, context.limit);
+  }
+
   const query = encodeURIComponent(`${context.subquery.searchQuery} in:name,description`);
   const url = `https://api.github.com/search/repositories?q=${query}&sort=updated&order=desc&per_page=${context.limit}`;
   const payload = getRecord(await json(await context.fetchFn(url, {
@@ -299,30 +358,7 @@ const githubAdapter = async (context: AdapterContext): Promise<RawEvidence[]> =>
     signal: context.signal,
   })));
   const items = Array.isArray(payload.items) ? payload.items.slice(0, context.limit) : [];
-  return items.flatMap((item): RawEvidence[] => {
-    const record = getRecord(item);
-    const owner = getRecord(record.owner);
-    const title = text(record.full_name) ?? text(record.name);
-    const url = text(record.html_url);
-    if (!title || !url) {
-      return [];
-    }
-    return [{
-      source: "github",
-      title,
-      url,
-      author: text(owner.login),
-      container: "GitHub repository",
-      publishedAt: text(record.updated_at) ?? text(record.created_at),
-      dateConfidence: text(record.updated_at) || text(record.created_at) ? "exact" : "unknown",
-      snippet: text(record.description) ?? "GitHub repository result",
-      engagement: {
-        stars: numberValue(record.stargazers_count),
-        forks: numberValue(record.forks_count),
-        openIssues: numberValue(record.open_issues_count),
-      },
-    }];
-  });
+  return items.flatMap((item): RawEvidence[] => normalizeGithubRepository(item));
 };
 
 const hackerNewsAdapter = async (context: AdapterContext): Promise<RawEvidence[]> => {
