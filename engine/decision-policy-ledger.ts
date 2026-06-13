@@ -30,6 +30,34 @@ type LedgerCacheEntry = {
 
 let jsonlCache: LedgerCacheEntry | null = null;
 
+export type CapabilityOutcomeSignal = {
+  outcome: "success" | "partial" | "failure" | "contract_failure";
+  taskDescription: string;
+  durationMs?: number;
+  costEstimate?: string;
+  errorClass?: string;
+  operatorNotes?: string;
+  reportedBy: string;
+  reportedAt: string;
+};
+
+export type CapabilityInvocationSignal = {
+  outcome: "success" | "failure" | "contract_failure";
+  durationMs?: number;
+  tool?: string;
+  status?: string;
+  gate?: string;
+  errorClass?: string;
+};
+
+export type DecisionPolicyEventWithSignals =
+  & DecisionPolicyEvent
+  & {
+    capabilityOutcome?: CapabilityOutcomeSignal;
+    capabilityInvocation?: CapabilityInvocationSignal;
+  }
+  & Record<string, unknown>;
+
 function defaultLedger(): DecisionPolicyLedger {
   return {
     schemaVersion: 1,
@@ -87,6 +115,149 @@ function readDecisionPolicyEventsFromJsonl(jsonlPath: string): DecisionPolicyEve
     }
   }
   return events;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" ? value as Record<string, unknown> : null;
+}
+
+function isOutcomeLiteral(
+  value: unknown,
+): value is CapabilityOutcomeSignal["outcome"] | CapabilityInvocationSignal["outcome"] {
+  return value === "success"
+    || value === "partial"
+    || value === "failure"
+    || value === "contract_failure";
+}
+
+function normalizeNonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function normalizeNonNegativeInteger(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : undefined;
+}
+
+function deriveOutcomeFromTokens(tokens: string[]): CapabilityOutcomeSignal["outcome"] | null {
+  const tokenSet = new Set(tokens);
+  if (tokenSet.has("outcome_contract_failure") || tokenSet.has("contract_failure")) {
+    return "contract_failure";
+  }
+  if (tokenSet.has("outcome_partial") || tokenSet.has("partial")) {
+    return "partial";
+  }
+  if (tokenSet.has("outcome_failure") || tokenSet.has("failure")) {
+    return "failure";
+  }
+  if (tokenSet.has("outcome_success") || tokenSet.has("success")) {
+    return "success";
+  }
+  return null;
+}
+
+function deriveLegacyOutcomeFromRationale(
+  event: DecisionPolicyEvent,
+): CapabilityOutcomeSignal["outcome"] | CapabilityInvocationSignal["outcome"] | null {
+  const rationale = event.rationale.toLowerCase();
+
+  if (event.source === "capability_outcome") {
+    if (/\boutcome:\s*contract_failure\b/.test(rationale)) return "contract_failure";
+    if (/\boutcome:\s*partial(?:_success)?\b/.test(rationale)) return "partial";
+    if (/\boutcome:\s*failure\b/.test(rationale)) return "failure";
+    if (/\boutcome:\s*success\b/.test(rationale)) return "success";
+    return null;
+  }
+
+  if (/\bcontract failure\b/.test(rationale) || /\bcontract_failure\b/.test(rationale)) {
+    return "contract_failure";
+  }
+  if (/\binvoked successfully\b/.test(rationale)) {
+    return "success";
+  }
+  if (/\binvocation failed\b/.test(rationale) || /\bnot found in callable registry\b/.test(rationale)) {
+    return "failure";
+  }
+
+  return null;
+}
+
+export function extractCapabilityOutcomeSignal(event: DecisionPolicyEvent): CapabilityOutcomeSignal | null {
+  if (event.source !== "capability_outcome") {
+    return null;
+  }
+
+  const extended = event as DecisionPolicyEventWithSignals;
+  const record = asRecord(extended.capabilityOutcome);
+  if (record) {
+    const outcome = record.outcome;
+    const taskDescription = normalizeNonEmptyString(record.taskDescription);
+    const reportedBy = normalizeNonEmptyString(record.reportedBy);
+    const reportedAt = normalizeNonEmptyString(record.reportedAt);
+    const durationMs = normalizeNonNegativeInteger(record.durationMs);
+    const costEstimate = normalizeNonEmptyString(record.costEstimate);
+    const errorClass = normalizeNonEmptyString(record.errorClass);
+    const operatorNotes = normalizeNonEmptyString(record.operatorNotes);
+
+    if (isOutcomeLiteral(outcome) && taskDescription && reportedBy && reportedAt) {
+      return {
+        outcome,
+        taskDescription,
+        reportedBy,
+        reportedAt,
+        ...(durationMs !== undefined ? { durationMs } : {}),
+        ...(costEstimate ? { costEstimate } : {}),
+        ...(errorClass ? { errorClass } : {}),
+        ...(operatorNotes ? { operatorNotes } : {}),
+      };
+    }
+  }
+
+  const outcome = deriveOutcomeFromTokens(event.sourceSignalTokens) ?? deriveLegacyOutcomeFromRationale(event);
+  if (!outcome) {
+    return null;
+  }
+
+  return {
+    outcome,
+    taskDescription: event.rationale,
+    reportedBy: "legacy",
+    reportedAt: event.recordedAt,
+  };
+}
+
+export function extractCapabilityInvocationSignal(event: DecisionPolicyEvent): CapabilityInvocationSignal | null {
+  if (event.source !== "capability_invocation") {
+    return null;
+  }
+
+  const extended = event as DecisionPolicyEventWithSignals;
+  const record = asRecord(extended.capabilityInvocation);
+  if (record) {
+    const outcome = record.outcome;
+    if (isOutcomeLiteral(outcome) && outcome !== "partial") {
+      return {
+        outcome,
+        ...(normalizeNonNegativeInteger(record.durationMs) !== undefined
+          ? { durationMs: normalizeNonNegativeInteger(record.durationMs) }
+          : {}),
+        ...(normalizeNonEmptyString(record.tool) ? { tool: normalizeNonEmptyString(record.tool) } : {}),
+        ...(normalizeNonEmptyString(record.status) ? { status: normalizeNonEmptyString(record.status) } : {}),
+        ...(normalizeNonEmptyString(record.gate) ? { gate: normalizeNonEmptyString(record.gate) } : {}),
+        ...(normalizeNonEmptyString(record.errorClass)
+          ? { errorClass: normalizeNonEmptyString(record.errorClass) }
+          : {}),
+      };
+    }
+  }
+
+  const outcome = deriveOutcomeFromTokens(event.sourceSignalTokens) ?? deriveLegacyOutcomeFromRationale(event);
+  if (outcome === "success" || outcome === "failure" || outcome === "contract_failure") {
+    return { outcome };
+  }
+
+  return null;
 }
 
 export function readDecisionPolicyLedger(
@@ -153,9 +324,9 @@ export function readDecisionPolicyLedger(
 
 export function appendDecisionPolicyEvent(input: {
   directiveRoot: string;
-  event: DecisionPolicyEvent;
+  event: DecisionPolicyEventWithSignals;
 }) {
-  const normalizedEvent: DecisionPolicyEvent = {
+  const normalizedEvent: DecisionPolicyEventWithSignals = {
     ...input.event,
     sourceSignalTokens: uniqueStrings(
       input.event.sourceSignalTokens.length > 0
