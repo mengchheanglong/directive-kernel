@@ -1,13 +1,23 @@
 /**
- * One-Shot Pipeline: source → routing → follow-up → record → proof
- * → capability boundary → promotion readiness → seam → registry
+ * One-Shot Pipeline: source → operationalization decision → guardrails → routing →
+ * follow-up → record → proof → capability boundary → promotion readiness → seam → registry
  * 
- * Usage: npx tsx scripts/pipeline.ts <source-name> <source-url> [source-type]
+ * Usage: npx tsx scripts/pipeline.ts <source-name> <source-url> [source-type] [--dry-run]
  * Example: npx tsx scripts/pipeline.ts "shadcn/ui" "https://github.com/shadcn-ui/ui"
+ * 
+ * The pipeline prints the source operationalization decision before advancing.
+ * Only capability_candidate sources advance to the Runtime registry by default.
+ * Non-capability decisions (note_only, training_lab_only, fine_tune_later, reject)
+ * never enter Runtime automatically.
  */
 
 import { createStandaloneFilesystemHost } from "../hosts/standalone-host/filesystem-host.ts";
 import { renderDiscoveryRoutingRecord } from "../discovery/lib/routing/record-writer.ts";
+import {
+  deriveSourceOperationalizationDecision,
+  type SourceOperationalizationDecision,
+  type SourceOperationalizationDecisionResult,
+} from "../engine/routing/source-operationalization.ts";
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
@@ -15,12 +25,275 @@ import { execSync } from "node:child_process";
 const ROOT = "C:/Users/User/AppData/Local/hermes/directive-root/directive-root";
 const TODAY = new Date().toISOString().slice(0, 10);
 
+type GitHubRepoMetadata = {
+  description: string | null;
+  stars: number | null;
+  topics: string[];
+};
+
+const CALLABLE_CLI_HINT = /\b(cli|command[ -]?line|terminal|shell)\b/i;
+const CALLABLE_API_HINT = /\b(api|sdk|mcp|server|daemon|http)\b/i;
+const INSTALLABLE_PACKAGE_HINT = /\b(package|library|framework|component|components|plugin|npm|pip|crate|gem|module)\b/i;
+const WORKFLOW_RELEVANCE_HINT = /\b(agent|automation|browser|scraper|markdown|parser|converter|workflow|orchestration|routing|retrieval|ranking|context|memory|eval|prompt|dashboard|mcp)\b/i;
+const UI_SURFACE_RELEVANCE_HINT = /\b(ui|design system|component|components|dashboard|operator|frontend|react|tailwind|shadcn|daisyui)\b/i;
+
+function parseGitHubRepoRef(url: string, name: string): string | null {
+  const trimmedName = name.trim();
+  if (/^[^/\s]+\/[^/\s]+$/.test(trimmedName)) {
+    return trimmedName;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== "github.com") {
+      return null;
+    }
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) {
+      return null;
+    }
+    return `${parts[0]}/${parts[1]}`;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchGitHubRepoMetadata(url: string, name: string): Promise<GitHubRepoMetadata | null> {
+  const repoRef = parseGitHubRepoRef(url, name);
+  if (!repoRef) {
+    return null;
+  }
+
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repoRef}`, {
+      headers: {
+        "User-Agent": "directive-kernel-pipeline/1.0",
+        Accept: "application/vnd.github+json",
+      },
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json() as {
+      description?: string | null;
+      stargazers_count?: number;
+      topics?: string[];
+    };
+
+    return {
+      description: data.description ?? null,
+      stars: typeof data.stargazers_count === "number" ? data.stargazers_count : null,
+      topics: Array.isArray(data.topics)
+        ? data.topics.filter((value): value is string => typeof value === "string")
+        : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function buildGithubOperationalizationHints(
+  name: string,
+  metadata: GitHubRepoMetadata | null,
+): {
+  summary: string;
+  missionAlignmentHint: string;
+  notes: string[];
+  repoStars: number | undefined;
+  containsWorkflowPattern: boolean;
+  improvesDirectiveWorkspace: boolean;
+  workflowBoundaryShape: "bounded_protocol" | undefined;
+  hasCallableCli: boolean;
+  hasCallableApi: boolean;
+  hasInstallablePackage: boolean;
+} {
+  const description = metadata?.description?.trim() || `${name} — auto-processed via one-shot pipeline.`;
+  const topics = metadata?.topics ?? [];
+  const repoText = [name, description, ...topics].join(" ");
+  const hasCallableCli = CALLABLE_CLI_HINT.test(repoText);
+  const hasCallableApi = CALLABLE_API_HINT.test(repoText);
+  const hasInstallablePackage = INSTALLABLE_PACKAGE_HINT.test(repoText);
+  const containsWorkflowPattern = WORKFLOW_RELEVANCE_HINT.test(repoText);
+  const improvesDirectiveWorkspace = containsWorkflowPattern || UI_SURFACE_RELEVANCE_HINT.test(repoText);
+  const missionAlignmentHint = improvesDirectiveWorkspace
+    ? `${name} exposes reusable operator/runtime surfaces that can improve Hermes or Directive Kernel workflows.`
+    : `${name} is a callable GitHub repo candidate under one-shot pipeline review.`;
+  const notes = [
+    "One-shot pipeline",
+    ...(topics.length > 0 ? [`GitHub topics: ${topics.join(", ")}`] : []),
+  ];
+
+  return {
+    summary: description,
+    missionAlignmentHint,
+    notes,
+    repoStars: metadata?.stars ?? undefined,
+    containsWorkflowPattern,
+    improvesDirectiveWorkspace,
+    workflowBoundaryShape: containsWorkflowPattern ? "bounded_protocol" : undefined,
+    hasCallableCli,
+    hasCallableApi,
+    hasInstallablePackage,
+  };
+}
+
+/** Canonical decision order — not allowed in Runtime by default. */
+const NON_RUNTIME_DECISIONS: Set<SourceOperationalizationDecision> = new Set([
+  "note_only",
+  "training_lab_only",
+  "fine_tune_later",
+  "reject",
+]);
+
+/**
+ * Print the operationalization decision with prominence before any action.
+ */
+function printDecision(result: SourceOperationalizationDecisionResult): void {
+  const scores = [
+    `actionability=${result.actionability_score}/100`,
+    `community=${result.community_signal_score}/100`,
+    `hermes-relevance=${result.hermes_relevance_score}/100`,
+  ].join("  ");
+  console.log("════════════════════════════════════════════");
+  console.log(`  SOURCE OPERATIONALIZATION DECISION`);
+  console.log("════════════════════════════════════════════");
+  console.log(`  Decision:       ${result.decision}`);
+  console.log(`  Classification: ${result.classification}`);
+  console.log(`  Scores:         ${scores}`);
+  console.log(`  Rationale:      ${result.rationale}`);
+  console.log(`  Next artifact:  ${result.next_artifact}`);
+  console.log(`  Recommended:    ${result.recommended_lane}`);
+  if (result.kill_criteria) {
+    console.log(`  Kill criteria:  ${result.kill_criteria}`);
+  }
+  if (result.note_target) {
+    console.log(`  Note target:    ${result.note_target}`);
+  }
+  console.log("════════════════════════════════════════════\n");
+}
+
+/**
+ * Print next-action instructions for decisions that do not advance to Runtime.
+ */
+function printNonRuntimeAction(result: SourceOperationalizationDecisionResult): void {
+  console.log("╔══════════════════════════════════════════════════════════╗");
+  console.log("║  PIPELINE HALTED — non-Runtime decision                  ║");
+  console.log("╠══════════════════════════════════════════════════════════╣");
+
+  switch (result.decision) {
+    case "architecture_experiment":
+      console.log("║  This source is an architecture_experiment.              ║");
+      console.log("║  It requires manual experiment design before execution.  ║");
+      console.log("║                                                          ║");
+      console.log("║  Next actions (operator):                                ║");
+      console.log("║  1. Document hypothesis + kill criteria in:              ║");
+      console.log(`║     ${result.next_artifact.padEnd(54)}║`);
+      console.log("║  2. Define implementation boundary & measurement cmd.    ║");
+      console.log("║  3. Hand off to OpenCode/Codex for implementation.       ║");
+      console.log("║  4. Measure result, then adopt or rollback.              ║");
+      console.log("║                                                          ║");
+      console.log("║  Architecture experiments do NOT enter Runtime.          ║");
+      break;
+    case "note_only":
+      console.log("║  This source is note_only — useful only as reference.    ║");
+      console.log(`║  Note target: ${(result.note_target ?? "N/A").padEnd(44)}║`);
+      console.log("║  No Runtime promotion will occur.                        ║");
+      break;
+    case "training_lab_only":
+      console.log("║  This source requires base-model training work.          ║");
+      console.log("║  It cannot be actioned locally. No Runtime promotion.    ║");
+      break;
+    case "fine_tune_later":
+      console.log("║  This source is a fine-tune / dataset recipe.            ║");
+      console.log(`║  Backlogged to: ${result.next_artifact.padEnd(42)}║`);
+      console.log("║  No Runtime promotion.                                   ║");
+      break;
+    case "reject":
+      console.log("║  This source was rejected — too low on signal quality.   ║");
+      console.log("║  No Runtime promotion.                                   ║");
+      break;
+    default:
+      break;
+  }
+
+  console.log("╚══════════════════════════════════════════════════════════╝");
+}
+
 async function main() {
-  const args = process.argv.slice(2);
+  const rawArgs = process.argv.slice(2);
+  const dryRun = rawArgs.includes("--dry-run");
+  const args = rawArgs.filter((a) => a !== "--dry-run");
+
   const name = args[0] || "test-capability";
   const url = args[1] || "https://github.com/test";
   const type = args[2] || "github-repo";
   const cid = `pipe-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now().toString(36)}`;
+
+  const githubMetadata = type === "github-repo"
+    ? await fetchGitHubRepoMetadata(url, name)
+    : null;
+  const githubHints = type === "github-repo"
+    ? buildGithubOperationalizationHints(name, githubMetadata)
+    : null;
+
+  // ─── Operationalization decision ───
+  const decision = deriveSourceOperationalizationDecision({
+    source: {
+      sourceId: cid,
+      sourceType: type as any,
+      sourceRef: url,
+      title: name,
+      summary: githubHints?.summary ?? `${name} — auto-processed via one-shot pipeline.`,
+      missionAlignmentHint: githubHints?.missionAlignmentHint ?? `${name} operational capability.`,
+      notes: githubHints?.notes ?? ["One-shot pipeline"],
+      primaryAdoptionTarget: type === "paper" ? "architecture" : "runtime",
+      containsExecutableCode: type !== "paper" && type !== "theory",
+      containsWorkflowPattern: githubHints?.containsWorkflowPattern,
+      improvesDirectiveWorkspace: githubHints?.improvesDirectiveWorkspace,
+      workflowBoundaryShape: githubHints?.workflowBoundaryShape,
+    },
+    mission: null,
+    signals: {
+      repoStars: githubHints?.repoStars ?? (type === "github-repo" ? 5000 : undefined),
+      hasCallableCli: githubHints?.hasCallableCli,
+      hasCallableApi: githubHints?.hasCallableApi,
+      hasInstallablePackage: githubHints?.hasInstallablePackage,
+    },
+  });
+
+  printDecision(decision);
+
+  // ─── Dry-run guard ───
+  if (dryRun) {
+    console.log("[dry-run] Decision preview only. No artifacts created.\n");
+    if (decision.decision !== "capability_candidate") {
+      printNonRuntimeAction(decision);
+    } else {
+      console.log("[dry-run] Would advance to Runtime pipeline.\n");
+    }
+    return;
+  }
+
+  // ─── Guardrail: only capability_candidate enters Runtime ───
+  if (decision.decision !== "capability_candidate") {
+    printNonRuntimeAction(decision);
+
+    if (NON_RUNTIME_DECISIONS.has(decision.decision)) {
+      console.log("Automatic Runtime registration is disabled for this decision class.");
+      console.log(`Source evaluated as: ${decision.classification}`);
+      console.log(`Rationale: ${decision.rationale}`);
+      console.log("Manual operator intervention is required to override this guardrail.");
+      return;
+    }
+
+    console.log("Pipeline cannot proceed automatically for this decision.");
+    return;
+  }
+
+  // ─── Capability candidate: proceed with one-shot Runtime pipeline ───
+  console.log("[capability_candidate] Advancing to Runtime pipeline...\n");
 
   console.log(`=== One-Shot Pipeline: ${name} ===\n`);
 

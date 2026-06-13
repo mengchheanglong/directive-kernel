@@ -1,11 +1,13 @@
 /**
  * Capability Health Report — audits all registry entries for harness-verified
- * vs placeholder evidence. Also provides UI consistency checking and regeneration.
+ * vs placeholder evidence. Also provides UI consistency checking and regeneration,
+ * plus Jarvis capability kernel readiness grouping.
  *
  * Usage:
  *   npx tsx scripts/capability-health.ts [--root <directive-root>]
  *   npx tsx scripts/capability-health.ts --check-ui [--root <directive-root>]
  *   npx tsx scripts/capability-health.ts --write-ui [--root <directive-root>]
+ *   npx tsx scripts/capability-health.ts --jarvis [--root <directive-root>]
  *
  * Modes:
  *   (default)  Health report: registry entries vs evidence, verification rates
@@ -13,6 +15,8 @@
  *               array against evidence-derived classification. Exits 1 on mismatch.
  *   --write-ui  Regenerates ui/source-descriptions.json verified array from evidence
  *               files on disk.
+ *   --jarvis    Jarvis readiness report: groups capabilities by entry class and
+ *               projection readiness using RuntimeCapabilityMetadata.
  */
  
 import fs from "node:fs";
@@ -27,6 +31,12 @@ import {
   isExecutionEvidenceShape,
 } from "../shared/lib/execution-evidence.ts";
 
+import {
+  deriveJarvisMigrationInventory,
+  printJarvisMigrationSummary,
+  summarizeJarvisMigrationInventory,
+} from "./migrate-jarvis-capability-kernel.ts";
+
 // ── Configuration ──────────────────────────────────────────────────
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -35,7 +45,7 @@ const DEFAULT_ROOT = "C:/Users/User/AppData/Local/hermes/directive-root/directiv
 
 interface ParsedArgs {
   root: string;
-  mode: "health" | "check-ui" | "write-ui";
+  mode: "health" | "check-ui" | "write-ui" | "jarvis";
 }
 
 function parseArgs(): ParsedArgs {
@@ -50,6 +60,8 @@ function parseArgs(): ParsedArgs {
       mode = "check-ui";
     } else if (args[i] === "--write-ui") {
       mode = "write-ui";
+    } else if (args[i] === "--jarvis") {
+      mode = "jarvis";
     }
   }
   return { root: path.resolve(root).replace(/\\/g, "/"), mode };
@@ -189,6 +201,18 @@ function runHealthReport(root: string) {
   console.log(`  1. Add a test spec to TEST_SPECS in scripts/execution-harness.ts`);
   console.log(`  2. Run: npx tsx scripts/execution-harness.ts <capability-id>`);
   console.log(`\nRoot: ${root}`);
+
+  const migrationInventory = deriveJarvisMigrationInventory({ root });
+  const migrationCounts = summarizeJarvisMigrationInventory(migrationInventory);
+  console.log("\n=== Jarvis Migration Category Summary ===\n");
+  console.log(`verified projection-ready:      ${migrationCounts.verified_projection_ready}`);
+  console.log(`verified but missing projection: ${migrationCounts.verified_missing_projection}`);
+  console.log(`candidate:                       ${migrationCounts.candidate}`);
+  console.log(`claimed:                         ${migrationCounts.claimed}`);
+  console.log(`placeholder:                     ${migrationCounts.placeholder}`);
+  console.log(`note_only:                       ${migrationCounts.note_only}`);
+  console.log(`rejected:                        ${migrationCounts.rejected}`);
+  console.log(`architecture_experiment:         ${migrationCounts.architecture_experiment}`);
 }
 
 // ── Evidence-derived classification ────────────────────────────────
@@ -376,6 +400,16 @@ function runUIWrite(root: string, kernelRoot: string) {
   console.log(`Timestamp: ${uiData._meta.lastVerified}`);
 }
 
+// ── Jarvis capability kernel readiness report ──────────────────────
+
+function runJarvisReport(_root: string) {
+  const inventory = deriveJarvisMigrationInventory({ root: _root });
+  printJarvisMigrationSummary({
+    inventory,
+    modeLabel: "read-only health report",
+  });
+}
+
 // ── Main ───────────────────────────────────────────────────────────
 
 function main() {
@@ -388,6 +422,10 @@ function main() {
     }
     case "write-ui": {
       runUIWrite(root, KERNEL_ROOT);
+      process.exit(0);
+    }
+    case "jarvis": {
+      runJarvisReport(root);
       process.exit(0);
     }
     case "health":

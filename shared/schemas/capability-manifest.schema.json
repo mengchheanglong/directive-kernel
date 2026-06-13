@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "shared/schemas/capability-manifest.schema.json",
   "title": "Capability Manifest Contract",
-  "description": "Defines the contract for a Runtime capability: input/output schemas, verification block, and golden examples for contract-grade verification.",
+  "description": "Defines the contract for a Runtime capability: input/output schemas, verification block, projection metadata, and golden examples for contract-grade verification.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -139,6 +139,52 @@
       "type": "string",
       "enum": ["complete", "partial", "missing"],
       "description": "Contract completeness: 'complete' = has input+output schemas + examples + verify; 'partial' = has some but not all; 'missing' = no contract fields. Set by the registry parser, not in the manifest file itself."
+    },
+    "whenToUse": {
+      "type": "string",
+      "description": "Jarvis capability kernel: description of when Hermes should invoke this capability. Used in recall ranking and tool selection. Required for projection-ready capabilities."
+    },
+    "failureModes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Jarvis capability kernel: known failure modes. Helps Hermes decide when NOT to use this capability."
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Jarvis capability kernel: Hermes projection metadata. If present and valid, the capability is eligible for projection as a Hermes power.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["mcp_tool", "hermes_skill", "cli_wrapper", "cron_job", "handoff_prompt", "obsidian_note"],
+          "description": "The projection mechanism."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Projection identifier."
+        },
+        "invocation": {
+          "type": "string",
+          "description": "The invocation string or command."
+        },
+        "inputContract": {
+          "type": "string",
+          "description": "Optional input schema reference for the projection."
+        },
+        "outputContract": {
+          "type": "string",
+          "description": "Optional output schema reference for the projection."
+        }
+      }
+    },
+    "costNotes": {
+      "type": "string",
+      "description": "Jarvis capability kernel: optional notes about cost, rate limits, or resource usage for this capability."
+    },
+    "verificationEvidence": {
+      "type": "string",
+      "description": "Jarvis capability kernel: path or reference to execution evidence artifact for this capability. Required for verified projection-ready entry."
     }
   }
 }

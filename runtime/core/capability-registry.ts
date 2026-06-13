@@ -11,6 +11,30 @@ import {
 export type RuntimeCapabilityVerification = "verified" | "claimed" | "placeholder" | "runs_unverified_contract";
 export type RuntimeCapabilityContract = "complete" | "partial" | "missing";
 
+export type RuntimeEntryClass =
+  | "verified_capability"
+  | "candidate"
+  | "placeholder"
+  | "note_only"
+  | "rejected"
+  | "architecture_experiment";
+
+export type HermesProjectionKind =
+  | "mcp_tool"
+  | "hermes_skill"
+  | "cli_wrapper"
+  | "cron_job"
+  | "handoff_prompt"
+  | "obsidian_note";
+
+export interface RuntimeCapabilityManifestProjection {
+  kind?: string;
+  id?: string;
+  invocation?: string;
+  inputContract?: string;
+  outputContract?: string;
+}
+
 export interface RuntimeCapabilityManifestExample {
   name: string;
   input: Record<string, unknown>;
@@ -35,6 +59,11 @@ export type RuntimeCapabilityManifest = {
   verify?: RuntimeCapabilityManifestVerifyBlock;
   examples?: RuntimeCapabilityManifestExample[];
   contract?: RuntimeCapabilityContract;
+  whenToUse?: string;
+  failureModes?: string[];
+  projection?: RuntimeCapabilityManifestProjection;
+  costNotes?: string;
+  verificationEvidence?: string;
 };
 
 export type RuntimeCapabilityMetadata = {
@@ -44,6 +73,12 @@ export type RuntimeCapabilityMetadata = {
   modulePath: string;
   verification: RuntimeCapabilityVerification;
   contract: RuntimeCapabilityContract;
+  entryClass: RuntimeEntryClass;
+  projectionKind?: HermesProjectionKind;
+  whenToUse?: string;
+  failureModes?: string[];
+  projectionReady: boolean;
+  notUsableReason?: string;
 };
 
 export type RuntimeCapabilityScaffoldFile = {
@@ -86,6 +121,184 @@ function resolveCapabilityRoot(capabilitiesRoot: string, id: string) {
 
 function resolveCapabilityManifestPath(capabilitiesRoot: string, id: string) {
   return path.resolve(resolveCapabilityRoot(capabilitiesRoot, id), "manifest.json");
+}
+
+/**
+ * Derive the runtime entry class from manifest verification, contract,
+ * and projection metadata. Conservative default: missing fields → placeholder.
+ */
+export function deriveEntryClass(
+  manifest: RuntimeCapabilityManifest,
+): RuntimeEntryClass {
+  const v = manifest.verification;
+  const { projectionReady } = deriveProjectionReadiness(manifest);
+
+  if (projectionReady) {
+    return "verified_capability";
+  }
+  if (v === "verified") {
+    return "candidate"; // verified but not projection-ready
+  }
+  if (v === "claimed") {
+    return "candidate";
+  }
+  return "placeholder";
+}
+
+/**
+ * Derive projection readiness based on manifest verification, contract
+ * completeness, and presence of Hermes projection metadata.
+ *
+ * Rules:
+ *  - verified + contract=complete + valid projection metadata + has whenToUse + has failureModes → ready
+ *  - verified but missing projection or metadata → not ready (honest label)
+ *  - claimed/placeholder → never ready
+ */
+export function deriveProjectionReadiness(
+  manifest: RuntimeCapabilityManifest,
+): { projectionReady: boolean; notUsableReason?: string } {
+  const v = manifest.verification;
+
+  if (v !== "verified") {
+    return {
+      projectionReady: false,
+      notUsableReason: `verification is '${v ?? "undefined"}' — must be "verified" for projection`,
+    };
+  }
+
+  if (manifest.contract !== "complete") {
+    return {
+      projectionReady: false,
+      notUsableReason: `contract is '${manifest.contract ?? "missing"}' — must be "complete" for projection`,
+    };
+  }
+
+  if (!manifest.projection) {
+    return {
+      projectionReady: false,
+      notUsableReason: "no Hermes projection block defined in manifest",
+    };
+  }
+
+  const projectionKind = resolveProjectionKind(manifest);
+  if (!projectionKind) {
+    return {
+      projectionReady: false,
+      notUsableReason: "projection.kind is missing or invalid for Hermes projection",
+    };
+  }
+
+  if (!manifest.projection.id || manifest.projection.id.trim().length === 0) {
+    return {
+      projectionReady: false,
+      notUsableReason: "missing projection.id — projection-ready capabilities must declare a projection identifier",
+    };
+  }
+
+  if (!manifest.projection.invocation || manifest.projection.invocation.trim().length === 0) {
+    return {
+      projectionReady: false,
+      notUsableReason: "missing projection.invocation — projection-ready capabilities must declare how Hermes invokes them",
+    };
+  }
+
+  if (!manifest.whenToUse || manifest.whenToUse.trim().length === 0) {
+    return {
+      projectionReady: false,
+      notUsableReason: "missing whenToUse — must describe when Hermes should invoke this capability",
+    };
+  }
+
+  if (!manifest.failureModes || manifest.failureModes.length === 0) {
+    return {
+      projectionReady: false,
+      notUsableReason: "missing failureModes — must list known failure modes",
+    };
+  }
+
+  return { projectionReady: true };
+}
+
+/**
+ * Resolve the Hermes projection kind from the manifest projection block.
+ */
+export function resolveProjectionKind(
+  manifest: RuntimeCapabilityManifest,
+): HermesProjectionKind | undefined {
+  const k = manifest.projection?.kind;
+  if (!k) return undefined;
+  const validKinds: readonly string[] = [
+    "mcp_tool", "hermes_skill", "cli_wrapper",
+    "cron_job", "handoff_prompt", "obsidian_note",
+  ];
+  if (validKinds.includes(k)) {
+    return k as HermesProjectionKind;
+  }
+  return undefined;
+}
+
+/**
+ * Parse the optional projection block from raw manifest JSON.
+ */
+function parseProjectionBlock(raw: Record<string, unknown>): RuntimeCapabilityManifestProjection | undefined {
+  const p = raw.projection;
+  if (typeof p !== "object" || p === null) return undefined;
+  const proj = p as Record<string, unknown>;
+  const parsed = {
+    ...(typeof proj.kind === "string" ? { kind: proj.kind } : {}),
+    ...(typeof proj.id === "string" ? { id: proj.id } : {}),
+    ...(typeof proj.invocation === "string" ? { invocation: proj.invocation } : {}),
+    ...(typeof proj.inputContract === "string" ? { inputContract: proj.inputContract } : {}),
+    ...(typeof proj.outputContract === "string" ? { outputContract: proj.outputContract } : {}),
+  };
+
+  return Object.keys(parsed).length > 0 ? parsed : undefined;
+}
+
+/**
+ * Extract all Jarvis projection fields from raw manifest JSON.
+ * Returns an object with only the fields that are present and valid.
+ */
+function parseProjectionFields(raw: Record<string, unknown>): Partial<{
+  whenToUse: string;
+  failureModes: string[];
+  projection: RuntimeCapabilityManifestProjection;
+  costNotes: string;
+  verificationEvidence: string;
+}> {
+  const result: Partial<{
+    whenToUse: string;
+    failureModes: string[];
+    projection: RuntimeCapabilityManifestProjection;
+    costNotes: string;
+    verificationEvidence: string;
+  }> = {};
+
+  if (typeof raw.whenToUse === "string" && raw.whenToUse.trim().length > 0) {
+    result.whenToUse = raw.whenToUse.trim();
+  }
+
+  if (Array.isArray(raw.failureModes)) {
+    const modes = raw.failureModes.filter((e: unknown): e is string => typeof e === "string" && e.length > 0);
+    if (modes.length > 0) {
+      result.failureModes = modes;
+    }
+  }
+
+  const proj = parseProjectionBlock(raw);
+  if (proj) {
+    result.projection = proj;
+  }
+
+  if (typeof raw.costNotes === "string" && raw.costNotes.trim().length > 0) {
+    result.costNotes = raw.costNotes.trim();
+  }
+
+  if (typeof raw.verificationEvidence === "string" && raw.verificationEvidence.trim().length > 0) {
+    result.verificationEvidence = raw.verificationEvidence.trim();
+  }
+
+  return result;
 }
 
 function parseRuntimeCapabilityManifest(
@@ -175,6 +388,17 @@ function parseRuntimeCapabilityManifest(
 
   // Schema validation failure overrides contract to "missing"
   if (!schemaValid) {
+    // Parse projection metadata from raw JSON even when schema fails
+    const raw = parsed as Record<string, unknown>;
+    const whenToUse = typeof raw.whenToUse === "string" && raw.whenToUse.length > 0 ? raw.whenToUse : undefined;
+    const failureModes = Array.isArray(raw.failureModes)
+      ? raw.failureModes.filter((e: unknown): e is string => typeof e === "string" && e.length > 0)
+      : undefined;
+    const projection = parseProjectionBlock(raw);
+    const costNotes = typeof raw.costNotes === "string" && raw.costNotes.length > 0 ? raw.costNotes : undefined;
+    const verificationEvidence = typeof raw.verificationEvidence === "string" && raw.verificationEvidence.length > 0
+      ? raw.verificationEvidence : undefined;
+
     return {
       displayName: parsed.displayName,
       description: parsed.description,
@@ -184,6 +408,11 @@ function parseRuntimeCapabilityManifest(
       ...(parsed.outputSchema ? { outputSchema: parsed.outputSchema } : {}),
       ...(examples ? { examples } : {}),
       ...(verify ? { verify } : {}),
+      ...(whenToUse ? { whenToUse } : {}),
+      ...(failureModes ? { failureModes } : {}),
+      ...(projection ? { projection } : {}),
+      ...(costNotes ? { costNotes } : {}),
+      ...(verificationEvidence ? { verificationEvidence } : {}),
       contract: "missing",
     };
   }
@@ -210,6 +439,7 @@ function parseRuntimeCapabilityManifest(
     ...(parsed.outputSchema ? { outputSchema: parsed.outputSchema } : {}),
     ...(examples ? { examples } : {}),
     ...(verify ? { verify } : {}),
+    ...(parseProjectionFields(parsed as Record<string, unknown>)),
     contract,
   };
 }
@@ -297,6 +527,14 @@ export function listRuntimeCapabilityMetadata(
         entry.name,
       );
       const contract = manifest?.contract ?? "missing";
+
+      // Derive Jarvis capability kernel metadata
+      const entryClass = manifest ? deriveEntryClass(manifest) : "placeholder";
+      const { projectionReady, notUsableReason } = manifest
+        ? deriveProjectionReadiness(manifest)
+        : { projectionReady: false, notUsableReason: "no manifest" };
+      const projectionKind = manifest ? resolveProjectionKind(manifest) : undefined;
+
       return {
         id: entry.name,
         displayName,
@@ -304,6 +542,12 @@ export function listRuntimeCapabilityMetadata(
         modulePath: `runtime/capabilities/${entry.name}/index.ts`,
         verification,
         contract,
+        entryClass,
+        projectionKind,
+        whenToUse: manifest?.whenToUse,
+        failureModes: manifest?.failureModes,
+        projectionReady,
+        ...(notUsableReason ? { notUsableReason } : {}),
       } satisfies RuntimeCapabilityMetadata;
     })
     .sort((a, b) => a.id.localeCompare(b.id));

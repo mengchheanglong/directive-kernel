@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/hermes-projection",
+  "title": "Hermes Projection",
+  "description": "Defines how a verified capability is made usable by Hermes. A capability without a projection is not yet a Hermes power.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "displayName",
+    "whenToUse",
+    "invocation",
+    "failureModes",
+    "verificationRef"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "mcp_tool",
+        "hermes_skill",
+        "cli_wrapper",
+        "cron_job",
+        "handoff_prompt",
+        "obsidian_note"
+      ],
+      "description": "The projection mechanism that makes this capability usable by Hermes."
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this projection. For MCP tools this is the tool name; for skills this is the skill slug."
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable name shown in Hermes's tool/skill surface."
+    },
+    "whenToUse": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Description of when Hermes should invoke this capability. Used in recall ranking and tool selection."
+    },
+    "invocation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The invocation string or command that triggers this capability. For MCP tools this is the tool call pattern; for CLI wrappers this is the command."
+    },
+    "inputContract": {
+      "type": "string",
+      "description": "Optional reference to the JSON Schema defining valid inputs."
+    },
+    "outputContract": {
+      "type": "string",
+      "description": "Optional reference to the JSON Schema defining expected outputs."
+    },
+    "costNotes": {
+      "type": "string",
+      "description": "Optional notes about cost, rate limits, or resource usage."
+    },
+    "failureModes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Known failure modes for this capability. Helps Hermes decide when NOT to use it."
+    },
+    "verificationRef": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reference to the verification evidence (e.g. manifest verify block path, execution evidence artifact path)."
+    }
+  }
+}

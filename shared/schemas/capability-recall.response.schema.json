@@ -7,18 +7,54 @@
   "properties": {
     "ok": { "type": "boolean" },
     "query": { "type": "string" },
+    "includeCandidates": { "type": "boolean" },
     "totalCount": { "type": "integer" },
     "results": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["capabilityId", "displayName", "rankScore"],
+        "required": [
+          "capabilityId",
+          "displayName",
+          "entryClass",
+          "projectionReady",
+          "rankScore"
+        ],
         "properties": {
           "capabilityId": { "type": "string" },
           "displayName": { "type": "string" },
           "description": { "type": "string" },
           "verification": { "type": "string" },
           "contract": { "type": "string" },
+          "entryClass": {
+            "type": "string",
+            "enum": [
+              "verified_capability",
+              "candidate",
+              "placeholder",
+              "note_only",
+              "rejected",
+              "architecture_experiment"
+            ],
+            "description": "Jarvis capability kernel: the classification of this capability."
+          },
+          "projectionReady": {
+            "type": "boolean",
+            "description": "Whether this capability is ready for Hermes projection."
+          },
+          "whenToUse": {
+            "type": "string",
+            "description": "When Hermes should use this capability."
+          },
+          "failureModes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Known failure modes for this capability."
+          },
+          "notUsableReason": {
+            "type": "string",
+            "description": "If not projectionReady, the reason why this capability cannot be used by Hermes."
+          },
           "matchScore": { "type": "number" },
           "reliability": { "type": "number" },
           "freshness": { "type": "number" },
