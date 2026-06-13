@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "directive-workspace/schemas/recent-research-brief-plan-v1",
+  "title": "RecentResearchBriefPlan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "topic",
+    "requestedIntent",
+    "intent",
+    "lookbackDays",
+    "depth",
+    "freshnessMode",
+    "subqueries",
+    "sourceWeights",
+    "excludedSources",
+    "warnings",
+    "clarifyingQuestions",
+    "requireCitations"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0.0" },
+    "topic": { "type": "string", "minLength": 1 },
+    "requestedIntent": {
+      "type": "string",
+      "enum": ["auto", "factual", "product", "concept", "opinion", "how_to", "comparison", "breaking_news", "prediction"]
+    },
+    "intent": {
+      "type": "string",
+      "enum": ["factual", "product", "concept", "opinion", "how_to", "comparison", "breaking_news", "prediction"]
+    },
+    "lookbackDays": { "type": "integer", "minimum": 1, "maximum": 3650 },
+    "depth": {
+      "type": "string",
+      "enum": ["quick", "default", "deep"]
+    },
+    "freshnessMode": {
+      "type": "string",
+      "enum": ["strict_recent", "balanced_recent", "evergreen_ok"]
+    },
+    "subqueries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "searchQuery", "rankingQuery", "sources", "weight"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "searchQuery": { "type": "string", "minLength": 1 },
+          "rankingQuery": { "type": "string", "minLength": 1 },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["github", "hackernews", "polymarket", "reddit_public", "web"]
+            }
+          },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "sourceWeights": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "weight"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": ["github", "hackernews", "polymarket", "reddit_public", "web"]
+          },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "excludedSources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "reason"],
+        "properties": {
+          "source": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "clarifyingQuestions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "reframe": { "type": "string", "minLength": 1 },
+    "requireCitations": { "type": "boolean" }
+  }
+}
