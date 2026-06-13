@@ -32,7 +32,7 @@ type StructuredCapabilityOutcome = {
 };
 
 let capabilityOutcomeSchemaValidator:
-  | ((payload: Record<string, unknown>) => boolean)
+  | (((payload: Record<string, unknown>) => boolean) & { errors?: Array<{ instancePath?: string; message?: string | null }> | null })
   | null = null;
 
 function tokenize(text: string): string[] {
