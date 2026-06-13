@@ -86,6 +86,11 @@ const SNAPSHOT_CACHE_TTL_MS = 60_000; // 60s — snapshot is expensive (200+ fil
 // ── Inbox cache ─────────────────────────────────────────────────
 let inboxCache: { data: ReturnType<typeof buildOperatorDecisionInboxReport>; ts: number } | null = null;
 const INBOX_CACHE_TTL_MS = 60_000;
+
+function invalidateReadModelCaches(): void {
+  snapshotCache = null;
+  inboxCache = null;
+}
 import {
   parseJsonBody,
   readBody,
@@ -658,14 +663,16 @@ export async function handleDirectiveUiApiRequest(input: {
       reviewedBy?: string;
       resolvedConfidence?: "high" | "medium" | "low";
     }>(await readBody(req));
-    writeJson(res, 200, await runtimeHost.writeRuntimeHostSelectionResolution({
+    const result = await runtimeHost.writeRuntimeHostSelectionResolution({
       promotionReadinessPath: payload.promotionReadinessPath,
       decision: payload.decision,
       selectedHost: payload.selectedHost ?? "",
       rationale: payload.rationale,
       reviewedBy: payload.reviewedBy ?? uiOperatorActor,
       resolvedConfidence: payload.resolvedConfidence,
-    }));
+    });
+    invalidateReadModelCaches();
+    writeJson(res, 200, result);
     return true;
   }
   if (method === "POST" && pathname === "/api/runtime/promotion-seam-decisions") {
@@ -674,11 +681,13 @@ export async function handleDirectiveUiApiRequest(input: {
       rationale: string;
       approvedBy?: string;
     }>(await readBody(req));
-    writeJson(res, 200, await runtimeHost.writeRuntimePromotionSeamDecision({
+    const result = await runtimeHost.writeRuntimePromotionSeamDecision({
       promotionReadinessPath: payload.promotionReadinessPath,
       rationale: payload.rationale,
       approvedBy: payload.approvedBy ?? uiOperatorActor,
-    }));
+    });
+    invalidateReadModelCaches();
+    writeJson(res, 200, result);
     return true;
   }
   if (method === "POST" && pathname === "/api/runtime/registry-acceptance-decisions") {
@@ -687,11 +696,13 @@ export async function handleDirectiveUiApiRequest(input: {
       rationale: string;
       acceptedBy?: string;
     }>(await readBody(req));
-    writeJson(res, 200, await runtimeHost.writeRuntimeRegistryAcceptanceDecision({
+    const result = await runtimeHost.writeRuntimeRegistryAcceptanceDecision({
       promotionRecordPath: payload.promotionRecordPath,
       rationale: payload.rationale,
       acceptedBy: payload.acceptedBy ?? uiOperatorActor,
-    }));
+    });
+    invalidateReadModelCaches();
+    writeJson(res, 200, result);
     return true;
   }
   if (method === "POST" && pathname === "/api/runtime/capabilities/invoke") {
