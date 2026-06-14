@@ -40,6 +40,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
  * Default directive root. Override with --root <path>.
  */
 const DEFAULT_ROOT = "C:/Users/User/AppData/Local/hermes/directive-root/directive-root";
+const TEMP_ROOT = (process.env.TEMP || "/tmp").replace(/\\/g, "/");
 
 // ── Harness test manifests ─────────────────────────────────────────
 // Maps capability IDs to the CLI command that proves they work.
@@ -84,7 +85,72 @@ const TEST_SPECS: Record<string, HarnessTestSpec> = {
     }],
   },
   "pipe-scrapling-adaptive-web-scraper-mq9mmrc0": {
-    command: 'C:/Python314/python -c "import scrapling; print(scrapling.__version__)"',
+    command: `C:/Python314/python ${TEMP_ROOT}/dk-scrapling-smoke.py ${TEMP_ROOT}/dk-scrapling-smoke.html`,
+    setup: (tmpDir: string) => {
+      const normalizedTmp = tmpDir.replace(/\\/g, "/");
+      const fixturePath = path.join(tmpDir, "dk-scrapling-smoke.html");
+      const helperPath = path.join(tmpDir, "dk-scrapling-smoke.py");
+      fs.writeFileSync(
+        fixturePath,
+        [
+          "<html><head><title>Hermes Scrapling Smoke</title></head><body>",
+          "<h1>Hermes Scrapling Smoke</h1>",
+          "<p class=\"summary\">Local extraction proof.</p>",
+          "<a href=\"https://example.com\">Example</a>",
+          "</body></html>",
+        ].join(""),
+        "utf8",
+      );
+      fs.writeFileSync(
+        helperPath,
+        [
+          "import json",
+          "import pathlib",
+          "import sys",
+          "from scrapling.parser import Adaptor",
+          "page = Adaptor(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))",
+          "heading = page.css('h1')[0].get_all_text(separator=' ', strip=True)",
+          "link = page.css('a[href]')[0]",
+          "result = {",
+          "  'ok': True,",
+          "  'sourceType': 'sourcePath',",
+          "  'fields': {'heading': heading},",
+          "  'warnings': [],",
+          "  'links': [{'text': link.get_all_text(separator=' ', strip=True), 'href': link.attrib.get('href')}],",
+          "}",
+          "print(json.dumps(result))",
+          "",
+        ].join("\n"),
+        "utf8",
+      );
+      if (normalizedTmp !== TEMP_ROOT) {
+        throw new Error(`Harness temp root mismatch: ${normalizedTmp} !== ${TEMP_ROOT}`);
+      }
+    },
+    examples: [{
+      name: "extract-local-html",
+      input: {
+        sourcePath: `${TEMP_ROOT}/dk-scrapling-smoke.html`,
+        selectors: { heading: "h1" },
+        includeLinks: true,
+      },
+      assert: ({ stdout, exitCode }) => {
+        if (exitCode !== 0) return false;
+        try {
+          const parsed = JSON.parse(stdout) as {
+            ok?: boolean;
+            fields?: { heading?: string };
+            links?: Array<{ href?: string }>;
+          };
+          return parsed.ok === true
+            && typeof parsed.fields?.heading === "string"
+            && parsed.fields.heading.includes("Hermes Scrapling Smoke")
+            && parsed.links?.some((link) => link.href === "https://example.com") === true;
+        } catch {
+          return false;
+        }
+      },
+    }],
   },
   "pipe-bb-browser-authenticated-chrome-control-mq9mnns2": {
     command: 'bb-browser --version 2>&1 || echo "installed"',
@@ -199,6 +265,10 @@ async function main() {
     input: example.input,
     passed: example.assert({ stdout, stderr, exitCode }),
   }));
+  if (exitCode === 0 && exampleResults?.some((example) => !example.passed)) {
+    stderr = `${stderr}${stderr ? "\n" : ""}Contract example assertion failed.`;
+    exitCode = 1;
+  }
 
   // Build unsigned evidence
   const unsigned: Omit<ExecutionEvidence, "signature"> = {

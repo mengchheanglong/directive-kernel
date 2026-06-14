@@ -546,4 +546,68 @@ describe("capability recall projection gates", () => {
       expect(result.results[0]?.notUsableReason).toBeUndefined();
     });
   });
+
+  it("default recall surfaces Scrapling for static HTML extraction", async () => {
+    await withTempRootAsync(async () => {
+      writeSchema("shared/schemas/scrapling-extract-input.schema.json", {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          html: { type: "string" },
+          sourcePath: { type: "string" },
+          selectors: { type: "object", additionalProperties: { type: "string" } },
+          includeText: { type: "boolean" },
+          includeLinks: { type: "boolean" },
+        },
+        oneOf: [{ required: ["html"] }, { required: ["sourcePath"] }],
+      });
+      writeSchema("shared/schemas/scrapling-extract-output.schema.json", {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        required: ["ok"],
+        properties: { ok: { type: "boolean" } },
+      });
+      writeCapability("pipe-scrapling-adaptive-web-scraper-mq9mmrc0", {
+        displayName: "Scrapling Adaptive Web Scraper",
+        description: "Extract structured fields, text, and links from static HTML using Scrapling.",
+        domain: "runtime",
+        verification: "verified",
+        inputSchema: "shared/schemas/scrapling-extract-input.schema.json",
+        outputSchema: "shared/schemas/scrapling-extract-output.schema.json",
+        verify: {
+          command: "C:/Python314/python C:/tmp/dk-scrapling-smoke.py C:/tmp/dk-scrapling-smoke.html",
+          assertions: [{ type: "regex", value: "Hermes Scrapling Smoke" }],
+          timeoutMs: 30000,
+        },
+        examples: [{
+          name: "extract-local-html",
+          input: { html: "<h1>Hermes Scrapling Smoke</h1>", selectors: { heading: "h1" } },
+          expectedOutput: { ok: true, sourceType: "html", fields: { heading: "Hermes Scrapling Smoke" }, warnings: [] },
+          match: { invariantFields: ["ok", "sourceType", "fields", "warnings"] },
+        }],
+        whenToUse: "Use when Hermes needs structured extraction from static HTML or saved local HTML files.",
+        failureModes: ["Missing Scrapling install", "Timeout", "URL fetching is not supported in S1"],
+        projection: {
+          kind: "mcp_tool",
+          id: "scrapling",
+          invocation: "cap_pipe-scrapling-adaptive-web-scraper-mq9mmrc0",
+        },
+      });
+      writeSignedEvidence("pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
+
+      vi.resetModules();
+      const { buildCapabilityRecallExecutors } = await import("../../hosts/mcp-host/executors/capability-recall.ts");
+      const executors = buildCapabilityRecallExecutors({ directiveRoot: tmpDir });
+      const result = await executors.find_capability({ query: "static html extraction fields links" }) as {
+        ok: boolean;
+        results: Array<{ capabilityId: string; projectionReady: boolean; entryClass: string; notUsableReason?: string }>;
+      };
+      expect(result.ok).toBe(true);
+      expect(result.results[0]?.capabilityId).toBe("pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
+      expect(result.results[0]?.projectionReady).toBe(true);
+      expect(result.results[0]?.entryClass).toBe("verified_capability");
+      expect(result.results[0]?.notUsableReason).toBeUndefined();
+    });
+  });
 });

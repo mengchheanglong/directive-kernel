@@ -31,9 +31,9 @@ describe("listRuntimeCapabilityMetadata", () => {
     expect(manifest?.domain).toBe("runtime");
   });
 
-  it("returns all 4 capability metadata entries", () => {
+  it("returns all 5 capability metadata entries", () => {
     const capabilities = listRuntimeCapabilityMetadata();
-    expect(capabilities.length).toBe(4);
+    expect(capabilities.length).toBe(5);
   });
 
   it("IDs match the existing capability folders", () => {
@@ -43,6 +43,7 @@ describe("listRuntimeCapabilityMetadata", () => {
     expect(ids).toContain("literature-access");
     expect(ids).toContain("research-vault-source-pack");
     expect(ids).toContain("pipe-microsoft-markitdown-mq9jdf6o");
+    expect(ids).toContain("pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
   });
 
   it("entries are sorted by id", () => {
@@ -133,7 +134,10 @@ describe("metadata exposes Jarvis fields for shipped capabilities", () => {
     const capabilities = listRuntimeCapabilityMetadata();
     for (const cap of capabilities) {
       expect(["placeholder", "candidate", "verified_capability"]).toContain(cap.entryClass);
-      if (cap.id !== "pipe-microsoft-markitdown-mq9jdf6o") {
+      if (
+        cap.id !== "pipe-microsoft-markitdown-mq9jdf6o"
+        && cap.id !== "pipe-scrapling-adaptive-web-scraper-mq9mmrc0"
+      ) {
         expect(cap.projectionReady).toBe(false);
       }
     }

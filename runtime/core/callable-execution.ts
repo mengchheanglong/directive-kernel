@@ -14,6 +14,9 @@ import {
 import {
   createMarkItDownCallableCapability,
 } from "../capabilities/pipe-microsoft-markitdown-mq9jdf6o/index.ts";
+import {
+  createScraplingCallableCapability,
+} from "../capabilities/pipe-scrapling-adaptive-web-scraper-mq9mmrc0/index.ts";
 import type {
   CallableCapability,
   CallableExecutionResult,
@@ -28,6 +31,8 @@ const CODE_NORMALIZER_CAPABILITY_ID = "dw-transform-code-normalizer";
 const RESEARCH_VAULT_SOURCE_PACK_CAPABILITY_ID =
   "research-engine-web-aakashsharan-com-research-va-20260407t052643z-20260407t052702";
 const MICROSOFT_MARKITDOWN_CAPABILITY_ID = "pipe-microsoft-markitdown-mq9jdf6o";
+const SCRAPLING_ADAPTIVE_WEB_SCRAPER_CAPABILITY_ID =
+  "pipe-scrapling-adaptive-web-scraper-mq9mmrc0";
 
 const KNOWN_CALLABLE_CAPABILITIES = {
   [SCIENTIFY_LITERATURE_ACCESS_CAPABILITY_ID]:
@@ -38,6 +43,8 @@ const KNOWN_CALLABLE_CAPABILITIES = {
     createResearchVaultSourcePackCallableCapability,
   [MICROSOFT_MARKITDOWN_CAPABILITY_ID]:
     createMarkItDownCallableCapability,
+  [SCRAPLING_ADAPTIVE_WEB_SCRAPER_CAPABILITY_ID]:
+    createScraplingCallableCapability,
 } satisfies Record<string, () => CallableCapability>;
 
 export type RuntimeCallableCapabilityId =

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/scrapling-extract-input.schema.json",
+  "title": "Scrapling HTML Extraction Input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "html": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Inline static HTML content to parse with Scrapling."
+    },
+    "sourcePath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Absolute or relative path to a local HTML file to parse with Scrapling."
+    },
+    "selectors": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Named CSS selectors to extract from the HTML."
+    },
+    "includeText": {
+      "type": "boolean",
+      "description": "Whether to include full-page extracted text."
+    },
+    "includeLinks": {
+      "type": "boolean",
+      "description": "Whether to include anchor text and href values from local/static HTML."
+    },
+    "timeoutMs": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 45000,
+      "description": "Optional execution timeout in milliseconds, clamped by the runtime executor."
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["html"],
+      "not": {
+        "required": ["sourcePath"]
+      }
+    },
+    {
+      "required": ["sourcePath"],
+      "not": {
+        "required": ["html"]
+      }
+    }
+  ]
+}

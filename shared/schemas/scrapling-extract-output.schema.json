@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shared/schemas/scrapling-extract-output.schema.json",
+  "title": "Scrapling HTML Extraction Output",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "ok",
+    "tool",
+    "status",
+    "result",
+    "metadata"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "tool": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "result": {},
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "if": {
+    "properties": {
+      "ok": {
+        "const": true
+      }
+    },
+    "required": ["ok"]
+  },
+  "then": {
+    "properties": {
+      "result": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ok",
+          "sourceType",
+          "fields",
+          "warnings"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": ["html", "sourcePath"]
+          },
+          "sourcePath": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text", "href"],
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

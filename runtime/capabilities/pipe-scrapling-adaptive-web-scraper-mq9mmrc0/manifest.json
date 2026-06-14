@@ -1,0 +1,65 @@
+{
+  "displayName": "Scrapling Adaptive Web Scraper",
+  "description": "Extract structured fields, text, and links from local/static HTML using Scrapling's parser for Hermes research and source operationalization workflows.",
+  "domain": "runtime",
+  "verification": "verified",
+  "inputSchema": "shared/schemas/scrapling-extract-input.schema.json",
+  "outputSchema": "shared/schemas/scrapling-extract-output.schema.json",
+  "verify": {
+    "command": "C:/Python314/python -c \"from scrapling.parser import Adaptor; page=Adaptor('<h1>Hermes Scrapling Smoke</h1>'); print(page.css('h1')[0].get_all_text(separator=' ', strip=True))\"",
+    "assertions": [
+      {
+        "type": "regex",
+        "value": "Hermes Scrapling Smoke"
+      }
+    ],
+    "timeoutMs": 30000
+  },
+  "examples": [
+    {
+      "name": "extract-inline-html",
+      "input": {
+        "html": "<html><head><title>Hermes Scrapling Smoke</title></head><body><h1>Hermes Scrapling Smoke</h1><p class=\"summary\">Local parser proof.</p><a href=\"https://example.com\">Example</a></body></html>",
+        "selectors": {
+          "heading": "h1",
+          "summary": "p.summary"
+        },
+        "includeText": true,
+        "includeLinks": true
+      },
+      "expectedOutput": {
+        "ok": true,
+        "sourceType": "html",
+        "fields": {
+          "heading": "Hermes Scrapling Smoke",
+          "summary": "Local parser proof."
+        },
+        "warnings": []
+      },
+      "match": {
+        "invariantFields": [
+          "ok",
+          "sourceType",
+          "fields",
+          "warnings"
+        ]
+      }
+    }
+  ],
+  "whenToUse": "Use when Hermes has static HTML or a saved local HTML file and needs structured extraction of fields, text, or links before research summarization or source operationalization.",
+  "failureModes": [
+    "Scrapling is not installed in the configured Python environment.",
+    "The sourcePath does not exist or is not readable.",
+    "The HTML is malformed or selectors match no nodes.",
+    "URL fetching is requested; S1 intentionally does not support network fetches.",
+    "The extraction exceeds the bounded timeout."
+  ],
+  "projection": {
+    "kind": "mcp_tool",
+    "id": "scrapling",
+    "invocation": "cap_pipe-scrapling-adaptive-web-scraper-mq9mmrc0",
+    "inputContract": "shared/schemas/scrapling-extract-input.schema.json",
+    "outputContract": "shared/schemas/scrapling-extract-output.schema.json"
+  },
+  "verificationEvidence": "runtime/callable-executions/pipe-scrapling-adaptive-web-scraper-mq9mmrc0-execution.json"
+}

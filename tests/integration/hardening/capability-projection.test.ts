@@ -279,4 +279,200 @@ describe("dynamic MCP tool projection", () => {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
   });
+
+  it("projects Scrapling only when signed evidence and complete metadata exist", () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dk-scrapling-projection-"));
+    const restore = process.cwd;
+
+    try {
+      process.cwd = () => tempRoot;
+      const capRoot = path.join(tempRoot, "runtime", "capabilities", "pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
+      fs.mkdirSync(capRoot, { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, "runtime", "callable-executions"), { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, "shared", "schemas"), { recursive: true });
+
+      fs.writeFileSync(path.join(capRoot, "manifest.json"), JSON.stringify({
+        displayName: "Scrapling Adaptive Web Scraper",
+        description: "Extract structured fields, text, and links from static HTML.",
+        domain: "runtime",
+        verification: "verified",
+        inputSchema: "shared/schemas/scrapling-extract-input.schema.json",
+        outputSchema: "shared/schemas/scrapling-extract-output.schema.json",
+        verify: {
+          command: "C:/Python314/python C:/tmp/dk-scrapling-smoke.py C:/tmp/dk-scrapling-smoke.html",
+          assertions: [{ type: "regex", value: "Hermes Scrapling Smoke" }],
+          timeoutMs: 30000,
+        },
+        examples: [{
+          name: "extract-local-html",
+          input: { html: "<h1>Hermes Scrapling Smoke</h1>", selectors: { heading: "h1" } },
+          expectedOutput: { ok: true, sourceType: "html", fields: { heading: "Hermes Scrapling Smoke" }, warnings: [] },
+          match: { invariantFields: ["ok", "sourceType", "fields", "warnings"] },
+        }],
+        whenToUse: "Use when Hermes needs structured extraction from static HTML or saved local HTML files.",
+        failureModes: ["Timeout", "URL fetching is not supported in S1"],
+        projection: {
+          kind: "mcp_tool",
+          id: "scrapling",
+          invocation: "cap_pipe-scrapling-adaptive-web-scraper-mq9mmrc0",
+        },
+      }, null, 2), "utf8");
+      fs.writeFileSync(path.join(capRoot, "index.ts"), "export {};\n", "utf8");
+      fs.writeFileSync(path.join(capRoot, "executor.ts"), "export {};\n", "utf8");
+
+      fs.writeFileSync(path.join(tempRoot, "shared", "schemas", "scrapling-extract-input.schema.json"), JSON.stringify({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          html: { type: "string" },
+          sourcePath: { type: "string" },
+          selectors: { type: "object", additionalProperties: { type: "string" } },
+          includeText: { type: "boolean" },
+          includeLinks: { type: "boolean" },
+        },
+        oneOf: [{ required: ["html"] }, { required: ["sourcePath"] }],
+      }, null, 2), "utf8");
+      fs.writeFileSync(path.join(tempRoot, "shared", "schemas", "scrapling-extract-output.schema.json"), JSON.stringify({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        required: ["ok"],
+        properties: { ok: { type: "boolean" } },
+      }, null, 2), "utf8");
+
+      expect(getProjectedCapabilityIds(tempRoot)).not.toContain("pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
+
+      const evidence = attachHarnessSignature({
+        schemaVersion: 1,
+        capabilityId: "pipe-scrapling-adaptive-web-scraper-mq9mmrc0",
+        command: "C:/Python314/python C:/tmp/dk-scrapling-smoke.py C:/tmp/dk-scrapling-smoke.html",
+        exitCode: 0,
+        stdoutHash: "stdout-hash",
+        stderrHash: "stderr-hash",
+        wallTimeMs: 321,
+        environmentFingerprint: "win32-x64-v24.14.0",
+        timestamp: new Date().toISOString(),
+        harnessVersion: "1.0.0",
+        contractVerification: "full",
+        examples: [{
+          name: "extract-local-html",
+          input: { sourcePath: "C:/tmp/dk-scrapling-smoke.html" },
+          passed: true,
+        }],
+      });
+      fs.writeFileSync(
+        path.join(tempRoot, "runtime", "callable-executions", "pipe-scrapling-adaptive-web-scraper-mq9mmrc0-execution.json"),
+        JSON.stringify(evidence, null, 2),
+        "utf8",
+      );
+
+      const projectedIds = getProjectedCapabilityIds(tempRoot);
+      expect(projectedIds).toContain("pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
+
+      const { tools } = buildProjectedCapabilityTools({ directiveRoot: tempRoot });
+      expect(tools.map((tool) => tool.name)).toContain("cap_pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
+    } finally {
+      process.cwd = restore;
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("Scrapling projected tool rejects URL input with contract_failure", async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dk-scrapling-projection-"));
+    const restore = process.cwd;
+
+    try {
+      process.cwd = () => tempRoot;
+      const capRoot = path.join(tempRoot, "runtime", "capabilities", "pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
+      fs.mkdirSync(capRoot, { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, "runtime", "callable-executions"), { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, "shared", "schemas"), { recursive: true });
+
+      fs.writeFileSync(path.join(capRoot, "manifest.json"), JSON.stringify({
+        displayName: "Scrapling Adaptive Web Scraper",
+        description: "Extract structured fields, text, and links from static HTML.",
+        domain: "runtime",
+        verification: "verified",
+        inputSchema: "shared/schemas/scrapling-extract-input.schema.json",
+        outputSchema: "shared/schemas/scrapling-extract-output.schema.json",
+        verify: {
+          command: "C:/Python314/python C:/tmp/dk-scrapling-smoke.py C:/tmp/dk-scrapling-smoke.html",
+          assertions: [{ type: "regex", value: "Hermes Scrapling Smoke" }],
+          timeoutMs: 30000,
+        },
+        examples: [{
+          name: "extract-local-html",
+          input: { html: "<h1>Hermes Scrapling Smoke</h1>", selectors: { heading: "h1" } },
+          expectedOutput: { ok: true, sourceType: "html", fields: { heading: "Hermes Scrapling Smoke" }, warnings: [] },
+          match: { invariantFields: ["ok", "sourceType", "fields", "warnings"] },
+        }],
+        whenToUse: "Use when Hermes needs structured extraction from static HTML or saved local HTML files.",
+        failureModes: ["Timeout", "URL fetching is not supported in S1"],
+        projection: {
+          kind: "mcp_tool",
+          id: "scrapling",
+          invocation: "cap_pipe-scrapling-adaptive-web-scraper-mq9mmrc0",
+        },
+      }, null, 2), "utf8");
+      fs.writeFileSync(path.join(capRoot, "index.ts"), "export {};\n", "utf8");
+      fs.writeFileSync(path.join(capRoot, "executor.ts"), "export {};\n", "utf8");
+
+      fs.writeFileSync(path.join(tempRoot, "shared", "schemas", "scrapling-extract-input.schema.json"), JSON.stringify({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          html: { type: "string" },
+          sourcePath: { type: "string" },
+          selectors: { type: "object", additionalProperties: { type: "string" } },
+          includeText: { type: "boolean" },
+          includeLinks: { type: "boolean" },
+        },
+        oneOf: [{ required: ["html"] }, { required: ["sourcePath"] }],
+      }, null, 2), "utf8");
+      fs.writeFileSync(path.join(tempRoot, "shared", "schemas", "scrapling-extract-output.schema.json"), JSON.stringify({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        required: ["ok"],
+        properties: { ok: { type: "boolean" } },
+      }, null, 2), "utf8");
+
+      const evidence = attachHarnessSignature({
+        schemaVersion: 1,
+        capabilityId: "pipe-scrapling-adaptive-web-scraper-mq9mmrc0",
+        command: "C:/Python314/python C:/tmp/dk-scrapling-smoke.py C:/tmp/dk-scrapling-smoke.html",
+        exitCode: 0,
+        stdoutHash: "stdout-hash",
+        stderrHash: "stderr-hash",
+        wallTimeMs: 321,
+        environmentFingerprint: "win32-x64-v24.14.0",
+        timestamp: new Date().toISOString(),
+        harnessVersion: "1.0.0",
+        contractVerification: "full",
+        examples: [{
+          name: "extract-local-html",
+          input: { sourcePath: "C:/tmp/dk-scrapling-smoke.html" },
+          passed: true,
+        }],
+      });
+      fs.writeFileSync(
+        path.join(tempRoot, "runtime", "callable-executions", "pipe-scrapling-adaptive-web-scraper-mq9mmrc0-execution.json"),
+        JSON.stringify(evidence, null, 2),
+        "utf8",
+      );
+
+      const { tools } = buildProjectedCapabilityTools({ directiveRoot: tempRoot });
+      const projectedTool = tools.find((tool) => tool.name === "cap_pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
+      expect(projectedTool).toBeDefined();
+
+      const result = await projectedTool!.execute({ url: "https://example.com" });
+      expect(result).toMatchObject({
+        ok: false,
+        gate: "contract_failure",
+      });
+    } finally {
+      process.cwd = restore;
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
 });
