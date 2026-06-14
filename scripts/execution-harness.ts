@@ -107,17 +107,38 @@ const TEST_SPECS: Record<string, HarnessTestSpec> = {
           "import json",
           "import pathlib",
           "import sys",
+          "from curl_cffi import requests",
           "from scrapling.parser import Adaptor",
-          "page = Adaptor(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))",
-          "heading = page.css('h1')[0].get_all_text(separator=' ', strip=True)",
-          "link = page.css('a[href]')[0]",
-          "result = {",
+          "local_page = Adaptor(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))",
+          "local_heading = local_page.css('h1')[0].get_all_text(separator=' ', strip=True)",
+          "local_link = local_page.css('a[href]')[0]",
+          "with requests.Session(trust_env=False, allow_redirects=False, proxies={}, default_headers=False, discard_cookies=True) as session:",
+          "    response = session.get(",
+          "      'https://example.com',",
+          "      timeout=10,",
+          "      allow_redirects=False,",
+          "      max_redirects=0,",
+          "      proxies={},",
+          "      default_headers=False,",
+          "      discard_cookies=True,",
+          "    )",
+          "if response.status_code >= 400:",
+          "    raise RuntimeError(f'URL fetch failed with HTTP status {response.status_code}')",
+          "url_page = Adaptor(response.text)",
+          "url_heading = url_page.css('h1')[0].get_all_text(separator=' ', strip=True)",
+          "result = {'local': {",
           "  'ok': True,",
           "  'sourceType': 'sourcePath',",
-          "  'fields': {'heading': heading},",
+          "  'fields': {'heading': local_heading},",
           "  'warnings': [],",
-          "  'links': [{'text': link.get_all_text(separator=' ', strip=True), 'href': link.attrib.get('href')}],",
-          "}",
+          "  'links': [{'text': local_link.get_all_text(separator=' ', strip=True), 'href': local_link.attrib.get('href')}],",
+          "}, 'publicUrl': {",
+          "  'ok': True,",
+          "  'sourceType': 'url',",
+          "  'sourceUrl': 'https://example.com/',",
+          "  'fields': {'heading': url_heading},",
+          "  'warnings': [],",
+          "}}",
           "print(json.dumps(result))",
           "",
         ].join("\n"),
@@ -138,14 +159,41 @@ const TEST_SPECS: Record<string, HarnessTestSpec> = {
         if (exitCode !== 0) return false;
         try {
           const parsed = JSON.parse(stdout) as {
-            ok?: boolean;
-            fields?: { heading?: string };
-            links?: Array<{ href?: string }>;
+            local?: {
+              ok?: boolean;
+              fields?: { heading?: string };
+              links?: Array<{ href?: string }>;
+            };
           };
-          return parsed.ok === true
-            && typeof parsed.fields?.heading === "string"
-            && parsed.fields.heading.includes("Hermes Scrapling Smoke")
-            && parsed.links?.some((link) => link.href === "https://example.com") === true;
+          return parsed.local?.ok === true
+            && typeof parsed.local.fields?.heading === "string"
+            && parsed.local.fields.heading.includes("Hermes Scrapling Smoke")
+            && parsed.local.links?.some((link) => link.href === "https://example.com") === true;
+        } catch {
+          return false;
+        }
+      },
+    }, {
+      name: "extract-safe-public-url",
+      input: {
+        url: "https://example.com",
+        selectors: { heading: "h1" },
+      },
+      assert: ({ stdout, exitCode }) => {
+        if (exitCode !== 0) return false;
+        try {
+          const parsed = JSON.parse(stdout) as {
+            publicUrl?: {
+              ok?: boolean;
+              sourceType?: string;
+              sourceUrl?: string;
+              fields?: { heading?: string };
+            };
+          };
+          return parsed.publicUrl?.ok === true
+            && parsed.publicUrl.sourceType === "url"
+            && parsed.publicUrl.sourceUrl === "https://example.com/"
+            && parsed.publicUrl.fields?.heading === "Example Domain";
         } catch {
           return false;
         }

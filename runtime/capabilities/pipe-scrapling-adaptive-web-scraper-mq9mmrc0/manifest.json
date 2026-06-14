@@ -1,6 +1,6 @@
 {
   "displayName": "Scrapling Adaptive Web Scraper",
-  "description": "Extract structured fields, text, and links from local/static HTML using Scrapling's parser for Hermes research and source operationalization workflows.",
+  "description": "Extract structured fields, text, and links from inline HTML, saved local HTML, or safe public http/https URLs using bounded curl_cffi fetching plus Scrapling parsing for Hermes research and source operationalization workflows.",
   "domain": "runtime",
   "verification": "verified",
   "inputSchema": "shared/schemas/scrapling-extract-input.schema.json",
@@ -46,12 +46,14 @@
       }
     }
   ],
-  "whenToUse": "Use when Hermes has static HTML or a saved local HTML file and needs structured extraction of fields, text, or links before research summarization or source operationalization.",
+  "whenToUse": "Use when Hermes has inline HTML, a saved local HTML file, or a safe public http/https URL and needs structured extraction of fields, text, or links before research summarization or source operationalization.",
   "failureModes": [
     "Scrapling is not installed in the configured Python environment.",
+    "curl_cffi is missing in the configured durable Python environment for URL input.",
     "The sourcePath does not exist or is not readable.",
+    "The URL is malformed, non-http/https, credentialed, localhost, loopback, private, link-local, or otherwise unsafe.",
+    "The public URL fetch fails or exceeds the bounded URL timeout.",
     "The HTML is malformed or selectors match no nodes.",
-    "URL fetching is requested; S1 intentionally does not support network fetches.",
     "The extraction exceeds the bounded timeout."
   ],
   "projection": {

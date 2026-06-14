@@ -51,10 +51,14 @@
           },
           "sourceType": {
             "type": "string",
-            "enum": ["html", "sourcePath"]
+            "enum": ["html", "sourcePath", "url"]
           },
           "sourcePath": {
             "type": "string"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri"
           },
           "title": {
             "type": "string"

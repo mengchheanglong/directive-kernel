@@ -377,7 +377,7 @@ describe("dynamic MCP tool projection", () => {
     }
   });
 
-  it("Scrapling projected tool rejects URL input with contract_failure", async () => {
+  it("Scrapling projected tool rejects unsafe URL input with validation error", async () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dk-scrapling-projection-"));
     const restore = process.cwd;
 
@@ -390,7 +390,7 @@ describe("dynamic MCP tool projection", () => {
 
       fs.writeFileSync(path.join(capRoot, "manifest.json"), JSON.stringify({
         displayName: "Scrapling Adaptive Web Scraper",
-        description: "Extract structured fields, text, and links from static HTML.",
+        description: "Extract structured fields, text, and links from static HTML or safe public URLs using curl_cffi fetch plus Scrapling parse.",
         domain: "runtime",
         verification: "verified",
         inputSchema: "shared/schemas/scrapling-extract-input.schema.json",
@@ -406,8 +406,8 @@ describe("dynamic MCP tool projection", () => {
           expectedOutput: { ok: true, sourceType: "html", fields: { heading: "Hermes Scrapling Smoke" }, warnings: [] },
           match: { invariantFields: ["ok", "sourceType", "fields", "warnings"] },
         }],
-        whenToUse: "Use when Hermes needs structured extraction from static HTML or saved local HTML files.",
-        failureModes: ["Timeout", "URL fetching is not supported in S1"],
+        whenToUse: "Use when Hermes needs structured extraction from static HTML, saved local HTML files, or safe public URLs.",
+        failureModes: ["Timeout", "Unsafe URL rejected", "Missing curl_cffi"],
         projection: {
           kind: "mcp_tool",
           id: "scrapling",
@@ -424,11 +424,12 @@ describe("dynamic MCP tool projection", () => {
         properties: {
           html: { type: "string" },
           sourcePath: { type: "string" },
+          url: { type: "string" },
           selectors: { type: "object", additionalProperties: { type: "string" } },
           includeText: { type: "boolean" },
           includeLinks: { type: "boolean" },
         },
-        oneOf: [{ required: ["html"] }, { required: ["sourcePath"] }],
+        oneOf: [{ required: ["html"] }, { required: ["sourcePath"] }, { required: ["url"] }],
       }, null, 2), "utf8");
       fs.writeFileSync(path.join(tempRoot, "shared", "schemas", "scrapling-extract-output.schema.json"), JSON.stringify({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -465,11 +466,12 @@ describe("dynamic MCP tool projection", () => {
       const projectedTool = tools.find((tool) => tool.name === "cap_pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
       expect(projectedTool).toBeDefined();
 
-      const result = await projectedTool!.execute({ url: "https://example.com" });
+      const result = await projectedTool!.execute({ url: "http://localhost/" });
       expect(result).toMatchObject({
-        ok: false,
-        gate: "contract_failure",
+        ok: true,
+        status: "validation_error",
       });
+      expect(String((result as { result?: unknown }).result)).toContain("localhost");
     } finally {
       process.cwd = restore;
       fs.rmSync(tempRoot, { recursive: true, force: true });

@@ -556,11 +556,12 @@ describe("capability recall projection gates", () => {
         properties: {
           html: { type: "string" },
           sourcePath: { type: "string" },
+          url: { type: "string" },
           selectors: { type: "object", additionalProperties: { type: "string" } },
           includeText: { type: "boolean" },
           includeLinks: { type: "boolean" },
         },
-        oneOf: [{ required: ["html"] }, { required: ["sourcePath"] }],
+        oneOf: [{ required: ["html"] }, { required: ["sourcePath"] }, { required: ["url"] }],
       });
       writeSchema("shared/schemas/scrapling-extract-output.schema.json", {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -570,7 +571,7 @@ describe("capability recall projection gates", () => {
       });
       writeCapability("pipe-scrapling-adaptive-web-scraper-mq9mmrc0", {
         displayName: "Scrapling Adaptive Web Scraper",
-        description: "Extract structured fields, text, and links from static HTML using Scrapling.",
+        description: "Extract structured fields, text, and links from static HTML or safe public URLs using curl_cffi fetch plus Scrapling parse.",
         domain: "runtime",
         verification: "verified",
         inputSchema: "shared/schemas/scrapling-extract-input.schema.json",
@@ -586,8 +587,8 @@ describe("capability recall projection gates", () => {
           expectedOutput: { ok: true, sourceType: "html", fields: { heading: "Hermes Scrapling Smoke" }, warnings: [] },
           match: { invariantFields: ["ok", "sourceType", "fields", "warnings"] },
         }],
-        whenToUse: "Use when Hermes needs structured extraction from static HTML or saved local HTML files.",
-        failureModes: ["Missing Scrapling install", "Timeout", "URL fetching is not supported in S1"],
+        whenToUse: "Use when Hermes needs structured extraction from static HTML, saved local HTML files, or safe public URLs.",
+        failureModes: ["Missing Scrapling install", "Missing curl_cffi for URL input", "Unsafe URL rejected", "Timeout"],
         projection: {
           kind: "mcp_tool",
           id: "scrapling",
