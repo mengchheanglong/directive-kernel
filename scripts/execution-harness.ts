@@ -218,6 +218,65 @@ const TEST_SPECS: Record<string, HarnessTestSpec> = {
   "pipe-daisyui-mq9fvayg": {
     command: 'echo "daisyUI — design tokens verified via dashboard component patterns"',
   },
+  "pipe-crawl4ai-mqdt9lfs": {
+    command: `C:/Python314/python ${TEMP_ROOT}/dk-crawl4ai-smoke.py`,
+    setup: (tmpDir: string) => {
+      const normalizedTmp = tmpDir.replace(/\\/g, "/");
+      const helperPath = path.join(tmpDir, "dk-crawl4ai-smoke.py");
+      fs.writeFileSync(
+        helperPath,
+        [
+          "import asyncio, json, sys",
+          "from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode",
+          "",
+          "async def main():",
+          "    config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS)",
+          "    async with AsyncWebCrawler() as crawler:",
+          "        result = await crawler.arun(url='https://example.com', config=config)",
+          "        if not result.success:",
+          "            print(json.dumps({'ok': False, 'error': 'Crawl failed', 'error_message': result.error_message}))",
+          "            return",
+          "        md = result.markdown or ''",
+          "        print(json.dumps({",
+          "            'ok': True,",
+          "            'url': result.url,",
+          "            'status_code': result.status_code,",
+          "            'markdown_length': len(md),",
+          "            'has_heading': 'Example Domain' in md,",
+          "        }))",
+          "",
+          "asyncio.run(main())",
+        ].join("\n"),
+        "utf8",
+      );
+      if (normalizedTmp !== TEMP_ROOT) {
+        throw new Error(`Harness temp root mismatch: ${normalizedTmp} !== ${TEMP_ROOT}`);
+      }
+    },
+    timeoutMs: 60_000,
+    examples: [{
+      name: "crawl-example-com",
+      input: { url: "https://example.com" },
+      assert: ({ stdout, exitCode }) => {
+        if (exitCode !== 0) return false;
+        try {
+          const parsed = JSON.parse(stdout) as {
+            ok?: boolean;
+            url?: string;
+            status_code?: number;
+            markdown_length?: number;
+            has_heading?: boolean;
+          };
+          return parsed.ok === true
+            && parsed.status_code === 200
+            && (parsed.markdown_length ?? 0) > 0
+            && parsed.has_heading === true;
+        } catch {
+          return false;
+        }
+      },
+    }],
+  },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────
