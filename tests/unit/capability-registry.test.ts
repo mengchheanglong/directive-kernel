@@ -31,17 +31,19 @@ describe("listRuntimeCapabilityMetadata", () => {
     expect(manifest?.domain).toBe("runtime");
   });
 
-  it("returns all 5 capability metadata entries", () => {
+  it("returns all 7 capability metadata entries", () => {
     const capabilities = listRuntimeCapabilityMetadata();
-    expect(capabilities.length).toBe(5);
+    expect(capabilities.length).toBe(7);
   });
 
   it("IDs match the existing capability folders", () => {
     const capabilities = listRuntimeCapabilityMetadata();
     const ids = capabilities.map((c) => c.id);
     expect(ids).toContain("code-normalizer");
+    expect(ids).toContain("dw-source-scientify-research-workflow-plugin-2026-03-27");
     expect(ids).toContain("literature-access");
     expect(ids).toContain("research-vault-source-pack");
+    expect(ids).toContain("pipe-crawl4ai-mqdt9lfs");
     expect(ids).toContain("pipe-microsoft-markitdown-mq9jdf6o");
     expect(ids).toContain("pipe-scrapling-adaptive-web-scraper-mq9mmrc0");
   });
@@ -137,6 +139,8 @@ describe("metadata exposes Jarvis fields for shipped capabilities", () => {
       if (
         cap.id !== "pipe-microsoft-markitdown-mq9jdf6o"
         && cap.id !== "pipe-scrapling-adaptive-web-scraper-mq9mmrc0"
+        && cap.id !== "pipe-crawl4ai-mqdt9lfs"
+        && cap.id !== "dw-source-scientify-research-workflow-plugin-2026-03-27"
       ) {
         expect(cap.projectionReady).toBe(false);
       }

@@ -67,6 +67,45 @@ function mapCallableFailure(rawResult: CallableExecutionResult): {
   return { outcome: "failure", errorClass: "callable_error" };
 }
 
+function selectCallableTool(input: {
+  capabilityId: string;
+  descriptorTools: readonly string[];
+  args: Record<string, unknown>;
+}): { ok: true; tool: string; invocationInput: Record<string, unknown> } | { ok: false; error: string } {
+  const [fallbackTool] = input.descriptorTools;
+  const requestedTool = input.args.tool;
+
+  if (typeof requestedTool === "string") {
+    if (!input.descriptorTools.includes(requestedTool)) {
+      return {
+        ok: false,
+        error: `Unknown tool "${requestedTool}" for capability "${input.capabilityId}".`,
+      };
+    }
+
+    const invocationInput = { ...input.args };
+    delete invocationInput.tool;
+    return {
+      ok: true,
+      tool: requestedTool,
+      invocationInput,
+    };
+  }
+
+  if (fallbackTool) {
+    return {
+      ok: true,
+      tool: fallbackTool,
+      invocationInput: input.args,
+    };
+  }
+
+  return {
+    ok: false,
+    error: `Capability "${input.capabilityId}" has no callable tools registered.`,
+  };
+}
+
 export function buildProjectedCapabilityTools(options: {
   directiveRoot: string;
 }): { tools: McpTool[]; executors: Record<string, ToolExecutor> } {
@@ -200,11 +239,44 @@ function buildProjectedExecutor(
         };
       }
 
+      const selectedTool = selectCallableTool({
+        capabilityId: capability.id,
+        descriptorTools: descriptor.tools,
+        args,
+      });
+
+      if (!selectedTool.ok) {
+        const recordedAt = new Date().toISOString();
+        appendDecisionPolicyEvent({
+          directiveRoot,
+          event: {
+            recordedAt,
+            source: "capability_invocation",
+            candidateId: capability.id,
+            rationale: `Capability "${capability.id}" tool selection failed: ${selectedTool.error}`,
+            sourceSignalTokens: buildInvocationTokens(capability.id, "contract_failure", ["tool_selection"]),
+            capabilityInvocation: {
+              outcome: "contract_failure",
+              gate: "contract_failure",
+              errorClass: "tool_selection",
+            },
+          },
+        });
+
+        return {
+          ok: false,
+          error: selectedTool.error,
+          capability_id: capability.id,
+          gate: "contract_failure",
+          projected: true,
+        };
+      }
+
       const execInput = {
         directiveRoot,
         capabilityId: capability.id,
-        tool: descriptor.tools.length > 0 ? descriptor.tools[0] : capability.id,
-        input: args,
+        tool: selectedTool.tool,
+        input: selectedTool.invocationInput,
         allowExternalFetches: true,
       };
 

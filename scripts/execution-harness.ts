@@ -277,6 +277,35 @@ const TEST_SPECS: Record<string, HarnessTestSpec> = {
       },
     }],
   },
+  "dw-source-scientify-research-workflow-plugin-2026-03-27": {
+    command: "npx tsx -e \"import { runDirectiveRuntimeCallableExecution } from './runtime/core/callable-execution.ts'; (async()=>{ const r=await runDirectiveRuntimeCallableExecution({directiveRoot:'C:/Users/User/AppData/Local/hermes/directive-root/directive-root', capabilityId:'dw-source-scientify-research-workflow-plugin-2026-03-27', tool:'openalex-search', input:{query:'agent memory', max_results:1}, timeoutMs:30000, allowExternalFetches:true, persistArtifacts:false}); const result=r.rawResult.result; console.log(JSON.stringify({rawOk:r.rawResult.ok,status:r.rawResult.status,tool:r.rawResult.tool,workCount:Array.isArray(result?.works)?result.works.length:0})); })();\"",
+    timeoutMs: 30_000,
+    examples: [{
+      name: "openalex-search-agent-memory",
+      input: {
+        tool: "openalex-search",
+        query: "agent memory",
+        max_results: 1,
+      },
+      assert: ({ stdout, exitCode }) => {
+        if (exitCode !== 0) return false;
+        try {
+          const parsed = JSON.parse(stdout) as {
+            rawOk?: boolean;
+            status?: string;
+            tool?: string;
+            workCount?: number;
+          };
+          return parsed.rawOk === true
+            && parsed.status === "success"
+            && parsed.tool === "openalex-search"
+            && (parsed.workCount ?? 0) > 0;
+        } catch {
+          return false;
+        }
+      },
+    }],
+  },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────

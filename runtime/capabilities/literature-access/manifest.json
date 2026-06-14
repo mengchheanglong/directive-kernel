@@ -1,6 +1,6 @@
 {
-  "displayName": "Literature Access",
-  "description": "Provides access to academic and technical literature through the Scientify research bundle.",
+  "displayName": "Literature Access Implementation Module",
+  "description": "Implementation module for the Scientify literature-access callable bundle. The projected Runtime capability is dw-source-scientify-research-workflow-plugin-2026-03-27; this placeholder is intentionally not projected as cap_literature-access.",
   "domain": "runtime",
   "inputSchema": "shared/schemas/literature-access-callable-input.schema.json",
   "outputSchema": "shared/schemas/literature-access-callable-output.schema.json",

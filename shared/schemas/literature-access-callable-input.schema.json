@@ -13,6 +13,7 @@
     },
     "query": {
       "type": "string",
+      "minLength": 1,
       "description": "Search query string"
     },
     "max_results": {
@@ -23,15 +24,19 @@
     "arxiv_ids": {
       "type": "array",
       "description": "arXiv paper IDs for download",
+      "minItems": 1,
       "items": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1
       }
     },
     "dois": {
       "type": "array",
       "description": "DOI identifiers for download",
+      "minItems": 1,
       "items": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1
       }
     },
     "output_dir": {
@@ -55,5 +60,35 @@
       "description": "Sort order"
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "tool": { "const": "arxiv-search" } },
+        "required": ["tool"]
+      },
+      "then": { "required": ["query"] }
+    },
+    {
+      "if": {
+        "properties": { "tool": { "const": "openalex-search" } },
+        "required": ["tool"]
+      },
+      "then": { "required": ["query"] }
+    },
+    {
+      "if": {
+        "properties": { "tool": { "const": "arxiv-download" } },
+        "required": ["tool"]
+      },
+      "then": { "required": ["arxiv_ids"] }
+    },
+    {
+      "if": {
+        "properties": { "tool": { "const": "unpaywall-download" } },
+        "required": ["tool"]
+      },
+      "then": { "required": ["dois"] }
+    }
+  ],
   "additionalProperties": false
 }

@@ -1,0 +1,53 @@
+{
+  "displayName": "Scientify Literature Access",
+  "description": "Search academic and technical literature through bounded arXiv/OpenAlex/Unpaywall runtime callables.",
+  "domain": "runtime",
+  "verification": "verified",
+  "inputSchema": "shared/schemas/literature-access-callable-input.schema.json",
+  "outputSchema": "shared/schemas/literature-access-callable-output.schema.json",
+  "verify": {
+    "command": "npx tsx scripts/execution-harness.ts dw-source-scientify-research-workflow-plugin-2026-03-27",
+    "assertions": [
+      {
+        "type": "regex",
+        "value": "VERIFIED"
+      }
+    ],
+    "timeoutMs": 30000
+  },
+  "examples": [
+    {
+      "name": "openalex-search-agent-memory",
+      "input": {
+        "tool": "openalex-search",
+        "query": "agent memory",
+        "max_results": 1
+      },
+      "expectedOutput": {
+        "ok": true,
+        "status": "success",
+        "tool": "openalex-search"
+      },
+      "match": {
+        "invariantFields": ["ok", "status", "tool"]
+      }
+    }
+  ],
+  "whenToUse": "Invoke when Hermes needs bounded academic or technical literature search/metadata from OpenAlex/arXiv/Unpaywall for research, source evaluation, or DK capability-candidate analysis.",
+  "failureModes": [
+    "The selected literature tool is unknown or unsupported.",
+    "The public literature provider is unreachable, rate-limited, or returns degraded data.",
+    "Required query/identifier fields are missing or invalid.",
+    "Download-oriented tools may fail when no open-access source is available.",
+    "The bounded timeout is exceeded.",
+    "The returned payload fails output schema validation."
+  ],
+  "projection": {
+    "kind": "mcp_tool",
+    "id": "scientify-literature-access",
+    "invocation": "cap_dw-source-scientify-research-workflow-plugin-2026-03-27",
+    "inputContract": "shared/schemas/literature-access-callable-input.schema.json",
+    "outputContract": "shared/schemas/literature-access-callable-output.schema.json"
+  },
+  "verificationEvidence": "runtime/callable-executions/dw-source-scientify-research-workflow-plugin-2026-03-27-execution.json"
+}

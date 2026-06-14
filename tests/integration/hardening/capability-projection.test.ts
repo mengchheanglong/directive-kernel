@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { readDecisionPolicyLedger } from "../../../engine/decision-policy-ledger.ts";
 import { buildProjectedCapabilityTools, getProjectedCapabilityIds } from "../../../hosts/mcp-host/executors/capability-projection.ts";
 import { listRuntimeCapabilityMetadata } from "../../../runtime/core/capability-registry.ts";
@@ -500,6 +500,170 @@ describe("dynamic MCP tool projection", () => {
       });
       expect(event?.capabilityInvocation?.outcome).not.toBe("success");
     } finally {
+      process.cwd = restore;
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("Literature Access projected tool selects args.tool and strips the selector before callable execution", async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dk-literature-projection-"));
+    const restore = process.cwd;
+    const capabilityId = "dw-source-scientify-research-workflow-plugin-2026-03-27";
+    let capturedInput: Record<string, unknown> | null = null;
+
+    try {
+      process.cwd = () => tempRoot;
+      const capRoot = path.join(tempRoot, "runtime", "capabilities", capabilityId);
+      fs.mkdirSync(capRoot, { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, "runtime", "callable-executions"), { recursive: true });
+      fs.mkdirSync(path.join(tempRoot, "shared", "schemas"), { recursive: true });
+
+      fs.writeFileSync(path.join(capRoot, "manifest.json"), JSON.stringify({
+        displayName: "Scientify Literature Access",
+        description: "Search academic and technical literature through bounded runtime callables.",
+        domain: "runtime",
+        verification: "verified",
+        inputSchema: "shared/schemas/literature-access-callable-input.schema.json",
+        outputSchema: "shared/schemas/literature-access-callable-output.schema.json",
+        verify: {
+          command: "npx tsx scripts/execution-harness.ts dw-source-scientify-research-workflow-plugin-2026-03-27",
+          assertions: [{ type: "regex", value: "VERIFIED" }],
+          timeoutMs: 30000,
+        },
+        examples: [{
+          name: "openalex-search-agent-memory",
+          input: { tool: "openalex-search", query: "agent memory", max_results: 1 },
+          expectedOutput: { ok: true, status: "success", tool: "openalex-search" },
+          match: { invariantFields: ["ok", "status", "tool"] },
+        }],
+        whenToUse: "Use for bounded academic literature search.",
+        failureModes: ["Provider unavailable", "Invalid tool"],
+        projection: {
+          kind: "mcp_tool",
+          id: "scientify-literature-access",
+          invocation: `cap_${capabilityId}`,
+        },
+      }, null, 2), "utf8");
+
+      fs.writeFileSync(path.join(tempRoot, "shared", "schemas", "literature-access-callable-input.schema.json"), JSON.stringify({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        required: ["tool"],
+        properties: {
+          tool: { type: "string", enum: ["arxiv-search", "openalex-search"] },
+          query: { type: "string" },
+          max_results: { type: "integer", minimum: 1 },
+        },
+        allOf: [
+          {
+            if: { properties: { tool: { const: "arxiv-search" } }, required: ["tool"] },
+            then: { required: ["query"] },
+          },
+          {
+            if: { properties: { tool: { const: "openalex-search" } }, required: ["tool"] },
+            then: { required: ["query"] },
+          },
+        ],
+        additionalProperties: false,
+      }, null, 2), "utf8");
+      fs.writeFileSync(path.join(tempRoot, "shared", "schemas", "literature-access-callable-output.schema.json"), JSON.stringify({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        required: ["ok", "tool", "status", "result", "metadata"],
+        properties: {
+          ok: { type: "boolean" },
+          tool: { type: "string" },
+          status: { type: "string" },
+          result: { type: "object" },
+          metadata: { type: "object" },
+        },
+      }, null, 2), "utf8");
+
+      const evidence = attachHarnessSignature({
+        schemaVersion: 1,
+        capabilityId,
+        command: "npx tsx scripts/execution-harness.ts dw-source-scientify-research-workflow-plugin-2026-03-27",
+        exitCode: 0,
+        stdoutHash: "stdout-hash",
+        stderrHash: "stderr-hash",
+        wallTimeMs: 321,
+        environmentFingerprint: "win32-x64-v24.14.0",
+        timestamp: new Date().toISOString(),
+        harnessVersion: "1.0.0",
+        contractVerification: "full",
+        examples: [{
+          name: "openalex-search-agent-memory",
+          input: { tool: "openalex-search", query: "agent memory", max_results: 1 },
+          passed: true,
+        }],
+      });
+      fs.writeFileSync(
+        path.join(tempRoot, "runtime", "callable-executions", `${capabilityId}-execution.json`),
+        JSON.stringify(evidence, null, 2),
+        "utf8",
+      );
+
+      vi.doMock("../../../runtime/core/callable-execution.ts", () => ({
+        listDirectiveRuntimeCallableCapabilities: () => [{
+          capabilityId,
+          status: "callable",
+          form: "runtime_owned_callable_bundle",
+          title: "Scientify Literature-Access Tool Bundle",
+          toolCount: 2,
+          tools: ["arxiv-search", "openalex-search"],
+          defaultTimeoutMs: 30000,
+          maxTimeoutMs: 120000,
+        }],
+        runDirectiveRuntimeCallableExecution: async (input: {
+          tool: string;
+          input: Record<string, unknown>;
+        }) => {
+          capturedInput = input.input;
+          return {
+            ok: true,
+            record: {},
+            absolutePaths: null,
+            rawResult: {
+              ok: true,
+              tool: input.tool,
+              status: "success",
+              result: { works: [{ id: "W1" }] },
+              metadata: {
+                startedAt: "2026-01-01T00:00:00.000Z",
+                completedAt: "2026-01-01T00:00:00.001Z",
+                durationMs: 1,
+                timeoutMs: 30000,
+                capabilityId,
+              },
+            },
+          };
+        },
+      }));
+
+      const { tools } = buildProjectedCapabilityTools({ directiveRoot: tempRoot });
+      const projectedTool = tools.find((tool) => tool.name === `cap_${capabilityId}`);
+      expect(projectedTool).toBeDefined();
+
+      const result = await projectedTool!.execute({
+        tool: "openalex-search",
+        query: "agent memory",
+        max_results: 1,
+      });
+
+      expect(result).toMatchObject({
+        ok: true,
+        status: "success",
+        tool: "openalex-search",
+        capability_id: capabilityId,
+        projected: true,
+      });
+      expect(capturedInput).toEqual({
+        query: "agent memory",
+        max_results: 1,
+      });
+    } finally {
+      vi.doUnmock("../../../runtime/core/callable-execution.ts");
+      vi.resetModules();
       process.cwd = restore;
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
