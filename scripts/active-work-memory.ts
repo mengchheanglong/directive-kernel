@@ -1,4 +1,11 @@
-import { mkdir, readFile, appendFile, access } from "node:fs/promises";
+import {
+  appendFile,
+  access,
+  mkdir,
+  readFile,
+  readdir,
+  writeFile,
+} from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,7 +34,57 @@ export type ActiveWorkTransitionRecord = {
   resume_hint: string;
 };
 
+export type ActiveWorkCheckpointFile = {
+  path: string;
+  content: string;
+  bytes: number;
+};
+
+export type ActiveWorkCheckpointRecord = {
+  checkpoint_id: string;
+  timestamp: string;
+  actor: string;
+  reason: string;
+  source_files: string[];
+  files: ActiveWorkCheckpointFile[];
+  resume_hint: string;
+};
+
 const TRANSITIONS_FILE = "TRANSITIONS.jsonl";
+const CHECKPOINTS_DIR = "CHECKPOINTS";
+const CHECKPOINT_ID_SAFE_PATTERN = /^[A-Za-z0-9._-]+$/;
+const aliasMap = {
+  "active-dir": "active-dir",
+  "transition-id": "transition-id",
+  "timestamp": "timestamp",
+  "from-status": "from-status",
+  "to-status": "to-status",
+  "actor": "actor",
+  "reason": "reason",
+  "changed-file": "changed-file",
+  "next-actor": "next-actor",
+  "next-action": "next-action",
+  "evidence-ref": "evidence-ref",
+  "side-effect": "side-effect",
+  "resume-hint": "resume-hint",
+  "checkpoint-id": "checkpoint-id",
+  "file": "file",
+} as const;
+
+const DEFAULT_ACTIVE_WORK_CHECKPOINT_FILES = [
+  "CURRENT.md",
+  "NEXT.md",
+  "STATE.json",
+  "DECISIONS.md",
+  "BLOCKERS.md",
+  "EVIDENCE.md",
+  "TASKS.md",
+  "HANDOFF.md",
+  "SESSION-BOOT.md",
+  "SESSION-CLOSE.md",
+  "README.md",
+  "TRANSITIONS.jsonl",
+] as const;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -44,6 +101,41 @@ function isStringArray(value: unknown, field: string): string[] {
     throw new Error(`${field} must be an array of strings`);
   }
   return value;
+}
+
+function assertSafeCheckpointId(value: unknown): asserts value is string {
+  if (!isNonEmptyString(value)) {
+    throw new Error("checkpoint_id must be a non-empty string");
+  }
+  if (!CHECKPOINT_ID_SAFE_PATTERN.test(value)) {
+    throw new Error("checkpoint_id must be safe for filenames");
+  }
+}
+
+function assertSafeRelativePath(value: unknown, field: string): asserts value is string {
+  if (!isNonEmptyString(value)) {
+    throw new Error(`${field} must be a non-empty string`);
+  }
+  if (path.isAbsolute(value) || path.win32.isAbsolute(value) || path.posix.isAbsolute(value)) {
+    throw new Error(`${field} must be a relative path`);
+  }
+  if (/^[a-zA-Z]:[\\/]/.test(value)) {
+    throw new Error(`${field} must not be a Windows drive path`);
+  }
+  const parts = value.split(/[\\/]/);
+  if (parts.includes("..") || parts.includes("")) {
+    throw new Error(`${field} must be a safe relative path`);
+  }
+}
+
+function isValidUtf8ByteLength(pathValue: string, content: string, bytes: unknown): void {
+  if (typeof bytes !== "number" || !Number.isInteger(bytes) || bytes < 0) {
+    throw new Error(`bytes for ${pathValue} must be a non-negative integer`);
+  }
+  const actual = Buffer.from(content, "utf8").byteLength;
+  if (bytes !== actual) {
+    throw new Error(`bytes for ${pathValue} must equal UTF-8 byte length`);
+  }
 }
 
 function normalizeStatus(value: unknown, field: string): ActiveWorkTransitionStatus | string {
@@ -107,6 +199,141 @@ export function normalizeActiveWorkTransition(
     side_effects: sideEffects,
     resume_hint: input.resume_hint,
   };
+}
+
+export function getDefaultActiveWorkCheckpointFiles(): string[] {
+  return [...DEFAULT_ACTIVE_WORK_CHECKPOINT_FILES];
+}
+
+export function normalizeActiveWorkCheckpoint(
+  input: ActiveWorkCheckpointRecord,
+): ActiveWorkCheckpointRecord {
+  assertSafeCheckpointId(input.checkpoint_id);
+  if (!isNonEmptyString(input.timestamp)) {
+    throw new Error("timestamp must be a non-empty string");
+  }
+  if (Number.isNaN(new Date(input.timestamp).getTime())) {
+    throw new Error("timestamp must be a valid date");
+  }
+  if (!isNonEmptyString(input.actor)) {
+    throw new Error("actor must be a non-empty string");
+  }
+  if (!isNonEmptyString(input.reason)) {
+    throw new Error("reason must be a non-empty string");
+  }
+  const sourceFiles = isStringArray(input.source_files, "source_files");
+  if (!Array.isArray(input.files)) {
+    throw new Error("files must be an array of checkpoint files");
+  }
+
+  sourceFiles.forEach((entry) => {
+    assertSafeRelativePath(entry, "source_files");
+  });
+
+  const normalizedFiles: ActiveWorkCheckpointFile[] = input.files.map((entry) => {
+    if (typeof entry !== "object" || entry === null) {
+      throw new Error("files must be an array of { path, content, bytes } objects");
+    }
+    assertSafeRelativePath(entry.path, "files.path");
+    if (typeof entry.content !== "string") {
+      throw new Error("files.content must be a string");
+    }
+    isValidUtf8ByteLength(entry.path, entry.content, entry.bytes);
+    return {
+      path: entry.path,
+      content: entry.content,
+      bytes: entry.bytes,
+    };
+  });
+
+  if (!isNonEmptyString(input.resume_hint)) {
+    throw new Error("resume_hint must be a non-empty string");
+  }
+
+  return {
+    checkpoint_id: input.checkpoint_id,
+    timestamp: input.timestamp,
+    actor: input.actor,
+    reason: input.reason,
+    source_files: sourceFiles,
+    files: normalizedFiles,
+    resume_hint: input.resume_hint,
+  };
+}
+
+export async function createActiveWorkCheckpoint(input: {
+  activeDir: string;
+  checkpoint: Pick<
+    ActiveWorkCheckpointRecord,
+    "checkpoint_id" | "timestamp" | "actor" | "reason" | "resume_hint"
+  >;
+  files?: string[];
+}): Promise<ActiveWorkCheckpointRecord> {
+  assertSafeCheckpointId(input.checkpoint.checkpoint_id);
+  const sourceFiles = input.files ?? getDefaultActiveWorkCheckpointFiles();
+
+  if (!Array.isArray(sourceFiles)) {
+    throw new Error("files must be an array of file names");
+  }
+
+  const checkpointDir = path.join(input.activeDir, CHECKPOINTS_DIR);
+  await mkdir(checkpointDir, { recursive: true });
+  const candidateRecords: ActiveWorkCheckpointFile[] = [];
+
+  for (const filePath of sourceFiles) {
+    assertSafeRelativePath(filePath, "source_files");
+    const absoluteFilePath = path.join(input.activeDir, filePath);
+    try {
+      const content = await readFile(absoluteFilePath, "utf8");
+      candidateRecords.push({
+        path: filePath,
+        content,
+        bytes: Buffer.byteLength(content, "utf8"),
+      });
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  const record = normalizeActiveWorkCheckpoint({
+    checkpoint_id: input.checkpoint.checkpoint_id,
+    timestamp: input.checkpoint.timestamp,
+    actor: input.checkpoint.actor,
+    reason: input.checkpoint.reason,
+    source_files: sourceFiles,
+    files: candidateRecords,
+    resume_hint: input.checkpoint.resume_hint,
+  });
+
+  const checkpointPath = path.join(
+    input.activeDir,
+    CHECKPOINTS_DIR,
+    `${input.checkpoint.checkpoint_id}.json`,
+  );
+  await writeFile(
+    checkpointPath,
+    `${JSON.stringify(record, null, 2)}\n`,
+    "utf8",
+  );
+  return record;
+}
+
+export async function readActiveWorkCheckpoint(input: {
+  activeDir: string;
+  checkpointId: string;
+}): Promise<ActiveWorkCheckpointRecord> {
+  assertSafeCheckpointId(input.checkpointId);
+  const checkpointPath = path.join(
+    input.activeDir,
+    CHECKPOINTS_DIR,
+    `${input.checkpointId}.json`,
+  );
+  const text = await readFile(checkpointPath, "utf8");
+  const parsed = JSON.parse(text);
+  return normalizeActiveWorkCheckpoint(parsed as ActiveWorkCheckpointRecord);
 }
 
 export function parseActiveWorkTransitionsJsonl(
@@ -182,21 +409,6 @@ export async function appendActiveWorkTransition(input: {
 }
 
 type CliOptions = Record<string, string[]>;
-const aliasMap = {
-  "active-dir": "active-dir",
-  "transition-id": "transition-id",
-  "timestamp": "timestamp",
-  "from-status": "from-status",
-  "to-status": "to-status",
-  "actor": "actor",
-  "reason": "reason",
-  "changed-file": "changed-file",
-  "next-actor": "next-actor",
-  "next-action": "next-action",
-  "evidence-ref": "evidence-ref",
-  "side-effect": "side-effect",
-  "resume-hint": "resume-hint",
-} as const;
 
 function parseCliArgs(argv: string[]): Record<string, string[]> {
   const options: CliOptions = {};
@@ -296,11 +508,64 @@ async function runAppend(
   return 0;
 }
 
+async function runCheckpoint(options: Record<string, string[]>): Promise<number> {
+  const activeDir = getSingle(options, "active-dir");
+  if (!isNonEmptyString(activeDir)) {
+    throw new Error("Missing required flag: --active-dir");
+  }
+
+  const checkpoint = await createActiveWorkCheckpoint({
+    activeDir,
+    checkpoint: {
+      checkpoint_id: getRequired(options, "checkpoint-id"),
+      timestamp: getRequired(options, "timestamp"),
+      actor: getRequired(options, "actor"),
+      reason: getRequired(options, "reason"),
+      resume_hint: getRequired(options, "resume-hint"),
+    },
+    files: getSingle(options, "file") ? options.file : undefined,
+  });
+  const message = `Created checkpoint ${checkpoint.checkpoint_id} with ${checkpoint.files.length} file(s) captured.`;
+  console.log(message);
+  return 0;
+}
+
+async function runListCheckpoints(options: Record<string, string[]>): Promise<number> {
+  const activeDir = getSingle(options, "active-dir");
+  if (!isNonEmptyString(activeDir)) {
+    throw new Error("Missing required flag: --active-dir");
+  }
+
+  const checkpointsDir = path.join(activeDir, CHECKPOINTS_DIR);
+  try {
+    await access(checkpointsDir, constants.F_OK);
+  } catch {
+    console.log(`No checkpoints found in ${checkpointsDir}.`);
+    return 0;
+  }
+
+  const dirents = await readdir(checkpointsDir, { withFileTypes: true });
+  const ids = dirents
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .map((entry) => entry.name.replace(/\.json$/, ""))
+    .sort((left, right) => left.localeCompare(right));
+
+  if (ids.length === 0) {
+    console.log(`No checkpoints found in ${checkpointsDir}.`);
+    return 0;
+  }
+
+  ids.forEach((id) => {
+    console.log(id);
+  });
+  return 0;
+}
+
 async function runCli(): Promise<void> {
   const [, , ...args] = process.argv;
   const command = args[0];
   if (!command) {
-    throw new Error("No command provided. Use validate or append.");
+    throw new Error("No command provided. Use validate, append, checkpoint, or list-checkpoints.");
   }
   const options = parseCliArgs(args.slice(1));
 
@@ -312,6 +577,16 @@ async function runCli(): Promise<void> {
 
   if (command === "append") {
     await runAppend(options);
+    return;
+  }
+
+  if (command === "checkpoint") {
+    await runCheckpoint(options);
+    return;
+  }
+
+  if (command === "list-checkpoints") {
+    await runListCheckpoints(options);
     return;
   }
 
