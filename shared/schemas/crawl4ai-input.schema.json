@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Crawl4AI Input",
+  "type": "object",
+  "required": ["url"],
+  "properties": {
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "The seed URL to start crawling from. Must be a public http/https URL — no localhost, private IPs, or internal networks."
+    },
+    "maxPages": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 1,
+      "description": "Maximum number of pages to crawl. Set to 1 for single-page extraction."
+    },
+    "maxDepth": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 1,
+      "description": "Maximum link depth from the seed URL. Depth 1 = seed page only."
+    },
+    "outputFormat": {
+      "type": "string",
+      "enum": ["markdown", "json", "html"],
+      "default": "markdown",
+      "description": "Output format for crawled content."
+    },
+    "question": {
+      "type": "string",
+      "description": "Optional LLM extraction question to answer from crawled content (e.g., 'Extract all product prices')."
+    }
+  }
+}

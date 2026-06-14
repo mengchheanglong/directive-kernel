@@ -1,0 +1,66 @@
+{
+  "displayName": "Crawl4AI Web Crawler",
+  "description": "Deep crawl websites with recursive link-following, depth control, domain filtering, and LLM-ready markdown output. Use for multi-page extraction, documentation crawling, or domain research beyond single-page fetch.",
+  "domain": "runtime",
+  "verification": "verified",
+  "inputSchema": "shared/schemas/crawl4ai-input.schema.json",
+  "outputSchema": "shared/schemas/crawl4ai-output.schema.json",
+  "verify": {
+    "command": "C:/Python314/python -c \"import asyncio; from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode; async def m(): config=CrawlerRunConfig(cache_mode=CacheMode.BYPASS); async with AsyncWebCrawler() as c: r=await c.arun(url='https://example.com',config=config); print(r.success and 'Example Domain' in (r.markdown or ''))\" && asyncio.run(m())",
+    "assertions": [
+      { "type": "regex", "value": "True" }
+    ],
+    "timeoutMs": 60000
+  },
+  "examples": [
+    {
+      "name": "crawl-single-page",
+      "input": {
+        "url": "https://example.com",
+        "maxPages": 1,
+        "outputFormat": "markdown"
+      },
+      "expectedOutput": {
+        "ok": true,
+        "url": "https://example.com",
+        "markdown": "# Example Domain"
+      },
+      "match": {
+        "invariantFields": ["ok", "url", "markdown"]
+      }
+    },
+    {
+      "name": "deep-crawl-docs",
+      "input": {
+        "url": "https://docs.example.com",
+        "maxPages": 10,
+        "maxDepth": 2,
+        "outputFormat": "markdown"
+      },
+      "expectedOutput": {
+        "ok": true,
+        "pagesCrawled": "<= 10"
+      },
+      "match": {
+        "invariantFields": ["ok", "pagesCrawled"]
+      }
+    }
+  ],
+  "whenToUse": "Invoke when Hermes needs to crawl multiple pages from a domain — following links recursively, bounded by depth and page count — and return clean markdown for research, source operationalization, or knowledge ingestion. Prefer single-page web_extract for one URL. Prefer browser tools for JS-heavy SPAs.",
+  "failureModes": [
+    "Crawl4AI is not installed in the configured Python environment.",
+    "lxml build from source failed on Python 3.14 — some extraction features may be degraded.",
+    "The target URL is unreachable, returns 4xx/5xx, or blocks the crawler.",
+    "A deep crawl exceeds the bounded page limit or timeout.",
+    "No pages were successfully crawled (all failed or blocked).",
+    "The returned markdown is empty or does not match expected content."
+  ],
+  "projection": {
+    "kind": "mcp_tool",
+    "id": "crawl4ai",
+    "invocation": "cap_pipe-crawl4ai-mqdt9lfs",
+    "inputContract": "shared/schemas/crawl4ai-input.schema.json",
+    "outputContract": "shared/schemas/crawl4ai-output.schema.json"
+  },
+  "verificationEvidence": "runtime/callable-executions/pipe-crawl4ai-mqdt9lfs-execution.json"
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Crawl4AI Output",
+  "type": "object",
+  "required": ["ok"],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "Whether the crawl succeeded (at least one page crawled successfully)."
+    },
+    "url": {
+      "type": "string",
+      "description": "The seed URL that was crawled."
+    },
+    "pagesCrawled": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of pages successfully crawled."
+    },
+    "markdown": {
+      "type": "string",
+      "description": "Concatenated markdown output from all crawled pages."
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string" },
+          "statusCode": { "type": "integer" },
+          "markdown": { "type": "string" },
+          "success": { "type": "boolean" }
+        }
+      },
+      "description": "Per-page crawl results."
+    },
+    "error": {
+      "type": "string",
+      "description": "Error message if the crawl failed."
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Non-fatal warnings (e.g., some pages failed, output truncated)."
+    }
+  }
+}
