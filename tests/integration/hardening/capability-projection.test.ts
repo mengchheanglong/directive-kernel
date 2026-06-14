@@ -11,6 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { readDecisionPolicyLedger } from "../../../engine/decision-policy-ledger.ts";
 import { buildProjectedCapabilityTools, getProjectedCapabilityIds } from "../../../hosts/mcp-host/executors/capability-projection.ts";
 import { listRuntimeCapabilityMetadata } from "../../../runtime/core/capability-registry.ts";
 import { attachHarnessSignature } from "../../../shared/lib/execution-evidence.ts";
@@ -468,10 +469,36 @@ describe("dynamic MCP tool projection", () => {
 
       const result = await projectedTool!.execute({ url: "http://localhost/" });
       expect(result).toMatchObject({
-        ok: true,
+        ok: false,
+        status: "validation_error",
+        gate: "contract_failure",
+        capability_id: "pipe-scrapling-adaptive-web-scraper-mq9mmrc0",
+        projected: true,
+      });
+      expect(String((result as { error?: unknown }).error)).toContain("localhost");
+
+      const ledger = readDecisionPolicyLedger(tempRoot);
+      const event = ledger.events
+        .filter((entry) =>
+          entry.source === "capability_invocation"
+          && entry.candidateId === "pipe-scrapling-adaptive-web-scraper-mq9mmrc0"
+        )
+        .at(-1) as (typeof ledger.events[number] & {
+          capabilityInvocation?: {
+            outcome?: string;
+            gate?: string;
+            errorClass?: string;
+            status?: string;
+          };
+        }) | undefined;
+      expect(event).toBeDefined();
+      expect(event?.capabilityInvocation).toMatchObject({
+        outcome: "contract_failure",
+        gate: "contract_failure",
+        errorClass: "callable_validation",
         status: "validation_error",
       });
-      expect(String((result as { result?: unknown }).result)).toContain("localhost");
+      expect(event?.capabilityInvocation?.outcome).not.toBe("success");
     } finally {
       process.cwd = restore;
       fs.rmSync(tempRoot, { recursive: true, force: true });

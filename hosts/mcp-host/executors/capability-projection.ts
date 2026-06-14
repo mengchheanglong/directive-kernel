@@ -12,6 +12,7 @@ import type {
   RuntimeCapabilityMetadata,
   RuntimeCapabilityManifest,
 } from "../../../runtime/core/capability-registry.ts";
+import type { CallableExecutionResult } from "../../../runtime/core/callable-contract.ts";
 import type { McpTool, ToolExecutor } from "../types.ts";
 
 function buildInvocationTokens(
@@ -20,6 +21,50 @@ function buildInvocationTokens(
   extras: string[] = [],
 ): string[] {
   return [capabilityId, `outcome_${outcome}`, outcome, ...extras];
+}
+
+function deriveErrorMessage(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (value instanceof Error) {
+    return value.message;
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (typeof record.error === "string") {
+      return record.error;
+    }
+    if (typeof record.message === "string") {
+      return record.message;
+    }
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function mapCallableFailure(rawResult: CallableExecutionResult): {
+  outcome: "failure" | "contract_failure";
+  gate?: "contract_failure";
+  errorClass: string;
+} {
+  if (rawResult.status === "validation_error") {
+    return {
+      outcome: "contract_failure",
+      gate: "contract_failure",
+      errorClass: "callable_validation",
+    };
+  }
+  if (rawResult.status === "timeout") {
+    return { outcome: "failure", errorClass: "timeout" };
+  }
+  if (rawResult.status === "disabled") {
+    return { outcome: "failure", errorClass: "disabled" };
+  }
+  return { outcome: "failure", errorClass: "callable_error" };
 }
 
 export function buildProjectedCapabilityTools(options: {
@@ -167,6 +212,46 @@ function buildProjectedExecutor(
         execInput as Parameters<typeof runDirectiveRuntimeCallableExecution>[0],
       );
       const durationMs = Date.now() - startTime;
+      const rawResult = result.rawResult;
+
+      if (rawResult.ok !== true) {
+        const failure = mapCallableFailure(rawResult);
+        const statusTokens = typeof rawResult.status === "string" ? [rawResult.status] : [];
+        const recordedAt = new Date().toISOString();
+        const error = deriveErrorMessage(rawResult.result);
+
+        appendDecisionPolicyEvent({
+          directiveRoot,
+          event: {
+            recordedAt,
+            source: "capability_invocation",
+            candidateId: capability.id,
+            rationale: failure.outcome === "contract_failure"
+              ? `Capability "${capability.id}" callable contract failure (${rawResult.status}, ${durationMs}ms): ${error}`
+              : `Capability "${capability.id}" invocation failed (${rawResult.status}, ${durationMs}ms): ${error}`,
+            sourceSignalTokens: buildInvocationTokens(capability.id, failure.outcome, statusTokens),
+            capabilityInvocation: {
+              outcome: failure.outcome,
+              durationMs,
+              tool: typeof rawResult.tool === "string" ? rawResult.tool : undefined,
+              status: typeof rawResult.status === "string" ? rawResult.status : undefined,
+              gate: failure.gate,
+              errorClass: failure.errorClass,
+            },
+          },
+        });
+
+        return {
+          ok: false,
+          error,
+          capability_id: capability.id,
+          status: rawResult.status,
+          tool: rawResult.tool,
+          duration_ms: durationMs,
+          ...(failure.gate ? { gate: failure.gate } : {}),
+          projected: true,
+        };
+      }
 
       let outputValidationError: string | null = null;
       if (manifest?.outputSchema) {
@@ -218,7 +303,6 @@ function buildProjectedExecutor(
         };
       }
 
-      const rawResult = result.rawResult;
       const recordedAt = new Date().toISOString();
       appendDecisionPolicyEvent({
         directiveRoot,
