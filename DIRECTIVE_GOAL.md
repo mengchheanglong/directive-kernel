@@ -12,21 +12,30 @@ project-current-goal
 
 ## Goal Statement
 
-Improve the host project's active product direction with one bounded useful capability or one bounded engine improvement.
+Keep DK focused on verified capability truth for selected Hermes/OpenClaw-useful capabilities.
 
 ## Why Now
 
-Current delivery pressure or an explicit operator request makes this goal worth pursuing now.
+DK is in shrink phase. The immediate need is to prevent architecture-first expansion and preserve only the surfaces that make capabilities more trustworthy, recallable, and portable than plain skills.
 
 ## Adoption Target
 
 runtime
 
+## Primary Lane
+
+runtime
+
 ## Constraints
 
-- stay bounded
-- keep review explicit
+- Require a selected user/operator need before capability work.
+- Preserve Hermes skills as the user-facing interface.
+- Keep Runtime centered on proof, contracts, projection readiness, recall, and outcomes.
+- Limit Architecture to active-memory/state support.
+- Limit Discovery to source evaluation/research-engine support.
+- Avoid broad auto-ingest, dashboard polish, and registry-count goals.
+- Reject work that a plain Hermes skill solves more simply.
 
 ## Success Signal
 
-One bounded result is materially clearer, more reusable, or more adoptable than before without weakening review discipline.
+One bounded result makes DK smaller, clearer, or more truthful without adding feature surface.

@@ -1,13 +1,15 @@
 # Directive Kernel
 
-Directive Kernel is Hermes's capability kernel. It is the digestive and verification system that turns selected sources, repos, papers, workflows, and task failures into verified Hermes-usable capabilities or honestly-classified notes.
+Directive Kernel is a harness-portable capability truth layer for agents. Hermes skills remain the user-facing workflow/interface; DK sits underneath selected high-value skills when proof, contracts, recall, reliability, and portability matter.
 
-Use it when you want your project to:
-- classify inbound sources into operationalization decisions
-- prove capabilities work before exposing them as powers
-- route system-improvement ideas into measured experiments
-- turn verified results into Hermes-usable projections
-- learn from outcomes to improve trust and recall
+Use it when you need to:
+- prove a capability works before exposing it as an agent power
+- record contracts, schemas, failure modes, and execution evidence
+- project verified capabilities into Hermes/OpenClaw-compatible harnesses
+- let agents recall trusted capabilities instead of guessing from prose
+- feed outcomes back into reliability and trust
+
+Do **not** use DK as a replacement for Hermes skills. Use a plain Hermes skill when a workflow, prompt, or procedure is enough. Use DK only when stronger capability truth is worth the extra ceremony.
 
 ## Try It
 
@@ -35,48 +37,54 @@ All writes remain scoped to each root's own host.
 
 ## What This Repo Is For (current branch)
 
-Directive Kernel is **Hermes's capability acquisition, verification, and self-improvement kernel.** Its purpose is compounding assistant capability over time:
+Directive Kernel is **the capability truth/projection layer underneath selected Hermes/OpenClaw skills**. Its purpose is not to replace skills or maximize registry count; its purpose is to make selected agent capabilities more trustworthy than plain instructions.
 
 ```text
-Every accepted source must become exactly one of:
-1. verified Hermes capability (callable power with evidence),
-2. measured Architecture experiment (system improvement with kill criteria),
-3. Obsidian/note-only memory (useful but not a callable power),
-4. rejected/skipped item with rationale.
+selected need/source
+→ evaluate fit
+→ verify capability with evidence
+→ record contract/projection metadata
+→ expose through a skill or harness
+→ report outcomes into reliability/trust
 ```
 
-Registry growth is not success. **Hermes getting new reliable powers is success.**
+Registry growth is not success. **Verified usefulness is success.** Ten verified working powers beat one hundred placeholder capabilities.
 
 The kernel provides:
-- a **source operationalization classifier** — every source receives a decision (capability candidate, architecture experiment, note-only, training-lab-only, fine-tune later, or reject) before pipeline advancement
-- a **verified-only capability registry** — only capabilities with real execution evidence and a usable Hermes projection (MCP tool, skill, CLI wrapper, handoff prompt) surface as powers
-- a **capability recall and trust loop** — Hermes can ask for relevant capabilities, use them, and report outcomes that feed back into reliability scores
-- a **decision-policy ledger** — every routing and outcome decision is recorded with provenance
-- a **bounded operator dashboard** — Jarvis readiness surfaced as verified powers, candidates, gaps, and recent failures
+- a **verified-only capability ledger** — only capabilities with real execution evidence and usable projection metadata surface as powers
+- a **capability recall and trust loop** — Hermes/OpenClaw can ask for relevant verified capabilities, use them, and report outcomes that feed reliability scores
+- a **projection layer** — verified capabilities can be exposed through MCP tools, host APIs, or Hermes skills
+- a **bounded source-evaluation surface** — Discovery helps decide whether a selected source should become a Runtime capability, an active-memory experiment, a skill smoke, note-only memory, or a reject
+- a **minimal active-memory support pattern** — Architecture is retained only for active execution state, transition ledgers, checkpoints, and closeout discipline
+
+### DK and Hermes Skills
+
+Hermes skills are the user-facing workflow layer. DK is only used underneath selected skills when the capability needs stronger proof, contracts, recall, reliability, or portability.
+
+Use a plain skill when a procedure is enough. Use a DK-backed skill when the agent must know that the capability is real, verified, and safe enough to expose.
 
 ### Historical lineage (secondary)
 
-The `general-workflow-kernel` positioning — dev teams running source-driven workflows with bug-report triage, incident triage, and feature-request triage — is the kernel's historical public packaging. It is **not the current local north star** for this branch. Two flagship example consumers ship with the kernel as secondary lineage:
+The `general-workflow-kernel` positioning — dev teams running source-driven workflows with bug-report triage, incident triage, and feature-request triage — is historical public packaging. It is **not the current local north star** for this branch. Two flagship example consumers remain as secondary lineage:
 - **[Bug-report triage](hosts/integration-kit/examples/bug-report-triage/README.md)** — GitHub issue → routing decision (`fix-now`, `backlog`, `wontfix`, `duplicate`)
 - **[Incident triage](hosts/integration-kit/examples/incident-triage/README.md)** — alert webhook → routing decision (`page-on-call`, `monitor-only`, `auto-resolve`, `noise`)
 
-See [`AUDIENCE.md`](./AUDIENCE.md) for the full rationale behind the Jarvis capability kernel pivot.
+See [`AUDIENCE.md`](./AUDIENCE.md) for the current capability-truth audience and historical lineage.
 
-> **Warning:** Registry count is not a success metric. Ten verified working powers beat one hundred placeholder capabilities. Claimed/placeholder entries must never be projected as Hermes-usable tools.
+> **Warning:** Claimed/placeholder entries must never be projected as Hermes-usable tools.
 
 ## How It Works
 
-1. Hermes encounters a need, failure, or new source (paper, repo, tool, task failure)
-2. Sources enter through Discovery's front door
-3. Discovery classifies the source into an operationalization decision: capability candidate, architecture experiment, note-only, training-lab-only, fine-tune later, or reject
-4. Capability candidates enter Runtime for proof, verification, and projection into Hermes-usable powers
-5. Architecture experiments test system-improvement hypotheses with kill criteria
-6. The host and UI show Jarvis readiness: verified powers, candidates, gaps, recent failures, and trust state
+1. Hermes/OpenClaw has a selected capability need, source, paper, repo, or task failure
+2. Discovery evaluates whether it is worth operationalizing, testing as active-memory support, keeping as note-only, or rejecting
+3. Runtime turns approved capability candidates into verified, projection-ready powers with proof, contracts, schemas, and failure modes
+4. Hermes skills or harnesses expose the verified capability as the user-facing workflow
+5. Outcomes are reported back into reliability/trust
 
-The three main lanes are:
-- `Discovery` for source classification and operationalization decisions
-- `Runtime` for verified capability production and projection
-- `Architecture` for system-improvement experiments
+The three surviving surfaces are:
+- `Runtime` for capability ledger / projection truth
+- `Discovery` for research-engine / source evaluation support
+- `Architecture` for active memory / state patterns only
 
 ## Main Parts
 
@@ -87,12 +95,12 @@ The three main lanes are:
   - `engine/planning/` — plan construction and consumption
   - `engine/routing/` — lane scoring, assessment, and routing decisions
   - `engine/state/` — workspace state resolution
-- `discovery/` - source intake and routing
-- `runtime/` - reusable capability work
-- `architecture/` - system-improvement work
-- `shared/` - shared helpers and contracts
-- `hosts/` - ways to run or embed the system
-- `ui/` - a bounded operator workbench over the kernel mutation surface
+- `runtime/` - capability ledger, verification, projection, recall, and outcome trust
+- `discovery/` - selected source evaluation and research-engine support
+- `architecture/` - active memory / state-pattern support only
+- `shared/` - contracts, schemas, and helpers for capability truth
+- `hosts/` - thin MCP/API/web shells for exposing verified capabilities
+- `ui/` - optional operator debug/read-model surface
 
 Executable code lives in the `lib/`, `engine/`, `hosts/`, and `ui/src/` surfaces. The numbered lane folders under `discovery/`, `runtime/`, and `architecture/` are artifact/state surfaces, not normal module trees.
 
